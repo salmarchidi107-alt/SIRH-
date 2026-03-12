@@ -1,0 +1,330 @@
+@extends('layouts.app')
+
+@section('title', 'Planning')
+@section('page-title', 'Planning')
+
+@section('content')
+<div class="page-header">
+    <div class="page-header-left">
+        <h1> Planning</h1>
+        <p>Semaine du {{ $startOfWeek->format('d') }} au {{ $endOfWeek->format('d M Y') }}</p>
+    </div>
+<div class="page-header-right" style="display:flex;gap:8px">
+        <a href="{{ route('planning.monthly') }}" class="btn btn-outline">
+             Vue Mensuelle
+        </a>
+        <a href="{{ route('planning.templates.index') }}" class="btn btn-outline">
+             Semaines Types
+        </a>
+        <a href="{{ route('planning.templates.apply') }}" class="btn btn-outline">
+            ➕ Appliquer Semaine Type
+        </a>
+        <button type="button" class="btn btn-primary" onclick="openPlanningModal()">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Créer un planning
+        </button>
+    </div>
+</div>
+
+<!-- Create Planning Modal -->
+<div id="planningModal" class="modal" style="display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background-color:rgba(0,0,0,0.5)">
+    <div class="modal-content" style="background-color:white;margin:5% auto;padding:24px;border-radius:12px;width:90%;max-width:500px;box-shadow:0 10px 40px rgba(0,0,0,0.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+            <h2 style="margin:0;font-size:1.25rem">Créer un planning</h2>
+            <button type="button" onclick="closePlanningModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-muted)">×</button>
+        </div>
+        
+        <form method="POST" action="{{ route('planning.store') }}">
+            @csrf
+            
+            <div style="margin-bottom:16px">
+                <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Employé</label>
+                <select name="employee_id" required style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;background:white">
+                    <option value="">Sélectionner un employé</option>
+                    @foreach($employees as $emp)
+                        <option value="{{ $emp->id }}">{{ $emp->full_name }} - {{ $emp->department }}</option>
+                    @endforeach
+                </select>
+            </div>
+            
+            <div style="margin-bottom:16px">
+                <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Date</label>
+                <input type="date" name="date" required style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem">
+            </div>
+            
+            <div style="margin-bottom:16px">
+                <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Type de shift</label>
+                <select name="shift_type" required style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;background:white">
+                    <option value="matin"> Matin</option>
+                    <option value="apres_midi"> Après-midi</option>
+                    <option value="journee"> Journée complète</option>
+                    <option value="nuit"> Nuit</option>
+                    <option value="garde"> Garde</option>
+                </select>
+            </div>
+            
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+                <div>
+                    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Heure de début</label>
+                    <input type="time" name="shift_start" required style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem">
+                </div>
+                <div>
+                    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Heure de fin</label>
+                    <input type="time" name="shift_end" required style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem">
+                </div>
+            </div>
+            
+            <div style="margin-bottom:20px">
+                <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Notes (optionnel)</label>
+                <textarea name="notes" rows="2" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;resize:vertical"></textarea>
+            </div>
+            
+            <div style="display:flex;gap:12px;justify-content:flex-end">
+                <button type="button" onclick="closePlanningModal()" class="btn btn-outline">Annuler</button>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openPlanningModal() {
+    document.getElementById('planningModal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function closePlanningModal() {
+    document.getElementById('planningModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+window.onclick = function(event) {
+    var modal = document.getElementById('planningModal');
+    if (event.target == modal) {
+        closePlanningModal();
+    }
+}
+</script>
+
+<!-- Filters Bar -->
+<div class="filters-bar" style="margin-bottom: 20px;">
+    <form method="GET" action="{{ route('planning.weekly') }}" class="filters-form" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <!-- Week Navigation -->
+        <div style="display:flex;align-items:center;gap:8px">
+            <a href="{{ route('planning.weekly', ['week' => $week - 1, 'year' => $year, 'search' => $search, 'department' => $department]) }}" class="btn btn-sm btn-outline">← Semaine précédente</a>
+            <select name="week" class="filter-select" onchange="this.form.submit()" style="min-width:120px;border-radius:20px;padding-left:12px;padding-right:12px">
+                @for($w = 1; $w <= 52; $w++)
+                    <option value="{{ $w }}" {{ $week == $w ? 'selected' : '' }}>Semaine {{ $w }}</option>
+                @endfor
+            </select>
+            <select name="year" class="filter-select" onchange="this.form.submit()" style="min-width:100px;border-radius:20px;padding-left:12px;padding-right:12px">
+                @for($y = now()->year - 1; $y <= now()->year + 1; $y++)
+                    <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>{{ $y }}</option>
+                @endfor
+            </select>
+            <a href="{{ route('planning.weekly', ['week' => $week + 1, 'year' => $year, 'search' => $search, 'department' => $department]) }}" class="btn btn-sm btn-outline">Semaine suivante →</a>
+        </div>
+        
+        <!-- Search -->
+        <div style="display:flex;gap:8px;margin-left:auto">
+            <input type="text" name="search" value="{{ $search }}" placeholder="Rechercher par nom..." class="filter-input" style="min-width:180px;border-radius:20px;padding-left:16px;padding-right:16px">
+            <select name="department" class="filter-select" style="min-width:150px;border-radius:20px;padding-left:16px;padding-right: <option value="">16px">
+               Tous les services</option>
+                @foreach($departments as $dept)
+                    <option value="{{ $dept }}" {{ $department == $dept ? 'selected' : '' }}>{{ $dept }}</option>
+                @endforeach
+            </select>
+            <button type="submit" class="btn btn-primary">Rechercher</button>
+            @if($search || $department)
+                <a href="{{ route('planning.weekly', ['week' => $week, 'year' => $year]) }}" class="btn btn-outline">Réinitialiser</a>
+            @endif
+        </div>
+    </form>
+</div>
+
+<!-- Drag & Drop Info -->
+<div style="background:var(--surface-2);padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:0.85rem;color:var(--text-muted)">
+    💡 <strong>Glisser-Déposer:</strong> Vous pouvez déplacer un shift d'un employé vers un autre en glisser-déposant les cartes de shift.
+</div>
+
+<!-- Weekly Planning Table with Drag & Drop -->
+<div class="card" style="overflow-x:auto">
+    <div class="card-body" style="padding:0">
+        <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+            <thead>
+                <tr style="background:var(--surface-2)">
+                    <th style="padding:16px 12px;text-align:left;min-width:200px;position:sticky;left:0;background:var(--surface-2);z-index:10">
+                        Employé
+                    </th>
+                    @foreach($weekDays as $date => $day)
+                    <th style="padding:12px 8px;text-align:center;min-width:140px;white-space:nowrap">
+                        <div style="font-weight:600;color:var(--primary)">{{ ucfirst($day['day_name']) }}</div>
+                        <div style="font-size:0.75rem;color:var(--text-muted)">{{ $day['day_number'] }} {{ $day['date']->locale('fr')->monthName }}</div>
+                    </th>
+                    @endforeach
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($employees as $emp)
+                @php 
+                    $empPlannings = $plannings->get($emp->id, collect());
+                @endphp
+                <tr style="border-bottom:1px solid var(--border)" data-employee-id="{{ $emp->id }}">
+                    <!-- Employee Info -->
+                    <td style="padding:12px;position:sticky;left:0;background:white;z-index:5;box-shadow:2px 0 4px rgba(0,0,0,0.05)">
+                        <div style="display:flex;align-items:center;gap:10px">
+                            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg, var(--primary), #1a8fa5);color:white;font-weight:600;font-size:0.75rem;display:flex;align-items:center;justify-content:center">
+                                {{ strtoupper(substr($emp->first_name, 0, 1)) }}{{ strtoupper(substr($emp->last_name, 0, 1)) }}
+                            </div>
+                            <div>
+                                <a href="{{ route('planning.show', ['employee' => $emp->id, 'week' => $week, 'year' => $year]) }}" style="font-weight:600;color:var(--primary);text-decoration:none">
+                                    {{ $emp->full_name }}
+                                </a>
+                                <div style="font-size:0.7rem;color:var(--text-muted)">{{ $emp->department }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    
+                    <!-- Day Cells -->
+                    @foreach($weekDays as $date => $day)
+                    @php 
+                        $dayPlanning = $empPlannings->firstWhere('date', $day['date']);
+                    @endphp
+                    <td style="padding:8px;text-align:center;vertical-align:top" 
+                        data-date="{{ $day['date']->format('Y-m-d') }}"
+                        ondragover="allowDrop(event)"
+                        ondrop="drop(event, '{{ $day['date']->format('Y-m-d') }}', {{ $emp->id }})">
+                        @if($dayPlanning)
+                        <div draggable="true" 
+                             ondragstart="drag(event, {{ $dayPlanning->id }})"
+                             data-planning-id="{{ $dayPlanning->id }}"
+                             style="display:flex;flex-direction:column;gap:4px;cursor:grab;transition:transform 0.2s"
+                             onmouseover="this.style.transform='scale(1.02)'"
+                             onmouseout="this.style.transform='scale(1)'">
+                            @if(in_array($dayPlanning->shift_type, ['matin', 'journee']))
+                            <div style="background:linear-gradient(135deg, #0ea5e9, #38bdf8);color:white;padding:6px 8px;border-radius:6px;font-size:0.7rem">
+                                <div style="font-weight:600"> Matin</div>
+                                <div>{{ $dayPlanning->shift_start }}</div>
+                            </div>
+                            @endif
+                            
+                            @if(in_array($dayPlanning->shift_type, ['apres_midi', 'journee']))
+                            <div style="background:linear-gradient(135deg, #f59e0b, #fbbf24);color:white;padding:6px 8px;border-radius:6px;font-size:0.7rem">
+                                <div style="font-weight:600"> Après-midi</div>
+                                <div>{{ $dayPlanning->shift_end }}</div>
+                            </div>
+                            @endif
+                            
+                            @if($dayPlanning->shift_type === 'nuit')
+                            <div style="background:linear-gradient(135deg, #6366f1, #818cf8);color:white;padding:6px 8px;border-radius:6px;font-size:0.7rem">
+                                <div style="font-weight:600"> Nuit</div>
+                                <div>{{ $dayPlanning->shift_start }} - {{ $dayPlanning->shift_end }}</div>
+                            </div>
+                            @endif
+                            
+                            @if($dayPlanning->shift_type === 'garde')
+                            <div style="background:linear-gradient(135deg, #ef4444, #f87171);color:white;padding:6px 8px;border-radius:6px;font-size:0.7rem">
+                                <div style="font-weight:600"> Garde</div>
+                                <div>{{ $dayPlanning->shift_start }} - {{ $dayPlanning->shift_end }}</div>
+                            </div>
+                            @endif
+                        </div>
+                        @else
+                        <div style="color:var(--text-muted);font-size:0.7rem;min-height:40px;display:flex;align-items:center;justify-content:center;border:2px dashed var(--border);border-radius:6px">
+                            —
+                        </div>
+                        @endif
+                    </td>
+                    @endforeach
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="8" style="padding:40px;text-align:center;color:var(--text-muted)">
+                        <div style="font-size:2rem;margin-bottom:8px">📅</div>
+                        <div>Aucun employé trouvé</div>
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+let draggedPlanningId = null;
+
+function drag(event, planningId) {
+    draggedPlanningId = planningId;
+    event.dataTransfer.setData("text/plain", planningId);
+    event.target.style.opacity = '0.5';
+}
+
+function allowDrop(event) {
+    event.preventDefault();
+    event.target.closest('td').style.background = 'rgba(14, 165, 233, 0.1)';
+}
+
+function drop(event, newDate, newEmployeeId) {
+    event.preventDefault();
+    event.target.closest('td').style.background = '';
+    
+    if (!draggedPlanningId) return;
+    
+    // Send AJAX request to update planning
+    fetch('{{ route("planning.dragDrop") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({
+            planning_id: draggedPlanningId,
+            new_date: newDate,
+            new_employee_id: newEmployeeId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erreur lors de la mise à jour du planning');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erreur lors de la mise à jour du planning');
+    });
+    
+    draggedPlanningId = null;
+}
+
+// Reset opacity when drag ends
+document.addEventListener('dragend', function(event) {
+    event.target.style.opacity = '1';
+});
+</script>
+
+<!-- Legend -->
+<div style="display:flex;gap:20px;margin-top:16px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:16px;height:16px;background:linear-gradient(135deg, #0ea5e9, #38bdf8);border-radius:4px"></div>
+        <span style="font-size:0.8rem">Matin</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:16px;height:16px;background:linear-gradient(135deg, #f59e0b, #fbbf24);border-radius:4px"></div>
+        <span style="font-size:0.8rem">Après-midi</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:16px;height:16px;background:linear-gradient(135deg, #6366f1, #818cf8);border-radius:4px"></div>
+        <span style="font-size:0.8rem">Nuit</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:16px;height:16px;background:linear-gradient(135deg, #ef4444, #f87171);border-radius:4px"></div>
+        <span style="font-size:0.8rem">Garde</span>
+    </div>
+</div>
+
+@endsection

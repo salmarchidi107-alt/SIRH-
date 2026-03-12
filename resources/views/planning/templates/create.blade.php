@@ -1,0 +1,151 @@
+@extends('layouts.app')
+
+@section('title', 'Créer une Semaine Type')
+@section('page-title', 'Nouveau Modèle de Semaine')
+
+@section('content')
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>📋 Créer une Semaine Type</h1>
+        <p>Définissez les shifts pour chaque jour de la semaine</p>
+    </div>
+</div>
+
+<form method="POST" action="{{ route('planning.templates.store') }}">
+    @csrf
+    
+    <div class="card" style="margin-bottom: 20px;">
+        <div class="card-header">
+            <div class="card-title">Informations générales</div>
+        </div>
+        <div class="card-body">
+            <div style="max-width: 400px;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Nom du modèle</label>
+                <input type="text" name="name" required placeholder="Ex: Semaine classique, Semaine de nuit..." 
+                    style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem">
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">Configuration des jours</div>
+        </div>
+        <div class="card-body">
+            <div style="display:grid;gap:16px">
+                
+                <!-- Monday -->
+                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
+                    <div style="font-weight:600">Lundi</div>
+                    <select name="monday_shift_type" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                        <option value="">— Pas de shift —</option>
+                        <option value="matin"> Matin</option>
+                        <option value="apres_midi"> Après-midi</option>
+                        <option value="journee"> Journée</option>
+                        <option value="nuit"> Nuit</option>
+                        <option value="garde"> Garde</option>
+                    </select>
+                    <input type="time" name="monday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                    <input type="time" name="monday_end" placeholder="Fin" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                </div>
+
+                <!-- Tuesday -->
+                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
+                    <div style="font-weight:600">Mardi</div>
+                    <select name="tuesday_shift_type" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                        <option value="">— Pas de shift —</option>
+                        <option value="matin"> Matin</option>
+                        <option value="apres_midi"> Après-midi</option>
+                        <option value="journee"> Journée</option>
+                        <option value="nuit"> Nuit</option>
+                        <option value="garde"> Garde</option>
+                    </select>
+                    <input type="time" name="tuesday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                    <input type="time" name="tuesday_end" placeholder="Fin" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                </div>
+
+                <!-- Wednesday -->
+                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
+                    <div style="font-weight:600">Mercredi</div>
+                    <select name="wednesday_shift_type" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                        <option value="">— Pas de shift —</option>
+                        <option value="matin"> Matin</option>
+                        <option value="apres_midi"> Après-midi</option>
+                        <option value="journee"> Journée</option>
+                        <option value="nuit"> Nuit</option>
+                        <option value="garde"> Garde</option>
+                    </select>
+                    <input type="time" name="wednesday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                    <input type="time" name="wednesday_end" placeholder="Fin" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                </div>
+
+                <!-- Thursday -->
+                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
+                    <div style="font-weight:600">Jeudi</div>
+                    <select name="thursday_shift_type" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                        <option value="">— Pas de shift —</option>
+                        <option value="matin"> Matin</option>
+                        <option value="apres_midi"> Après-midi</option>
+                        <option value="journee"> Journée</option>
+                        <option value="nuit"> Nuit</option>
+                        <option value="garde"> Garde</option>
+                    </select>
+                    <input type="time" name="thursday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                    <input type="time" name="thursday_end" placeholder="Fin" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                </div>
+
+                <!-- Friday -->
+                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
+                    <div style="font-weight:600">Vendredi</div>
+                    <select name="friday_shift_type" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                        <option value="">— Pas de shift —</option>
+                        <option value="matin"> Matin</option>
+                        <option value="apres_midi"> Après-midi</option>
+                        <option value="journee"> Journée</option>
+                        <option value="nuit"> Nuit</option>
+                        <option value="garde"> Garde</option>
+                    </select>
+                    <input type="time" name="friday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                    <input type="time" name="friday_end" placeholder="Fin" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                </div>
+
+                <!-- Saturday -->
+                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
+                    <div style="font-weight:600">Samedi</div>
+                    <select name="saturday_shift_type" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                        <option value="">— Pas de shift —</option>
+                        <option value="matin"> Matin</option>
+                        <option value="apres_midi"> Après-midi</option>
+                        <option value="journee"> Journée</option>
+                        <option value="nuit"> Nuit</option>
+                        <option value="garde"> Garde</option>
+                    </select>
+                    <input type="time" name="saturday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                    <input type="time" name="saturday_end" placeholder="Fin" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                </div>
+
+                <!-- Sunday -->
+                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
+                    <div style="font-weight:600">Dimanche</div>
+                    <select name="sunday_shift_type" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                        <option value="">— Pas de shift —</option>
+                        <option value="matin"> Matin</option>
+                        <option value="apres_midi"> Après-midi</option>
+                        <option value="journee"> Journée</option>
+                        <option value="nuit"> Nuit</option>
+                        <option value="garde"> Garde</option>
+                    </select>
+                    <input type="time" name="sunday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                    <input type="time" name="sunday_end" placeholder="Fin" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:20px">
+        <a href="{{ route('planning.templates.index') }}" class="btn btn-outline">Annuler</a>
+        <button type="submit" class="btn btn-primary">Enregistrer le modèle</button>
+    </div>
+</form>
+@endsection

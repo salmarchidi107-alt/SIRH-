@@ -12,23 +12,23 @@ class NotificationController extends Controller
 {
     public function index()
     {
-        // Get pending absences (demandes de congés en attente)
+        
         $pendingAbsences = Absence::with('employee')
             ->where('status', 'pending')
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
         
-        // Get recent news (actualités)
+        
         $recentNews = News::orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
         
-        // Get counts
+        
         $pendingCount = $pendingAbsences->count();
         $newsCount = $recentNews->count();
         
-        // Get all employees for the dropdown
+        
         $employees = Employee::where('status', 'active')->orderBy('first_name')->get();
         
         return view('notifications.index', compact('pendingAbsences', 'recentNews', 'pendingCount', 'newsCount', 'employees'));
@@ -36,19 +36,19 @@ class NotificationController extends Controller
     
     public function data()
     {
-        // Get pending absences (demandes de congés en attente)
+        
         $pendingAbsences = Absence::with('employee')
             ->where('status', 'pending')
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
         
-        // Get recent news (actualités)
+        
         $recentNews = News::orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
         
-        // Get counts
+        
         $totalCount = $pendingAbsences->count() + $recentNews->count();
         
         return response()->json([

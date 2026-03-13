@@ -4,8 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Models\User;
 use App\Models\Employee;
 
-// This is a temporary route to auto-link users to employees by email
-// Run this once by visiting /link-users in your browser, then delete this file
+
 
 Route::get('/link-users', function () {
     $linked = 0;

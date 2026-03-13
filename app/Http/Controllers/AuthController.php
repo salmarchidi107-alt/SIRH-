@@ -30,16 +30,16 @@ class AuthController extends Controller
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
             
-            // Get the logged in user
+            
             $user = Auth::user();
             
-            // If user has no role, set them as employee by default
+            
             if (!$user->role) {
                 $user->role = User::ROLE_EMPLOYEE;
                 $user->save();
             }
             
-            // Try to link to employee if not already linked
+            
             if (!$user->employee_id) {
                 $employee = Employee::where('email', $user->email)->first();
                 if ($employee) {
@@ -66,10 +66,10 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        // Check if employee exists with this email
+        
         $employee = Employee::where('email', $validated['email'])->first();
         
-        // Create user with employee role by default
+        
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -78,7 +78,7 @@ class AuthController extends Controller
             'employee_id' => $employee ? $employee->id : null,
         ]);
 
-        // Link employee to user if found
+     
         if ($employee && !$employee->user_id) {
             $employee->user_id = $user->id;
             $employee->save();

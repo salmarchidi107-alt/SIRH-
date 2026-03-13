@@ -9,7 +9,7 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    
     use HasFactory, Notifiable;
 
     /**
@@ -48,46 +48,36 @@ class User extends Authenticatable
         ];
     }
 
-    // Roles constants
+    
     const ROLE_ADMIN = 'admin';
     const ROLE_RH = 'rh';
     const ROLE_EMPLOYEE = 'employee';
 
-    /**
-     * Check if user is admin
-     */
+    
     public function isAdmin(): bool
     {
         return $this->role === self::ROLE_ADMIN;
     }
 
-    /**
-     * Check if user is RH
-     */
+    
     public function isRh(): bool
     {
         return $this->role === self::ROLE_RH;
     }
 
-    /**
-     * Check if user is employee
-     */
+  
     public function isEmployee(): bool
     {
         return $this->role === self::ROLE_EMPLOYEE;
     }
 
-    /**
-     * Get the employee associated with this user
-     */
+   
     public function employee()
     {
         return $this->belongsTo(Employee::class);
     }
 
-    /**
-     * Get role display name
-     */
+   
     public function getRoleDisplayName(): string
     {
         return match($this->role) {

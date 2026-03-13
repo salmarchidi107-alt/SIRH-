@@ -24,7 +24,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('temps.vue-ensemble');
 });
 
-// Temporary route to auto-link users to employees by email
+
 Route::get('/link-users', function () {
     $linked = 0;
     foreach (User::all() as $user) {
@@ -44,33 +44,33 @@ Route::get('/link-users', function () {
     }
 });
 
-// Routes d'authentification
+
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Routes protégées par authentification
+
 Route::middleware(['auth'])->group(function () {
     Route::get('/', function () {
         return redirect()->route('dashboard');
     });
 
-    // Dashboard
+  
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Profil personnel (pour les employés)
+    
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
 
-// Actualités / News
+
 Route::resource('news', NewsController::class);
 
-// Employés
+
 Route::resource('employees', EmployeeController::class);
 Route::get('/trombinoscope', [TrombinoscopeController::class, 'index'])->name('trombinoscope');
 
-// Planning
+
 Route::get('/planning', [PlanningController::class, 'weekly'])->name('planning.weekly');
 Route::get('/planning/weekly', [PlanningController::class, 'weekly'])->name('planning.weekly');
 Route::get('/planning/global', [PlanningController::class, 'global'])->name('planning.global');
@@ -81,7 +81,7 @@ Route::put('/planning/{planning}', [PlanningController::class, 'update'])->name(
 Route::delete('/planning/{planning}', [PlanningController::class, 'destroy'])->name('planning.destroy');
 Route::post('/planning/drag-drop', [PlanningController::class, 'updateDragDrop'])->name('planning.dragDrop');
 
-// Semaines types
+
 Route::get('/planning/templates', [WeekTemplateController::class, 'index'])->name('planning.templates.index');
 Route::get('/planning/templates/create', [WeekTemplateController::class, 'create'])->name('planning.templates.create');
 Route::post('/planning/templates', [WeekTemplateController::class, 'store'])->name('planning.templates.store');
@@ -89,7 +89,7 @@ Route::delete('/planning/templates/{template}', [WeekTemplateController::class, 
 Route::get('/planning/templates/apply', [WeekTemplateController::class, 'applyForm'])->name('planning.templates.apply');
 Route::post('/planning/templates/apply', [WeekTemplateController::class, 'apply'])->name('planning.templates.apply');
 
-// Absences & Congés
+
 
 
 
@@ -98,7 +98,7 @@ Route::prefix('absences')->name('absences.')->group(function () {
     Route::get('/create', [AbsenceController::class, 'create'])->name('create');
     Route::post('/', [AbsenceController::class, 'store'])->name('store');
 
-    // Nouvelles pages
+   
     Route::get('/calendar', [AbsenceController::class, 'calendar'])->name('calendar');
     Route::get('/counters', [AbsenceController::class, 'counters'])->name('counters');
 
@@ -110,18 +110,18 @@ Route::prefix('absences')->name('absences.')->group(function () {
     Route::post('/{absence}/reject', [AbsenceController::class, 'reject'])->name('reject');
 });
 
-// Salaires
+
 Route::get('/salary', [SalaryController::class, 'index'])->name('salary.index');
 Route::get('/salary/{employee}', [SalaryController::class, 'show'])->name('salary.show');
 Route::post('/salary/{employee}', [SalaryController::class, 'update'])->name('salary.update');
 
-// API JSON pour les graphiques du dashboard
+
 Route::prefix('api')->group(function () {
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
     Route::get('/planning/events', [PlanningController::class, 'events']);
     Route::get('/notifications/data', [NotificationController::class, 'data'])->name('api.notifications.data');
 });
 
-// Notifications
+
 Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
 });

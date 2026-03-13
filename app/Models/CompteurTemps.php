@@ -66,11 +66,11 @@ class CompteurTemps extends Model
         return 0;
     }
 
-    // Méthode utilitaire pour obtenir ou créer le compteur du mois
+   
     public static function getOuCreeParMois($employeeId, $annee, $mois)
     {
         if (!$employeeId) {
-            // Retourner un objet stdClass avec des valeurs par défaut
+            
             $result = new \stdClass();
             $result->heures_planifiees = 140;
             $result->heures_realisees = 0;
@@ -81,17 +81,15 @@ class CompteurTemps extends Model
             return $result;
         }
         
-        // Calculer les heures planifiées selon le contrat (35h par défaut)
-        $employee = Employee::find($employeeId);
-        $heuresPlanifiees = 35 * 4; // 35h * 4 semaines par défaut
         
-        // Essayer de trouver un compteur existant
+        $employee = Employee::find($employeeId);
+        $heuresPlanifiees = 35 * 4; 
         $compteur = self::where('employee_id', $employeeId)
             ->where('annee', $annee)
             ->where('mois', $mois)
             ->first();
 
-        // Si aucun compteur, créer un nouveau avec des valeurs par défaut
+       
         if (!$compteur) {
             $compteur = self::create([
                 'employee_id' => $employeeId,
@@ -104,7 +102,7 @@ class CompteurTemps extends Model
             ]);
         }
 
-        // Calculer automatiquement les heures réalisées depuis les pointages
+        
         $pointages = Pointage::parEmployee($employeeId)
             ->parMois($annee, $mois)
             ->get();
@@ -117,7 +115,7 @@ class CompteurTemps extends Model
         return $compteur;
     }
 
-    // Méthode pour obtenir les compteurs de l'année
+   
     public static function getParAnnee($employeeId, $annee)
     {
         return self::parEmployee($employeeId)

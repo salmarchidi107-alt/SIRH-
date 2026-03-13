@@ -12,7 +12,7 @@ class EmployeeController extends Controller
     {
         $query = Employee::query();
 
-        // Filter by status: 'all' or 'active'
+        
         $filter = $request->get('filter', 'all');
         if ($filter === 'active') {
             $query->where('status', 'active');
@@ -45,7 +45,7 @@ class EmployeeController extends Controller
     public function create()
     {
         $managers = Employee::where('status', 'active')->get();
-        // Get users that are not already linked to employees
+        
         $linkedUserIds = Employee::whereNotNull('user_id')->pluck('user_id');
         $users = User::whereNotIn('id', $linkedUserIds)->get();
         return view('employees.create', compact('managers', 'users'));
@@ -74,7 +74,7 @@ class EmployeeController extends Controller
             'user_id' => 'nullable|exists:users,id|unique:employees,user_id',
         ]);
 
-        // Generate matricule
+        
         $lastEmp = Employee::latest('id')->first();
         $validated['matricule'] = 'EMP' . str_pad(($lastEmp ? $lastEmp->id + 1 : 1), 4, '0', STR_PAD_LEFT);
 

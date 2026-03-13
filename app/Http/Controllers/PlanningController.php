@@ -25,21 +25,21 @@ class PlanningController extends Controller
         return view('planning.index', compact('plannings', 'employees', 'month', 'year', 'employee_id'));
     }
 
-    // New weekly planning view
+    
     public function weekly(Request $request)
     {
         $week = $request->week ?? now()->weekOfYear;
         $year = $request->year ?? now()->year;
         
-        // Search filters
+       
         $search = $request->search;
         $department = $request->department;
         
-        // Get start and end of week (Monday to Sunday)
+    
         $startOfWeek = Carbon::now()->setISODate($year, $week)->startOfWeek(Carbon::MONDAY);
         $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
         
-        // Get employees with optional filters
+       
         $employees = Employee::where('status', 'active')
             ->when($search, fn($q) => $q->where(function($query) use ($search) {
                 $query->where('first_name', 'like', "%{$search}%")
@@ -51,19 +51,19 @@ class PlanningController extends Controller
             ->orderBy('last_name')
             ->get();
         
-        // Get all planning for this week
+       
         $plannings = Planning::with('employee')
             ->whereDate('date', '>=', $startOfWeek)
             ->whereDate('date', '<=', $endOfWeek)
             ->get()
             ->groupBy('employee_id');
         
-        // Get all departments for filter
+       
         $departments = Employee::whereNotNull('department')
             ->distinct()
             ->pluck('department');
         
-        // Generate week days
+        
         $weekDays = [];
         for ($i = 0; $i < 7; $i++) {
             $day = $startOfWeek->copy()->addDays($i);
@@ -77,21 +77,21 @@ class PlanningController extends Controller
         return view('planning.weekly', compact('employees', 'plannings', 'weekDays', 'week', 'year', 'startOfWeek', 'endOfWeek', 'search', 'department', 'departments'));
     }
 
-    // Monthly planning view
+   
     public function monthly(Request $request)
     {
         $month = $request->month ?? now()->month;
         $year = $request->year ?? now()->year;
         
-        // Search filters
+        
         $search = $request->search;
         $department = $request->department;
         
-        // Get start and end of month
+        
         $startOfMonth = Carbon::create($year, $month, 1)->startOfMonth();
         $endOfMonth = $startOfMonth->copy()->endOfMonth();
         
-        // Get employees with optional filters
+       
         $employees = Employee::where('status', 'active')
             ->when($search, fn($q) => $q->where(function($query) use ($search) {
                 $query->where('first_name', 'like', "%{$search}%")
@@ -103,19 +103,19 @@ class PlanningController extends Controller
             ->orderBy('last_name')
             ->get();
         
-        // Get all planning for this month
+       
         $plannings = Planning::with('employee')
             ->whereDate('date', '>=', $startOfMonth)
             ->whereDate('date', '<=', $endOfMonth)
             ->get()
             ->groupBy('employee_id');
         
-        // Get all departments for filter
+        
         $departments = Employee::whereNotNull('department')
             ->distinct()
             ->pluck('department');
         
-        // Generate calendar days with date string for comparison
+       
         $calendarDays = [];
         $startDay = $startOfMonth->copy();
         $endDay = $endOfMonth->copy();
@@ -134,21 +134,21 @@ class PlanningController extends Controller
         return view('planning.monthly', compact('employees', 'plannings', 'calendarDays', 'month', 'year', 'startOfMonth', 'endOfMonth', 'search', 'department', 'departments'));
     }
 
-    // Global planning view (all employees)
+   
     public function global(Request $request)
     {
         $month = $request->month ?? now()->month;
         $year = $request->year ?? now()->year;
         
-        // Search filters
+      
         $search = $request->search;
         $department = $request->department;
         
-        // Get start and end of month
+      
         $startOfMonth = Carbon::create($year, $month, 1)->startOfMonth();
         $endOfMonth = $startOfMonth->copy()->endOfMonth();
         
-        // Get employees with optional filters
+     
         $employees = Employee::where('status', 'active')
             ->when($search, fn($q) => $q->where(function($query) use ($search) {
                 $query->where('first_name', 'like', "%{$search}%")
@@ -160,19 +160,19 @@ class PlanningController extends Controller
             ->orderBy('last_name')
             ->get();
         
-        // Get all planning for this month
+        
         $plannings = Planning::with('employee')
             ->whereDate('date', '>=', $startOfMonth)
             ->whereDate('date', '<=', $endOfMonth)
             ->get()
             ->groupBy('employee_id');
         
-        // Get all departments for filter
+      
         $departments = Employee::whereNotNull('department')
             ->distinct()
             ->pluck('department');
         
-        // Generate calendar days
+        
         $calendarDays = [];
         $startDay = $startOfMonth->copy();
         $endDay = $endOfMonth->copy();
@@ -193,7 +193,7 @@ class PlanningController extends Controller
 
     public function show(Request $request, Employee $employee = null)
     {
-        // If no employee provided, check if we should show individual view
+       
         if (!$employee) {
             $employee_id = $request->employee_id;
             if ($employee_id) {
@@ -205,22 +205,22 @@ class PlanningController extends Controller
             return redirect()->route('planning.weekly');
         }
 
-        // Get current or selected week
+       
         $week = $request->week ?? now()->weekOfYear;
         $year = $request->year ?? now()->year;
         
-        // Get start and end of week
+        
         $startOfWeek = Carbon::now()->setISODate($year, $week)->startOfWeek(Carbon::MONDAY);
         $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
         
-        // Get planning for this employee in this week
+       
         $plannings = Planning::where('employee_id', $employee->id)
             ->whereDate('date', '>=', $startOfWeek)
             ->whereDate('date', '<=', $endOfWeek)
             ->get()
             ->keyBy('date');
         
-        // Generate week days
+       
         $weekDays = [];
         for ($i = 0; $i < 7; $i++) {
             $day = $startOfWeek->copy()->addDays($i);

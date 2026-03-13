@@ -17,11 +17,10 @@ class AbsenceController extends Controller
     {
         $query = Absence::with(['employee', 'replacement']);
 
-        // Employees can only see their own absences
         if (Auth::user()->role === 'employee' && Auth::user()->employee_id) {
             $query->where('employee_id', Auth::user()->employee_id);
         } else {
-            // Admin/RH can filter by employee
+           
             if ($request->employee_id) {
                 $query->where('employee_id', $request->employee_id);
             }
@@ -46,7 +45,7 @@ class AbsenceController extends Controller
         $absences = $query->latest()->paginate(20);
         $employees = Employee::where('status', 'active')->get();
         
-        // Only admin/RH can see pending count for all
+        
         if (Auth::user()->role === 'employee' && Auth::user()->employee_id) {
             $pending_count = Absence::where('employee_id', Auth::user()->employee_id)->where('status', 'pending')->count();
         } else {
@@ -58,7 +57,7 @@ class AbsenceController extends Controller
 
     public function create()
     {
-        // If employee, only allow creating for themselves
+        
         if (Auth::user()->role === 'employee' && Auth::user()->employee_id) {
             $employee = Employee::find(Auth::user()->employee_id);
             return view('absences.create', compact('employee'));
@@ -70,7 +69,7 @@ class AbsenceController extends Controller
 
     public function store(Request $request)
     {
-        // Employees can only create absence for themselves
+        
         if (Auth::user()->role === 'employee' && Auth::user()->employee_id) {
             $validated = $request->validate([
                 'type' => 'required|in:' . implode(',', array_keys(Absence::TYPES)),
@@ -161,12 +160,12 @@ class AbsenceController extends Controller
             'approved_at' => now(),
         ]);
 
-        // Envoi mail automatique à l'employé
+    
         if ($absence->employee && $absence->employee->email) {
             try {
                 Mail::to($absence->employee->email)->send(new AbsenceApproved($absence));
             } catch (\Exception $e) {
-                // Log l'erreur sans bloquer le flux
+                
                 \Log::error('Mail approve error: ' . $e->getMessage());
             }
         }
@@ -181,7 +180,7 @@ class AbsenceController extends Controller
             'approved_at' => now(),
         ]);
 
-        // Envoi mail automatique à l'employé
+        
         if ($absence->employee && $absence->employee->email) {
             try {
                 Mail::to($absence->employee->email)->send(new AbsenceRejected($absence));
@@ -193,9 +192,7 @@ class AbsenceController extends Controller
         return back()->with('success', 'Demande rejetée. Un email a été envoyé à l\'employé.');
     }
 
-    // =========================================================
-    // NOUVELLE PAGE : État visuel calendrier (planning mensuel)
-    // =========================================================
+
     public function calendar(Request $request)
     {
         $month = $request->get('month', now()->month);
@@ -223,7 +220,7 @@ class AbsenceController extends Controller
             })
             ->whereIn('status', ['approved', 'pending']);
 
-        // Apply filters
+        
         if ($request->department) {
             $query->whereHas('employee', function($q) use ($request) {
                 $q->where('department', $request->department);
@@ -240,13 +237,13 @@ class AbsenceController extends Controller
 
         $absences = $query->get();
 
-        // Get employees who have absences (for list view)
+        
         $employeeIdsWithAbsences = $absences->pluck('employee_id')->unique();
         $employeesWithAbsences = $employees->filter(function($emp) use ($employeeIdsWithAbsences) {
             return $employeeIdsWithAbsences->contains($emp->id);
         });
 
-        // Conflits : 2 absences approuvées qui se chevauchent pour le même employé
+        
         $conflicts = [];
         $approvedAbsences = $absences->where('status', 'approved');
         foreach ($approvedAbsences as $a) {
@@ -262,12 +259,12 @@ class AbsenceController extends Controller
             }
         }
 
-        // Remplacements du mois
+        
         $replacements = $absences->whereNotNull('replacement_id');
 
         $daysInMonth = $startOfMonth->daysInMonth;
 
-        // For list view, we need all employees with their absences
+        
         return view('absences.calendar', compact(
             'absences', 'conflicts', 'replacements',
             'employees', 'employeesWithAbsences', 'month', 'year',
@@ -275,9 +272,6 @@ class AbsenceController extends Controller
         ));
     }
 
-    // =========================================================
-    // NOUVELLE PAGE : Compteurs et droits d'absence
-    // =========================================================
     public function counters(Request $request)
     {
         $year = $request->get('year', now()->year);
@@ -290,30 +284,30 @@ class AbsenceController extends Controller
         $countersData = [];
 
         foreach ($employees as $emp) {
-            // Date d'embauche
+            
             $hireDate = $emp->hire_date ? Carbon::parse($emp->hire_date) : Carbon::create($year, 1, 1);
             $startOfYear = Carbon::create($year, 1, 1);
             $endOfYear   = Carbon::create($year, 12, 31);
 
-            // Mois travaillés dans l'année (depuis embauche)
+            
             $workStart = $hireDate->gt($startOfYear) ? $hireDate : $startOfYear;
             $workEnd   = now()->lt($endOfYear) ? now() : $endOfYear;
             $monthsWorked = max(0, $workStart->floatDiffInMonths($workEnd));
 
-            // Droits acquis : 1.5 jour / mois → entier
+            
             $acquis = floor($monthsWorked * 1.5);
 
-            // Congés pris (approuvés dans l'année)
+            
             $taken = Absence::where('employee_id', $emp->id)
                 ->where('status', 'approved')
                 ->whereYear('start_date', $year)
                 ->whereIn('type', ['conge_annuel', 'conge_sans_solde', 'conge_maladie'])
                 ->sum('days');
 
-            // Solde disponible → entier
+            
             $solde = $acquis - $taken;
 
-            // Congés en attente
+            
             $pending = Absence::where('employee_id', $emp->id)
                 ->where('status', 'pending')
                 ->whereYear('start_date', $year)

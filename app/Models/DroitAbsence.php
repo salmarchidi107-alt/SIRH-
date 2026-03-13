@@ -31,19 +31,19 @@ class DroitAbsence extends Model
         'rtt_pris'          => 'decimal:2',
     ];
 
-    // Relations
+    
     public function employee()
     {
         return $this->belongsTo(Employee::class);
     }
 
-    // Scopes
+  
     public function scopeParAnnee($query, $annee)
     {
         return $query->where('annee', $annee);
     }
 
-    // Accessors
+    
     public function getRttSoldeAttribute()
     {
         return $this->rtt_acquis - $this->rtt_pris;
@@ -62,11 +62,11 @@ class DroitAbsence extends Model
         return 0;
     }
 
-    // Méthodes utilitaires
+   
     public static function getOuCreeParAnnee($employeeId, $annee)
     {
         if (!$employeeId) {
-            // Retourner un objet avec des valeurs par défaut
+            
             $result = new \stdClass();
             $result->jours_acquis = 25;
             $result->jours_pris = 0;

@@ -13,22 +13,20 @@ use Illuminate\Support\Facades\Auth;
 
 class VueEnsembleController extends Controller
 {
-    /**
-     * Affiche la vue d'ensemble du temps de travail
-     */
+    
     public function index(Request $request)
     {
         $user = Auth::user();
         $annee = $request->get('annee', Carbon::now()->year);
         $mois = $request->get('mois', Carbon::now()->month);
         
-        // Recherche par employé
+        
         $employeeId = $request->get('employee_id');
         $department = $request->get('department');
         
         $departments = Employee::distinct()->pluck('department')->filter()->values();
 
-        // Sélection d'un employé
+        
         $selectedEmployee = null;
         
         if ($employeeId) {
@@ -37,7 +35,7 @@ class VueEnsembleController extends Controller
             $selectedEmployee = Employee::with(['user'])->where('department', $department)->first();
         }
         
-        // Auto-liaison si pas d'employé sélectionné
+        
         if (!$selectedEmployee && $user) {
             $selectedEmployee = Employee::with(['user'])->where('user_id', $user->id)->first();
             
@@ -64,7 +62,7 @@ class VueEnsembleController extends Controller
             }
         }
 
-        // Employé par défaut si none
+       
         if (!$selectedEmployee) {
             $selectedEmployee = new Employee();
             $selectedEmployee->id = 0;
@@ -84,32 +82,32 @@ class VueEnsembleController extends Controller
         $employee = $selectedEmployee;
         $listeEmployesSelect = Employee::orderBy('first_name')->get(['id', 'first_name', 'last_name', 'matricule', 'department']);
 
-        // Données du mois en cours
+       
         $compteurMois = null;
         $joursDetails = [];
         
         if ($employee && $employee->id > 0) {
             $compteurMois = CompteurTemps::getOuCreeParMois($employee->id, $annee, $mois);
             
-            // Détails par jour
+            
             $joursDetails = $this->getJoursDetails($employee->id, $annee, $mois);
         } else {
             $compteurMois = $this->getDefaultCompteur();
         }
 
-        // Semaines du mois
+       
         $semaines = [];
         if ($employee && $employee->id > 0) {
             $semaines = $this->getSemainesDuMois($employee->id, $annee, $mois);
         }
 
-        // Graphique 12 derniers mois
+      
         $graphiqueMois = $this->getGraphiqueMois($employee->id ?? 0, $annee);
 
-        // Navigation mois
+        
         $moisDisponibles = $this->getMoisDisponibles($annee);
 
-        // Mois précédent et suivant pour la période glissante
+       
         $moisPrecedent = Carbon::create($annee, $mois)->subMonth();
         $moisSuivant = Carbon::create($annee, $mois)->addMonth();
 
@@ -131,9 +129,7 @@ class VueEnsembleController extends Controller
         ));
     }
     
-    /**
-     * Obtenir les détails par jour pour le mois
-     */
+   
     private function getJoursDetails($employeeId, $annee, $mois)
     {
         $jours = [];
@@ -168,9 +164,7 @@ class VueEnsembleController extends Controller
         return $jours;
     }
     
-    /**
-     * Obtenir les données par semaine pour un mois
-     */
+    
     private function getSemainesDuMois($employeeId, $annee, $mois)
     {
         if (!$employeeId) {
@@ -184,7 +178,7 @@ class VueEnsembleController extends Controller
         $current = $debut->copy();
         $numSem = 1;
         
-        $heuresPlanifiees = 35; // Par défaut
+        $heuresPlanifiees = 35; 
 
         while ($current <= $fin) {
             $debutSem = $current->copy();
@@ -198,11 +192,11 @@ class VueEnsembleController extends Controller
             $heuresSupp = $pointages->sum('heures_supplementaires');
             $total = $heuresTravaillees + $heuresSupp;
             
-            // Calculer les heures non travaillées (weekends)
-            $nbJoursSemaine = 5; // Du lundi au vendredi
+            
+            $nbJoursSemaine = 5; 
             $heuresNonTravaillees = 0;
             
-            // Jours détails pour la semaine
+            
             $joursSemaine = [];
             $jourCourant = $debutSem->copy();
             while ($jourCourant <= $finSem) {
@@ -248,9 +242,7 @@ class VueEnsembleController extends Controller
         return $semaines;
     }
 
-    /**
-     * Données graphique pour les 12 mois
-     */
+    
     private function getGraphiqueMois($employeeId, $annee)
     {
         $nomsMois = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
@@ -277,9 +269,7 @@ class VueEnsembleController extends Controller
         return $donnees;
     }
 
-    /**
-     * Liste des mois pour la navigation
-     */
+    
     private function getMoisDisponibles($annee)
     {
         $noms = [
@@ -295,9 +285,7 @@ class VueEnsembleController extends Controller
         ]);
     }
     
-    /**
-     * Compteur par défaut
-     */
+    
     private function getDefaultCompteur()
     {
         $compteur = new \stdClass();

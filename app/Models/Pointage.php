@@ -60,7 +60,7 @@ class Pointage extends Model
         return 0;
     }
 
-    // Méthodes statiques utilitaires
+    
     public static function getHeuresMois($employeeId, $annee, $mois)
     {
         return self::parEmployee($employeeId)

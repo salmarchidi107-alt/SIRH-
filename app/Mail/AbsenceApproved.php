@@ -15,17 +15,13 @@ class AbsenceApproved extends Mailable
 
     public $absence;
 
-    /**
-     * Create a new message instance.
-     */
+    
     public function __construct(Absence $absence)
     {
         $this->absence = $absence->load(['employee', 'replacement']);
     }
 
-    /**
-     * Get the message envelope.
-     */
+    
     public function envelope(): Envelope
     {
         return new Envelope(
@@ -33,9 +29,7 @@ class AbsenceApproved extends Mailable
         );
     }
 
-    /**
-     * Get the message content definition.
-     */
+    
     public function content(): Content
     {
         return new Content(

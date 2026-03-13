@@ -43,7 +43,7 @@ class SalaryController extends Controller
         $overtime_pay = ($validated['overtime_hours'] ?? 0) * ($base / 173.33) * 1.25;
         $gross = $base + $bonuses + $overtime_pay;
 
-        // Moroccan payroll calculations
+        
         $cnss = min($gross * 0.0448, 419.96);
         $amo = $gross * 0.0226;
         $taxable = $gross - $cnss - $amo;

@@ -25,7 +25,7 @@ class NewsController extends Controller
             \Log::error('Calendar API Error: ' . $e->getMessage());
         }
 
-        // Fallback: Default Morocco public holidays if API fails
+       
         if (empty($holidays)) {
             $currentYear = date('Y');
             $holidays = [

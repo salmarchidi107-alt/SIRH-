@@ -18,7 +18,7 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // Fetch holidays from calendar API
+        
         $holidays = [];
         try {
             $response = Http::get('https://calendar-api.ma/api/holidays?year=' . date('Y'));
@@ -34,7 +34,7 @@ class DashboardController extends Controller
             \Log::error('Calendar API Error: ' . $e->getMessage());
         }
 
-        // Fallback: Default Morocco public holidays if API fails
+       
         if (empty($holidays)) {
             $currentYear = date('Y');
             $holidays = [
@@ -46,9 +46,9 @@ class DashboardController extends Controller
                 ['name' => 'Fête de la Jeunesse', 'date' => $currentYear . '-08-21'],
                 ['name' => 'Mort du Roi Hassan II', 'date' => $currentYear . '-07-30'],
                 ['name' => 'Anniversaire du Roi', 'date' => $currentYear . '-08-21'],
-                ['name' => 'Aïd al-Fitr', 'date' => ''], // Variable - depends on lunar calendar
-                ['name' => 'Aïd al-Adha', 'date' => ''], // Variable - depends on lunar calendar
-                ['name' => 'Nouvel An Hégirien', 'date' => ''], // Variable - depends on lunar calendar
+                ['name' => 'Aïd al-Fitr', 'date' => ''], 
+                ['name' => 'Aïd al-Adha', 'date' => ''], 
+                ['name' => 'Nouvel An Hégirien', 'date' => ''], 
                 ['name' => 'Fête de l’Indépendance', 'date' => $currentYear . '-11-18'],
             ];
         }
@@ -83,7 +83,7 @@ $user = Auth::user();
             ->whereDate('date', today())
             ->get();
 
-        // Monthly absences for chart (last 6 months)
+    
         $monthly_absences = [];
         for ($i = 5; $i >= 0; $i--) {
             $month = now()->subMonths($i);
@@ -95,7 +95,7 @@ $user = Auth::user();
             ];
         }
 
-        // Get birthdays this month
+    
         $currentMonth = now()->month;
         $currentYear = now()->year;
         
@@ -109,20 +109,20 @@ $user = Auth::user();
             })
             ->sortBy('birthday_this_year');
 
-        // Get upcoming news (next 14 days)
+        
         $upcomingNews = News::active()
             ->upcoming()
             ->take(5)
             ->get();
 
-        // Get recent news for notification
+        
         $recentNews = News::active()
             ->where('event_date', '>=', now()->subDays(7))
             ->orderBy('event_date', 'desc')
             ->take(3)
             ->get();
 
-        // Detect conflicts (overlapping approved absences for same employee)
+        
         $conflicts = [];
         $allApprovedAbsences = Absence::with('employee')
             ->where('status', 'approved')
@@ -161,7 +161,7 @@ $user = Auth::user();
             }
         }
 
-        // Temps & Activités : Données pour le widget
+       
         $user = Auth::user();
         $currentYear = now()->year;
         $currentMonth = now()->month;
@@ -169,12 +169,12 @@ $user = Auth::user();
         $employee = null;
         
         if ($user) {
-            // First try to find by user_id, then by email
+           
             $employee = Employee::with('user')->where('user_id', $user->id)->first();
             if (!$employee) {
                 $employee = Employee::with('user')->where('email', $user->email)->first();
             }
-            // Also check employee_id field in users table
+           
             if (!$employee && $user->employee_id) {
                 $employee = Employee::with('user')->find($user->employee_id);
             }

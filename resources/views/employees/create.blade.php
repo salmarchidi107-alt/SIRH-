@@ -197,26 +197,39 @@
         </div>
     </div>
 
-    <!-- Liaison compte utilisateur -->
+    <!-- Créer compte utilisateur (Admin only) -->
     <div class="card mb-4">
         <div class="card-header">
-            <div class="card-title"> Liaison Compte Utilisateur</div>
+            <div class="card-title"> Créer un compte utilisateur</div>
         </div>
         <div class="card-body">
-            <div class="form-grid">
-                <div class="form-group full">
-                    <label>Lier à un compte utilisateur</label>
-                    <select name="user_id" class="form-control">
-                        <option value="">Aucun compte lié</option>
-                        @foreach($users as $user)
-                            <option value="{{ $user->id }}" {{ old('user_id') == $user->id ? 'selected' : '' }}>
-                                {{ $user->name }} ({{ $user->email }})
-                            </option>
-                        @endforeach
-                    </select>
-                    <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; display: block;">
-                        Sélectionnez un compte utilisateur pour permettre à cet employé d'accéder à son tableau de bord personnalisé.
-                    </small>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="create_account" value="1" id="create_account">
+                    Créer un compte utilisateur pour cet employé
+                </label>
+            </div>
+            <div id="account_fields" style="display:none;">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Rôle utilisateur *</label>
+                        <select name="user_role" class="form-control">
+                            <option value="">Sélectionner rôle</option>
+                            <option value="employee" selected>Employé</option>
+                            <option value="rh">Responsable RH</option>
+                            <option value="admin">Administrateur</option>
+                        </select>
+                        @error('user_role') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="form-group">
+                        <label>Mot de passe *</label>
+                        <input type="password" name="user_password" class="form-control" min="8">
+                        @error('user_password') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="form-group">
+                        <label>Confirmer mot de passe *</label>
+                        <input type="password" name="user_password_confirmation" class="form-control" min="8">
+                    </div>
                 </div>
             </div>
         </div>
@@ -304,4 +317,11 @@
         </button>
     </div>
 </form>
+
+<script>
+document.getElementById('create_account').addEventListener('change', function() {
+    document.getElementById('account_fields').style.display = this.checked ? 'block' : 'none';
+});
+</script>
 @endsection
+

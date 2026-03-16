@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Employee extends Model
 {
@@ -84,16 +85,11 @@ class Employee extends Model
     public function getPhotoUrlAttribute(): string
     {
         if ($this->photo) {
-            // Remove 'photos/' prefix if already present in database value
-            $photoPath = str_replace('photos/', '', $this->photo);
-            return asset('storage/photos/' . $photoPath);
+            return Storage::url($this->photo);
         }
         return asset('images/default-avatar.png');
     }
 
-    /**
-     * Relation avec l'utilisateur (compte)
-     */
     public function user()
     {
         return $this->belongsTo(User::class);

@@ -262,15 +262,7 @@
                         >
                     </div>
 
-                    <div class="auth-form-group">
-                        <label for="role" class="auth-label">Type de compte</label>
-                        <select class="auth-input" id="role" name="role" required>
-                            <option value="">Sélectionner...</option>
-                            <option value="admin">Administrateur</option>
-                            <option value="rh">Responsable RH</option>
-                            <option value="employee">Employé</option>
-                        </select>
-                    </div>
+
 
                     <div class="auth-checkbox">
                         <input type="checkbox" id="remember" name="remember">
@@ -288,7 +280,6 @@
                 </form>
 
                 <div class="auth-footer">
-                    <p>Pas encore de compte? <a href="{{ route('register') }}">Créer un compte</a></p>
                 </div>
             </div>
         </div>

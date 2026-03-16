@@ -15,11 +15,6 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
-    public function showRegisterForm()
-    {
-        return view('auth.register');
-    }
-
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -56,37 +51,6 @@ class AuthController extends Controller
         return back()->withErrors([
             'email' => 'Les identifiants fournis ne correspondent pas à nos enregistrements.',
         ])->withInput($request->except('password'));
-    }
-
-    public function register(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
-
-        
-        $employee = Employee::where('email', $validated['email'])->first();
-        
-        
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role' => $employee ? User::ROLE_EMPLOYEE : User::ROLE_EMPLOYEE,
-            'employee_id' => $employee ? $employee->id : null,
-        ]);
-
-     
-        if ($employee && !$employee->user_id) {
-            $employee->user_id = $user->id;
-            $employee->save();
-        }
-
-        Auth::login($user);
-
-        return redirect('/')->with('success', 'Compte créé avec succès! Bienvenue ' . $user->name);
     }
 
     public function logout(Request $request)

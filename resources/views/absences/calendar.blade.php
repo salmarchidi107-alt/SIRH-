@@ -384,10 +384,14 @@
 <div class="page-header">
     <div class="page-header-left">
         <h1>État Visuel des Absences</h1>
-        <p>Vue mensuelle — {{ $firstDay->translatedFormat('F Y') }}</p>
+        @php
+\Carbon\Carbon::setLocale('fr');
+@endphp
+
+<p>Vue mensuelle — {{ $firstDay->translatedFormat('F Y') }}</p>
     </div>
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-        <!-- View Toggle (Calendar and List only - no Timeline) -->
+       
         <div class="view-toggle">
             <button class="{{ (!isset($viewMode) || $viewMode == 'calendar') ? 'active' : '' }}" onclick="switchView('calendar')">
                 📅 Calendrier

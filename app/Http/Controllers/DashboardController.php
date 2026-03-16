@@ -62,6 +62,10 @@ $user = Auth::user();
             'today_present' => Planning::whereDate('date', today())->count(),
         ];
 
+
+        $recent_absences = collect();
+        $contract_types = collect();
+
         if ($isAdminOrRH) {
             $stats['pending_absences'] = Absence::where('status', 'pending')->count();
             $recent_absences = Absence::with('employee')
@@ -73,6 +77,7 @@ $user = Auth::user();
                 ->selectRaw('contract_type, count(*) as total')
                 ->pluck('total', 'contract_type');
         }
+
 
         $departments = Employee::groupBy('department')
             ->selectRaw('department, count(*) as total')

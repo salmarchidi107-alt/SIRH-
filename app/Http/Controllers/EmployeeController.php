@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class EmployeeController extends Controller
 {
@@ -46,13 +48,23 @@ class EmployeeController extends Controller
     {
         $managers = Employee::where('status', 'active')->get();
         
+        $currentUser = Auth::user();
+        if (!$currentUser || !in_array($currentUser->role, ['admin', 'rh'])) {
+            abort(403, 'Seuls les administrateurs et responsables RH peuvent créer des employés.');
+        }
+
         $linkedUserIds = Employee::whereNotNull('user_id')->pluck('user_id');
         $users = User::whereNotIn('id', $linkedUserIds)->get();
-        return view('employees.create', compact('managers', 'users'));
+        return view('employees.create', compact('managers', 'users', 'currentUser'));
     }
 
     public function store(Request $request)
     {
+        $currentUser = Auth::user();
+        if (!$currentUser || !in_array($currentUser->role, ['admin', 'rh'])) {
+            abort(403, 'Seuls les administrateurs et responsables RH peuvent créer des employés.');
+        }
+
         $validated = $request->validate([
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
@@ -71,8 +83,33 @@ class EmployeeController extends Controller
             'cnss' => 'nullable|string|max:20',
             'address' => 'nullable|string',
             'manager_id' => 'nullable|exists:employees,id',
-            'user_id' => 'nullable|exists:users,id|unique:employees,user_id',
+            'create_account' => 'nullable|boolean',
+            'user_role' => 'required_if:create_account,true|in:employee,rh,admin',
+            'user_password' => 'required_if:create_account,true|min:8|confirmed',
         ]);
+
+        if ($request->boolean('create_account')) {
+            $userEmail = $validated['email'];
+            if (User::where('email', $userEmail)->exists()) {
+                return back()->withErrors(['email' => 'Email déjà utilisé pour un compte utilisateur.'])->withInput();
+            }
+
+            $user = User::create([
+                'name' => $validated['first_name'] . ' ' . $validated['last_name'],
+                'email' => $userEmail,
+                'password' => Hash::make($request->user_password),
+                'role' => $request->user_role,
+            ]);
+            $validated['user_id'] = $user->id;
+        } elseif ($request->user_id) {
+            $user = User::find($request->user_id);
+            if ($user->employee_id) {
+                return back()->withErrors(['user_id' => 'Ce compte est déjà lié à un employé.']);
+            }
+            $validated['user_id'] = $user->id;
+        } else {
+            $validated['user_id'] = null;
+        }
 
         
         $lastEmp = Employee::latest('id')->first();
@@ -87,6 +124,7 @@ class EmployeeController extends Controller
         return redirect()->route('employees.index')
             ->with('success', 'Employé créé avec succès.');
     }
+
 
     public function show(Employee $employee)
     {

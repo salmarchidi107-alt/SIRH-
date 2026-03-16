@@ -4,7 +4,7 @@
 @section('page-title', 'Mon Profil')
 
 @section('content')
-<!-- Hero Profile Banner -->
+
 <div class="profile-hero mb-6">
     <div class="profile-photo">
         @if($employee->photo)
@@ -28,10 +28,9 @@
             @endif
         </div>
     </div>
-    <div class="profile-meta">
+    <div clajn ss="profile-meta">
         <div class="profile-meta-item">
-            <div class="profile-meta-value">{{ $employee->hire_date->diffInYears(now()) }}</div>
-            <div class="profile-meta-label">Années d'ancienneté</div>
+            
         </div>
     </div>
 </div>

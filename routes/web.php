@@ -47,8 +47,7 @@ Route::get('/link-users', function () {
 
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
-Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
-Route::post('/register', [AuthController::class, 'register']);
+
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 
@@ -60,7 +59,7 @@ Route::middleware(['auth'])->group(function () {
   
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    
+
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
 
 
@@ -98,7 +97,7 @@ Route::prefix('absences')->name('absences.')->group(function () {
     Route::get('/create', [AbsenceController::class, 'create'])->name('create');
     Route::post('/', [AbsenceController::class, 'store'])->name('store');
 
-   
+    
     Route::get('/calendar', [AbsenceController::class, 'calendar'])->name('calendar');
     Route::get('/counters', [AbsenceController::class, 'counters'])->name('counters');
 

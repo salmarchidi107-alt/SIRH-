@@ -1,12 +1,9 @@
-/* ============================================
-   HospitalRH - Professional HR Management
-   Design: Clean Medical + Corporate Elegance
-   ============================================ */
+
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Syne:wght@400;500;600;700;800&display=swap');
 
 :root {
-  /* Primary palette - Medical teal + Corporate navy */
+
   --primary: #0f6b7c;
   --primary-light: #1a8fa5;
   --primary-dark: #094f5c;

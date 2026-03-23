@@ -101,19 +101,19 @@
                 </option>
             @endforeach
         </select>
-        
+
         <select name="department" onchange="this.form.submit()" style="min-width: 180px;">
             <option value="">Tous les departements</option>
             @foreach($departments as $dept)
                 <option value="{{ $dept }}" {{ $department == $dept ? 'selected' : '' }}>{{ $dept }}</option>
             @endforeach
         </select>
-        
+
         <input type="number" name="annee" value="{{ $annee }}" min="2020" max="2030" style="width: 80px;">
         <input type="hidden" name="mois" value="{{ $mois }}">
         <button type="submit" class="btn btn-primary btn-sm">Rechercher</button>
     </form>
-    
+
     <div class="period-nav">
         <a href="{{ route('temps.vue-ensemble', ['mois' => $moisPrecedent->month, 'annee' => $moisPrecedent->year, 'employee_id' => $employeeId]) }}">&larr; Prec.</a>
         <span class="period-current">{{ \Carbon\Carbon::create($annee, $mois, 1)->translatedFormat('F Y') }}</span>
@@ -184,7 +184,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="card">
         <div class="card-header">Recapitulatif du mois</div>
         <div class="card-body" style="padding: 0;">
@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const joursDetails = @json($joursDetails);
     const joursLabels = joursDetails.map(d => d.jour);
     const joursHeures = joursDetails.map(d => d.total);
-    
+
     const dailyCtx = document.getElementById('dailyChart');
     if (dailyCtx && joursDetails.length > 0) {
         new Chart(dailyCtx, {
@@ -294,13 +294,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Graphique annuel
     const annualData = @json($graphiqueMois);
     const annualLabels = annualData.map(d => d.mois);
     const annualRealisees = annualData.map(d => d.heures_realisees);
     const annualPlanif = annualData.map(d => d.heures_planifiees);
-    
+
     const annualCtx = document.getElementById('annualChart');
     if (annualCtx) {
         new Chart(annualCtx, {
@@ -323,4 +323,3 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 @endpush
-

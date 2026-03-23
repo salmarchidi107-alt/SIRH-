@@ -4,74 +4,195 @@ namespace App\Http\Controllers;
 
 use App\Models\Employee;
 use App\Models\Salary;
+use App\Services\PayrollService;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class SalaryController extends Controller
 {
-    public function index()
-    {
-        $employees = Employee::where('status', 'active')
-            ->with(['salaries' => fn($q) => $q->latest()->take(1)])
-            ->paginate(20);
+    public function __construct(private PayrollService $payrollService) {}
 
-        return view('salary.index', compact('employees'));
+    public function getMonthlySummary(int $month, int $year): array
+    {
+        $salaries = Salary::where('month', $month)
+            ->where('year', $year)
+            ->get();
+
+        return [
+            'total_gross' => $salaries->sum('gross_salary'),
+            'total_cnss_sal' => $salaries->sum('cnss_deduction'),
+            'total_amo_sal' => $salaries->sum('amo_deduction'),
+            'total_ir' => $salaries->sum('ir_deduction'),
+            'total_net' => $salaries->sum('net_salary'),
+            'count' => $salaries->count(),
+            'count_validated' => $salaries->where('status', 'validated')->count(),
+            'count_paid' => $salaries->where('status', 'paid')->count(),
+            'total_employer_cost' => 0,
+            'total_employer_cnss' => 0,
+            'total_employer_amo' => 0,
+            'total_employer_tfp' => 0,
+            'count_draft' => $salaries->where('status', 'draft')->count(),
+        ];
+    }
+
+    public function index(Request $request)
+    {
+        $month = (int) $request->get('month', now()->month);
+        $year = (int) $request->get('year', now()->year);
+
+        $employees = Employee::with([
+            'salaries' => fn($q) => $q->where('month', $month)->where('year', $year),
+        ])
+        ->orderByRaw("CONCAT(first_name, ' ', last_name) ASC")
+        ->get();
+
+        $summary = $this->payrollService->getMonthlySummary($month, $year);
+
+        return view('salary.index', compact('employees', 'month', 'year', 'summary'));
     }
 
     public function show(Employee $employee)
     {
-        $salaries = Salary::where('employee_id', $employee->id)
-            ->orderByDesc('year')->orderByDesc('month')
-            ->paginate(12);
+        $salaries = $employee->salaries()
+            ->orderByDesc('year')
+            ->orderByDesc('month')
+            ->get();
 
         return view('salary.show', compact('employee', 'salaries'));
     }
 
-    public function update(Request $request, Employee $employee)
+    public function create(Employee $employee, Request $request)
     {
-        $validated = $request->validate([
-            'month' => 'required|integer|between:1,12',
-            'year' => 'required|integer|min:2000',
-            'base_salary' => 'required|numeric|min:0',
-            'bonuses' => 'nullable|numeric|min:0',
-            'deductions' => 'nullable|numeric|min:0',
-            'overtime_hours' => 'nullable|numeric|min:0',
-            'notes' => 'nullable|string',
-        ]);
+        $month = (int) $request->get('month', now()->month);
+        $year = (int) $request->get('year', now()->year);
 
-        $base = $validated['base_salary'];
-        $bonuses = $validated['bonuses'] ?? 0;
-        $overtime_pay = ($validated['overtime_hours'] ?? 0) * ($base / 173.33) * 1.25;
-        $gross = $base + $bonuses + $overtime_pay;
+        $existing = $employee->salaries()
+            ->where('month', $month)
+            ->where('year', $year)
+            ->first();
 
-        
-        $cnss = min($gross * 0.0448, 419.96);
-        $amo = $gross * 0.0226;
-        $taxable = $gross - $cnss - $amo;
-        $ir = $this->calculateIR($taxable * 12) / 12;
+        $variableElements = $employee->variableElements()
+            ->where('month', $month)
+            ->where('year', $year)
+            ->get();
 
-        $net = $gross - $cnss - $amo - $ir - ($validated['deductions'] ?? 0);
-
-        Salary::updateOrCreate(
-            ['employee_id' => $employee->id, 'month' => $validated['month'], 'year' => $validated['year']],
-            array_merge($validated, [
-                'overtime_pay' => $overtime_pay,
-                'cnss_deduction' => $cnss,
-                'amo_deduction' => $amo,
-                'ir_deduction' => $ir,
-                'net_salary' => $net,
-            ])
-        );
-
-        return back()->with('success', 'Fiche de paie générée avec succès.');
+        return view('salary.create', compact(
+            'employee',
+            'month',
+            'year',
+            'existing',
+            'variableElements'
+        ));
     }
 
-    private function calculateIR(float $annual): float
+    public function store(Request $request, Employee $employee)
     {
-        if ($annual <= 30000) return 0;
-        if ($annual <= 50000) return ($annual - 30000) * 0.10;
-        if ($annual <= 60000) return 2000 + ($annual - 50000) * 0.20;
-        if ($annual <= 80000) return 4000 + ($annual - 60000) * 0.30;
-        if ($annual <= 180000) return 10000 + ($annual - 80000) * 0.34;
-        return 44000 + ($annual - 180000) * 0.38;
+        $request->validate([
+            'month' => 'required|integer|min:1|max:12',
+            'year' => 'required|integer|min:2000',
+            'base_salary' => 'required|numeric|min:0',
+            'overtime_day_hours' => 'nullable|numeric|min:0',
+            'overtime_night_hours' => 'nullable|numeric|min:0',
+            'overtime_weekend_hours' => 'nullable|numeric|min:0',
+            'performance_bonus' => 'nullable|numeric|min:0',
+            'transport_allowance' => 'nullable|numeric|min:0',
+            'meal_allowance' => 'nullable|numeric|min:0',
+            'housing_allowance' => 'nullable|numeric|min:0',
+            'responsibility_allowance' => 'nullable|numeric|min:0',
+            'absence_days' => 'nullable|numeric|min:0|max:31',
+            'advance_deduction' => 'nullable|numeric|min:0',
+            'loan_deduction' => 'nullable|numeric|min:0',
+            'garnishment_deduction' => 'nullable|numeric|min:0',
+        ]);
+
+        $this->payrollService->calculate($employee, $request->all());
+
+        return redirect()
+            ->route('salary.show', $employee)
+            ->with('success', 'Bulletin de paie calculé avec succès.');
+    }
+
+    public function validateSalary(Salary $salary)
+    {
+        abort_if(
+            $salary->status !== 'draft',
+            403,
+            'Ce bulletin ne peut pas être validé.'
+        );
+
+        $salary->update(['status' => 'validated']);
+
+        return back()->with('success', 'Bulletin validé.');
+    }
+
+    public function markPaid(Salary $salary)
+    {
+        abort_if(
+            $salary->status !== 'validated',
+            403,
+            "Valider d'abord le bulletin."
+        );
+
+        $salary->update(['status' => 'paid']);
+
+        return back()->with('success', 'Bulletin marqué comme payé.');
+    }
+
+    public function destroy(Salary $salary)
+    {
+        abort_if(
+            $salary->status !== 'draft',
+            403,
+            'Seuls les bulletins brouillon peuvent être supprimés.'
+        );
+
+        $employee = $salary->employee;
+
+        $salary->delete();
+
+        return redirect()
+            ->route('salary.show', $employee)
+            ->with('success', 'Bulletin supprimé.');
+    }
+
+    public function pdf(Salary $salary)
+    {
+        $salary->load('employee');
+
+        $pdf = Pdf::loadView('salary.pdf', compact('salary'))
+            ->setPaper('a4', 'portrait');
+
+        $filename = 'bulletin-' .
+            str($salary->employee->full_name)->slug() . '-' .
+            str_pad($salary->month, 2, '0', STR_PAD_LEFT) . '-' .
+            $salary->year . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    public function generateAll(Request $request)
+    {
+        $request->validate([
+            'month' => 'required|integer|min:1|max:12',
+            'year' => 'required|integer|min:2000',
+        ]);
+
+        $count = 0;
+
+        foreach (Employee::all() as $emp) {
+            $this->payrollService->calculate($emp, [
+                'month' => $request->month,
+                'year' => $request->year,
+                'base_salary' => $emp->base_salary,
+            ]);
+            $count++;
+        }
+
+        return redirect()
+            ->route('salary.index', [
+                'month' => $request->month,
+                'year' => $request->year
+            ])
+            ->with('success', "Paie générée pour $count employés.");
     }
 }

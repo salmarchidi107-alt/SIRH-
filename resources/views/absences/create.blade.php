@@ -23,14 +23,24 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>Employé *</label>
+@if(isset($employee))
+                    <input type="hidden" name="employee_id" value="{{ $employee->id }}">
+                    <div style="padding:16px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:24px">
+                        <h3 style="margin:0 0 8px 0;color:var(--primary);font-size:1.1rem">{{ $employee->full_name }}</h3>
+                        <div style="color:var(--text-muted);font-size:0.875rem">{{ $employee->department }} — {{ $employee->position }}</div>
+                    </div>
+@else
                     <select name="employee_id" class="form-control" required>
                         <option value="">Sélectionner un employé</option>
-                        @foreach($employees as $emp)
-                            <option value="{{ $emp->id }}" {{ request('employee_id') == $emp->id ? 'selected' : '' }}>
-                                {{ $emp->full_name }} — {{ $emp->department }}
-                            </option>
-                        @endforeach
+                        @if(isset($employees) && $employees->count() > 0)
+                            @foreach($employees as $emp)
+                                <option value="{{ $emp->id }}" {{ old('employee_id', request('employee_id')) == $emp->id ? 'selected' : '' }}>
+                                    {{ $emp->full_name }} — {{ $emp->department }}
+                                </option>
+                            @endforeach
+                        @endif
                     </select>
+@endif
                 </div>
                 <div class="form-group">
                     <label>Type d'absence *</label>
@@ -57,9 +67,11 @@
                     <label>Employé de remplacement</label>
                     <select name="replacement_id" class="form-control">
                         <option value="">Aucun</option>
-                        @foreach($employees as $emp)
-                            <option value="{{ $emp->id }}">{{ $emp->full_name }}</option>
-                        @endforeach
+                        @if(isset($employees) && $employees->count() > 0)
+                            @foreach($employees as $emp)
+                                <option value="{{ $emp->id }}">{{ $emp->full_name }}</option>
+                            @endforeach
+                        @endif
                     </select>
                 </div>
                 <div class="form-group full">
@@ -76,3 +88,4 @@
     </div>
 </form>
 @endsection
+

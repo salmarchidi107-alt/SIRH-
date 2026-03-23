@@ -36,7 +36,7 @@ Route::get('/link-users', function () {
             echo "Linked: {$user->email} -> {$employee->first_name} {$employee->last_name}<br>";
         }
     }
-    
+
     if ($linked > 0) {
         echo "<br>Successfully linked {$linked} user(s)!";
     } else {
@@ -56,7 +56,7 @@ Route::middleware(['auth'])->group(function () {
         return redirect()->route('dashboard');
     });
 
-  
+
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
 
@@ -70,7 +70,7 @@ Route::resource('employees', EmployeeController::class);
 Route::get('/trombinoscope', [TrombinoscopeController::class, 'index'])->name('trombinoscope');
 
 
-Route::get('/planning', [PlanningController::class, 'weekly'])->name('planning.weekly');
+
 Route::get('/planning/weekly', [PlanningController::class, 'weekly'])->name('planning.weekly');
 Route::get('/planning/global', [PlanningController::class, 'global'])->name('planning.global');
 Route::get('/planning/monthly', [PlanningController::class, 'monthly'])->name('planning.monthly');
@@ -97,7 +97,7 @@ Route::prefix('absences')->name('absences.')->group(function () {
     Route::get('/create', [AbsenceController::class, 'create'])->name('create');
     Route::post('/', [AbsenceController::class, 'store'])->name('store');
 
-    
+
     Route::get('/calendar', [AbsenceController::class, 'calendar'])->name('calendar');
     Route::get('/counters', [AbsenceController::class, 'counters'])->name('counters');
 
@@ -110,7 +110,10 @@ Route::prefix('absences')->name('absences.')->group(function () {
 });
 
 
+
 Route::get('/salary', [SalaryController::class, 'index'])->name('salary.index');
+Route::get('/salary/{employee}/create', [SalaryController::class, 'create'])->name('salary.create');
+
 Route::get('/salary/{employee}', [SalaryController::class, 'show'])->name('salary.show');
 Route::post('/salary/{employee}', [SalaryController::class, 'update'])->name('salary.update');
 
@@ -123,4 +126,53 @@ Route::prefix('api')->group(function () {
 
 
 Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+});
+
+
+// ============================================================
+// AJOUTER CES ROUTES DANS votre fichier routes/web.php
+// ============================================================
+
+
+use App\Http\Controllers\VariableElementController;
+
+// ─── Module Paie ─────────────────────────────────────────────
+
+Route::prefix('salary')->name('salary.')->group(function () {
+
+    // Liste des employés + état paie du mois
+    Route::get('/', [SalaryController::class, 'index'])->name('index');
+
+    // Générer la paie pour tous les employés d'un mois
+    Route::post('/generate-all', [SalaryController::class, 'generateAll'])->name('generate-all');
+
+    // Fiche d'un employé
+    Route::get('/{employee}', [SalaryController::class, 'show'])->name('show');
+
+    // Générer / recalculer le bulletin d'un employé
+    Route::post('/{employee}', [SalaryController::class, 'store'])->name('update');
+
+    // Valider un bulletin
+    Route::patch('/{salary}/validate', [SalaryController::class, 'validateSalary'])->name('validate');
+
+    // Marquer comme payé
+    Route::patch('/{salary}/paid', [SalaryController::class, 'markPaid'])->name('paid');
+
+    // Supprimer un bulletin (draft seulement)
+    Route::delete('/{salary}', [SalaryController::class, 'destroy'])->name('destroy');
+
+    // Télécharger le PDF
+    Route::get('/{salary}/pdf', [SalaryController::class, 'pdf'])->name('pdf');
+});
+
+// ─── Payroll Settings ────────────────────────────────────────
+Route::get('/salary/settings', [\App\Http\Controllers\PayrollSettingController::class, 'index'])->name('payroll.settings');
+Route::put('/salary/settings', [\App\Http\Controllers\PayrollSettingController::class, 'update'])->name('payroll.settings.update');
+
+// ─── Éléments variables ───────────────────────────────────────
+
+Route::prefix('variables')->name('variables.')->group(function () {
+    Route::get('/',                         [VariableElementController::class, 'index'])->name('index');
+    Route::post('/',                        [VariableElementController::class, 'store'])->name('store');
+    Route::delete('/{variableElement}',     [VariableElementController::class, 'destroy'])->name('destroy');
 });

@@ -20,7 +20,7 @@ class AbsenceController extends Controller
         if (Auth::user()->role === 'employee' && Auth::user()->employee_id) {
             $query->where('employee_id', Auth::user()->employee_id);
         } else {
-           
+
             if ($request->employee_id) {
                 $query->where('employee_id', $request->employee_id);
             }
@@ -43,9 +43,9 @@ class AbsenceController extends Controller
         }
 
         $absences = $query->latest()->paginate(20);
-        $employees = Employee::where('status', 'active')->get();
-        
-        
+        $employees = Employee::where('status', 'active')->when(Auth::user()->role === 'employee', fn($q) => $q->where('id', Auth::user()->employee_id))->get();
+
+
         if (Auth::user()->role === 'employee' && Auth::user()->employee_id) {
             $pending_count = Absence::where('employee_id', Auth::user()->employee_id)->where('status', 'pending')->count();
         } else {
@@ -57,19 +57,19 @@ class AbsenceController extends Controller
 
     public function create()
     {
-        
+
         if (Auth::user()->role === 'employee' && Auth::user()->employee_id) {
             $employee = Employee::find(Auth::user()->employee_id);
             return view('absences.create', compact('employee'));
         }
-        
-        $employees = Employee::where('status', 'active')->get();
+
+        $employees = Employee::where('status', 'active')->when(Auth::user()->role === 'employee', fn($q) => $q->where('id', Auth::user()->employee_id))->get();
         return view('absences.create', compact('employees'));
     }
 
     public function store(Request $request)
     {
-        
+
         if (Auth::user()->role === 'employee' && Auth::user()->employee_id) {
             $validated = $request->validate([
                 'type' => 'required|in:' . implode(',', array_keys(Absence::TYPES)),
@@ -122,7 +122,7 @@ class AbsenceController extends Controller
 
     public function edit(Absence $absence)
     {
-        $employees = Employee::where('status', 'active')->get();
+        $employees = Employee::where('status', 'active')->when(Auth::user()->role === 'employee', fn($q) => $q->where('id', Auth::user()->employee_id))->get();
         return view('absences.edit', compact('absence', 'employees'));
     }
 
@@ -155,18 +155,20 @@ class AbsenceController extends Controller
 
     public function approve(Absence $absence)
     {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Seuls les administrateurs peuvent approuver les absences.');
+        }
+
         $absence->update([
             'status' => 'approved',
             'approved_at' => now(),
         ]);
 
-    
         if ($absence->employee && $absence->employee->email) {
             try {
                 Mail::to($absence->employee->email)->send(new AbsenceApproved($absence));
             } catch (\Exception $e) {
-                
-                \Log::error('Mail approve error: ' . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error('Mail approve error: ' . $e->getMessage());
             }
         }
 
@@ -175,17 +177,20 @@ class AbsenceController extends Controller
 
     public function reject(Absence $absence)
     {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Seuls les administrateurs peuvent rejeter les absences.');
+        }
+
         $absence->update([
             'status' => 'rejected',
             'approved_at' => now(),
         ]);
 
-        
         if ($absence->employee && $absence->employee->email) {
             try {
                 Mail::to($absence->employee->email)->send(new AbsenceRejected($absence));
             } catch (\Exception $e) {
-                \Log::error('Mail reject error: ' . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error('Mail reject error: ' . $e->getMessage());
             }
         }
 
@@ -220,7 +225,7 @@ class AbsenceController extends Controller
             })
             ->whereIn('status', ['approved', 'pending']);
 
-        
+
         if ($request->department) {
             $query->whereHas('employee', function($q) use ($request) {
                 $q->where('department', $request->department);
@@ -237,13 +242,13 @@ class AbsenceController extends Controller
 
         $absences = $query->get();
 
-        
+
         $employeeIdsWithAbsences = $absences->pluck('employee_id')->unique();
         $employeesWithAbsences = $employees->filter(function($emp) use ($employeeIdsWithAbsences) {
             return $employeeIdsWithAbsences->contains($emp->id);
         });
 
-        
+
         $conflicts = [];
         $approvedAbsences = $absences->where('status', 'approved');
         foreach ($approvedAbsences as $a) {
@@ -259,12 +264,12 @@ class AbsenceController extends Controller
             }
         }
 
-        
+
         $replacements = $absences->whereNotNull('replacement_id');
 
-        $daysInMonth = $startOfMonth->daysInMonth;
+        $daysInMonth = $startOfMonth->daysInMonth();
 
-        
+
         return view('absences.calendar', compact(
             'absences', 'conflicts', 'replacements',
             'employees', 'employeesWithAbsences', 'month', 'year',
@@ -284,30 +289,30 @@ class AbsenceController extends Controller
         $countersData = [];
 
         foreach ($employees as $emp) {
-            
+
             $hireDate = $emp->hire_date ? Carbon::parse($emp->hire_date) : Carbon::create($year, 1, 1);
             $startOfYear = Carbon::create($year, 1, 1);
             $endOfYear   = Carbon::create($year, 12, 31);
 
-            
+
             $workStart = $hireDate->gt($startOfYear) ? $hireDate : $startOfYear;
             $workEnd   = now()->lt($endOfYear) ? now() : $endOfYear;
             $monthsWorked = max(0, $workStart->floatDiffInMonths($workEnd));
 
-            
+
             $acquis = floor($monthsWorked * 1.5);
 
-            
+
             $taken = Absence::where('employee_id', $emp->id)
                 ->where('status', 'approved')
                 ->whereYear('start_date', $year)
                 ->whereIn('type', ['conge_annuel', 'conge_sans_solde', 'conge_maladie'])
                 ->sum('days');
 
-            
+
             $solde = $acquis - $taken;
 
-            
+
             $pending = Absence::where('employee_id', $emp->id)
                 ->where('status', 'pending')
                 ->whereYear('start_date', $year)
@@ -327,3 +332,4 @@ class AbsenceController extends Controller
         return view('absences.counters', compact('countersData', 'year'));
     }
 }
+

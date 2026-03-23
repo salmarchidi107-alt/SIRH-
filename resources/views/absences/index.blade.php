@@ -102,7 +102,7 @@
                                     <circle cx="12" cy="12" r="3"/>
                                 </svg>
                             </a>
-                            @if($absence->status == 'pending')
+@if($absence->status == 'pending' && in_array(auth()->user()->role, ['admin', 'rh']))
                                 <form action="{{ route('absences.approve', $absence) }}" method="POST">
                                     @csrf
                                     <button type="submit" class="btn btn-success btn-sm" title="Approuver">✓</button>

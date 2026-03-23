@@ -9,12 +9,14 @@
         <h1>Employés</h1>
         <p>{{ $employees->total() }} collaborateurs enregistrés</p>
     </div>
+    @if(in_array(auth()->user()->role ?? '', ['admin', 'rh']))
     <a href="{{ route('employees.create') }}" class="btn btn-primary">
         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
         Nouvel Employé
     </a>
+    @endif
 </div>
 
 <!-- Filter Buttons: Tous / Actifs -->
@@ -54,7 +56,7 @@
         <table>
             <thead>
                 <tr>
-               
+
                     <th>Matricule</th>
                     <th>Collaborateur</th>
                     <th>Fonction</th>
@@ -102,7 +104,7 @@
                         @endif
                     </td>
                     <td class="text-sm text-muted">{{ $employee->hire_date->format('d/m/Y') }}</td>
-                    <td>
+<td>
                         <div style="display:flex;gap:6px">
                             <a href="{{ route('employees.show', $employee) }}" class="btn btn-ghost btn-sm btn-icon" title="Voir">
                                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -110,6 +112,7 @@
                                     <circle cx="12" cy="12" r="3"/>
                                 </svg>
                             </a>
+                            @if(in_array(auth()->user()->role ?? '', ['admin', 'rh']))
                             <a href="{{ route('employees.edit', $employee) }}" class="btn btn-outline btn-sm btn-icon" title="Modifier">
                                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -126,6 +129,7 @@
                                     </svg>
                                 </button>
                             </form>
+                            @endif
                         </div>
                     </td>
                 </tr>

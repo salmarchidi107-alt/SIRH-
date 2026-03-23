@@ -3,6 +3,12 @@
 @section('title', $employee->full_name)
 @section('page-title', 'Fiche Employé')
 
+@if(auth()->user()->role === 'employee' && auth()->user()->employee_id != $employee->id)
+    <script>
+        document.body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);"><h2>Accès restreint</h2><p>Vous ne pouvez voir que votre propre profil.</p><a href="/trombinoscope" class="btn btn-primary mt-4">← Retour trombinoscope</a></div>';
+    </script>
+@endif
+
 @section('content')
 <!-- Hero Profile Banner -->
 <div class="profile-hero mb-6">
@@ -46,8 +52,10 @@
         <!-- Informations personnelles -->
         <div class="card mb-4">
             <div class="card-header">
-                <div class="card-title"> Informations Personnelles</div>
-                <a href="{{ route('employees.edit', $employee) }}" class="btn btn-outline btn-sm">Modifier</a>
+                <div class="card-title">Informations Personnelles</div>
+@if(in_array(auth()->user()->role ?? '', ['admin', 'rh']))
+<a href="{{ route('employees.edit', $employee) }}" class="btn btn-outline btn-sm">Modifier</a>
+@endif
             </div>
             <div class="card-body">
                 <div class="detail-grid">
@@ -307,9 +315,11 @@
                 <a href="{{ route('salary.show', $employee) }}" class="btn btn-outline w-full">
                      Dossier salaire
                 </a>
+                @if(in_array(auth()->user()->role ?? '', ['admin', 'rh']))
                 <a href="{{ route('employees.edit', $employee) }}" class="btn btn-primary w-full">
                      Modifier le profil
                 </a>
+                @endif
             </div>
         </div>
 

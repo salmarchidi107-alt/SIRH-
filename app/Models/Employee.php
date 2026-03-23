@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 class Employee extends Model
 {
@@ -31,6 +32,11 @@ class Employee extends Model
         'cin',
         'address',
         'family_situation',
+        'children_count',
+        'payment_method',
+        'bank',
+        'rib',
+        'contractual_benefits',
         'emergency_contact',
         'emergency_phone',
         'work_hours',
@@ -50,11 +56,18 @@ class Employee extends Model
         'work_days' => 'array',
         'base_salary' => 'decimal:2',
         'work_hours_counter' => 'decimal:2',
+        'children_count' => 'integer',
     ];
 
     public function getFullNameAttribute(): string
     {
         return "{$this->first_name} {$this->last_name}";
+    }
+
+    public function getSeniorityAttribute()
+    {
+        if (!$this->hire_date) return null;
+        return $this->hire_date->diffInYears(now());
     }
 
     public function manager()
@@ -82,6 +95,11 @@ class Employee extends Model
         return $this->hasMany(Salary::class);
     }
 
+    public function variableElements()
+    {
+        return $this->hasMany(VariableElement::class);
+    }
+
     public function getPhotoUrlAttribute(): string
     {
         if ($this->photo) {
@@ -95,3 +113,4 @@ class Employee extends Model
         return $this->belongsTo(User::class);
     }
 }
+

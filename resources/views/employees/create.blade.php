@@ -170,7 +170,7 @@
         </div>
     </div>
 
-    <!-- Rémunération & Social -->
+    <!-- Rémunération & Informations Sociales -->
     <div class="card mb-4">
         <div class="card-header">
             <div class="card-title"> Rémunération & Informations Sociales</div>
@@ -184,6 +184,31 @@
                 <div class="form-group">
                     <label>N° CNSS</label>
                     <input type="text" name="cnss" class="form-control" value="{{ old('cnss') }}" placeholder="1234567">
+                </div>
+                <div class="form-group">
+                    <label>Nb. d'enfants</label>
+                    <input type="number" name="children_count" class="form-control" value="{{ old('children_count', 0) }}" min="0" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>Mode de paiement</label>
+                    <select name="payment_method" class="form-control">
+                        <option value="">Sélectionner...</option>
+                        <option value="virement" {{ old('payment_method') == 'virement' ? 'selected' : '' }}>Virement</option>
+                        <option value="cash" {{ old('payment_method') == 'cash' ? 'selected' : '' }}>Espèces</option>
+                        <option value="chèque" {{ old('payment_method') == 'chèque' ? 'selected' : '' }}>Chèque</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Banque</label>
+                    <input type="text" name="bank" class="form-control" value="{{ old('bank') }}" placeholder="ex: BMCI">
+                </div>
+                <div class="form-group">
+                    <label>RIB</label>
+                    <input type="text" name="rib" class="form-control" value="{{ old('rib') }}" placeholder="XX 12 3456 7890 1234 5678 90">
+                </div>
+                <div class="form-group full">
+                    <label>Avantages contractuels</label>
+                    <textarea name="contractual_benefits" class="form-control" rows="2" placeholder="Primes, avantages...">{{ old('contractual_benefits') }}</textarea>
                 </div>
                 <div class="form-group">
                     <label>Contact d'urgence</label>
@@ -286,7 +311,7 @@
                         Mer
                     </label>
                     <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #f1f5f9; border-radius: 8px;">
-                        <input type="checkbox" name="work_days[]" value="jeudi" {{ is_array(old('work_days')) && in_array('jeudi', old('work_days')) ? 'checked' : '' }}>
+                        <input type="checkbox" name="work_days[]" value="jeudi" {{ is_array(old('work_days')) && in_array('jeudi', old('work_days')) ? 'selected' : '' }}>
                         Jeu
                     </label>
                     <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #f1f5f9; border-radius: 8px;">

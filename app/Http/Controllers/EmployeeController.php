@@ -14,7 +14,6 @@ class EmployeeController extends Controller
     {
         $query = Employee::query();
 
-        
         $filter = $request->get('filter', 'all');
         if ($filter === 'active') {
             $query->where('status', 'active');
@@ -47,7 +46,7 @@ class EmployeeController extends Controller
     public function create()
     {
         $managers = Employee::where('status', 'active')->get();
-        
+
         $currentUser = Auth::user();
         if (!$currentUser || !in_array($currentUser->role, ['admin', 'rh'])) {
             abort(403, 'Seuls les administrateurs et responsables RH peuvent créer des employés.');
@@ -83,6 +82,11 @@ class EmployeeController extends Controller
             'cnss' => 'nullable|string|max:20',
             'address' => 'nullable|string',
             'manager_id' => 'nullable|exists:employees,id',
+            'children_count' => 'nullable|integer|min:0',
+            'payment_method' => 'nullable|in:virement,cash,chèque',
+            'bank' => 'nullable|string|max:100',
+            'rib' => 'nullable|string|max:30',
+            'contractual_benefits' => 'nullable|string',
             'create_account' => 'nullable|boolean',
             'user_role' => 'required_if:create_account,true|in:employee,rh,admin',
             'user_password' => 'required_if:create_account,true|min:8|confirmed',
@@ -111,7 +115,6 @@ class EmployeeController extends Controller
             $validated['user_id'] = null;
         }
 
-        
         $lastEmp = Employee::latest('id')->first();
         $validated['matricule'] = 'EMP' . str_pad(($lastEmp ? $lastEmp->id + 1 : 1), 4, '0', STR_PAD_LEFT);
 
@@ -125,7 +128,6 @@ class EmployeeController extends Controller
             ->with('success', 'Employé créé avec succès.');
     }
 
-
     public function show(Employee $employee)
     {
         $employee->load(['absences' => fn($q) => $q->latest()->take(10), 'salaries' => fn($q) => $q->latest()->take(6)]);
@@ -135,7 +137,7 @@ class EmployeeController extends Controller
     public function edit(Employee $employee)
     {
         $managers = Employee::where('status', 'active')->where('id', '!=', $employee->id)->get();
-        // Get users that are not already linked to employees (except the current one)
+
         $linkedUserIds = Employee::whereNotNull('user_id')->where('id', '!=', $employee->id)->pluck('user_id');
         $users = User::whereNotIn('id', $linkedUserIds)->get();
         return view('employees.edit', compact('employee', 'managers', 'users'));
@@ -161,6 +163,11 @@ class EmployeeController extends Controller
             'cnss' => 'nullable|string|max:20',
             'address' => 'nullable|string',
             'manager_id' => 'nullable|exists:employees,id',
+            'children_count' => 'nullable|integer|min:0',
+            'payment_method' => 'nullable|in:virement,cash,chèque',
+            'bank' => 'nullable|string|max:100',
+            'rib' => 'nullable|string|max:30',
+            'contractual_benefits' => 'nullable|string',
             'user_id' => 'nullable|exists:users,id|unique:employees,user_id,' . $employee->id,
         ]);
 
@@ -181,3 +188,4 @@ class EmployeeController extends Controller
             ->with('success', 'Employé supprimé.');
     }
 }
+

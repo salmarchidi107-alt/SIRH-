@@ -150,6 +150,31 @@
                     <input type="text" name="cnss" class="form-control" value="{{ old('cnss', $employee->cnss) }}">
                 </div>
                 <div class="form-group">
+                    <label>Nb. d'enfants</label>
+                    <input type="number" name="children_count" class="form-control" value="{{ old('children_count', $employee->children_count ?? 0) }}" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Mode de paiement</label>
+                    <select name="payment_method" class="form-control">
+                        <option value="">Sélectionner...</option>
+                        <option value="virement" {{ old('payment_method', $employee->payment_method) == 'virement' ? 'selected' : '' }}>Virement</option>
+                        <option value="cash" {{ old('payment_method', $employee->payment_method) == 'cash' ? 'selected' : '' }}>Espèces</option>
+                        <option value="chèque" {{ old('payment_method', $employee->payment_method) == 'chèque' ? 'selected' : '' }}>Chèque</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Banque</label>
+                    <input type="text" name="bank" class="form-control" value="{{ old('bank', $employee->bank) }}" placeholder="ex: BMCI">
+                </div>
+                <div class="form-group">
+                    <label>RIB</label>
+                    <input type="text" name="rib" class="form-control" value="{{ old('rib', $employee->rib) }}" placeholder="XX 12 3456 7890 1234 5678 90">
+                </div>
+                <div class="form-group full">
+                    <label>Avantages contractuels</label>
+                    <textarea name="contractual_benefits" class="form-control" rows="2">{{ old('contractual_benefits', $employee->contractual_benefits) }}</textarea>
+                </div>
+                <div class="form-group">
                     <label>Contact d'urgence</label>
                     <input type="text" name="emergency_contact" class="form-control" value="{{ old('emergency_contact', $employee->emergency_contact) }}">
                 </div>
@@ -282,3 +307,4 @@
     </div>
 </form>
 @endsection
+

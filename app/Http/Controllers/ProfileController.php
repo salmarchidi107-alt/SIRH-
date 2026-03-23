@@ -7,47 +7,23 @@ use Illuminate\Support\Facades\Auth;
 
 class ProfileController extends Controller
 {
-    public function index()
+public function index()
     {
         $user = Auth::user();
 
-       
-        if ($user->isAdmin() || $user->isRh()) {
-          
-            $employee = null;
-            if ($user->employee_id) {
-                $employee = Employee::find($user->employee_id);
-            }
-            if (!$employee && $user->email) {
-                $employee = Employee::where('email', $user->email)->first();
-            }
-            
-            if ($employee) {
-                return view('employees.profile', ['employee' => $employee]);
-            }
-            
-          
-            return redirect()->route('dashboard');
+        if (!$user->employee_id && !$user->email) {
+            return redirect()->route('dashboard')->with('error', 'Aucun profil employé associé à ce compte.');
         }
 
-        $employee = null;
+        $employee = Employee::where('id', $user->employee_id)
+            ->orWhere('email', $user->email)
+            ->first();
 
-        
-        if ($user->employee_id) {
-            $employee = Employee::find($user->employee_id);
-        }
-
-     
-        if (!$employee && $user->email) {
-            $employee = Employee::where('email', $user->email)->first();
-        }
-
-        
         if (!$employee) {
-            return redirect()->route('dashboard')->with('error', 'Aucun profil employé associé à ce compte. Veuillez contacter l\'administrateur.');
+            return redirect()->route('dashboard')->with('error', 'Profil employé non trouvé.');
         }
 
-        return view('employees.profile', ['employee' => $employee]);
+        return redirect()->route('employees.show', $employee);
     }
 }
 

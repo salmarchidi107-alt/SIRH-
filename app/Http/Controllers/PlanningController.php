@@ -6,6 +6,9 @@ use App\Models\Planning;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use App\Exports\PlanningMonthlyExport;
+use App\Exports\PlanningWeeklyExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PlanningController extends Controller
 {
@@ -77,7 +80,6 @@ class PlanningController extends Controller
         return view('planning.weekly', compact('employees', 'plannings', 'weekDays', 'week', 'year', 'startOfWeek', 'endOfWeek', 'search', 'department', 'departments'));
     }
 
-   
     public function monthly(Request $request)
     {
         $month = $request->month ?? now()->month;
@@ -269,8 +271,26 @@ class PlanningController extends Controller
 
     public function destroy(Planning $planning)
     {
-        $planning->delete();
-        return back()->with('success', 'Shift supprimé.');
+        if (!$planning->exists) {
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['error' => 'Shift introuvable'], 404);
+            }
+            return back()->with('error', 'Shift introuvable');
+        }
+
+        try {
+            $planning->delete();
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['success' => true]);
+            }
+            return back()->with('success', 'Shift supprimé.');
+        } catch (\Exception $e) {
+            \Log::error('Shift delete failed for planning ID ' . $planning->id . ': ' . $e->getMessage());
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['error' => 'Erreur suppression: ' . $e->getMessage()], 500);
+            }
+            return back()->with('error', 'Erreur suppression shift: ' . $e->getMessage());
+        }
     }
 
     // API pour le drag & drop
@@ -280,18 +300,29 @@ class PlanningController extends Controller
             'planning_id' => 'required|exists:plannings,id',
             'new_date' => 'required|date',
             'new_employee_id' => 'nullable|exists:employees,id',
+            'duplicate' => 'boolean',
         ]);
 
-        $planning = Planning::findOrFail($validated['planning_id']);
-        $planning->date = $validated['new_date'];
-        
-        if ($validated['new_employee_id']) {
-            $planning->employee_id = $validated['new_employee_id'];
+        if ($request->duplicate) {
+            $planning = Planning::findOrFail($validated['planning_id']);
+            $newPlanning = $planning->replicate();
+            $newPlanning->date = $validated['new_date'];
+            $newPlanning->employee_id = $validated['new_employee_id'] ?? $planning->employee_id;
+            $newPlanning->save();
+        } else {
+            $planning = Planning::findOrFail($validated['planning_id']);
+            $planning->date = $validated['new_date'];
+            $planning->employee_id = $validated['new_employee_id'] ?? $planning->employee_id;
+            $planning->save();
         }
-        
-        $planning->save();
 
-        return response()->json(['success' => true, 'message' => 'Planning mis à jour']);
+        return response()->json(['success' => true]);
+    }
+
+    public function getPlanning($id)
+    {
+        $planning = Planning::findOrFail($id);
+        return response()->json($planning);
     }
 
     public function events(Request $request)
@@ -322,5 +353,15 @@ class PlanningController extends Controller
             'garde' => '#ef4444',
             default => '#10b981',
         };
+    }
+
+    public function exportMonthly()
+    {
+        return Excel::download(new PlanningMonthlyExport, 'planning-mensuel.xlsx');
+    }
+
+    public function exportWeekly()
+    {
+        return Excel::download(new PlanningWeeklyExport, 'planning-hebdo.xlsx');
     }
 }

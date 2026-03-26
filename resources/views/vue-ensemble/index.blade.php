@@ -1,218 +1,193 @@
 @extends('layouts.app')
-
 @section('title', 'Vue d\'ensemble')
 @section('page-title', 'Vue d\'ensemble du temps de travail')
 
 @push('styles')
 <style>
-.employee-card {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-}
-.employee-avatar {
-    width: 60px; height: 60px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #0f6b7c, #00c9a7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    color: white;
-    font-size: 1.2rem;
-}
-.employee-info h3 { font-size: 1.1rem; margin-bottom: 2px; }
-.employee-info p { color: #64748b; font-size: 0.85rem; }
-.employee-meta { margin-left: auto; display: flex; gap: 20px; }
-.meta-value { font-weight: 700; color: #0f6b7c; font-size: 1rem; }
-.meta-label { font-size: 0.7rem; color: #64748b; }
+/* ── Base ── */
+.employee-card { background:white; border-radius:12px; padding:20px; display:flex; align-items:center; gap:20px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+.employee-avatar { width:60px; height:60px; border-radius:50%; background:linear-gradient(135deg,#0f6b7c,#00c9a7); display:flex; align-items:center; justify-content:center; font-weight:700; color:white; font-size:1.2rem; flex-shrink:0; }
+.employee-info h3 { font-size:1.1rem; margin-bottom:2px; }
+.employee-info p  { color:#64748b; font-size:.85rem; }
+.employee-meta { margin-left:auto; display:flex; gap:20px; }
+.meta-value { font-weight:700; color:#0f6b7c; font-size:1rem; }
+.meta-label { font-size:.7rem; color:#64748b; }
 
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 15px;
-    margin-bottom: 20px;
-}
-.stat-card {
-    background: white;
-    padding: 16px;
-    border-radius: 10px;
-    text-align: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-}
-.stat-card.primary { border-top: 3px solid #0f6b7c; }
-.stat-card.info { border-top: 3px solid #3b82f6; }
-.stat-card.warning { border-top: 3px solid #f59e0b; }
-.stat-card.success { border-top: 3px solid #10b981; }
-.stat-value { font-size: 1.5rem; font-weight: 800; }
-.stat-label { font-size: 0.75rem; color: #64748b; }
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:15px; margin-bottom:20px; }
+.stat-card { background:white; padding:16px; border-radius:10px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+.stat-card.primary { border-top:3px solid #0f6b7c; }
+.stat-card.info    { border-top:3px solid #3b82f6; }
+.stat-card.warning { border-top:3px solid #f59e0b; }
+.stat-card.success { border-top:3px solid #10b981; }
+.stat-card.purple  { border-top:3px solid #8b5cf6; }
+.stat-value { font-size:1.5rem; font-weight:800; }
+.stat-label { font-size:.75rem; color:#64748b; }
 
-.content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-.card { background: white; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-.card-header { padding: 14px; border-bottom: 1px solid #e2e8f0; font-weight: 700; }
-.card-body { padding: 16px; }
-.chart-container { height: 240px; }
+.content-grid { display:grid; grid-template-columns:2fr 1fr; gap:20px; }
+.card { background:white; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+.card-header { padding:14px; border-bottom:1px solid #e2e8f0; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
+.card-body { padding:16px; }
+.chart-container { height:240px; }
 
-.data-table { width: 100%; border-collapse: collapse; }
-.data-table th { background: #f8fafc; padding: 10px; font-size: 0.65rem; text-transform: uppercase; }
-.data-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; text-align: center; }
-.data-table td:first-child { text-align: left; font-weight: 600; }
-.total-row { background: #e6f4f7; font-weight: 700; }
-.positive { color: #10b981; font-weight: 600; }
-.negative { color: #ef4444; font-weight: 600; }
+.data-table { width:100%; border-collapse:collapse; }
+.data-table th { background:#f8fafc; padding:10px; font-size:.65rem; text-transform:uppercase; }
+.data-table td { padding:10px; border-bottom:1px solid #f1f5f9; text-align:center; }
+.data-table td:first-child { text-align:left; font-weight:600; }
+.total-row { background:#e6f4f7; font-weight:700; }
+.positive { color:#10b981; font-weight:600; }
+.negative { color:#ef4444; font-weight:600; }
 
-.weeks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 20px; }
-.week-card { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-.week-header { background: #0f6b7c; color: white; padding: 10px; display: flex; justify-content: space-between; font-weight: 600; font-size: 0.85rem; }
-.week-table { width: 100%; font-size: 0.8rem; }
-.week-table td { padding: 8px; text-align: center; border-bottom: 1px solid #eee; }
-.week-balance { padding: 10px; font-weight: 700; display: flex; justify-content: space-between; }
-.week-balance.positive { background: #ecfdf5; color: #10b981; }
-.week-balance.negative { background: #fef2f2; color: #ef4444; }
+.weeks-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:15px; margin-top:20px; }
+.week-card { background:white; border-radius:10px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+.week-header { background:#0f6b7c; color:white; padding:10px; display:flex; justify-content:space-between; font-weight:600; font-size:.85rem; }
+.week-table { width:100%; font-size:.8rem; }
+.week-table td { padding:8px; text-align:center; border-bottom:1px solid #eee; }
+.week-balance { padding:10px; font-weight:700; display:flex; justify-content:space-between; }
+.week-balance.positive { background:#ecfdf5; color:#10b981; }
+.week-balance.negative { background:#fef2f2; color:#ef4444; }
 
-.filters-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
-.filters-bar select, .filters-bar input { padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; }
-.period-nav { display: flex; gap: 8px; align-items: center; margin-left: auto; }
-.period-nav a { padding: 8px 12px; background: #f1f5f9; border-radius: 6px; text-decoration: none; color: #333; font-size: 0.85rem; }
-.period-current { padding: 8px 16px; background: #0f6b7c; color: white; border-radius: 6px; font-weight: 600; }
+/* ── Département ── */
+.dept-banner { background:linear-gradient(135deg,#0f6b7c,#00c9a7); border-radius:12px; padding:20px 24px; margin-bottom:20px; color:white; display:flex; align-items:center; gap:16px; }
+.dept-icon { width:52px; height:52px; background:rgba(255,255,255,.2); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.5rem; }
+.dept-title { font-size:1.25rem; font-weight:800; }
+.dept-subtitle { font-size:.85rem; opacity:.85; }
 
-@media (max-width: 1024px) {
-    .stats-grid { grid-template-columns: repeat(2, 1fr); }
-    .content-grid { grid-template-columns: 1fr; }
-    .employee-meta { margin-left: 0; margin-top: 12px; }
+.employes-table-wrap { overflow-x:auto; }
+.employes-table { width:100%; border-collapse:collapse; font-size:.85rem; }
+.employes-table th { background:#f8fafc; padding:10px 12px; font-size:.65rem; text-transform:uppercase; text-align:center; white-space:nowrap; }
+.employes-table th:first-child { text-align:left; }
+.employes-table td { padding:10px 12px; border-bottom:1px solid #f1f5f9; text-align:center; }
+.employes-table td:first-child { text-align:left; }
+.employes-table tbody tr:hover { background:#f8fafc; }
+.emp-mini-avatar { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#0f6b7c,#00c9a7); display:inline-flex; align-items:center; justify-content:center; font-size:.7rem; font-weight:700; color:white; margin-right:8px; }
+.taux-bar { width:80px; height:6px; background:#e2e8f0; border-radius:3px; display:inline-block; vertical-align:middle; margin-right:6px; }
+.taux-fill { height:100%; border-radius:3px; background:#0f6b7c; }
+.taux-fill.warning { background:#f59e0b; }
+.taux-fill.danger  { background:#ef4444; }
+.btn-emp-detail { font-size:.75rem; padding:4px 10px; background:#f1f5f9; border:none; border-radius:6px; cursor:pointer; text-decoration:none; color:#0f6b7c; font-weight:600; }
+.btn-emp-detail:hover { background:#e2e8f0; }
+
+.filters-bar { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; align-items:center; }
+.filters-bar select, .filters-bar input { padding:8px 12px; border:1px solid #e2e8f0; border-radius:6px; }
+.period-nav { display:flex; gap:8px; align-items:center; margin-left:auto; }
+.period-nav a { padding:8px 12px; background:#f1f5f9; border-radius:6px; text-decoration:none; color:#333; font-size:.85rem; }
+.period-current { padding:8px 16px; background:#0f6b7c; color:white; border-radius:6px; font-weight:600; }
+
+@media(max-width:1024px){
+    .stats-grid { grid-template-columns:repeat(2,1fr); }
+    .content-grid { grid-template-columns:1fr; }
+    .employee-meta { margin-left:0; margin-top:12px; }
 }
 </style>
 @endpush
 
 @section('content')
-{{-- FILTRES --}}
+
+{{-- ── BARRE DE FILTRES ── --}}
 <div class="filters-bar">
-    <form method="GET" action="{{ route('temps.vue-ensemble') }}" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; flex: 1;">
-        <select name="employee_id" onchange="this.form.submit()" style="min-width: 180px;">
-            <option value="">Selection employe...</option>
+    <form method="GET" action="{{ route('temps.vue-ensemble') }}" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;flex:1;">
+
+        <select name="employee_id" onchange="this.form.submit()" style="min-width:180px;">
+            <option value="">Sélection employé...</option>
             @foreach($listeEmployesSelect as $emp)
-                <option value="{{ $emp->id }}" {{ $employeeId == $emp->id ? 'selected' : '' }}>
+                <option value="{{ $emp->id }}" {{ ($employeeId ?? '') == $emp->id ? 'selected' : '' }}>
                     {{ $emp->first_name }} {{ $emp->last_name }}
                 </option>
             @endforeach
         </select>
 
-        <select name="department" onchange="this.form.submit()" style="min-width: 180px;">
-            <option value="">Tous les departements</option>
+        <select name="department" onchange="this.form.submit()" style="min-width:180px;">
+            <option value="">Tous les départements</option>
             @foreach($departments as $dept)
-                <option value="{{ $dept }}" {{ $department == $dept ? 'selected' : '' }}>{{ $dept }}</option>
+                <option value="{{ $dept }}" {{ ($department ?? '') == $dept ? 'selected' : '' }}>{{ $dept }}</option>
             @endforeach
         </select>
 
-        <input type="number" name="annee" value="{{ $annee }}" min="2020" max="2030" style="width: 80px;">
+        <input type="number" name="annee" value="{{ $annee }}" min="2020" max="2030" style="width:80px;">
         <input type="hidden" name="mois" value="{{ $mois }}">
         <button type="submit" class="btn btn-primary btn-sm">Rechercher</button>
     </form>
 
     <div class="period-nav">
-        <a href="{{ route('temps.vue-ensemble', ['mois' => $moisPrecedent->month, 'annee' => $moisPrecedent->year, 'employee_id' => $employeeId]) }}">&larr; Prec.</a>
-        <span class="period-current">{{ \Carbon\Carbon::create($annee, $mois, 1)->translatedFormat('F Y') }}</span>
-        <a href="{{ route('temps.vue-ensemble', ['mois' => $moisSuivant->month, 'annee' => $moisSuivant->year, 'employee_id' => $employeeId]) }}">Suiv. &rarr;</a>
+        <a href="{{ route('temps.vue-ensemble', ['mois' => $moisPrecedent->month, 'annee' => $moisPrecedent->year, 'employee_id' => $employeeId ?? '', 'department' => $department ?? '']) }}">&larr; Préc.</a>
+      <span class="period-current">
+    {{ \Carbon\Carbon::create($annee, $mois, 1)->locale('fr')->translatedFormat('F Y') }}
+</span>
+        <a href="{{ route('temps.vue-ensemble', ['mois' => $moisSuivant->month, 'annee' => $moisSuivant->year, 'employee_id' => $employeeId ?? '', 'department' => $department ?? '']) }}">Suiv. &rarr;</a>
     </div>
 </div>
 
-{{-- SI AUCUN EMPLOYE --}}
-@if(!$employee || !$employee->id)
-<div class="card">
-    <div class="card-body" style="text-align: center; padding: 40px;">
-        <div style="font-size: 1.1rem; margin-bottom: 8px;">Selectionnez un employe</div>
-        <div style="color: #64748b;">Utilisez les filtres ci-dessus pour selectionner un employe.</div>
-    </div>
-</div>
-@else
 
-{{-- INFORMATIONS EMPLOYE --}}
-<div class="employee-card">
-    <div class="employee-avatar">
-        {{ strtoupper(substr($employee->first_name ?? 'U', 0, 1)) }}{{ strtoupper(substr($employee->last_name ?? 'U', 0, 1)) }}
-    </div>
-    <div class="employee-info">
-        <h3>{{ $employee->first_name }} {{ $employee->last_name }}</h3>
-        <p>{{ $employee->position ?? 'Employe' }} | {{ $employee->department ?? 'Service' }} | {{ $employee->contract_type ?? 'CDI' }}</p>
-    </div>
-    <div class="employee-meta">
-        <div>
-            <div class="meta-value">{{ $employee->work_hours ?? 35 }}h</div>
-            <div class="meta-label">Heures/semaine</div>
-        </div>
-        <div>
-            <div class="meta-value">{{ number_format($compteurMois->heures_planifiees ?? 0, 0) }}</div>
-            <div class="meta-label">Planning</div>
-        </div>
+
+@if($modeDepartement && $statsGlobalesDept)
+
+{{-- Bandeau département --}}
+<div class="dept-banner">
+    <div class="dept-icon">🏥</div>
+    <div>
+        <div class="dept-title">Département : {{ $nomDepartement }}</div>
+        <div class="dept-subtitle">{{ $statsGlobalesDept->nb_employes }} employé{{ $statsGlobalesDept->nb_employes > 1 ? 's' : '' }} · {{ \Carbon\Carbon::create($annee, $mois, 1)->translatedFormat('F Y') }}</div>
     </div>
 </div>
 
-{{-- STATS --}}
-<div class="stats-grid">
+{{-- Stats agrégées --}}
+<div class="stats-grid" style="grid-template-columns:repeat(5,1fr);">
+    <div class="stat-card purple">
+        <div class="stat-value" style="color:#8b5cf6;">{{ $statsGlobalesDept->nb_employes }}</div>
+        <div class="stat-label">Employés</div>
+    </div>
     <div class="stat-card primary">
-        <div class="stat-value" style="color: #0f6b7c;">{{ number_format($compteurMois->heures_realisees ?? 0, 1) }}h</div>
-        <div class="stat-label">Heures realisees</div>
+        <div class="stat-value" style="color:#0f6b7c;">{{ number_format($statsGlobalesDept->heures_realisees, 1) }}h</div>
+        <div class="stat-label">Heures réalisées</div>
     </div>
     <div class="stat-card info">
-        <div class="stat-value">{{ number_format($compteurMois->heures_planifiees ?? 0, 0) }}h</div>
-        <div class="stat-label">Heures planifiees</div>
+        <div class="stat-value">{{ number_format($statsGlobalesDept->heures_planifiees, 1) }}h</div>
+        <div class="stat-label">Heures planifiées</div>
     </div>
     <div class="stat-card warning">
-        <div class="stat-value" style="color: #f59e0b;">{{ number_format($compteurMois->heures_supplementaires ?? 0, 1) }}h</div>
+        <div class="stat-value" style="color:#f59e0b;">{{ number_format($statsGlobalesDept->heures_supplementaires, 1) }}h</div>
         <div class="stat-label">Heures supp.</div>
     </div>
-    <div class="stat-card {{ ($compteurMois->ecart ?? 0) >= 0 ? 'success' : 'warning' }}">
-        <div class="stat-value {{ ($compteurMois->ecart ?? 0) >= 0 ? 'positive' : 'negative' }}">
-            {{ ($compteurMois->ecart ?? 0) >= 0 ? '+' : '' }}{{ number_format($compteurMois->ecart ?? 0, 1) }}h
+    <div class="stat-card {{ $statsGlobalesDept->ecart >= 0 ? 'success' : 'warning' }}">
+        <div class="stat-value {{ $statsGlobalesDept->ecart >= 0 ? 'positive' : 'negative' }}">
+            {{ $statsGlobalesDept->ecart >= 0 ? '+' : '' }}{{ number_format($statsGlobalesDept->ecart, 1) }}h
         </div>
-        <div class="stat-label">Ecart</div>
+        <div class="stat-label">Écart global</div>
     </div>
 </div>
 
-{{-- CONTENU PRINCIPAL --}}
+{{-- Graphique + récap --}}
 <div class="content-grid">
     <div class="card">
-        <div class="card-header">Heures travaillees par jour</div>
+        <div class="card-header">Évolution annuelle {{ $annee }} — {{ $nomDepartement }}</div>
         <div class="card-body">
             <div class="chart-container">
-                <canvas id="dailyChart"></canvas>
+                <canvas id="annualChartDept"></canvas>
             </div>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-header">Recapitulatif du mois</div>
-        <div class="card-body" style="padding: 0;">
+        <div class="card-header">Récapitulatif du mois</div>
+        <div class="card-body" style="padding:0;">
             <table class="data-table">
                 <thead>
-                    <tr><th>Type</th><th>Plan.</th><th>Realise</th><th>Ecart</th></tr>
+                    <tr><th>Indicateur</th><th>Valeur</th></tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>Travaillees</td>
-                        <td>{{ number_format($compteurMois->heures_planifiees ?? 0, 1) }}h</td>
-                        <td style="font-weight: 700; color: #0f6b7c;">{{ number_format($compteurMois->heures_realisees ?? 0, 1) }}h</td>
-                        <td class="{{ ($compteurMois->heures_realisees - $compteurMois->heures_planifiees) >= 0 ? 'positive' : 'negative' }}">
-                            {{ ($compteurMois->heures_realisees - $compteurMois->heures_planifiees) >= 0 ? '+' : '' }}{{ number_format(($compteurMois->heures_realisees ?? 0) - ($compteurMois->heures_planifiees ?? 0), 1) }}h
+                    <tr><td>Heures planifiées</td><td>{{ number_format($statsGlobalesDept->heures_planifiees, 1) }}h</td></tr>
+                    <tr><td>Heures réalisées</td><td style="color:#0f6b7c;font-weight:700;">{{ number_format($statsGlobalesDept->heures_realisees, 1) }}h</td></tr>
+                    <tr><td>Heures supplémentaires</td><td style="color:#f59e0b;font-weight:700;">{{ number_format($statsGlobalesDept->heures_supplementaires, 1) }}h</td></tr>
+                    <tr><td>Taux de réalisation</td>
+                        <td>
+                            <div class="taux-bar"><div class="taux-fill {{ $statsGlobalesDept->taux_realisation < 70 ? 'danger' : ($statsGlobalesDept->taux_realisation < 90 ? 'warning' : '') }}" style="width:{{ min($statsGlobalesDept->taux_realisation, 100) }}%"></div></div>
+                            {{ $statsGlobalesDept->taux_realisation }}%
                         </td>
                     </tr>
-                    <tr>
-                        <td>Non trav.</td>
-                        <td>0h</td>
-                        <td>0h</td>
-                        <td>0h</td>
-                    </tr>
                     <tr class="total-row">
-                        <td>Total</td>
-                        <td style="font-weight: 700;">{{ number_format($compteurMois->heures_planifiees ?? 0, 1) }}h</td>
-                        <td style="font-weight: 700;">{{ number_format(($compteurMois->heures_realisees ?? 0) + ($compteurMois->heures_supplementaires ?? 0), 1) }}h</td>
-                        <td style="font-weight: 700;" class="{{ ($compteurMois->ecart ?? 0) >= 0 ? 'positive' : 'negative' }}">
-                            {{ ($compteurMois->ecart ?? 0) >= 0 ? '+' : '' }}{{ number_format($compteurMois->ecart ?? 0, 1) }}h
+                        <td>Écart</td>
+                        <td class="{{ $statsGlobalesDept->ecart >= 0 ? 'positive' : 'negative' }}">
+                            {{ $statsGlobalesDept->ecart >= 0 ? '+' : '' }}{{ number_format($statsGlobalesDept->ecart, 1) }}h
                         </td>
                     </tr>
                 </tbody>
@@ -221,17 +196,17 @@
     </div>
 </div>
 
-{{-- COMPTEURS HEBDOMADAIRES --}}
-<div style="font-weight: 700; margin: 20px 0 14px;">Compteurs hebdomadaires</div>
+{{-- Compteurs hebdomadaires département --}}
+<div style="font-weight:700;margin:20px 0 14px;">Compteurs hebdomadaires — {{ $nomDepartement }}</div>
 <div class="weeks-grid">
-    @foreach($semaines as $semaine)
+    @foreach($semainerDept as $semaine)
     <div class="week-card">
         <div class="week-header">
             <span>Semaine {{ $semaine['numero'] }}</span>
             <span>{{ $semaine['debut'] }} - {{ $semaine['fin'] }}</span>
         </div>
         <table class="week-table">
-            <tr><th>Plan</th><th>Real</th><th>Solde</th></tr>
+            <tr><th>Plan</th><th>Réal</th><th>Solde</th></tr>
             <tr>
                 <td>{{ $semaine['heures_planifiees'] }}h</td>
                 <td>{{ number_format($semaine['heures_realisees'], 1) }}h</td>
@@ -248,34 +223,224 @@
     @endforeach
 </div>
 
-{{-- EVOLUTION ANNUELLE --}}
-<div class="card" style="margin-top: 20px;">
-    <div class="card-header">Evolution annuelle {{ $annee }}</div>
-    <div class="card-body">
-        <div style="height: 260px;">
-            <canvas id="annualChart"></canvas>
+{{-- Tableau des employés --}}
+<div class="card" style="margin-top:20px;">
+    <div class="card-header">
+        <span>Détail par employé</span>
+        <span style="font-size:.8rem;color:#64748b;font-weight:400;">{{ $statsGlobalesDept->nb_employes }} employé(s)</span>
+    </div>
+    <div class="card-body" style="padding:0;">
+        <div class="employes-table-wrap">
+            <table class="employes-table">
+                <thead>
+                    <tr>
+                        <th>Employé</th>
+                        <th>Poste</th>
+                        <th>Planifiées</th>
+                        <th>Réalisées</th>
+                        <th>Supp.</th>
+                        <th>Écart</th>
+                        <th>Taux</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($employesDept as $emp)
+                    <tr>
+                        <td>
+                            <div style="display:flex;align-items:center;">
+                                <span class="emp-mini-avatar">{{ $emp['initiales'] }}</span>
+                                <span style="font-weight:600;">{{ $emp['nom'] }}</span>
+                            </div>
+                        </td>
+                        <td style="color:#64748b;">{{ $emp['poste'] }}</td>
+                        <td>{{ number_format($emp['planifiees'], 1) }}h</td>
+                        <td style="color:#0f6b7c;font-weight:700;">{{ number_format($emp['realisees'], 1) }}h</td>
+                        <td style="color:#f59e0b;">{{ number_format($emp['supp'], 1) }}h</td>
+                        <td class="{{ $emp['ecart'] >= 0 ? 'positive' : 'negative' }}">
+                            {{ $emp['ecart'] >= 0 ? '+' : '' }}{{ number_format($emp['ecart'], 1) }}h
+                        </td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:4px;">
+                                <div class="taux-bar">
+                                    <div class="taux-fill {{ $emp['taux'] < 70 ? 'danger' : ($emp['taux'] < 90 ? 'warning' : '') }}"
+                                         style="width:{{ min($emp['taux'], 100) }}%"></div>
+                                </div>
+                                <span style="font-size:.75rem;">{{ $emp['taux'] }}%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <a href="{{ route('temps.vue-ensemble', ['employee_id' => $emp['id'], 'annee' => $annee, 'mois' => $mois]) }}"
+                               class="btn-emp-detail">Détail →</a>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+                {{-- Ligne totaux --}}
+                <tfoot>
+                    <tr class="total-row">
+                        <td colspan="2" style="text-align:left;">Total département</td>
+                        <td>{{ number_format($statsGlobalesDept->heures_planifiees, 1) }}h</td>
+                        <td style="color:#0f6b7c;">{{ number_format($statsGlobalesDept->heures_realisees, 1) }}h</td>
+                        <td style="color:#f59e0b;">{{ number_format($statsGlobalesDept->heures_supplementaires, 1) }}h</td>
+                        <td class="{{ $statsGlobalesDept->ecart >= 0 ? 'positive' : 'negative' }}">
+                            {{ $statsGlobalesDept->ecart >= 0 ? '+' : '' }}{{ number_format($statsGlobalesDept->ecart, 1) }}h
+                        </td>
+                        <td colspan="2">{{ $statsGlobalesDept->taux_realisation }}%</td>
+                    </tr>
+                </tfoot>
+            </table>
         </div>
     </div>
 </div>
 
+{{-- ══════════════════════════════════════════════════════
+     MODE EMPLOYÉ INDIVIDUEL
+══════════════════════════════════════════════════════ --}}
+@elseif(!$modeDepartement && $employee && $employee->id)
+
+{{-- Informations employé --}}
+<div class="employee-card">
+    <div class="employee-avatar">
+        {{ strtoupper(substr($employee->first_name ?? 'U', 0, 1)) }}{{ strtoupper(substr($employee->last_name ?? 'U', 0, 1)) }}
+    </div>
+    <div class="employee-info">
+        <h3>{{ $employee->first_name }} {{ $employee->last_name }}</h3>
+        <p>{{ $employee->position ?? 'Employé' }} | {{ $employee->department ?? 'Service' }} | {{ $employee->contract_type ?? 'CDI' }}</p>
+    </div>
+    <div class="employee-meta">
+        <div>
+            <div class="meta-value">{{ $employee->work_hours ?? 35 }}h</div>
+            <div class="meta-label">Heures/semaine</div>
+        </div>
+        <div>
+            <div class="meta-value">{{ number_format($compteurMois->heures_planifiees ?? 0, 0) }}h</div>
+            <div class="meta-label">Planning</div>
+        </div>
+    </div>
+</div>
+
+{{-- Stats individuelles --}}
+<div class="stats-grid">
+    <div class="stat-card primary">
+        <div class="stat-value" style="color:#0f6b7c;">{{ number_format($compteurMois->heures_realisees ?? 0, 1) }}h</div>
+        <div class="stat-label">Heures réalisées</div>
+    </div>
+    <div class="stat-card info">
+        <div class="stat-value">{{ number_format($compteurMois->heures_planifiees ?? 0, 1) }}h</div>
+        <div class="stat-label">Heures planifiées</div>
+    </div>
+    <div class="stat-card warning">
+        <div class="stat-value" style="color:#f59e0b;">{{ number_format($compteurMois->heures_supplementaires ?? 0, 1) }}h</div>
+        <div class="stat-label">Heures supp.</div>
+    </div>
+    <div class="stat-card {{ ($compteurMois->ecart ?? 0) >= 0 ? 'success' : 'warning' }}">
+        <div class="stat-value {{ ($compteurMois->ecart ?? 0) >= 0 ? 'positive' : 'negative' }}">
+            {{ ($compteurMois->ecart ?? 0) >= 0 ? '+' : '' }}{{ number_format($compteurMois->ecart ?? 0, 1) }}h
+        </div>
+        <div class="stat-label">Écart</div>
+    </div>
+</div>
+
+{{-- Graphiques employé --}}
+<div class="content-grid">
+    <div class="card">
+        <div class="card-header">Heures travaillées par jour</div>
+        <div class="card-body">
+            <div class="chart-container"><canvas id="dailyChart"></canvas></div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">Récapitulatif du mois</div>
+        <div class="card-body" style="padding:0;">
+            <table class="data-table">
+                <thead><tr><th>Type</th><th>Plan.</th><th>Réalisé</th><th>Écart</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td>Travaillées</td>
+                        <td>{{ number_format($compteurMois->heures_planifiees ?? 0, 1) }}h</td>
+                        <td style="font-weight:700;color:#0f6b7c;">{{ number_format($compteurMois->heures_realisees ?? 0, 1) }}h</td>
+                        <td class="{{ (($compteurMois->heures_realisees ?? 0) - ($compteurMois->heures_planifiees ?? 0)) >= 0 ? 'positive' : 'negative' }}">
+                            {{ (($compteurMois->heures_realisees ?? 0) - ($compteurMois->heures_planifiees ?? 0)) >= 0 ? '+' : '' }}{{ number_format(($compteurMois->heures_realisees ?? 0) - ($compteurMois->heures_planifiees ?? 0), 1) }}h
+                        </td>
+                    </tr>
+                    <tr><td>Non trav.</td><td>0h</td><td>0h</td><td>0h</td></tr>
+                    <tr class="total-row">
+                        <td>Total</td>
+                        <td>{{ number_format($compteurMois->heures_planifiees ?? 0, 1) }}h</td>
+                        <td>{{ number_format(($compteurMois->heures_realisees ?? 0) + ($compteurMois->heures_supplementaires ?? 0), 1) }}h</td>
+                        <td class="{{ ($compteurMois->ecart ?? 0) >= 0 ? 'positive' : 'negative' }}">
+                            {{ ($compteurMois->ecart ?? 0) >= 0 ? '+' : '' }}{{ number_format($compteurMois->ecart ?? 0, 1) }}h
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{{-- Semaines employé --}}
+<div style="font-weight:700;margin:20px 0 14px;">Compteurs hebdomadaires</div>
+<div class="weeks-grid">
+    @foreach($semaines as $semaine)
+    <div class="week-card">
+        <div class="week-header">
+            <span>Semaine {{ $semaine['numero'] }}</span>
+            <span>{{ $semaine['debut'] }} - {{ $semaine['fin'] }}</span>
+        </div>
+        <table class="week-table">
+            <tr><th>Plan</th><th>Réal</th><th>Solde</th></tr>
+            <tr>
+                <td>{{ $semaine['heures_planifiees'] }}h</td>
+                <td>{{ number_format($semaine['heures_realisees'], 1) }}h</td>
+                <td class="{{ $semaine['solde'] >= 0 ? 'positive' : 'negative' }}">
+                    {{ $semaine['solde'] >= 0 ? '+' : '' }}{{ number_format($semaine['solde'], 1) }}h
+                </td>
+            </tr>
+        </table>
+        <div class="week-balance {{ $semaine['solde'] >= 0 ? 'positive' : 'negative' }}">
+            <span>Solde</span>
+            <span>{{ $semaine['solde'] >= 0 ? '+' : '' }}{{ number_format($semaine['solde'], 1) }}h</span>
+        </div>
+    </div>
+    @endforeach
+</div>
+
+{{-- Évolution annuelle employé --}}
+<div class="card" style="margin-top:20px;">
+    <div class="card-header">Évolution annuelle {{ $annee }}</div>
+    <div class="card-body">
+        <div style="height:260px;"><canvas id="annualChart"></canvas></div>
+    </div>
+</div>
+
+@else
+{{-- Aucune sélection --}}
+<div class="card">
+    <div class="card-body" style="text-align:center;padding:40px;">
+        <div style="font-size:2rem;margin-bottom:12px;">👆</div>
+        <div style="font-size:1.1rem;margin-bottom:8px;font-weight:600;">Sélectionnez un employé ou un département</div>
+        <div style="color:#64748b;">Utilisez les filtres ci-dessus pour afficher les données.</div>
+    </div>
+</div>
 @endif
+
 @endsection
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Graphique quotidien
-    const joursDetails = @json($joursDetails);
-    const joursLabels = joursDetails.map(d => d.jour);
-    const joursHeures = joursDetails.map(d => d.total);
+document.addEventListener('DOMContentLoaded', function () {
 
+    // ── Graphique quotidien (mode employé) ──────────────────────────────────
+    const joursDetails = @json($joursDetails ?? []);
     const dailyCtx = document.getElementById('dailyChart');
     if (dailyCtx && joursDetails.length > 0) {
+        const joursHeures = joursDetails.map(d => d.total);
         new Chart(dailyCtx, {
             type: 'bar',
             data: {
-                labels: joursLabels,
+                labels: joursDetails.map(d => d.jour),
                 datasets: [{
                     label: 'Heures',
                     data: joursHeures,
@@ -284,8 +449,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
+                responsive: true, maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
                     y: { beginAtZero: true, max: 12 },
@@ -295,26 +459,43 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Graphique annuel
-    const annualData = @json($graphiqueMois);
-    const annualLabels = annualData.map(d => d.mois);
-    const annualRealisees = annualData.map(d => d.heures_realisees);
-    const annualPlanif = annualData.map(d => d.heures_planifiees);
-
+    // ── Graphique annuel employé ────────────────────────────────────────────
+    const annualData = @json($graphiqueMois ?? []);
     const annualCtx = document.getElementById('annualChart');
-    if (annualCtx) {
+    if (annualCtx && annualData.length > 0) {
         new Chart(annualCtx, {
             type: 'bar',
             data: {
-                labels: annualLabels,
+                labels: annualData.map(d => d.mois),
                 datasets: [
-                    { label: 'Heures realisees', data: annualRealisees, backgroundColor: '#0f6b7c', borderRadius: 4 },
-                    { label: 'Planning', data: annualPlanif, backgroundColor: '#e2e8f0', borderRadius: 4 }
+                    { label: 'Heures réalisées', data: annualData.map(d => d.heures_realisees), backgroundColor: '#0f6b7c', borderRadius: 4 },
+                    { label: 'Planning',          data: annualData.map(d => d.heures_planifiees), backgroundColor: '#e2e8f0', borderRadius: 4 }
                 ]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    // ── Graphique annuel département ────────────────────────────────────────
+    const annualDeptData = @json($graphiqueMoisDept ?? []);
+    const annualDeptCtx = document.getElementById('annualChartDept');
+    if (annualDeptCtx && annualDeptData.length > 0) {
+        new Chart(annualDeptCtx, {
+            type: 'bar',
+            data: {
+                labels: annualDeptData.map(d => d.mois),
+                datasets: [
+                    { label: 'Heures réalisées', data: annualDeptData.map(d => d.heures_realisees), backgroundColor: '#0f6b7c', borderRadius: 4 },
+                    { label: 'Planning',          data: annualDeptData.map(d => d.heures_planifiees), backgroundColor: '#e2e8f0', borderRadius: 4 },
+                    { label: 'Heures supp.',      data: annualDeptData.map(d => d.heures_supp),       backgroundColor: '#f59e0b', borderRadius: 4 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
                 plugins: { legend: { position: 'bottom' } },
                 scales: { y: { beginAtZero: true } }
             }

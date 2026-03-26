@@ -23,7 +23,8 @@ class WeekTemplateController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+'name' => 'required|string|max:255',
+            'department' => 'nullable|string|max:255',
             'monday_shift_type' => 'nullable|string',
             'monday_start' => 'nullable',
             'monday_end' => 'nullable',
@@ -69,16 +70,28 @@ class WeekTemplateController extends Controller
     {
         $validated = $request->validate([
             'template_id' => 'required|exists:week_templates,id',
-            'employee_id' => 'required|exists:employees,id',
+            'employee_id' => 'nullable|exists:employees,id',
+            'department_target' => 'nullable|string',
             'start_date' => 'required|date',
         ]);
 
         $template = WeekTemplate::findOrFail($validated['template_id']);
-        $employee = Employee::findOrFail($validated['employee_id']);
         $startDate = Carbon::parse($validated['start_date']);
 
-        $template->applyToEmployee($validated['employee_id'], $startDate);
+        if ($validated['department_target']) {
+            $employees = Employee::where('department', $validated['department_target'])
+                ->where('status', 'active')
+                ->get();
+            
+            foreach ($employees as $employee) {
+                $template->applyToEmployee($employee->id, $startDate);
+            }
 
-        return back()->with('success', 'Semaine type appliquée au planning de ' . $employee->full_name);
+            return back()->with('success', "Semaine type appliquée à **{$employees->count()} employés** du département {$validated['department_target']}");
+        } else {
+            $employee = Employee::findOrFail($validated['employee_id']);
+            $template->applyToEmployee($validated['employee_id'], $startDate);
+            return back()->with('success', 'Semaine type appliquée à ' . $employee->full_name);
+        }
     }
 }

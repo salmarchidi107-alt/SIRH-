@@ -394,10 +394,10 @@
        
         <div class="view-toggle">
             <button class="{{ (!isset($viewMode) || $viewMode == 'calendar') ? 'active' : '' }}" onclick="switchView('calendar')">
-                📅 Calendrier
+                Calendrier
             </button>
             <button class="{{ $viewMode == 'list' ? 'active' : '' }}" onclick="switchView('list')">
-                📋 Liste
+                Liste
             </button>
         </div>
         

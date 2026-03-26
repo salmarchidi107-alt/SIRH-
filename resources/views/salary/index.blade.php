@@ -38,7 +38,7 @@
         <a href="{{ route('variables.index', ['month'=>$month,'year'=>$year]) }}" class="btn btn-ghost">
             Éléments variables
         </a>
-        <a href="{{ route('payroll.settings') }}" class="btn btn-ghost">Paramétrage</a>
+        
     </div>
 </div>
 
@@ -106,11 +106,12 @@
 {{-- ═══ Tableau employés ══════════════════════════════════════════ --}}
 <div class="card">
     <div class="card-header">
-        <div class="card-title">Employés — {{ $employees->count() }} au total</div>
+<div class="card-title">Employés — {{ $employees->count() }} {{ $status ? ucfirst($status) : 'au total' }}</div>
         <div style="display:flex;gap:8px">
-            <span class="badge badge-warning">{{ $summary['count_draft'] }} brouillons</span>
-            <span class="badge badge-success">{{ $summary['count_validated'] }} validés</span>
-            <span class="badge badge-info">{{ $summary['count_paid'] }} payés</span>
+            <a href="{{ route('salary.index', array_merge(request()->only(['month', 'year']), ['status' => null])) }}" class="badge badge-neutral {{ ($status ?? null) === null ? 'active' : '' }}" style="{{ ($status ?? null) === null ? 'font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);' : '' }}">Tous ({{ $summary['count'] }})</a>
+            <a href="{{ route('salary.index', array_merge(request()->only(['month', 'year']), ['status' => 'draft'])) }}" class="badge badge-warning {{ $status == 'draft' ? 'active' : '' }}" style="{{ $status == 'draft' ? 'font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);' : '' }}">{{ $summary['count_draft'] }} brouillons</a>
+            <a href="{{ route('salary.index', array_merge(request()->only(['month', 'year']), ['status' => 'validated'])) }}" class="badge badge-success {{ $status == 'validated' ? 'active' : '' }}" style="{{ $status == 'validated' ? 'font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);' : '' }}">{{ $summary['count_validated'] }} validés</a>
+            <a href="{{ route('salary.index', array_merge(request()->only(['month', 'year']), ['status' => 'paid'])) }}" class="badge badge-info {{ $status == 'paid' ? 'active' : '' }}" style="{{ $status == 'paid' ? 'font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);' : '' }}">{{ $summary['count_paid'] }} rémunérer</a>
         </div>
     </div>
     <div class="card-body" style="padding:0">

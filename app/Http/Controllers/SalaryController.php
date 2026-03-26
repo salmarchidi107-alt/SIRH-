@@ -7,6 +7,8 @@ use App\Models\Salary;
 use App\Services\PayrollService;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Exports\SalariesExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class SalaryController extends Controller
 {
@@ -39,16 +41,26 @@ class SalaryController extends Controller
     {
         $month = (int) $request->get('month', now()->month);
         $year = (int) $request->get('year', now()->year);
+        $status = $request->get('status');
 
-        $employees = Employee::with([
+        $query = Employee::with([
             'salaries' => fn($q) => $q->where('month', $month)->where('year', $year),
-        ])
-        ->orderByRaw("CONCAT(first_name, ' ', last_name) ASC")
-        ->get();
+        ]);
+
+        if ($status) {
+            $query->whereHas('salaries', function ($q) use ($status, $month, $year) {
+                $q->where('status', $status)
+                  ->where('month', $month)
+                  ->where('year', $year);
+            });
+        }
+
+        $employees = $query->orderByRaw("CONCAT(first_name, ' ', last_name) ASC")
+            ->get();
 
         $summary = $this->payrollService->getMonthlySummary($month, $year);
 
-        return view('salary.index', compact('employees', 'month', 'year', 'summary'));
+        return view('salary.index', compact('employees', 'month', 'year', 'summary', 'status'));
     }
 
     public function show(Employee $employee)
@@ -195,4 +207,10 @@ class SalaryController extends Controller
             ])
             ->with('success', "Paie générée pour $count employés.");
     }
+
+    public function export()
+    {
+        return Excel::download(new SalariesExport, 'salaires.xlsx');
+    }
 }
+

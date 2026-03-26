@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Exports\TrombinoscopeExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class TrombinoscopeController extends Controller
 {
@@ -25,11 +27,16 @@ class TrombinoscopeController extends Controller
         }
 
 $employees = $query->where('status', 'active')->get();
-        $departments = Employee::distinct()->pluck('department');
-        $departments = Employee::distinct()->pluck('department');
+$departments = Employee::distinct()->pluck('department');
 
 
         return view('trombinoscope.index', compact('employees', 'departments'));
 
+
+    }
+
+    public function export()
+    {
+        return Excel::download(new TrombinoscopeExport, 'trombinoscope.xlsx');
     }
 }

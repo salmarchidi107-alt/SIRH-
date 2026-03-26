@@ -16,12 +16,17 @@
         </svg>
         Nouvel Employé
     </a>
-    @endif
-</div>
+@endif
+        
+    </div>
 
 <!-- Filter Buttons: Tous / Actifs -->
 <div class="filters-bar">
-    <div style="display:flex;gap:8px">
+
+    <div style="display:flex;gap:8px;flex-direction:row-reverse">
+        @if(in_array(auth()->user()->role ?? '', ['admin', 'rh']))
+       
+        @endif
         <a href="{{ route('employees.index', ['filter' => 'all']) }}"
            class="btn {{ $filter == 'all' ? 'btn-primary' : 'btn-outline' }}">
             Tous
@@ -56,9 +61,9 @@
         <table>
             <thead>
                 <tr>
-
                     <th>Matricule</th>
                     <th>Collaborateur</th>
+                    <th>Service</th>
                     <th>Fonction</th>
                     <th>Contrat</th>
                     <th>Statut</th>
@@ -87,6 +92,9 @@
                                 <div class="table-name">{{ $employee->full_name }}</div>
                             </div>
                         </div>
+                    </td>
+                    <td>
+                        <span class="badge badge-neutral">{{ $employee->department ?? 'N/A' }}</span>
                     </td>
                     <td class="text-sm">{{ $employee->position }}</td>
                     <td>

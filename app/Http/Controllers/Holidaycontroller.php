@@ -13,10 +13,12 @@ class HolidayController extends Controller
     {
         $response = Http::withoutVerifying()->withHeaders([
             'accept'    => 'application/json',
-            'x-api-key' => config('services.calendarapi.key'),
+            'X-API-KEY' => 'ff0292833c26ea7056ebc413bfbcaaa48f75fbd235c85615',
         ])->get("https://calendar-api.ma/api/v1/holidays/2026", [
             'holiday_type' => 'ND',
         ]);
+
+
 
         return response()->json([
             'status'  => $response->status(),
@@ -35,10 +37,12 @@ class HolidayController extends Controller
            
             $response = Http::withoutVerifying()->withHeaders([
                 'accept'    => 'application/json',
-                'x-api-key' => config('services.calendarapi.key'),
+            'X-API-KEY' => 'ff0292833c26ea7056ebc413bfbcaaa48f75fbd235c85615',
             ])->get("https://calendar-api.ma/api/v1/holidays/{$year}", [
                 'holiday_type' => 'ND',
             ]);
+
+
 
             if ($response->failed()) {
                 return null;

@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\Auth;
 use App\Mail\AbsenceApproved;
 use App\Mail\AbsenceRejected;
 use Carbon\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\AbsencesExport;
+use App\Exports\CountersExport;
+use App\Exports\DroitsAbsenceExport;
 
 class AbsenceController extends Controller
 {
@@ -197,6 +201,63 @@ class AbsenceController extends Controller
         return back()->with('success', 'Demande rejetée. Un email a été envoyé à l\'employé.');
     }
 
+    public function export()
+    {
+        return Excel::download(new AbsencesExport(), 'demandes_absences.xlsx');
+    }
+
+    public function countersExport(Request $request)
+    {
+        $year = $request->get('year', now()->year);
+        $employees = Employee::where('status', 'active')
+            ->orderBy('department')
+            ->orderBy('last_name')
+            ->get();
+
+        $countersData = [];
+
+        foreach ($employees as $emp) {
+            $hireDate = $emp->hire_date ? Carbon::parse($emp->hire_date) : Carbon::create($year, 1, 1);
+            $startOfYear = Carbon::create($year, 1, 1);
+            $endOfYear   = Carbon::create($year, 12, 31);
+
+            $workStart = $hireDate->gt($startOfYear) ? $hireDate : $startOfYear;
+            $workEnd   = now()->lt($endOfYear) ? now() : $endOfYear;
+            $monthsWorked = max(0, $workStart->floatDiffInMonths($workEnd));
+
+            $acquis = floor($monthsWorked * 1.5);
+
+            $taken = Absence::where('employee_id', $emp->id)
+                ->where('status', 'approved')
+                ->whereYear('start_date', $year)
+                ->whereIn('type', ['conge_annuel', 'conge_sans_solde', 'conge_maladie'])
+                ->sum('days');
+
+            $solde = $acquis - $taken;
+
+            $pending = Absence::where('employee_id', $emp->id)
+                ->where('status', 'pending')
+                ->whereYear('start_date', $year)
+                ->sum('days');
+
+            $countersData[] = [
+                'employee'      => $emp,
+                'months_worked' => floor($monthsWorked),
+                'acquis'        => $acquis,
+                'taken'         => $taken,
+                'pending'       => $pending,
+                'solde'         => round($solde, 2),
+                'solde_if_pending' => round($solde - $pending, 2),
+            ];
+        }
+
+        return Excel::download(new CountersExport($countersData, $year), "compteurs_absences_{$year}.xlsx");
+    }
+
+    public function droitsExport()
+    {
+        return Excel::download(new DroitsAbsenceExport(), 'droits_absences.xlsx');
+    }
 
     public function calendar(Request $request)
     {
@@ -277,31 +338,47 @@ class AbsenceController extends Controller
         ));
     }
 
+
+
+
     public function counters(Request $request)
     {
         $year = $request->get('year', now()->year);
+        $search = $request->get('search');
+        $department = $request->get('department');
 
-        $employees = Employee::where('status', 'active')
+        $query = Employee::where('status', 'active')
             ->orderBy('department')
-            ->orderBy('last_name')
-            ->get();
+            ->orderBy('last_name');
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                  ->orWhere('last_name', 'like', "%{$search}%")
+                  ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"])
+                  ->orWhere('matricule', 'like', "%{$search}%");
+            });
+        }
+
+        if ($department) {
+            $query->where('department', $department);
+        }
+
+        $employees = $query->get();
+        $departments = Employee::where('status', 'active')->distinct()->pluck('department')->filter()->sort()->values();
 
         $countersData = [];
 
         foreach ($employees as $emp) {
-
             $hireDate = $emp->hire_date ? Carbon::parse($emp->hire_date) : Carbon::create($year, 1, 1);
             $startOfYear = Carbon::create($year, 1, 1);
             $endOfYear   = Carbon::create($year, 12, 31);
-
 
             $workStart = $hireDate->gt($startOfYear) ? $hireDate : $startOfYear;
             $workEnd   = now()->lt($endOfYear) ? now() : $endOfYear;
             $monthsWorked = max(0, $workStart->floatDiffInMonths($workEnd));
 
-
             $acquis = floor($monthsWorked * 1.5);
-
 
             $taken = Absence::where('employee_id', $emp->id)
                 ->where('status', 'approved')
@@ -309,9 +386,7 @@ class AbsenceController extends Controller
                 ->whereIn('type', ['conge_annuel', 'conge_sans_solde', 'conge_maladie'])
                 ->sum('days');
 
-
             $solde = $acquis - $taken;
-
 
             $pending = Absence::where('employee_id', $emp->id)
                 ->where('status', 'pending')
@@ -320,7 +395,7 @@ class AbsenceController extends Controller
 
             $countersData[] = [
                 'employee'      => $emp,
-'months_worked' => floor($monthsWorked),
+                'months_worked' => floor($monthsWorked),
                 'acquis'        => $acquis,
                 'taken'         => $taken,
                 'pending'       => $pending,
@@ -329,7 +404,8 @@ class AbsenceController extends Controller
             ];
         }
 
-        return view('absences.counters', compact('countersData', 'year'));
+        return view('absences.counters', compact('countersData', 'year', 'search', 'department', 'departments'));
     }
 }
+
 

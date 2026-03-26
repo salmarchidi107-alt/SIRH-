@@ -115,6 +115,11 @@
                     </select>
                 </div>
                 <div class="form-group">
+                    <label>Site de travail</label>
+                    <input type="text" name="work_site" class="form-control" value="{{ old('work_site') }}" placeholder="ex: Hôpital Central, Clinique Sud">
+                    @error('work_site') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+                </div>
+                <div class="form-group">
                     <label>Compétences / Expérience</label>
                     <select name="skills" class="form-control">
                         <option value="">Sélectionner...</option>
@@ -200,7 +205,21 @@
                 </div>
                 <div class="form-group">
                     <label>Banque</label>
-                    <input type="text" name="bank" class="form-control" value="{{ old('bank') }}" placeholder="ex: BMCI">
+                    <select name="bank" class="form-control">
+                        <option value="">Sélectionner une banque...</option>
+                        <optgroup label="Banques principales">
+                            <option value="Attijariwafa Bank" {{ old('bank') == 'Attijariwafa Bank' ? 'selected' : '' }}>Attijariwafa Bank</option>
+                            <option value="Banque Populaire" {{ old('bank') == 'Banque Populaire' ? 'selected' : '' }}>Banque Populaire (BCP)</option>
+                            <option value="Bank of Africa" {{ old('bank') == 'Bank of Africa' ? 'selected' : '' }}>Bank of Africa (BOA)</option>
+                            <option value="CIH Bank" {{ old('bank') == 'CIH Bank' ? 'selected' : '' }}>CIH Bank</option>
+                            <option value="Crédit Agricole du Maroc" {{ old('bank') == 'Crédit Agricole du Maroc' ? 'selected' : '' }}>Crédit Agricole du Maroc</option>
+                            <option value="BMCE Bank" {{ old('bank') == 'BMCE Bank' ? 'selected' : '' }}>BMCE Bank</option>
+                            <option value="CFG Bank" {{ old('bank') == 'CFG Bank' ? 'selected' : '' }}>CFG Bank</option>
+                            <option value="Société Générale Maroc" {{ old('bank') == 'Société Générale Maroc' ? 'selected' : '' }}>Société Générale Maroc</option>
+                            <option value="Al Barid Bank" {{ old('bank') == 'Al Barid Bank' ? 'selected' : '' }}>Al Barid Bank</option>
+                        </optgroup>
+                        <option value="Autre">Autre...</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>RIB</label>
@@ -247,13 +266,30 @@
                         @error('user_role') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                     </div>
                     <div class="form-group">
-                        <label>Mot de passe *</label>
-                        <input type="password" name="user_password" class="form-control" min="8">
+                    <label>Mot de passe *</label>
+                        <div class="password-group">
+                            <input type="password" name="user_password" id="user_password" class="form-control" min="8">
+                            <button type="button" class="toggle-password" data-target="user_password" title="Afficher/Masquer">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" opacity="0.5"/>
+                                    <circle cx="12" cy="12" r="3.5"/>
+                                </svg>
+                            </button>
+                        </div>
                         @error('user_password') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                     </div>
                     <div class="form-group">
                         <label>Confirmer mot de passe *</label>
-                        <input type="password" name="user_password_confirmation" class="form-control" min="8">
+                        <div class="password-group">
+                            <input type="password" name="user_password_confirmation" id="user_password_confirmation" class="form-control" min="8">
+                            <button type="button" class="toggle-password" data-target="user_password_confirmation" title="Afficher/Masquer">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" opacity="0.5"/>
+                                    <circle cx="12" cy="12" r="3.5"/>
+                                </svg>
+                            </button>
+                        </div>
+                        @error('user_password_confirmation') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                     </div>
                 </div>
             </div>
@@ -343,9 +379,53 @@
     </div>
 </form>
 
+<style>
+.password-group {
+    position: relative;
+}
+.password-group .form-control {
+    padding-right: 40px;
+}
+.toggle-password {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+.toggle-password:hover {
+    opacity: 1;
+}
+.toggle-password svg {
+    width: 16px;
+    height: 16px;
+}
+</style>
+
 <script>
 document.getElementById('create_account').addEventListener('change', function() {
     document.getElementById('account_fields').style.display = this.checked ? 'block' : 'none';
+});
+
+document.querySelectorAll('.toggle-password').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const targetId = this.dataset.target;
+        const input = document.getElementById(targetId);
+        const icon = this.querySelector('svg');
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';
+        } else {
+            input.type = 'password';
+            icon.innerHTML = '<circle cx="12" cy="12" r="3.5" opacity="0.5"/><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>';
+        }
+    });
 });
 </script>
 @endsection

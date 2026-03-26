@@ -6,7 +6,7 @@
 @section('content')
 <div class="page-header">
     <div class="page-header-left">
-        <h1>📋 Appliquer une Semaine Type</h1>
+        <h1> Appliquer une Semaine Type</h1>
         <p>Appliquez un modèle de semaine à un employé</p>
     </div>
 </div>
@@ -34,13 +34,33 @@
                 </div>
 
                 <div>
-                    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Employé</label>
-                    <select name="employee_id" required style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;background:white">
-                        <option value="">Sélectionner un employé</option>
-                        @foreach($employees as $emp)
-                            <option value="{{ $emp->id }}">{{ $emp->full_name }} - {{ $emp->department }}</option>
-                        @endforeach
-                    </select>
+                    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">
+                        {{ $template->department ? 'Département ciblé' : 'Employé / Département' }}
+                    </label>
+                    @if($template->department)
+                        {{-- Auto department --}}
+                        <div style="padding:12px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border);font-weight:500">
+                            📍 {{ $template->department }} 
+                            <span style="font-size:0.85rem;color:var(--text-muted);font-weight:400">
+                                ({{ \App\Models\Employee::where('department', $template->department)->where('status', 'active')->count() }} employés)
+                            </span>
+                            <input type="hidden" name="department_target" value="{{ $template->department }}">
+                        </div>
+                    @else
+                        {{-- Manual select --}}
+                        <select name="department_target" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;background:white;margin-bottom:12px">
+                            <option value="">Sélectionner un département (mass apply)</option>
+                            @foreach(\App\Models\Employee::where('status','active')->distinct('department')->pluck('department') as $dept)
+                                <option value="{{ $dept }}">{{ $dept }}</option>
+                            @endforeach
+                        </select>
+                        <select name="employee_id" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;background:white">
+                            <option value="">OU un employé spécifique</option>
+                            @foreach($employees as $emp)
+                                <option value="{{ $emp->id }}">{{ $emp->full_name }} - {{ $emp->department }}</option>
+                            @endforeach
+                        </select>
+                    @endif
                 </div>
 
                 <div>

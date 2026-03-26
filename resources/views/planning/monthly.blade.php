@@ -29,10 +29,10 @@
             <h2 style="margin:0;font-size:1.25rem">Creer un planning</h2>
             <button type="button" onclick="closePlanningModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-muted)">x</button>
         </div>
-        
+
         <form method="POST" action="{{ route('planning.store') }}">
             @csrf
-            
+
             <div style="margin-bottom:16px">
                 <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Employe</label>
                 <select name="employee_id" required style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;background:white">
@@ -42,12 +42,12 @@
                     @endforeach
                 </select>
             </div>
-            
+
             <div style="margin-bottom:16px">
                 <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Date</label>
                 <input type="date" name="date" required style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem">
             </div>
-            
+
             <div style="margin-bottom:16px">
                 <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Type de shift</label>
                 <select name="shift_type" required style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;background:white">
@@ -58,7 +58,7 @@
                     <option value="garde">Garde</option>
                 </select>
             </div>
-            
+
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
                 <div>
                     <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Heure de debut</label>
@@ -69,12 +69,12 @@
                     <input type="time" name="shift_end" required style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem">
                 </div>
             </div>
-            
+
             <div style="margin-bottom:20px">
                 <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Notes (optionnel)</label>
                 <textarea name="notes" rows="2" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;resize:vertical"></textarea>
             </div>
-            
+
             <div style="display:flex;gap:12px;justify-content:flex-end">
                 <button type="button" onclick="closePlanningModal()" class="btn btn-outline">Annuler</button>
                 <button type="submit" class="btn btn-primary">Enregistrer</button>
@@ -119,7 +119,7 @@ window.onclick = function(event) {
             </select>
             <a href="{{ route('planning.monthly', ['month' => $month + 1, 'year' => $month == 12 ? $year + 1 : $year]) }}" class="btn btn-sm btn-outline">Mois suivant ></a>
         </div>
-        
+
         <div style="display:flex;gap:8px;margin-left:auto">
             <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Rechercher..." style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;min-width:150px;">
             <select name="department" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;min-width:140px;">
@@ -149,7 +149,7 @@ window.onclick = function(event) {
                         Collaborateur
                     </th>
                     @for($i = 1; $i <= $endOfMonth->day; $i++)
-                    @php 
+                    @php
                         $dayDate = \Carbon\Carbon::create($year, $month, $i);
                         $isWeekend = in_array($dayDate->dayOfWeek, [\Carbon\Carbon::SUNDAY, \Carbon\Carbon::SATURDAY]);
                     @endphp
@@ -162,7 +162,7 @@ window.onclick = function(event) {
             </thead>
             <tbody>
                 @forelse($employees as $emp)
-                @php 
+                @php
                     $empPlannings = isset($plannings) ? ($plannings->get($emp->id, collect()) ?? collect()) : collect();
                 @endphp
                 <tr style="border-bottom:1px solid var(--border)">
@@ -178,19 +178,19 @@ window.onclick = function(event) {
                             </div>
                         </div>
                     </td>
-                    
+
                     <!-- Day Cells -->
                     @for($i = 1; $i <= $endOfMonth->day; $i++)
-                    @php 
+                    @php
                         $dayDate = \Carbon\Carbon::create($year, $month, $i);
                         $dayDateStr = $dayDate->format('Y-m-d');
                         $isWeekend = in_array($dayDate->dayOfWeek, [\Carbon\Carbon::SUNDAY, \Carbon\Carbon::SATURDAY]);
-                        
+
                         $dayPlanning = $empPlannings->filter(function($planning) use ($dayDateStr) {
                             return $planning->date && $planning->date->format('Y-m-d') === $dayDateStr;
                         })->first();
                     @endphp
-                    <td style="padding:2px;text-align:center;vertical-align:middle;min-width:35px;width:35px;{{ $isWeekend ? 'background:#f8fafc' : '' }}" 
+                    <td style="padding:2px;text-align:center;vertical-align:middle;min-width:35px;width:35px;{{ $isWeekend ? 'background:#f8fafc' : '' }}"
                         title="{{ $dayDate->format('d/m/Y') }}">
                         @if($dayPlanning)
                         <div style="display:flex;flex-direction:column;align-items:center;gap:1px">
@@ -256,4 +256,3 @@ window.onclick = function(event) {
 </div>
 
 @endsection
-

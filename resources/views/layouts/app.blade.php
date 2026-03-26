@@ -232,8 +232,48 @@
                         </div>
                     </div>
                 </div>
+                <!-- Global Excel Export Dropdown -->
+                <div class="export-wrapper" style="position: relative;">
+                    <button class="topbar-btn" id="exportBtn" title="Fichier Excel Imprimable" onclick="toggleExportDropdown()">
+                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path d="M12 10l-5.5 5.5h11L12 10z"/>
+                        </svg>
+                    </button>
+                    <div class="export-dropdown" id="exportDropdown" style="display: none; position: absolute; top: 100%; right: 0; width: 280px; background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 1000; margin-top: 8px; max-height: 400px; overflow-y: auto;">
+                        <div style="padding: 12px 16px; border-bottom: 1px solid #eee; font-weight: 600; color: var(--primary);">📊 Fichier Excel Imprimable</div>
+                        <a href="{{ route('employees.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                              Liste du Personnel
+                        </a>
+                        <a href="{{ route('trombinoscope.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                              Trombinoscope
+                        </a>
+                        <a href="/salary/export" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                              Bulletins de Paie
+                        </a>
+                        <a href="{{ route('absences.droits.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                              Droits d'Absences
+                        </a>
+                        <a href="{{ route('absences.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                              Demandes d'Absences
+                        </a>
+                        <a href="{{ route('absences.counters.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                              Compteurs Absences
+                        </a>
+                        <a href="{{ route('absences.droits.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                              Droits d'Absences
+                        </a>
+<a href="{{ route('planning.monthly.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                              Planning Mensuel
+                        </a>
+                        <a href="{{ route('planning.weekly.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                              Planning Hebdomadaire
+                        </a>
+                        
+                    </div>
+                </div>
             </div>
         </header>
+
 
         <main class="page-content">
             @if(session('success'))
@@ -256,9 +296,24 @@
     </div>
 </div>
 
-<script>
+    <script>
 document.getElementById('menuToggle')?.addEventListener('click', () => {
     document.getElementById('sidebar').classList.toggle('open');
+});
+
+// Export Dropdown Toggle
+function toggleExportDropdown() {
+    const dropdown = document.getElementById('exportDropdown');
+    dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+}
+
+// Close export dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const wrapper = document.querySelector('.export-wrapper');
+    const dropdown = document.getElementById('exportDropdown');
+    if (wrapper && !wrapper.contains(event.target)) {
+        dropdown.style.display = 'none';
+    }
 });
 
 // Notifications

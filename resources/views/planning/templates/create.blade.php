@@ -6,7 +6,7 @@
 @section('content')
 <div class="page-header">
     <div class="page-header-left">
-        <h1>📋 Créer une Semaine Type</h1>
+        <h1> Créer une Semaine Type</h1>
         <p>Définissez les shifts pour chaque jour de la semaine</p>
     </div>
 </div>
@@ -14,15 +14,26 @@
 <form method="POST" action="{{ route('planning.templates.store') }}">
     @csrf
     
-    <div class="card" style="margin-bottom: 20px;">
+        <div class="card" style="margin-bottom: 20px;">
         <div class="card-header">
             <div class="card-title">Informations générales</div>
         </div>
         <div class="card-body">
-            <div style="max-width: 400px;">
-                <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Nom du modèle</label>
-                <input type="text" name="name" required placeholder="Ex: Semaine classique, Semaine de nuit..." 
-                    style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:600px">
+                <div>
+                    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Nom du modèle *</label>
+                    <input type="text" name="name" required placeholder="Ex: Semaine classique Urgences" 
+                        style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem">
+                </div>
+                <div>
+                    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Département</label>
+                    <select name="department" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem">
+                        <option value="">— Pour tous les départements —</option>
+                        @foreach(\App\Models\Employee::where('status','active')->distinct('department')->pluck('department')->filter() as $dept)
+                            <option value="{{ $dept }}">{{ $dept }}</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
         </div>
     </div>

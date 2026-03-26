@@ -289,13 +289,18 @@ function deletePlanning() {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
                 'Content-Type': 'application/json'
             }
         }).then(response => {
             if (response.ok) {
                 location.reload();
+            } else {
+                response.json().then(data => {
+                    alert('Erreur suppression: ' + (data.message || data.error || 'Erreur serveur inconnue'));
+                }).catch(() => alert('Erreur suppression (réseau)'));
             }
-        });
+        }).catch(e => alert('Erreur réseau: ' + e.message));
     }
 }
 

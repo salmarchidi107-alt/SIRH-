@@ -102,6 +102,11 @@
                     </select>
                 </div>
                 <div class="form-group">
+                    <label>Site de travail</label>
+                    <input type="text" name="work_site" class="form-control" value="{{ old('work_site', $employee->work_site) }}" placeholder="ex: Hôpital Central, Clinique Sud">
+                    @error('work_site') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+                </div>
+                <div class="form-group">
                     <label>Compétences</label>
                     <select name="skills" class="form-control">
                         <option value="">Sélectionner...</option>
@@ -164,7 +169,21 @@
                 </div>
                 <div class="form-group">
                     <label>Banque</label>
-                    <input type="text" name="bank" class="form-control" value="{{ old('bank', $employee->bank) }}" placeholder="ex: BMCI">
+                    <select name="bank" class="form-control">
+                        <option value="">Sélectionner une banque...</option>
+                        <optgroup label="Banques principales">
+                            <option value="Attijariwafa Bank" {{ old('bank', $employee->bank) == 'Attijariwafa Bank' ? 'selected' : '' }}>Attijariwafa Bank</option>
+                            <option value="Banque Populaire" {{ old('bank', $employee->bank) == 'Banque Populaire' ? 'selected' : '' }}>Banque Populaire (BCP)</option>
+                            <option value="Bank of Africa" {{ old('bank', $employee->bank) == 'Bank of Africa' ? 'selected' : '' }}>Bank of Africa (BOA)</option>
+                            <option value="CIH Bank" {{ old('bank', $employee->bank) == 'CIH Bank' ? 'selected' : '' }}>CIH Bank</option>
+                            <option value="Crédit Agricole du Maroc" {{ old('bank', $employee->bank) == 'Crédit Agricole du Maroc' ? 'selected' : '' }}>Crédit Agricole du Maroc</option>
+                            <option value="BMCE Bank" {{ old('bank', $employee->bank) == 'BMCE Bank' ? 'selected' : '' }}>BMCE Bank</option>
+                            <option value="CFG Bank" {{ old('bank', $employee->bank) == 'CFG Bank' ? 'selected' : '' }}>CFG Bank</option>
+                            <option value="Société Générale Maroc" {{ old('bank', $employee->bank) == 'Société Générale Maroc' ? 'selected' : '' }}>Société Générale Maroc</option>
+                            <option value="Al Barid Bank" {{ old('bank', $employee->bank) == 'Al Barid Bank' ? 'selected' : '' }}>Al Barid Bank</option>
+                        </optgroup>
+                        <option value="Autre">Autre...</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>RIB</label>

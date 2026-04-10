@@ -32,7 +32,6 @@ class EmployeesExport implements FromCollection, WithHeadings, WithMapping
             $employee->hire_date ? $employee->hire_date->format('d/m/Y') : '',
             $employee->base_salary,
             $employee->contract_type,
-            $employee->photo_url,
         ];
     }
 
@@ -51,7 +50,6 @@ class EmployeesExport implements FromCollection, WithHeadings, WithMapping
             'Date Embauche',
             'Salaire Base',
             'Type Contrat',
-            'Photo URL',
         ];
     }
 }

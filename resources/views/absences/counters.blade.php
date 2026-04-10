@@ -101,7 +101,7 @@
                     <th style="text-align:center">Pris</th>
                     <th style="text-align:center">En attente</th>
                     <th style="text-align:center">Solde</th>
-                    <th style="text-align:center">Si approved</th>
+                    <th style="text-align:center">Statut</th>
                 </tr>
             </thead>
             <tbody>

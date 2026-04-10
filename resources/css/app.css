@@ -9,3 +9,16 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+:root {
+  --chart-color-1: #0f6b7c;
+  --chart-color-2: #1a8fa5;
+  --chart-color-3: #00c9a7;
+  --chart-color-4: #3b82f6;
+  --chart-color-5: #f59e0b;
+  --chart-color-6: #ef4444;
+  --chart-color-7: #6366f1;
+  --chart-color-8: #10b981;
+  --chart-color-9: #ec4899;
+}
+

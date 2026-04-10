@@ -25,11 +25,12 @@ class NotificationController extends Controller
             ->get();
         
         
-        $pendingCount = $pendingAbsences->count();
-        $newsCount = $recentNews->count();
+$totalCount = Absence::where('status', 'pending')->count() + News::count();
+        $pendingCount = Absence::where('status', 'pending')->count();
+        $newsCount = News::count();
         
         
-        $employees = Employee::where('status', 'active')->orderBy('first_name')->get();
+        $employees = Employee::active()->orderBy('first_name')->get();
         
         return view('notifications.index', compact('pendingAbsences', 'recentNews', 'pendingCount', 'newsCount', 'employees'));
     }
@@ -49,7 +50,7 @@ class NotificationController extends Controller
             ->get();
         
         
-        $totalCount = $pendingAbsences->count() + $recentNews->count();
+$totalCount = Absence::where('status', 'pending')->count() + News::count();
         
         return response()->json([
             'absences' => $pendingAbsences->map(function($absence) {

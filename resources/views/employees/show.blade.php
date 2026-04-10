@@ -1,13 +1,8 @@
+
 @extends('layouts.app')
 
 @section('title', $employee->full_name)
 @section('page-title', 'Fiche Employé')
-
-@if(auth()->user()->role === 'employee' && auth()->user()->employee_id != $employee->id)
-    <script>
-        document.body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);"><h2>Accès restreint</h2><p>Vous ne pouvez voir que votre propre profil.</p><a href="/trombinoscope" class="btn btn-primary mt-4">← Retour trombinoscope</a></div>';
-    </script>
-@endif
 
 @section('content')
 <!-- Hero Profile Banner -->
@@ -36,8 +31,8 @@
         </div>
     </div>
     <div class="profile-meta">
-        <div class="profile-meta-item">
-            <div class="profile-meta-value">{{ round($employee->hire_date->floatDiffInYears(now()), 2) }}</div>
+            <div class="profile-meta-item">
+            <div class="profile-meta-value">{{ $employee->hire_date ? round($employee->hire_date->floatDiffInYears(now()), 1) : 'N/A' }}</div>
             <div class="profile-meta-label">Années d'ancienneté</div>
         </div>
         <div class="profile-meta-item">
@@ -47,7 +42,7 @@
     </div>
 </div>
 
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;align-items:start">
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;align-items:start;min-height:100vh;">
     <div>
         <!-- Informations personnelles -->
         <div class="card mb-4">
@@ -79,6 +74,20 @@
                         <div class="detail-label"> N° CNSS</div>
                         <div class="detail-value">{{ $employee->cnss ?: '—' }}</div>
                     </div>
+@if(in_array(auth()->user()->role ?? '', ['admin', 'rh']))
+                    <div class="detail-item">
+                        <div class="detail-label"> PIN Badge</div>
+                        <div class="detail-value">
+                            @if($employee->plain_pin)
+                                <span id="pin-{{ $employee->id }}" class="text-muted font-mono font-bold text-lg" style="letter-spacing: 2px;">{{ $employee->plain_pin }}</span>
+                                
+                                <button onclick="regeneratePin({{ $employee->id }})" class="btn btn-sm btn-warning ml-1">🔄 Regénérer</button>
+                            @else
+                                <button onclick="generatePin({{ $employee->id }})" class="btn btn-sm btn-primary">Générer PIN</button>
+                            @endif
+                        </div>
+                    </div>
+@endif
                     <div class="detail-item">
                         <div class="detail-label"> Situation familiale</div>
                         <div class="detail-value">{{ $employee->family_situation ?: '—' }}</div>
@@ -99,6 +108,7 @@
             </div>
         </div>
 
+        <!-- Rest of the content unchanged -->
         <!-- Informations Professionnelles -->
         <div class="card mb-4">
             <div class="card-header">
@@ -229,7 +239,7 @@
                         <div style="width: 56px; height: 56px; margin: 0 auto 12px; background: #cffafe; border-radius: 16px; display: flex; align-items: center; justify-content: center;">
                             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0891b2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                         </div>
-                        <div style="font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Compteur de Temps</div>
+                        <div style="font-size: 0.7rem; color: #64748b; text-transform:uppercase; letter-spacing: 0.5px;">Compteur de Temps</div>
                         <div style="font-size: 2rem; font-weight: 700; color: #0891b2; margin-top: 8px;">{{ $employee->work_hours_counter ?? 0 }} <span style="font-size: 1rem; font-weight: 400; color: #64748b;">heures</span></div>
                     </div>
                 </div>
@@ -276,33 +286,7 @@
     </div>
 
     <div>
-        <!-- Salaire -->
-        @if($employee->base_salary)
-        <div class="salary-card mb-4">
-            <div class="salary-label">Salaire de Base</div>
-            <div class="salary-net">{{ number_format($employee->base_salary, 0, ',', ' ') }} MAD</div>
-            <div style="font-size:0.75rem;opacity:0.5">Brut mensuel</div>
-            @if($employee->salaries->first())
-            @php $lastSalary = $employee->salaries->first(); @endphp
-            <div class="salary-breakdown">
-                <div>
-                    <div class="salary-item-label">Net</div>
-                    <div class="salary-item-value bonus">{{ number_format($lastSalary->net_salary, 0, ',', ' ') }}</div>
-                </div>
-                <div>
-                    <div class="salary-item-label">CNSS</div>
-                    <div class="salary-item-value deduction">-{{ number_format($lastSalary->cnss_deduction, 0, ',', ' ') }}</div>
-                </div>
-                <div>
-                    <div class="salary-item-label">IR</div>
-                    <div class="salary-item-value deduction">-{{ number_format($lastSalary->ir_deduction, 0, ',', ' ') }}</div>
-                </div>
-            </div>
-            @endif
-        </div>
-        @endif
-
-        <!-- Actions rapides -->
+           <!-- Actions rapides -->
         <div class="card mb-4">
             <div class="card-header"><div class="card-title"> Actions Rapides</div></div>
             <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
@@ -322,7 +306,6 @@
                 @endif
             </div>
         </div>
-
         <!-- Manager -->
         @if($employee->manager)
         <div class="card">
@@ -343,3 +326,26 @@
     </div>
 </div>
 @endsection
+
+
+<script>
+function regeneratePin(id) {
+  if (confirm('Regénérer le PIN?')) {
+    fetch(`/employees/${id}/regenerate-pin`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        'Content-Type': 'application/json',
+      }
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('pin-' + id).textContent = data.pin;
+      alert('PIN regénéré: ' + data.pin);
+    })
+    .catch(err => alert('Erreur'));
+  }
+}
+</script>
+
+

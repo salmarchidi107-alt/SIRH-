@@ -4,6 +4,16 @@
 @section('page-title', 'Ajouter un Employé')
 
 @section('content')
+@if ($errors->any())
+<div class="alert alert-danger">
+    <ul class="mb-0">
+        @foreach ($errors->all() as $error)
+        <li>{{ $error }}</li>
+        @endforeach
+    </ul>
+</div>
+@endif
+
 <div class="page-header">
     <div class="page-header-left">
         <h1>+ Nouvel Employé</h1>
@@ -70,9 +80,73 @@
                     <label>Photo de profil</label>
                     <input type="file" name="photo" class="form-control" accept="image/*">
                 </div>
+
+                <!-- NOUVEAU : PIN Badge -->
+                <div class="form-group">
+                    <label>Code PIN Badge </label>
+                    <div class="input-group">
+                        <input type="text" 
+                               name="pin" 
+                               id="pin_field" 
+                               class="form-control" 
+                               placeholder="1234AB"
+                               pattern="[0-9]{4}[A-Z]{2}"
+                               maxlength="6"
+                               readonly
+                               value="{{ old('pin') }}">
+                        <button type="button" id="generate_pin" class="btn btn-outline-primary">
+                            Générer
+                        </button>
+                    </div>
+                
+                </div>
             </div>
         </div>
     </div>
+
+    <style>
+    .input-group {
+        display: flex; gap: 8px;
+    }
+    .input-group .form-control {
+        flex: 1;
+    }
+    .input-group .btn {
+        white-space: nowrap; padding: 8px 16px;
+    }
+    #pin_field {
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        font-family: monospace;
+        font-weight: 600;
+    }
+    </style>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Générateur PIN Badge
+        document.getElementById('generate_pin').addEventListener('click', function() {
+            const digits = Math.floor(1000 + Math.random() * 9000); // 1000-9999
+            const letters = Array.from({length: 2}, () => 
+                String.fromCharCode(65 + Math.floor(Math.random() * 26))
+            ).join('');
+            
+            const pin = digits + letters;
+            document.getElementById('pin_field').value = pin;
+            
+            // Feedback visuel
+            this.textContent = ' ' + pin;
+            this.style.background = '#10b981';
+            this.style.color = 'white';
+            
+            setTimeout(() => {
+                this.textContent = ' Générer';
+                this.style.background = '';
+                this.style.color = '';
+            }, 2000);
+        });
+    });
+    </script>
 
     <!-- Informations professionnelles -->
     <div class="card mb-4">
@@ -141,12 +215,8 @@
                 </div>
                 <div class="form-group">
                     <label>Type de contrat *</label>
-                    <select name="contract_type" class="form-control" required>
-                        <option value="">Choisir...</option>
-                        @foreach(['CDI','CDD','Interim','Stage'] as $ct)
-                            <option value="{{ $ct }}" {{ old('contract_type') == $ct ? 'selected' : '' }}>{{ $ct }}</option>
-                        @endforeach
-                    </select>
+                    <input type="text" name="contract_type" class="form-control" value="{{ old('contract_type') }}" required placeholder="ex: CDI, CDD, Freelance">
+                    @error('contract_type') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group">
                     <label>Date d'embauche *</label>
@@ -305,14 +375,8 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>Temps de travail (h/semaine)</label>
-                    <select name="work_hours" class="form-control">
-                        <option value="">Sélectionner...</option>
-                        <option value="24" {{ old('work_hours') == '24' ? 'selected' : '' }}>24h/semaine (Mi-temps)</option>
-                        <option value="36" {{ old('work_hours') == '36' ? 'selected' : '' }}>36h/semaine (3/4 temps)</option>
-                        <option value="40" {{ old('work_hours', '40') == '40' ? 'selected' : '' }}>40h/semaine (Temps plein)</option>
-                        <option value="44" {{ old('work_hours') == '44' ? 'selected' : '' }}>44h/semaine (Surcroit)</option>
-                        <option value="48" {{ old('work_hours') == '48' ? 'selected' : '' }}>48h/semaine (Temps plein +)</option>
-                    </select>
+                    <input type="number" name="work_hours" class="form-control" value="{{ old('work_hours') }}" min="0" step="0.5" placeholder="ex: 40">
+                    @error('work_hours') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group">
                     <label>Début du contrat</label>

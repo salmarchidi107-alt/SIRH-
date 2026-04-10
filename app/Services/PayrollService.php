@@ -45,13 +45,13 @@ class PayrollService
         $transportAllow = (float) ($data['transport_allowance'] ?? 0);
 
         // 1. Éléments variables du mois (ajoutés via l'interface)
-        $variables = VariableElement::where('employee_id', $employee->id)
+$variables = $employee->variableElements()
             ->where('month', $month)
             ->where('year', $year)
             ->get();
 
-        $variableGains    = $variables->where('type', 'gain')->sum('amount');
-        $variableRetenues = $variables->where('type', 'retenue')->sum('amount');
+$variableGains    = $variables->where('type', \App\Enums\VariableElementType::GAIN)->sum('amount');
+        $variableRetenues = $variables->where('type', \App\Enums\VariableElementType::RETENUE)->sum('amount');
 
         // 2. Prime d'ancienneté
         $seniorityBonus = round($base * $employee->seniority_rate, 2);
@@ -160,31 +160,49 @@ class PayrollService
 
     public function getMonthlySummary(int $month, int $year): array
     {
-        $salaries = Salary::where('month', $month)->where('year', $year)->get();
+        $cacheKey = "payroll.summary.{$month}.{$year}";
+        
+        return cache()->remember($cacheKey, now()->addHour(), function () use ($month, $year) {
+            $stats = Salary::where('month', $month)
+                ->where('year', $year)
+                ->selectRaw('
+                    COUNT(*) as count,
+                    SUM(gross_salary) as total_gross,
+                    SUM(cnss_deduction) as total_cnss_sal,
+                    SUM(amo_deduction) as total_amo_sal,
+                    SUM(ir_deduction) as total_ir,
+                    SUM(net_salary) as total_net,
+                    SUM(CASE WHEN status = "validated" THEN 1 ELSE 0 END) as count_validated,
+                    SUM(CASE WHEN status = "paid" THEN 1 ELSE 0 END) as count_paid,
+                    SUM(CASE WHEN status = "draft" THEN 1 ELSE 0 END) as count_draft,
+                    SUM(LEAST(gross_salary, ' . self::CNSS_CEILING . ')) as cnss_bases,
+                    SUM(gross_salary) as total_gross_for_rates
+                ')
+                ->first();
 
+            $cnssCeilSum = $stats->cnss_bases ?? 0;
+            $grossSum = $stats->total_gross_for_rates ?? 0;
 
-        $totalPatronal = $salaries->sum(function ($s) {
-            $base = min($s->gross_salary, self::CNSS_CEILING);
-            return $base * self::CNSS_RATE_PAT + $s->gross_salary * self::AMO_RATE + $s->gross_salary * self::TFP_RATE;
+            return [
+                'total_gross'           => (float) ($stats->total_gross ?? 0),
+                'total_cnss_sal'        => (float) ($stats->total_cnss_sal ?? 0),
+                'total_amo_sal'         => (float) ($stats->total_amo_sal ?? 0),
+                'total_ir'              => (float) ($stats->total_ir ?? 0),
+                'total_net'             => (float) ($stats->total_net ?? 0),
+                'count'                 => (int) $stats->count,
+                'count_validated'       => (int) $stats->count_validated,
+                'count_paid'            => (int) $stats->count_paid,
+                'count_draft'           => (int) $stats->count_draft,
+                'total_employer_cnss'   => round($cnssCeilSum * self::CNSS_RATE_PAT, 2),
+                'total_employer_amo'    => round($grossSum * self::AMO_RATE, 2),
+                'total_employer_tfp'    => round($grossSum * self::TFP_RATE, 2),
+                'total_employer_cost'   => round(
+                    $cnssCeilSum * self::CNSS_RATE_PAT + 
+                    $grossSum * self::AMO_RATE + 
+                    $grossSum * self::TFP_RATE, 2
+                ),
+            ];
         });
-
-        return [
-            'total_gross'      => $salaries->sum('gross_salary'),
-            'total_cnss_sal'   => $salaries->sum('cnss_deduction'),
-            'total_amo_sal'    => $salaries->sum('amo_deduction'),
-            'total_ir'         => $salaries->sum('ir_deduction'),
-            'total_net'        => $salaries->sum('net_salary'),
-            'count'            => $salaries->count(),
-            'count_validated'  => $salaries->where('status', 'validated')->count(),
-            'count_paid'       => $salaries->where('status', 'paid')->count(),
-            'count_draft'      => $salaries->where('status', 'draft')->count(),
-            'total_employer_cnss' => $salaries->sum(function ($s) {
-                return min($s->gross_salary, self::CNSS_CEILING) * self::CNSS_RATE_PAT;
-            }),
-            'total_employer_amo'  => $salaries->sum('gross_salary') * self::AMO_RATE,
-            'total_employer_tfp'  => $salaries->sum('gross_salary') * self::TFP_RATE,
-            'total_employer_cost' => $totalPatronal,
-        ];
     }
 
 }

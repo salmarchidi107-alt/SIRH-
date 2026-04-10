@@ -7,6 +7,7 @@
     <title>@yield('title', 'HospitalRH') — HospitalRH</title>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkR4j8R2G1QXQh5l+e2n5p3p6Y9Q3U8p4aQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     @stack('styles')
     <style>
         .nav-submenu { padding-left: 20px; margin: 4px 0; }
@@ -21,7 +22,7 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <a href="{{ route('dashboard') }}" class="brand">
-                <div class="brand-icon">🏥</div>
+                <div class="brand-icon"><i class="fa-solid fa-hospital" aria-hidden="true"></i></div>
                 <div class="brand-name">
                     HospitalRH
                     <span>Gestion RH</span>
@@ -32,6 +33,15 @@
         <nav class="sidebar-nav">
             {{-- Dashboard - Visible to all authenticated users --}}
             <div class="nav-section-label">Principal</div>
+            @if(Auth::user() && Auth::user()->role === 'employee')
+            <a href="{{ route('employee.dashboard') }}" class="nav-item {{ request()->routeIs('employee.dashboard') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+                </svg>
+                Tableau de bord
+            </a>
+            @else
             <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
@@ -39,6 +49,7 @@
                 </svg>
                 Tableau de bord
             </a>
+            @endif
 
             {{-- Profile - Visible to Employee only, not admin/RH --}}
             @if(Auth::user() && Auth::user()->role === 'employee')
@@ -147,6 +158,41 @@
                 Compteurs et droits d'absences
             </a>
             @endif
+@auth
+@if(in_array(auth()->user()->role, ['admin', 'rh']))
+
+    @php
+        $pointageEnAttente = 0;
+        try {
+            $pointageEnAttente = \App\Models\Pointage::forDate(today()->toDateString())
+                ->where('valide', false)
+                ->where('statut', 'present')
+                ->count();
+        } catch (\Exception $e) {}
+    @endphp
+
+    <a href="{{ route('pointage.index') }}"
+       class="nav-item {{ request()->routeIs('pointage.*') ? 'active' : '' }}"
+       style="display:flex;align-items:center;gap:10px;">
+
+        {{-- Icône badgeuse --}}
+        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="8" height="18" rx="1.5"/>
+            <rect x="13" y="3" width="8" height="8" rx="1.5"/>
+            <rect x="13" y="13" width="8" height="18" rx="1.5"/>
+        </svg>
+
+        Pointage
+
+        @if($pointageEnAttente > 0)
+            <span class="badge">{{ $pointageEnAttente }}</span>
+        @endif 
+
+    </a>
+
+@endif
+@endauth
+            
 
             {{-- Salaries - Role based visibility --}}
             @if(Auth::user() && in_array(Auth::user()->role, ['admin', 'rh']))
@@ -209,7 +255,7 @@
     <!-- MAIN CONTENT -->
     <div class="main-content">
         <header class="topbar">
-            <button class="btn-ghost btn btn-icon" id="menuToggle" style="display:none">☰</button>
+            <button class="btn-ghost btn btn-icon" id="menuToggle" style="display:none"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>
             <div class="topbar-title">@yield('page-title', 'Tableau de bord')</div>
             <div class="topbar-actions">
                 <div class="notification-wrapper" style="position: relative;">
@@ -240,7 +286,7 @@
                         </svg>
                     </button>
                     <div class="export-dropdown" id="exportDropdown" style="display: none; position: absolute; top: 100%; right: 0; width: 280px; background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 1000; margin-top: 8px; max-height: 400px; overflow-y: auto;">
-                        <div style="padding: 12px 16px; border-bottom: 1px solid #eee; font-weight: 600; color: var(--primary);">📊 Fichier Excel Imprimable</div>
+                        <div style="padding: 12px 16px; border-bottom: 1px solid #eee; font-weight: 600; color: var(--primary);"><i class="fa-solid fa-chart-column" aria-hidden="true"></i> Fichier Excel Imprimable</div>
                         <a href="{{ route('employees.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
                               Liste du Personnel
                         </a>
@@ -285,20 +331,310 @@
                 </div>
             @endif
             @if(session('warning'))
-                <div class="alert alert-warning">⚠️ {{ session('warning') }}</div>
+                <div class="alert alert-warning"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> {{ session('warning') }}</div>
             @endif
             @if(session('error'))
                 <div class="alert alert-danger">{{ session('error') }}</div>
             @endif
 
             @yield('content')
-        </main>
-    </div>
-</div>
+            @include('components.chatbot')
+            
 
-    <script>
+            
+<!-- WhatsApp-like Chat Popup -->
+            <div id="chatPopup" class="whatsapp-chat" style="display: none;">
+                <div class="whatsapp-header">
+                    <div class="whatsapp-avatar"><i class="fa-solid fa-robot" aria-hidden="true"></i></div>
+                    <div>
+                        <div class="whatsapp-title">Assistant RH</div>
+                        <div class="whatsapp-subtitle">HospitalRH · OpenAI</div>
+                    </div>
+                    <button onclick="toggleChatPopup()" class="whatsapp-close" title="Minimiser">−</button>
+                </div>
+                <div class="whatsapp-suggestions">
+                    <button onclick="sendSuggestion('Stats RH globales')"> Stats</button>
+                    <button onclick="sendSuggestion('Salaire matricule 1')"> Salaire</button>
+                    <button onclick="sendSuggestion('Planning matricule 1 avril')"> Planning</button>
+                </div>
+                <div class="whatsapp-messages" id="whatsappMessages">
+                    <div class="whatsapp-message whatsapp-bot">
+                        Bonjour ! Assistant RH prêt. Demandez stats, salaires, plannings...
+                    </div>
+                </div>
+                <div class="whatsapp-input-area">
+                    <textarea id="whatsappInput" placeholder="Tapez votre question..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+                    <button id="whatsappSend" onclick="sendWhatsAppMessage()"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i></button>
+                </div>
+            </div>
+
+        </main>
+        
+@include('components.chatbot')
+
+<style>
+.assistant-rh-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #c8102e 100%);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 0 8px 32px rgba(26,26,46,0.4);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 9999;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.assistant-rh-btn:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 12px 40px rgba(26,26,46,0.6);
+}
+</style>
+
+<style>
+.floating-chat-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #c8102e 100%);
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    box-shadow: 0 8px 32px rgba(26, 26, 46, 0.4);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255,255,255,0.2);
+    z-index: 10000;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    color: white;
+}
+
+.floating-chat-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 16px 48px rgba(26, 26, 46, 0.6);
+}
+
+.chat-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10001;
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+.chat-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: transparent;
+}
+
+.chat-modal-content {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: transparent;
+    border-radius: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: none;
+
+.chat-modal-header {
+    display: none;
+}
+
+.chat-close-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #666;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.chat-close-btn:hover {
+    background: #f1f5f9;
+    color: #333;
+}
+
+.chat-iframe {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !iframe !important;
+    border: none !important;
+    background: transparent !important;
+    z-index: 10002 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+}
+
+@keyframes modalSlideIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+    .chat-modal-content {
+        max-height: 85vh;
+        border-radius: 20px 20px 0 0;
+    }
+}
+
+.floating-chat-btn.active {
+    box-shadow: 0 8px 32px rgba(200, 16, 46, 0.4);
+}
+
+.chat-icon {
+    font-size: 24px;
+    animation: pulse-chat 2s infinite;
+}
+
+.chat-badge {
+    background: rgba(255,255,255,0.9);
+    color: #1a1a2e;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+    transform: scale(0.8);
+}
+
+@keyframes pulse-chat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+</style>
+
+
+<script>
+function toggleChatPopup() {
+    const popup = document.getElementById('chatPopup');
+    const btn = document.querySelector('.floating-chat-btn');
+    popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
+    btn.classList.toggle('active');
+}
+
+let threadId = localStorage.getItem('chatThread') || null;
+
+function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+}
+
+function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendWhatsAppMessage();
+    }
+}
+
+function sendSuggestion(text) {
+    document.getElementById('whatsappInput').value = text;
+    sendWhatsAppMessage();
+}
+
+async function sendWhatsAppMessage() {
+    const input = document.getElementById('whatsappInput');
+    const btn = document.getElementById('whatsappSend');
+    const messages = document.getElementById('whatsappMessages');
+    const text = input.value.trim();
+
+    if (!text) return;
+
+    // User message
+    const userMsg = document.createElement('div');
+    userMsg.className = 'whatsapp-message whatsapp-user';
+    userMsg.textContent = text;
+    messages.appendChild(userMsg);
+    messages.scrollTop = messages.scrollHeight;
+
+    input.value = '';
+    autoResize(input);
+    btn.disabled = true;
+
+    // Typing
+    const typing = document.createElement('div');
+    typing.className = 'whatsapp-message whatsapp-bot typing';
+    typing.innerHTML = '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>';
+    messages.appendChild(typing);
+    messages.scrollTop = messages.scrollHeight;
+
+    try {
+        const res = await fetch('{{ route("assistant-rh.chat") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: JSON.stringify({ message: text, thread: threadId }),
+        });
+
+        const data = await res.json();
+        typing.remove();
+
+        if (data.reply) {
+            threadId = data.thread;
+            localStorage.setItem('chatThread', threadId);
+            const botMsg = document.createElement('div');
+            botMsg.className = 'whatsapp-message whatsapp-bot';
+            botMsg.innerHTML = data.reply.replace(/\n/g, '<br>');
+            messages.appendChild(botMsg);
+            messages.scrollTop = messages.scrollHeight;
+        } else {
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'whatsapp-message whatsapp-bot';
+            errorMsg.textContent = 'Erreur serveur';
+            messages.appendChild(errorMsg);
+        }
+    } catch (err) {
+        typing.remove();
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'whatsapp-message whatsapp-bot';
+        errorMsg.textContent = 'Pas de connexion';
+        messages.appendChild(errorMsg);
+    } finally {
+        btn.disabled = false;
+        input.focus();
+    }
+}
+
 document.getElementById('menuToggle')?.addEventListener('click', () => {
     document.getElementById('sidebar').classList.toggle('open');
+});
+
+// Close modal on ESC
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') toggleChatModal();
 });
 
 // Export Dropdown Toggle
@@ -380,7 +716,7 @@ function loadNotifications() {
             notifList.innerHTML = items.slice(0, 10).map(item => `
                 <a href="${item.url}" style="display: flex; align-items: center; gap: 10px; padding: 10px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
                     <div style="width: 32px; height: 32px; border-radius: 50%; background: ${item.color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.8rem; flex-shrink: 0;">
-                        ${item.type === 'absence' ? '📅' : '📰'}
+                        ${item.type === 'absence' ? '<i class="fa-solid fa-calendar-days" aria-hidden="true"></i>' : '<i class="fa-solid fa-newspaper" aria-hidden="true"></i>'}
                     </div>
                     <div style="flex: 1; min-width: 0;">
                         <div style="font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.message}</div>

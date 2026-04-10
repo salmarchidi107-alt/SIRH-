@@ -50,7 +50,7 @@
                         {{-- Manual select --}}
                         <select name="department_target" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;background:white;margin-bottom:12px">
                             <option value="">Sélectionner un département (mass apply)</option>
-                            @foreach(\App\Models\Employee::where('status','active')->distinct('department')->pluck('department') as $dept)
+                            @foreach(\App\Models\Department::orderBy('name')->pluck('name') as $dept)
                                 <option value="{{ $dept }}">{{ $dept }}</option>
                             @endforeach
                         </select>

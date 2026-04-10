@@ -79,4 +79,3 @@ class PointageSeeder extends Seeder
         $this->command->info('Donnees de pointage creees pour ' . $employees->count() . ' employe(s)');
     }
 }
-

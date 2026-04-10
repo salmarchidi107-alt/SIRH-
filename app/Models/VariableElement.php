@@ -9,23 +9,26 @@ class VariableElement extends Model
 {
     protected $fillable = [
         'employee_id', 'month', 'year',
-'category', 'rubrique', 'label', 'amount', 'unit', 'type',
+        'category', 'rubrique', 'label', 'amount', 'unit', 'type',
     ];
 
-    protected $casts = ['amount' => 'decimal:2'];
+    protected $casts = [
+        'amount' => 'decimal:2',
+        'type' => \App\Enums\VariableElementType::class,
+    ];
 
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
     }
 
-    public function getCategoryColorAttribute(): string
+    public function getTypeColorAttribute(): string
     {
-        return $this->category === 'gain' ? 'success' : 'danger';
+        return $this->type === \App\Enums\VariableElementType::GAIN ? 'success' : 'danger';
     }
 
-    public function getCategoryLabelAttribute(): string
+    public function getTypeLabelAttribute(): string
     {
-        return $this->category === 'gain' ? 'Gain' : 'Retenue';
+        return $this->type->label();
     }
 }

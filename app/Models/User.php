@@ -74,17 +74,32 @@ class User extends Authenticatable
    
     public function employee()
     {
-        return $this->belongsTo(Employee::class);
+        return $this->belongsTo(Employee::class, 'employee_id');
+    }
+
+    public function getEmployeeByLegacyKeyAttribute()
+    {
+        return Employee::where('user_id', $this->id)->first();
     }
 
    
     public function getRoleDisplayName(): string
     {
-        return match($this->role) {
-            self::ROLE_ADMIN => 'Administrateur',
-            self::ROLE_RH => 'Responsable RH',
-            self::ROLE_EMPLOYEE => 'Employé',
-            default => 'Employé',
-        };
+        return \App\Enums\UserRole::tryFrom($this->role)?->label() ?? 'Employé';
+    }
+
+    public function isAdminOrRh(): bool
+    {
+        return in_array($this->role, [\App\Enums\UserRole::Admin->value, \App\Enums\UserRole::Rh->value]);
+    }
+
+    public function can($abilities, $arguments = []): bool
+    {
+        if (is_string($abilities)) {
+            $permissions = config('roles.permissions', []);
+            $allowedRoles = $permissions[$abilities] ?? [];
+            return in_array($this->role, $allowedRoles);
+        }
+        return parent::can($abilities, $arguments);
     }
 }

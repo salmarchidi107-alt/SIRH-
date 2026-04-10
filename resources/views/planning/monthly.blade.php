@@ -13,6 +13,7 @@
         <a href="{{ route('planning.weekly') }}" class="btn btn-outline">
             Vue Hebdomadaire
         </a>
+        <a href="{{ route('planning.monthly.pdf', request()->query()) }}" class="btn btn-outline" target="_blank">Exporter PDF</a>
         <button type="button" class="btn btn-primary" onclick="openPlanningModal()">
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>

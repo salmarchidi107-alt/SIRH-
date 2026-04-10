@@ -15,7 +15,7 @@ class TrombinoscopeExport implements FromCollection, WithHeadings, WithMapping
 
     public function collection()
     {
-        return Employee::where('status', 'active')->get();
+        return Employee::active()->get();
     }
 
     public function map($employee): array

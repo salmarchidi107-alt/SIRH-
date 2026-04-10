@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Absence;
+use App\Models\Department;
 use App\Models\Employee;
+use App\Http\Requests\StoreAbsenceRequest;
+use App\Http\Requests\UpdateAbsenceRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Mail\AbsenceApproved;
 use App\Mail\AbsenceRejected;
 use Carbon\Carbon;
@@ -19,10 +23,10 @@ class AbsenceController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Absence::with(['employee', 'replacement']);
+        $query = Absence::with(['employee:id,first_name,last_name,matricule,department', 'replacement:id,first_name,last_name,matricule,department']);
 
-        if (Auth::user()->role === 'employee' && Auth::user()->employee_id) {
-            $query->where('employee_id', Auth::user()->employee_id);
+        if (auth()->user()->isEmployee() && auth()->user()->employee_id) {
+            $query->where('employee_id', auth()->user()->employee_id);
         } else {
 
             if ($request->employee_id) {
@@ -30,31 +34,26 @@ class AbsenceController extends Controller
             }
         }
 
-        if ($request->status) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->type) {
-            $query->where('type', $request->type);
-        }
-
-        if ($request->search) {
-            $search = $request->search;
-            $query->whereHas('employee', function($q) use ($search) {
-                $q->where('first_name', 'like', "%$search%")
-                  ->orWhere('last_name', 'like', "%$search%");
-            });
-        }
+        $query->when($request->status, fn($q) => $q->where('status', $request->status))
+            ->when($request->type, fn($q) => $q->where('type', $request->type))
+            ->when($request->search, fn($q) => $q->whereHas('employee', function ($q) use ($request) {
+                $q->where('first_name', 'like', "%{$request->search}%")
+                  ->orWhere('last_name', 'like', "%{$request->search}%");
+            }));
 
         $absences = $query->latest()->paginate(20);
-        $employees = Employee::where('status', 'active')->when(Auth::user()->role === 'employee', fn($q) => $q->where('id', Auth::user()->employee_id))->get();
+        $employeesQuery = Employee::active()->when(auth()->user()->isEmployee(), fn($q) => $q->where('id', auth()->user()->employee_id))->select(['id', 'first_name', 'last_name', 'matricule', 'department']);
+        $this->applyEmployeeFilters($employeesQuery, $request);
+        $employees = $employeesQuery->get();
+        $departments = $this->getDepartments();
 
-
-        if (Auth::user()->role === 'employee' && Auth::user()->employee_id) {
-            $pending_count = Absence::where('employee_id', Auth::user()->employee_id)->where('status', 'pending')->count();
+        if (auth()->user()->isEmployee() && auth()->user()->employee_id) {
+            $pending_count = Absence::where('employee_id', auth()->user()->employee_id)->where('status', 'pending')->count();
         } else {
             $pending_count = Absence::where('status', 'pending')->count();
         }
+
+        return view('absences.index', compact('absences', 'employees', 'pending_count', 'departments'));
 
         return view('absences.index', compact('absences', 'employees', 'pending_count'));
     }
@@ -62,39 +61,18 @@ class AbsenceController extends Controller
     public function create()
     {
 
-        if (Auth::user()->role === 'employee' && Auth::user()->employee_id) {
-            $employee = Employee::find(Auth::user()->employee_id);
+        if (auth()->user()->isEmployee() && auth()->user()->employee_id) {
+            $employee = Employee::find(auth()->user()->employee_id);
             return view('absences.create', compact('employee'));
         }
 
-        $employees = Employee::where('status', 'active')->when(Auth::user()->role === 'employee', fn($q) => $q->where('id', Auth::user()->employee_id))->get();
+        $employees = Employee::active()->when(auth()->user()->isEmployee(), fn($q) => $q->where('id', auth()->user()->employee_id))->select(['id', 'first_name', 'last_name', 'matricule', 'department'])->get();
         return view('absences.create', compact('employees'));
     }
 
-    public function store(Request $request)
+    public function store(StoreAbsenceRequest $request)
     {
-
-        if (Auth::user()->role === 'employee' && Auth::user()->employee_id) {
-            $validated = $request->validate([
-                'type' => 'required|in:' . implode(',', array_keys(Absence::TYPES)),
-                'start_date' => 'required|date',
-                'end_date' => 'required|date|after_or_equal:start_date',
-                'reason' => 'nullable|string',
-                'replacement_id' => 'nullable|exists:employees,id',
-                'notes' => 'nullable|string',
-            ]);
-            $validated['employee_id'] = Auth::user()->employee_id;
-        } else {
-            $validated = $request->validate([
-                'employee_id' => 'required|exists:employees,id',
-                'type' => 'required|in:' . implode(',', array_keys(Absence::TYPES)),
-                'start_date' => 'required|date',
-                'end_date' => 'required|date|after_or_equal:start_date',
-                'reason' => 'nullable|string',
-                'replacement_id' => 'nullable|exists:employees,id',
-                'notes' => 'nullable|string',
-            ]);
-        }
+        $validated = $request->validated();
 
         $start = Carbon::parse($validated['start_date']);
         $end = Carbon::parse($validated['end_date']);
@@ -126,19 +104,13 @@ class AbsenceController extends Controller
 
     public function edit(Absence $absence)
     {
-        $employees = Employee::where('status', 'active')->when(Auth::user()->role === 'employee', fn($q) => $q->where('id', Auth::user()->employee_id))->get();
+        $employees = Employee::active()->when(auth()->user()->isEmployee(), fn($q) => $q->where('id', auth()->user()->employee_id))->select(['id', 'first_name', 'last_name', 'matricule', 'department'])->get();
         return view('absences.edit', compact('absence', 'employees'));
     }
 
-    public function update(Request $request, Absence $absence)
+    public function update(UpdateAbsenceRequest $request, Absence $absence)
     {
-        $validated = $request->validate([
-            'type' => 'required',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'reason' => 'nullable|string',
-            'replacement_id' => 'nullable|exists:employees,id',
-        ]);
+        $validated = $request->validated();
 
         $start = Carbon::parse($validated['start_date']);
         $end = Carbon::parse($validated['end_date']);
@@ -159,14 +131,26 @@ class AbsenceController extends Controller
 
     public function approve(Absence $absence)
     {
-        if (Auth::user()->role !== 'admin') {
-            abort(403, 'Seuls les administrateurs peuvent approuver les absences.');
+        if (!auth()->user()->can('approve_absences')) {
+            abort(403, 'Accès non autorisé.');
         }
 
         $absence->update([
             'status' => 'approved',
             'approved_at' => now(),
         ]);
+
+        // Sync droit absence
+        if (in_array($absence->type, ['conge_annuel', 'conge_sans_solde', 'conge_maladie', 'absence_justifiee'])) {
+            $year = $absence->start_date->year;
+            $droit = \App\Models\DroitAbsence::updateOrCreate(
+                ['employee_id' => $absence->employee_id, 'annee' => $year],
+                ['jours_pris' => 0, 'jours_en_attente' => 0, 'jours_solde' => 0]
+            );
+            $droit->jours_pris += $absence->days;
+            $droit->jours_solde = $droit->jours_acquis - $droit->jours_pris - $droit->jours_en_attente;
+            $droit->save();
+        }
 
         if ($absence->employee && $absence->employee->email) {
             try {
@@ -181,14 +165,24 @@ class AbsenceController extends Controller
 
     public function reject(Absence $absence)
     {
-        if (Auth::user()->role !== 'admin') {
-            abort(403, 'Seuls les administrateurs peuvent rejeter les absences.');
+        if (!auth()->user()->can('approve_absences')) {
+            abort(403, 'Accès non autorisé.');
         }
 
         $absence->update([
             'status' => 'rejected',
             'approved_at' => now(),
         ]);
+
+        // Remove from attente if was pending (already pending sum in counters)
+        $year = $absence->start_date->year;
+        $droit = \App\Models\DroitAbsence::where('employee_id', $absence->employee_id)
+            ->where('annee', $year)->first();
+        if ($droit) {
+            $droit->jours_en_attente -= $absence->days;
+            $droit->jours_solde = $droit->jours_acquis - $droit->jours_pris - $droit->jours_en_attente;
+            $droit->save();
+        }
 
         if ($absence->employee && $absence->employee->email) {
             try {
@@ -209,12 +203,16 @@ class AbsenceController extends Controller
     public function countersExport(Request $request)
     {
         $year = $request->get('year', now()->year);
-        $employees = Employee::where('status', 'active')
+        $employees = Employee::active()
+            ->withCount(['absences' => function ($q) use ($year) {
+                $q->where('status', 'approved')->whereYear('start_date', $year);
+            }])
             ->orderBy('department')
             ->orderBy('last_name')
+            ->select(['id', 'first_name', 'last_name', 'department', 'matricule', 'hire_date'])
             ->get();
 
-        $countersData = [];
+        $countersData = []; 
 
         foreach ($employees as $emp) {
             $hireDate = $emp->hire_date ? Carbon::parse($emp->hire_date) : Carbon::create($year, 1, 1);
@@ -230,7 +228,7 @@ class AbsenceController extends Controller
             $taken = Absence::where('employee_id', $emp->id)
                 ->where('status', 'approved')
                 ->whereYear('start_date', $year)
-                ->whereIn('type', ['conge_annuel', 'conge_sans_solde', 'conge_maladie'])
+                ->whereIn('type', ['conge_annuel', 'conge_sans_solde', 'conge_maladie', 'absence_justifiee'])
                 ->sum('days');
 
             $solde = $acquis - $taken;
@@ -265,16 +263,36 @@ class AbsenceController extends Controller
         $year  = $request->get('year', now()->year);
         $viewMode = $request->get('view', 'calendar');
 
-        $startOfMonth = Carbon::create($year, $month, 1)->startOfMonth();
-        $endOfMonth   = Carbon::create($year, $month, 1)->endOfMonth();
+        $firstDay = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $today = Carbon::today();
+        $startOfMonth = $firstDay->copy();
+        $endOfMonth   = $firstDay->copy()->endOfMonth();
+        $daysInMonth = $firstDay->daysInMonth;
+
+        // Navigation URLs
+        $prevMonthData = array_merge(request()->query(), ['month' => $firstDay->copy()->subMonth()->month, 'year' => $firstDay->copy()->subMonth()->year]);
+        $nextMonthData = array_merge(request()->query(), ['month' => $firstDay->copy()->addMonth()->month, 'year' => $firstDay->copy()->addMonth()->year]);
+        $todayData = array_merge(request()->query(), ['month' => now()->month, 'year' => now()->year]);
+        $prevMonthUrl = route('absences.calendar', $prevMonthData);
+        $nextMonthUrl = route('absences.calendar', $nextMonthData);
+        $todayUrl = route('absences.calendar', $todayData);
+        $resetUrl = route('absences.calendar', ['month' => $month, 'year' => $year]);
 
         // Get all employees for filtering
-        $employees = Employee::where('status', 'active')
+        $employees = Employee::active()
             ->orderBy('department')
             ->orderBy('last_name')
             ->get();
 
-        // Build query for absences
+$departments = $this->getDepartments();
+
+        $employeesQuery = Employee::active()
+            ->orderBy('department')
+            ->orderBy('last_name');
+        $this->applyEmployeeFilters($employeesQuery, $request);
+        $filteredEmployees = $employeesQuery->get();
+
+        // Build query for absences (already filtered by request params)
         $query = Absence::with(['employee', 'replacement'])
             ->where(function($q) use ($startOfMonth, $endOfMonth) {
                 $q->whereBetween('start_date', [$startOfMonth, $endOfMonth])
@@ -286,60 +304,176 @@ class AbsenceController extends Controller
             })
             ->whereIn('status', ['approved', 'pending']);
 
-
-        if ($request->department) {
-            $query->whereHas('employee', function($q) use ($request) {
-                $q->where('department', $request->department);
-            });
-        }
-
-        if ($request->employee_id) {
-            $query->where('employee_id', $request->employee_id);
-        }
-
-        if ($request->status) {
-            $query->where('status', $request->status);
-        }
+        $query->when($request->department, fn($q) => $q->whereHas('employee', function ($q2) use ($request) {
+                $this->applyEmployeeFilters($q2, $request);
+            }))
+            ->when($request->employee_id, fn($q) => $q->where('employee_id', $request->employee_id))
+            ->when($request->status, fn($q) => $q->where('status', $request->status));
 
         $absences = $query->get();
 
+        // Build absenceMap: [emp_id][day] = absence (moved from blade)
+        $absenceMap = [];
+        foreach ($absences as $absence) {
+            $empId = $absence->employee_id;
+            if (!isset($absenceMap[$empId])) {
+                $absenceMap[$empId] = [];
+            }
+            $start = Carbon::parse($absence->start_date);
+            $end = Carbon::parse($absence->end_date);
+            for ($d = $start->copy(); $d->lte($end); $d->addDay()) {
+                if ($d->month == $month && $d->year == $year) {
+                    $absenceMap[$empId][$d->day] = $absence;
+                }
+            }
+        }
 
         $employeeIdsWithAbsences = $absences->pluck('employee_id')->unique();
         $employeesWithAbsences = $employees->filter(function($emp) use ($employeeIdsWithAbsences) {
             return $employeeIdsWithAbsences->contains($emp->id);
         });
 
-
-        $conflicts = [];
-        $approvedAbsences = $absences->where('status', 'approved');
-        foreach ($approvedAbsences as $a) {
-            foreach ($approvedAbsences as $b) {
-                if ($a->id >= $b->id) continue;
-                if ($a->employee_id === $b->employee_id) {
-                    $overlapStart = max($a->start_date, $b->start_date);
-                    $overlapEnd   = min($a->end_date,   $b->end_date);
-                    if ($overlapStart <= $overlapEnd) {
-                        $conflicts[] = ['a' => $a, 'b' => $b];
-                    }
-                }
-            }
+        if ($request->status === 'pending') {
+            $conflicts = collect();
+        } else {
+            $conflicts = DB::table('absences as a1')
+                ->join('absences as a2', function ($join) {
+                    $join->on('a1.employee_id', '=', 'a2.employee_id')
+                         ->whereColumn('a1.id', '<', 'a2.id')
+                         ->where('a1.status', 'approved')
+                         ->where('a2.status', 'approved');
+                })
+                ->join('employees', 'employees.id', '=', 'a1.employee_id')
+                ->where(function ($q) use ($startOfMonth, $endOfMonth) {
+                    $q->whereBetween('a1.start_date', [$startOfMonth, $endOfMonth])
+                      ->orWhereBetween('a1.end_date', [$startOfMonth, $endOfMonth])
+                      ->orWhere(function ($q2) use ($startOfMonth, $endOfMonth) {
+                          $q2->where('a1.start_date', '<=', $startOfMonth)
+                             ->where('a1.end_date', '>=', $endOfMonth);
+                      });
+                })
+                ->where(function ($q) use ($startOfMonth, $endOfMonth) {
+                    $q->whereBetween('a2.start_date', [$startOfMonth, $endOfMonth])
+                      ->orWhereBetween('a2.end_date', [$startOfMonth, $endOfMonth])
+                      ->orWhere(function ($q2) use ($startOfMonth, $endOfMonth) {
+                          $q2->where('a2.start_date', '<=', $startOfMonth)
+                             ->where('a2.end_date', '>=', $endOfMonth);
+                      });
+                })
+                ->when($request->department, fn($q) => $q->where('employees.department', $request->department))
+                ->when($request->employee_id, fn($q) => $q->where('a1.employee_id', $request->employee_id))
+                ->selectRaw('DISTINCT a1.id as absence1_id, a2.id as absence2_id, a1.employee_id, CONCAT(employees.first_name, " ", employees.last_name) as employee_name, a1.type as absence1_type, a2.type as absence2_type, GREATEST(a1.start_date, a2.start_date) as overlap_start, LEAST(a1.end_date, a2.end_date) as overlap_end')
+                ->get()
+                ->map(function ($conflict) {
+                    $a = Absence::find($conflict->absence1_id);
+                    $b = Absence::find($conflict->absence2_id);
+                    return [
+                        'employee_id' => $conflict->employee_id,
+                        'a' => $a,
+                        'b' => $b,
+                        'employee' => $conflict->employee_name,
+                        'absence1' => \App\Models\Absence::TYPES[$conflict->absence1_type] ?? $conflict->absence1_type,
+                        'absence2' => \App\Models\Absence::TYPES[$conflict->absence2_type] ?? $conflict->absence2_type,
+                        'start' => \Carbon\Carbon::parse($conflict->overlap_start)->format('d/m'),
+                        'end' => \Carbon\Carbon::parse($conflict->overlap_end)->format('d/m/Y'),
+                    ];
+                });
         }
-
 
         $replacements = $absences->whereNotNull('replacement_id');
 
-        $daysInMonth = $startOfMonth->daysInMonth();
-
+        // Stats (moved from blade quick-stats) - now after $conflicts defined
+        $approvedAbsences = $absences->where('status', 'approved');
+        $pendingAbsences = $absences->where('status', 'pending');
+        $stats = [
+            'approved_count' => $approvedAbsences->count(),
+            'pending_count' => $pendingAbsences->count(),
+            'conflicts_count' => $conflicts->count(),
+            'replacements_count' => $replacements->count(),
+            'total_days' => $absences->sum('days'),
+        ];
 
         return view('absences.calendar', compact(
-            'absences', 'conflicts', 'replacements',
-            'employees', 'employeesWithAbsences', 'month', 'year',
-            'startOfMonth', 'endOfMonth', 'daysInMonth', 'viewMode'
+            'absences', 'conflicts', 'replacements', 'employees', 'employeesWithAbsences',
+            'month', 'year', 'firstDay', 'today', 'daysInMonth', 'startOfMonth', 'endOfMonth', 
+            'viewMode', 'filteredEmployees', 'absenceMap', 'stats', 'prevMonthUrl', 
+            'nextMonthUrl', 'todayUrl', 'resetUrl', 'departments'
         ));
     }
 
 
 
+
+    private function applyEmployeeFilters($query, Request $request)
+    {
+        $query->when($request->search, fn($q) => $q->where(function ($q) use ($request) {
+                $q->where('first_name', 'like', "%{$request->search}%")
+                  ->orWhere('last_name', 'like', "%{$request->search}%")
+                  ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$request->search}%"])
+                  ->orWhere('matricule', 'like', "%{$request->search}%");
+            }))
+            ->when($request->department, fn($q, $dep) => $q->where('department', $dep));
+
+        return $query;
+    }
+
+    private function getDepartments()
+    {
+        return Department::names();
+    }
+
+    public function getConflicts(Request $request)
+    {
+        $month = $request->get('month', now()->month);
+        $year  = $request->get('year', now()->year);
+        $startOfMonth = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $endOfMonth   = $startOfMonth->copy()->endOfMonth();
+
+        $conflicts = DB::table('absences as a1')
+            ->join('absences as a2', function ($join) {
+                $join->on('a1.employee_id', '=', 'a2.employee_id')
+                     ->whereColumn('a1.id', '<', 'a2.id')
+                     ->where('a1.status', 'approved')
+                     ->where('a2.status', 'approved');
+            })
+            ->join('employees', 'employees.id', '=', 'a1.employee_id')
+            ->where(function ($q) use ($startOfMonth, $endOfMonth) {
+                $q->whereBetween('a1.start_date', [$startOfMonth, $endOfMonth])
+                  ->orWhereBetween('a1.end_date', [$startOfMonth, $endOfMonth])
+                  ->orWhere(function ($q2) use ($startOfMonth, $endOfMonth) {
+                      $q2->where('a1.start_date', '<=', $startOfMonth)
+                         ->where('a1.end_date', '>=', $endOfMonth);
+                  });
+            })
+            ->where(function ($q) use ($startOfMonth, $endOfMonth) {
+                $q->whereBetween('a2.start_date', [$startOfMonth, $endOfMonth])
+                  ->orWhereBetween('a2.end_date', [$startOfMonth, $endOfMonth])
+                  ->orWhere(function ($q2) use ($startOfMonth, $endOfMonth) {
+                      $q2->where('a2.start_date', '<=', $startOfMonth)
+                         ->where('a2.end_date', '>=', $endOfMonth);
+                  });
+            })
+            ->when($request->department, fn($q) => $q->whereHas('employee', fn($q2) => $this->applyEmployeeFilters($q2, $request)))
+            ->when($request->employee_id, fn($q) => $q->where('a1.employee_id', $request->employee_id))
+            ->selectRaw('DISTINCT a1.id as absence1_id, a2.id as absence2_id, a1.employee_id, CONCAT(employees.first_name, " ", employees.last_name) as employee_name, a1.type as absence1_type, a2.type as absence2_type, GREATEST(a1.start_date, a2.start_date) as overlap_start, LEAST(a1.end_date, a2.end_date) as overlap_end')
+            ->get()
+            ->map(function ($conflict) {
+                $a = Absence::find($conflict->absence1_id);
+                $b = Absence::find($conflict->absence2_id);
+                return [
+                    'employee_id' => $conflict->employee_id,
+                    'a' => $a,
+                    'b' => $b,
+                    'employee' => $conflict->employee_name,
+                    'absence1' => \App\Models\Absence::TYPES[$conflict->absence1_type] ?? $conflict->absence1_type,
+                    'absence2' => \App\Models\Absence::TYPES[$conflict->absence2_type] ?? $conflict->absence2_type,
+                    'start' => \Carbon\Carbon::parse($conflict->overlap_start)->format('d/m'),
+                    'end' => \Carbon\Carbon::parse($conflict->overlap_end)->format('d/m/Y'),
+                ];
+            });
+
+        return response()->json($conflicts);
+    }
 
     public function counters(Request $request)
     {
@@ -347,47 +481,28 @@ class AbsenceController extends Controller
         $search = $request->get('search');
         $department = $request->get('department');
 
-        $query = Employee::where('status', 'active')
+        $query = Employee::active()
             ->orderBy('department')
             ->orderBy('last_name');
 
-        if ($search) {
-            $query->where(function($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%")
-                  ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"])
-                  ->orWhere('matricule', 'like', "%{$search}%");
-            });
-        }
-
-        if ($department) {
-            $query->where('department', $department);
-        }
-
+        $this->applyEmployeeFilters($query, $request);
         $employees = $query->get();
-        $departments = Employee::where('status', 'active')->distinct()->pluck('department')->filter()->sort()->values();
+        $departments = $this->getDepartments();
 
         $countersData = [];
 
         foreach ($employees as $emp) {
-            $hireDate = $emp->hire_date ? Carbon::parse($emp->hire_date) : Carbon::create($year, 1, 1);
-            $startOfYear = Carbon::create($year, 1, 1);
-            $endOfYear   = Carbon::create($year, 12, 31);
-
-            $workStart = $hireDate->gt($startOfYear) ? $hireDate : $startOfYear;
-            $workEnd   = now()->lt($endOfYear) ? now() : $endOfYear;
-            $monthsWorked = max(0, $workStart->floatDiffInMonths($workEnd));
-
-            $acquis = floor($monthsWorked * 1.5);
-
+            $droit = \App\Models\DroitAbsence::where('employee_id', $emp->id)
+                ->where('annee', $year)
+                ->first();
+            
+            $acquis = $droit ? $droit->jours_acquis : 0;
             $taken = Absence::where('employee_id', $emp->id)
                 ->where('status', 'approved')
                 ->whereYear('start_date', $year)
-                ->whereIn('type', ['conge_annuel', 'conge_sans_solde', 'conge_maladie'])
+                ->whereIn('type', ['conge_annuel', 'conge_sans_solde', 'conge_maladie', 'absence_justifiee'])
                 ->sum('days');
-
-            $solde = $acquis - $taken;
-
+            $solde = $droit ? $droit->jours_solde : 0;
             $pending = Absence::where('employee_id', $emp->id)
                 ->where('status', 'pending')
                 ->whereYear('start_date', $year)
@@ -395,12 +510,12 @@ class AbsenceController extends Controller
 
             $countersData[] = [
                 'employee'      => $emp,
-                'months_worked' => floor($monthsWorked),
+                'months_worked' => $droit ? round($droit->jours_acquis / 1.5) : 0,
                 'acquis'        => $acquis,
                 'taken'         => $taken,
                 'pending'       => $pending,
-                'solde'         => round($solde, 2),
-                'solde_if_pending' => round($solde - $pending, 2),
+                'solde'         => $solde,
+                'solde_if_pending' => $solde - $pending,
             ];
         }
 

@@ -2,15 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Pointage;
 use App\Models\CompteurTemps;
+use App\DTOs\CompteurMoisDTO;
+use App\Services\GraphService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class VueEnsembleController extends Controller
 {
+    protected GraphService $graphService;
+
+    public function __construct(GraphService $graphService)
+    {
+        $this->graphService = $graphService;
+    }
     public function index(Request $request)
     {
         $user       = Auth::user();
@@ -19,39 +29,19 @@ class VueEnsembleController extends Controller
         $employeeId = $request->get('employee_id');
         $department = $request->get('department');
 
-        $departments        = Employee::distinct()->pluck('department')->filter()->values();
+        $departments        = Department::names();
         $listeEmployesSelect = Employee::orderBy('first_name')->get(['id', 'first_name', 'last_name', 'matricule', 'department']);
 
-        // ── Mode département ────────────────────────────────────────────────
-        // Si un département est sélectionné ET qu'aucun employé n'est explicitement choisi
-        if ($department && !$employeeId) {
-            $donnesDept = $this->getDonneesDepartement($department, $annee, $mois);
-
-            $moisPrecedent = Carbon::create($annee, $mois, 1)->subMonth();
-            $moisSuivant   = Carbon::create($annee, $mois, 1)->addMonth();
-
-            return view('vue-ensemble.index', array_merge($donnesDept, [
-                'modeDepartement'    => true,
-                'employee'           => null,
-                'listeEmployesSelect' => $listeEmployesSelect,
-                'departments'        => $departments,
-                'annee'              => $annee,
-                'mois'               => $mois,
-                'employeeId'         => null,
-                'department'         => $department,
-                'moisPrecedent'      => $moisPrecedent,
-                'moisSuivant'        => $moisSuivant,
-                'joursDetails'       => [],
-                'semaines'           => [],
-            ]));
-        }
-
-        // ── Mode employé individuel ─────────────────────────────────────────
+        // ── Mode employé par défaut, département conditionnel avec when() ──
         $employee = $this->resoudreEmployee($employeeId, $user);
 
         $compteurMois = null;
         $joursDetails = [];
         $semaines     = [];
+
+        $graphiqueMois = $this->graphService->getGraphiqueMois($employee->id ?? 0, $annee);
+        $moisPrecedent = Carbon::create($annee, $mois, 1)->subMonth();
+        $moisSuivant   = Carbon::create($annee, $mois, 1)->addMonth();
 
         if ($employee && $employee->id > 0) {
             $compteurMois = $this->recalculerCompteurMois($employee, $annee, $mois);
@@ -61,11 +51,7 @@ class VueEnsembleController extends Controller
             $compteurMois = $this->getDefaultCompteur();
         }
 
-        $graphiqueMois = $this->getGraphiqueMois($employee->id ?? 0, $annee);
-        $moisPrecedent = Carbon::create($annee, $mois, 1)->subMonth();
-        $moisSuivant   = Carbon::create($annee, $mois, 1)->addMonth();
-
-        return view('vue-ensemble.index', [
+        $viewData = [
             'modeDepartement'    => false,
             'employee'           => $employee,
             'listeEmployesSelect' => $listeEmployesSelect,
@@ -80,13 +66,25 @@ class VueEnsembleController extends Controller
             'department'         => $department,
             'moisPrecedent'      => $moisPrecedent,
             'moisSuivant'        => $moisSuivant,
-            // variables département vides pour éviter les erreurs dans la vue
             'nomDepartement'     => null,
             'statsGlobalesDept'  => null,
             'employesDept'       => [],
             'graphiqueMoisDept'  => [],
             'semainerDept'       => [],
-        ]);
+        ];
+
+        if ($department && !$employeeId) {
+            $donneesDept = $this->getDonneesDepartement($department, $annee, $mois);
+            $viewData = array_merge($viewData, $donneesDept, [
+                'modeDepartement'    => true,
+                'employee'           => null,
+                'joursDetails'       => [],
+                'semaines'           => [],
+                'employeeId'         => null,
+            ]);
+        }
+
+        return view('vue-ensemble.index', $viewData);
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -100,24 +98,41 @@ class VueEnsembleController extends Controller
         $debut = Carbon::create($annee, $mois, 1)->startOfMonth();
         $fin   = Carbon::create($annee, $mois, 1)->endOfMonth();
 
+        // Batch load all pointages for department to fix N+1
+        $pointagesDept = Pointage::whereIn('employee_id', $employes->pluck('id'))
+            ->whereBetween('date', [$debut->format('Y-m-d'), $fin->format('Y-m-d')])
+            ->get()
+            ->groupBy('employee_id');
+
         $totalPlanifiees      = 0;
         $totalRealisees       = 0;
         $totalSupplementaires = 0;
         $employesDept         = [];
 
         foreach ($employes as $emp) {
-            // Recalcul depuis les pointages pour chaque employé
-            $compteur = $this->recalculerCompteurMois($emp, $annee, $mois);
+            // Compute from batched pointages (no DB query)
+            $empPointages = $pointagesDept->get($emp->id, collect());
+            $heuresRealisees = $empPointages->sum('heures_travaillees');
+            $heuresSupplementaires = $empPointages->sum('heures_supplementaires');
+            $heuresPlanifiees = $this->calculerHeuresPlanifiees($emp, $annee, $mois);
+            $ecart = ($heuresRealisees + $heuresSupplementaires) - $heuresPlanifiees;
 
-            $totalPlanifiees      += $compteur->heures_planifiees;
-            $totalRealisees       += $compteur->heures_realisees;
-            $totalSupplementaires += $compteur->heures_supplementaires;
+            $totalPlanifiees      += $heuresPlanifiees;
+            $totalRealisees       += $heuresRealisees;
+            $totalSupplementaires += $heuresSupplementaires;
+
+            $compteur = (object) [
+                'heures_planifiees' => $heuresPlanifiees,
+                'heures_realisees' => $heuresRealisees,
+                'heures_supplementaires' => $heuresSupplementaires,
+                'ecart' => $ecart,
+            ];
 
             $employesDept[] = [
                 'id'          => $emp->id,
                 'nom'         => $emp->first_name . ' ' . $emp->last_name,
                 'initiales'   => strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1)),
-                'poste'       => $emp->position ?? 'Employé',
+'poste'       => $emp->position ?? 'Employé',
                 'contrat'     => $emp->contract_type ?? 'CDI',
                 'work_hours'  => $emp->work_hours ?? 35,
                 'planifiees'  => round($compteur->heures_planifiees, 1),
@@ -144,7 +159,7 @@ class VueEnsembleController extends Controller
         ];
 
         // Graphique annuel agrégé du département
-        $graphiqueMoisDept = $this->getGraphiqueMoisDepartement($department, $annee);
+        $graphiqueMoisDept = $this->graphService->getGraphiqueMoisDepartement($department, $annee);
 
         // Semaines agrégées du département
         $semainerDept = $this->getSemainesDepartement($employes, $annee, $mois);
@@ -160,30 +175,7 @@ class VueEnsembleController extends Controller
         ];
     }
 
-    private function getGraphiqueMoisDepartement(string $department, int $annee): array
-    {
-        $nomsMois  = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
-        $employeIds = Employee::where('department', $department)->pluck('id');
 
-        $compteurs = CompteurTemps::whereIn('employee_id', $employeIds)
-            ->where('annee', $annee)
-            ->get()
-            ->groupBy('mois');
-
-        $donnees = [];
-        for ($m = 1; $m <= 12; $m++) {
-            $groupe = $compteurs->get($m, collect());
-            $donnees[] = [
-                'mois'             => $nomsMois[$m - 1],
-                'numero'           => $m,
-                'heures_planifiees' => round($groupe->sum('heures_planifiees'), 1),
-                'heures_realisees'  => round($groupe->sum('heures_realisees'), 1),
-                'heures_supp'       => round($groupe->sum('heures_supplementaires'), 1),
-            ];
-        }
-
-        return $donnees;
-    }
 
     private function getSemainesDepartement($employes, int $annee, int $mois): array
     {
@@ -278,16 +270,16 @@ class VueEnsembleController extends Controller
         $heuresPlanifiees      = $this->calculerHeuresPlanifiees($employee, $annee, $mois);
         $ecart                 = ($heuresRealisees + $heuresSupplementaires) - $heuresPlanifiees;
 
-        return CompteurTemps::updateOrCreate(
+        $compteur = CompteurTemps::updateOrCreate(
             ['employee_id' => $employee->id, 'annee' => $annee, 'mois' => $mois],
             [
                 'heures_planifiees'      => $heuresPlanifiees,
                 'heures_realisees'       => $heuresRealisees,
                 'heures_supplementaires' => $heuresSupplementaires,
-                'ecart'                  => $ecart,
                 'solde_compteur'         => $ecart,
             ]
         );
+        return CompteurMoisDTO::fromModel($compteur);
     }
 
     private function calculerHeuresPlanifiees(Employee $employee, int $annee, int $mois): float
@@ -317,124 +309,136 @@ class VueEnsembleController extends Controller
         return round($heuresParJour * $nbJours, 2);
     }
 
+    /**
+     * Get optimized daily details with caching & CarbonPeriod
+     */
     private function getJoursDetails(int $employeeId, int $annee, int $mois): array
     {
-        $debut     = Carbon::create($annee, $mois, 1);
-        $fin       = Carbon::create($annee, $mois, 1)->endOfMonth();
-        $pointages = Pointage::where('employee_id', $employeeId)
-            ->whereBetween('date', [$debut->format('Y-m-d'), $fin->format('Y-m-d')])
-            ->get()->keyBy('date');
+        $cacheKey = "vue_ensemble_jours_{$employeeId}_{$annee}_{$mois}";
+        
+        return Cache::remember($cacheKey, 3600, function () use ($employeeId, $annee, $mois) {
+            $dateRange = $this->getDateRange($annee, $mois);
+            $pointages = Pointage::where('employee_id', $employeeId)
+                ->whereBetween('date', [$dateRange['debut'], $dateRange['fin']])
+                ->get()
+                ->keyBy('date');
 
-        $jours   = [];
-        $current = $debut->copy();
+            $jours = [];
+            
+            foreach (CarbonPeriod::create($dateRange['debut_obj'])->days() as $current) {
+                if ($current > $dateRange['fin_obj']) break;
+                
+                $dateStr = $current->format('Y-m-d');
+                $pointage = $pointages->get($dateStr);
+                
+                $jours[] = [
+                    'date' => $dateStr,
+                    'jour' => $current->format('d'),
+                    'nom_jour' => $current->locale('fr')->shortDayName,
+                    'is_weekend' => $current->isWeekend(),
+                    'heures_travaillees' => $pointage ? (float) $pointage->heures_travaillees : 0,
+                    'heures_supplementaires' => $pointage ? (float) $pointage->heures_supplementaires : 0,
+                    'total' => $pointage 
+                        ? (float) $pointage->heures_travaillees + (float) $pointage->heures_supplementaires 
+                        : 0,
+                    'statut' => $pointage 
+                        ? ($pointage->heure_entree ? 'present' : 'absent')
+                        : ($current->isWeekend() ? 'weekend' : 'non_defini'),
+                ];
+            }
 
-        while ($current <= $fin) {
-            $dateStr  = $current->format('Y-m-d');
-            $pointage = $pointages->get($dateStr);
-            $jours[]  = [
-                'date'                   => $dateStr,
-                'jour'                   => $current->format('d'),
-                'nom_jour'               => $current->locale('fr')->shortDayName,
-                'is_weekend'             => $current->isWeekend(),
-                'heures_travaillees'     => $pointage ? (float) $pointage->heures_travaillees : 0,
-                'heures_supplementaires' => $pointage ? (float) $pointage->heures_supplementaires : 0,
-                'total'                  => $pointage
-                    ? (float) $pointage->heures_travaillees + (float) $pointage->heures_supplementaires
-                    : 0,
-                'statut' => $pointage
-                    ? ($pointage->heure_entree ? 'present' : 'absent')
-                    : ($current->isWeekend() ? 'weekend' : 'non_defini'),
-            ];
-            $current->addDay();
-        }
-
-        return $jours;
+            return $jours;
+        });
     }
 
+    /**
+     * Get optimized weekly summary with caching & collection grouping
+     */
     private function getSemainesDuMois(Employee $employee, int $annee, int $mois): array
     {
+        $cacheKey = "vue_ensemble_semaines_{$employee->id}_{$annee}_{$mois}";
         $heuresPlanifieesSemaine = (float) ($employee->work_hours ?? 35);
-        $debutMois  = Carbon::create($annee, $mois, 1);
-        $finMois    = Carbon::create($annee, $mois, 1)->endOfMonth();
+        
+        return Cache::remember($cacheKey, 3600, function () use ($employee, $annee, $mois, $heuresPlanifieesSemaine) {
+            $dateRange = $this->getDateRange($annee, $mois);
+            
+            $pointagesMois = Pointage::where('employee_id', $employee->id)
+                ->whereBetween('date', [$dateRange['debut'], $dateRange['fin']])
+                ->get()
+                ->map(function ($p) {
+                    $p->date_obj = Carbon::parse($p->date);
+                    $p->week_start = $p->date_obj->copy()->startOfWeek(Carbon::MONDAY)->format('Y-m-d');
+                    return $p;
+                });
 
-        $pointagesMois = Pointage::where('employee_id', $employee->id)
-            ->whereBetween('date', [$debutMois->format('Y-m-d'), $finMois->format('Y-m-d')])
-            ->get();
+            // Group by week start for O(1) lookups
+            $pointagesByWeek = $pointagesMois->groupBy('week_start');
+            
+            $semaines = [];
+            $debutMoisObj = $dateRange['debut_obj']->copy()->startOfWeek(Carbon::MONDAY);
+            $finMoisObj = $dateRange['fin_obj'];
+            $numSem = 1;
 
-        $semaines = [];
-        $current  = $debutMois->copy()->startOfWeek(Carbon::MONDAY);
-        $numSem   = 1;
+            while ($debutMoisObj->lte($finMoisObj)) {
+                $weekStart = $debutMoisObj->format('Y-m-d');
+                $weekEnd = $debutMoisObj->copy()->endOfWeek(Carbon::SUNDAY);
+                
+                $ptsSemaine = $pointagesByWeek->get($weekStart, collect());
+                $heuresTravaillees = (float) $ptsSemaine->sum('heures_travaillees');
+                $heuresSupp = (float) $ptsSemaine->sum('heures_supplementaires');
+                $total = $heuresTravaillees + $heuresSupp;
 
-        while ($current->lte($finMois)) {
-            $debutSem = $current->copy();
-            $finSem   = $current->copy()->endOfWeek(Carbon::SUNDAY);
+                $semaines[] = [
+                    'numero' => $numSem,
+                    'debut' => $debutMoisObj->format('d/m'),
+                    'fin' => $weekEnd->format('d/m'),
+                    'heures_planifiees' => $heuresPlanifieesSemaine,
+                    'heures_realisees' => round($heuresTravaillees, 2),
+                    'heures_supplementaires' => round($heuresSupp, 2),
+                    'total' => round($total, 2),
+                    'solde' => round($total - $heuresPlanifieesSemaine, 2),
+                ];
 
-            $pts = $pointagesMois->filter(fn($p) => Carbon::parse($p->date)->between($debutSem, $finSem));
+                $debutMoisObj->addWeek();
+                $numSem++;
+            }
 
-            $heuresTravaillees = (float) $pts->sum('heures_travaillees');
-            $heuresSupp        = (float) $pts->sum('heures_supplementaires');
-            $total             = $heuresTravaillees + $heuresSupp;
-
-            $semaines[] = [
-                'numero'            => $numSem,
-                'debut'             => $debutSem->format('d/m'),
-                'fin'               => $finSem->format('d/m'),
-                'heures_planifiees' => $heuresPlanifieesSemaine,
-                'heures_realisees'  => round($heuresTravaillees, 2),
-                'heures_supplementaires' => round($heuresSupp, 2),
-                'total'             => round($total, 2),
-                'solde'             => round($total - $heuresPlanifieesSemaine, 2),
-            ];
-
-            $current->addWeek();
-            $numSem++;
-        }
-
-        return $semaines;
+            return $semaines;
+        });
     }
 
-    private function getGraphiqueMois(int $employeeId, int $annee): array
+
+
+    private function getDefaultCompteur(): CompteurMoisDTO
     {
-        $nomsMois = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
-        $compteurs = $employeeId
-            ? CompteurTemps::where('employee_id', $employeeId)->where('annee', $annee)->get()->keyBy('mois')
-            : collect();
-
-        $donnees = [];
-        for ($m = 1; $m <= 12; $m++) {
-            $c = $compteurs->get($m);
-            $donnees[] = [
-                'mois'             => $nomsMois[$m - 1],
-                'numero'           => $m,
-                'heures_planifiees' => $c ? (float) $c->heures_planifiees : 0,
-                'heures_realisees'  => $c ? (float) $c->heures_realisees  : 0,
-                'heures_supp'       => $c ? (float) $c->heures_supplementaires : 0,
-            ];
-        }
-
-        return $donnees;
-    }
-
-    private function getDefaultCompteur(): object
-    {
-        return (object) [
-            'heures_planifiees'      => 0,
-            'heures_realisees'       => 0,
-            'heures_supplementaires' => 0,
-            'ecart'                  => 0,
-            'solde_compteur'         => 0,
-        ];
+        return CompteurMoisDTO::defaults();
     }
 
     private function validerAnnee($val): int
     {
         $v = (int) $val;
-        return ($v >= 1900 && $v <= 2100) ? $v : Carbon::now()->year;
+        return ($v >= 1900 && $v <= 2100) ? $v : now()->year;
     }
 
     private function validerMois($val): int
     {
         $v = (int) $val;
-        return ($v >= 1 && $v <= 12) ? $v : Carbon::now()->month;
+        return ($v >= 1 && $v <= 12) ? $v : now()->month;
+    }
+
+    /**
+     * Get standardized month date range
+     */
+    private function getDateRange(int $annee, int $mois): array
+    {
+        $debut = Carbon::create($annee, $mois, 1)->startOfMonth();
+        $fin = Carbon::create($annee, $mois, 1)->endOfMonth();
+        
+        return [
+            'debut' => $debut->format('Y-m-d'),
+            'fin' => $fin->format('Y-m-d'),
+            'debut_obj' => $debut,
+            'fin_obj' => $fin
+        ];
     }
 }

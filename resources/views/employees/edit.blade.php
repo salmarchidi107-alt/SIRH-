@@ -128,11 +128,8 @@
                 </div>
                 <div class="form-group">
                     <label>Contrat *</label>
-                    <select name="contract_type" class="form-control" required>
-                        @foreach(['CDI','CDD','Interim','Stage'] as $ct)
-                            <option value="{{ $ct }}" {{ old('contract_type', $employee->contract_type) == $ct ? 'selected' : '' }}>{{ $ct }}</option>
-                        @endforeach
-                    </select>
+                    <input type="text" name="contract_type" class="form-control" value="{{ old('contract_type', $employee->contract_type) }}" required placeholder="ex: CDI, CDD">
+                    @error('contract_type') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group">
                     <label>Date d'embauche *</label>
@@ -214,14 +211,8 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>Temps de travail (h/semaine)</label>
-                    <select name="work_hours" class="form-control">
-                        <option value="">Sélectionner...</option>
-                        <option value="24" {{ old('work_hours', $employee->work_hours) == '24' ? 'selected' : '' }}>24h/semaine (Mi-temps)</option>
-                        <option value="36" {{ old('work_hours', $employee->work_hours) == '36' ? 'selected' : '' }}>36h/semaine (3/4 temps)</option>
-                        <option value="40" {{ old('work_hours', $employee->work_hours) == '40' ? 'selected' : '' }}>40h/semaine (Temps plein)</option>
-                        <option value="44" {{ old('work_hours', $employee->work_hours) == '44' ? 'selected' : '' }}>44h/semaine (Surcroit)</option>
-                        <option value="48" {{ old('work_hours', $employee->work_hours) == '48' ? 'selected' : '' }}>48h/semaine (Temps plein +)</option>
-                    </select>
+                    <input type="number" name="work_hours" class="form-control" value="{{ old('work_hours', $employee->work_hours) }}" min="0" step="0.5" placeholder="ex: 40">
+                    @error('work_hours') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group">
                     <label>Début du contrat</label>

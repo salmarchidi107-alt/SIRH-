@@ -9,8 +9,7 @@
         <h1>Absences & Congés</h1>
         <p>{{ $absences->total() }} demandes d'absence</p>
     </div>
-    <div style="display:flex;gap:8px">
-        
+    <div class="flex gap-2">
         <a href="{{ route('absences.create') }}" class="btn btn-primary">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -21,7 +20,7 @@
 </div>
 
 <div class="filters-bar">
-    <form method="GET" action="{{ route('absences.index') }}" class="filters-bar" style="margin:0;flex-wrap:wrap;gap:12px">
+    <form method="GET" action="{{ route('absences.index') }}" class="filters-bar flex-wrap gap-3">
         <div class="search-bar">
             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -44,7 +43,7 @@
 </div>
 
 @if($pending_count > 0)
-<div class="alert alert-warning" style="margin-bottom:20px">
+<div class="alert alert-warning mb-5">
     ⚠️ <strong>{{ $pending_count }}</strong> demande(s) en attente d'approbation
 </div>
 @endif
@@ -81,9 +80,9 @@
                     </td>
                     <td><span class="font-semibold">{{ $absence->days }}</span></td>
                     <td>
-                        <span style="font-size:0.8rem;color:var(--text-muted)">
-                            {{ $absence->created_at->format('d/m/Y') }}<br>
-                            <span style="font-size:0.75rem">{{ $absence->created_at->format('H:i') }}</span>
+                        <span class="text-xs text-muted block">
+                            {{ $absence->created_at->format('d/m/Y') }}
+                            <time class="text-[0.6875rem]">{{ $absence->created_at->format('H:i') }}</time>
                         </span>
                     </td>
                     <td>
@@ -98,19 +97,19 @@
                         @endif
                     </td>
                     <td>
-                        <div style="display:flex;gap:6px">
+                        <div class="flex gap-1.5">
                             <a href="{{ route('absences.show', $absence) }}" class="btn btn-ghost btn-sm btn-icon" title="Voir">
                                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                                     <circle cx="12" cy="12" r="3"/>
                                 </svg>
                             </a>
-@if($absence->status == 'pending' && in_array(auth()->user()->role, ['admin', 'rh']))
-                                <form action="{{ route('absences.approve', $absence) }}" method="POST">
+                            @if($absence->status == 'pending' && in_array(auth()->user()->role, ['admin', 'rh']))
+                                <form action="{{ route('absences.approve', $absence) }}" method="POST" class="inline">
                                     @csrf
                                     <button type="submit" class="btn btn-success btn-sm" title="Approuver">✓</button>
                                 </form>
-                                <form action="{{ route('absences.reject', $absence) }}" method="POST">
+                                <form action="{{ route('absences.reject', $absence) }}" method="POST" class="inline">
                                     @csrf
                                     <button type="submit" class="btn btn-danger btn-sm" title="Rejeter">✗</button>
                                 </form>
@@ -120,8 +119,8 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" style="text-align:center;padding:48px;color:var(--text-muted)">
-                        <div style="font-size:2.5rem;margin-bottom:12px">📅</div>
+                    <td colspan="7" class="text-center p-12 text-muted-foreground">
+                        <div class="text-6xl mb-3">📅</div>
                         <div>Aucune absence trouvée</div>
                     </td>
                 </tr>
@@ -129,6 +128,7 @@
             </tbody>
         </table>
     </div>
-    <div style="padding:0 16px">{{ $absences->withQueryString()->links() }}</div>
+    <div class="px-4">{{ $absences->withQueryString()->links() }}</div>
 </div>
 @endsection
+

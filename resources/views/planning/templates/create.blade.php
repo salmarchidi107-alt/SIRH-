@@ -29,7 +29,7 @@
                     <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Département</label>
                     <select name="department" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem">
                         <option value="">— Pour tous les départements —</option>
-                        @foreach(\App\Models\Employee::where('status','active')->distinct('department')->pluck('department')->filter() as $dept)
+                        @foreach(\App\Models\Department::orderBy('name')->pluck('name')->filter() as $dept)
                             <option value="{{ $dept }}">{{ $dept }}</option>
                         @endforeach
                     </select>

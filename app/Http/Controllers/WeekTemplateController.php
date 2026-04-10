@@ -62,7 +62,7 @@ class WeekTemplateController extends Controller
     public function applyForm()
     {
         $templates = WeekTemplate::all();
-        $employees = Employee::where('status', 'active')->get();
+        $employees = Employee::active()->get();
         return view('planning.templates.apply', compact('templates', 'employees'));
     }
 
@@ -80,7 +80,7 @@ class WeekTemplateController extends Controller
 
         if ($validated['department_target']) {
             $employees = Employee::where('department', $validated['department_target'])
-                ->where('status', 'active')
+                ->active()
                 ->get();
             
             foreach ($employees as $employee) {

@@ -10,11 +10,13 @@
         <h1>{{ $employee->full_name }}</h1>
         <p>{{ $employee->department }} — {{ $employee->position }}</p>
     </div>
-    <div style="display:flex;gap:8px">
-        <a href="{{ route('salary.create', [$employee,'month'=>now()->month,'year'=>now()->year]) }}"
-            class="btn btn-primary">Saisir la paie du mois</a>
-        <a href="{{ route('salary.index') }}" class="btn btn-ghost">← Retour</a>
-    </div>
+    @unless(auth()->user()->isEmployee())
+        <div style="display:flex;gap:8px">
+            <a href="{{ route('salary.create', [$employee,'month'=>now()->month,'year'=>now()->year]) }}"
+                class="btn btn-primary">Saisir la paie du mois</a>
+            <a href="{{ route('salary.index') }}" class="btn btn-ghost">← Retour</a>
+        </div>
+    @endunless
 </div>
 
 @if(session('success'))
@@ -28,8 +30,15 @@
             <div><div style="color:var(--text-muted);font-size:0.75rem">CIN</div><strong>{{ $employee->cin ?? '—' }}</strong></div>
             <div><div style="color:var(--text-muted);font-size:0.75rem">N° CNSS</div><strong>{{ $employee->cnss_number ?? '—' }}</strong></div>
             <div><div style="color:var(--text-muted);font-size:0.75rem">Date d'embauche</div><strong>{{ $employee->hire_date?->format('d/m/Y') ?? '—' }}</strong></div>
-            <div><div style="color:var(--text-muted);font-size:0.75rem">Ancienneté</div><strong>{{ $employee->seniority_label }}</strong></div>
+            <div><div style="color:var(--text-muted);font-size:0.75rem">Mode paiement</div><strong>
+@if($employee->payment_method == 'virement')
+    Virement {{ $employee->bank ?? '—' }}
+@else
+    {{ ucfirst($employee->payment_method ?? '—') }}
+@endif
+</strong></div>
             <div><div style="color:var(--text-muted);font-size:0.75rem">Salaire base</div><strong>{{ number_format($employee->base_salary,0,',',' ') }} MAD</strong></div>
+
             <div><div style="color:var(--text-muted);font-size:0.75rem">Situation familiale</div><strong>{{ ucfirst($employee->family_status ?? 'Célibataire') }}</strong></div>
             <div><div style="color:var(--text-muted);font-size:0.75rem">Enfants</div><strong>{{ $employee->children_count ?? 0 }}</strong></div>
             <div><div style="color:var(--text-muted);font-size:0.75rem">Banque</div><strong>{{ $employee->bank_name ?? '—' }}</strong></div>
@@ -39,16 +48,55 @@
     </div>
 </div>
 
+<div class="card mb-4">
+    <div class="card-header">
+        <h3>Historique des paiements (12 derniers mois)</h3>
+    </div>
+    <div class="card-body">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Période</th>
+                        <th>Net à payer</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($salaries->take(12) as $salary)
+                        <tr>
+                            <td>{{ $salary->month_name }} {{ $salary->year }}</td>
+                            <td style="font-weight:600;color:var(--success)">{{ number_format($salary->net_salary,0,',',' ') }} MAD</td>
+                            <td><span class="badge badge-{{ $salary->status_color }}">{{ $salary->status_label }}</span></td>
+                            <td>
+<a href="{{ route('salary.pdf', $salary) }}" class="btn btn-sm btn-ghost" download="bulletin.pdf">PDF</a>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">Aucun historique</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 @if($salaries->isEmpty())
     <div class="card">
         <div class="card-body" style="padding:60px;text-align:center;color:var(--text-muted)">
             <div style="font-size:3rem;margin-bottom:12px">💰</div>
             <div style="font-size:1rem;margin-bottom:8px">Aucun bulletin de paie</div>
-            <a href="{{ route('salary.create',[$employee,'month'=>now()->month,'year'=>now()->year]) }}"
-               class="btn btn-primary" style="margin-top:12px">Générer le premier bulletin</a>
+@unless(auth()->user()->isEmployee())
+                    <a href="{{ route('salary.create',[$employee,'month'=>now()->month,'year'=>now()->year]) }}"
+                       class="btn btn-primary" style="margin-top:12px">Générer le premier bulletin</a>
+                @endunless
         </div>
     </div>
 @else
+
 
 @foreach($salaries as $i => $salary)
 <div class="card mb-3">
@@ -74,27 +122,29 @@
                 </span>
             </div>
             <div style="display:flex;gap:6px">
-                <a href="{{ route('salary.pdf',$salary) }}"
-                   class="btn btn-sm btn-ghost" onclick="event.stopPropagation()">PDF</a>
-                @if($salary->status==='draft')
-                    <form method="POST" action="{{ route('salary.validate',$salary) }}" onclick="event.stopPropagation()">
-                        @csrf @method('PATCH')
-                        <button class="btn btn-sm btn-success">Valider</button>
-                    </form>
-                @endif
-                @if($salary->status==='validated')
-                    <form method="POST" action="{{ route('salary.paid',$salary) }}" onclick="event.stopPropagation()">
-                        @csrf @method('PATCH')
-                        <button class="btn btn-sm btn-primary">Marquer rémunérer</button>
-                    </form>
-                @endif
-                @if($salary->status==='draft')
-                    <form method="POST" action="{{ route('salary.destroy',$salary) }}"
-                          onsubmit="return confirm('Supprimer ce bulletin ?')" onclick="event.stopPropagation()">
-                        @csrf @method('DELETE')
-                        <button class="btn btn-sm btn-danger">Supprimer</button>
-                    </form>
-                @endif
+<a href="{{ route('salary.pdf',$salary) }}"
+                   class="btn btn-sm btn-ghost" download="bulletin.pdf" onclick="event.stopPropagation()">PDF</a>
+                @unless(auth()->user()->isEmployee())
+                    @if($salary->status==='draft')
+                        <form method="POST" action="{{ route('salary.validate',$salary) }}" onclick="event.stopPropagation()">
+                            @csrf @method('PATCH')
+                            <button class="btn btn-sm btn-success">Valider</button>
+                        </form>
+                    @endif
+                    @if($salary->status==='validated')
+                        <form method="POST" action="{{ route('salary.paid',$salary) }}" onclick="event.stopPropagation()">
+                            @csrf @method('PATCH')
+                            <button class="btn btn-sm btn-primary">Marquer rémunérer</button>
+                        </form>
+                    @endif
+                    @if($salary->status==='draft')
+                        <form method="POST" action="{{ route('salary.destroy',$salary) }}"
+                              onsubmit="return confirm('Supprimer ce bulletin ?')" onclick="event.stopPropagation()">
+                            @csrf @method('DELETE')
+                            <button class="btn btn-sm btn-danger">Supprimer</button>
+                        </form>
+                    @endif
+                @endunless
             </div>
         </div>
     </div>

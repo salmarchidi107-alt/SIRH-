@@ -17,6 +17,7 @@
     @if(!(isset($isEmployee) && $isEmployee))
     <div class="page-header-right" style="display:flex;gap:8px">
         <a href="{{ route('planning.monthly') }}" class="btn btn-outline">Vue Mensuelle</a>
+        <a href="{{ route('planning.weekly.pdf', request()->query()) }}" class="btn btn-outline" target="_blank">Exporter PDF</a>
         <a href="{{ route('planning.templates.index') }}" class="btn btn-outline">Semaines Types</a>
         <a href="{{ route('planning.templates.apply') }}" class="btn btn-outline">➕ Appliquer Semaine Type</a>
         <button type="button" class="btn btn-primary" onclick="openPlanningModal()">
@@ -389,10 +390,7 @@
         <div style="width:16px;height:16px;background:linear-gradient(135deg,#ef4444,#f87171);border-radius:4px"></div>
         <span style="font-size:0.8rem">Garde</span>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
-        <span style="font-size:0.75rem;color:var(--text-muted)">📝 = note attachée &nbsp;|&nbsp; Cliquez sur un shift pour modifier</span>
-    </div>
-</div>
+    
 
 {{-- ══════════════════════════════════════
      SCRIPTS
@@ -402,6 +400,7 @@
 let draggedPlanningId = null;
 
 function drag(event, planningId) {
+    console.log('Drag start', planningId);
     draggedPlanningId = planningId;
     event.dataTransfer.setData("text/plain", planningId);
     event.target.closest('[data-planning-id]').style.opacity = '0.5';
@@ -409,28 +408,48 @@ function drag(event, planningId) {
 
 function allowDrop(event) {
     event.preventDefault();
+    console.log('Allow drop');
     event.target.closest('td').style.background = 'rgba(14,165,233,0.08)';
 }
 
 function drop(event, newDate, newEmployeeId) {
     event.preventDefault();
+    console.log('Drop:', {planningId: draggedPlanningId, newDate, newEmployeeId});
     event.target.closest('td').style.background = '';
     if (!draggedPlanningId) return;
 
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     fetch('{{ route("planning.dragDrop") }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json'
         },
-        body: JSON.stringify({ planning_id: draggedPlanningId, new_date: newDate, new_employee_id: newEmployeeId })
+        body: JSON.stringify({ 
+            planning_id: draggedPlanningId, 
+            new_date: newDate, 
+            new_employee_id: newEmployeeId,
+            _token: csrfToken 
+        })
     })
-    .then(r => r.json())
-    .then(data => { if (data.success) location.reload(); else alert('Erreur lors du déplacement'); })
-    .catch(() => alert('Erreur réseau'));
+
+    .then(r => {
+        console.log('Response status', r.status);
+        return r.json();
+    })
+    .then(data => { 
+        console.log('Response data', data);
+        if (data.success) location.reload(); else alert('Erreur: ' + (data.error || 'Inconnue')); 
+    })
+    .catch(err => { 
+        console.error('Fetch error', err);
+        alert('Erreur réseau'); 
+    });
 
     draggedPlanningId = null;
 }
+
 
 document.addEventListener('dragend', e => {
     const el = e.target.closest('[data-planning-id]');

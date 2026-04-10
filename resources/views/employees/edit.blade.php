@@ -102,6 +102,11 @@
                     </select>
                 </div>
                 <div class="form-group">
+                    <label>Site de travail</label>
+                    <input type="text" name="work_site" class="form-control" value="{{ old('work_site', $employee->work_site) }}" placeholder="ex: Hôpital Central, Clinique Sud">
+                    @error('work_site') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+                </div>
+                <div class="form-group">
                     <label>Compétences</label>
                     <select name="skills" class="form-control">
                         <option value="">Sélectionner...</option>
@@ -123,11 +128,8 @@
                 </div>
                 <div class="form-group">
                     <label>Contrat *</label>
-                    <select name="contract_type" class="form-control" required>
-                        @foreach(['CDI','CDD','Interim','Stage'] as $ct)
-                            <option value="{{ $ct }}" {{ old('contract_type', $employee->contract_type) == $ct ? 'selected' : '' }}>{{ $ct }}</option>
-                        @endforeach
-                    </select>
+                    <input type="text" name="contract_type" class="form-control" value="{{ old('contract_type', $employee->contract_type) }}" required placeholder="ex: CDI, CDD">
+                    @error('contract_type') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group">
                     <label>Date d'embauche *</label>
@@ -164,7 +166,21 @@
                 </div>
                 <div class="form-group">
                     <label>Banque</label>
-                    <input type="text" name="bank" class="form-control" value="{{ old('bank', $employee->bank) }}" placeholder="ex: BMCI">
+                    <select name="bank" class="form-control">
+                        <option value="">Sélectionner une banque...</option>
+                        <optgroup label="Banques principales">
+                            <option value="Attijariwafa Bank" {{ old('bank', $employee->bank) == 'Attijariwafa Bank' ? 'selected' : '' }}>Attijariwafa Bank</option>
+                            <option value="Banque Populaire" {{ old('bank', $employee->bank) == 'Banque Populaire' ? 'selected' : '' }}>Banque Populaire (BCP)</option>
+                            <option value="Bank of Africa" {{ old('bank', $employee->bank) == 'Bank of Africa' ? 'selected' : '' }}>Bank of Africa (BOA)</option>
+                            <option value="CIH Bank" {{ old('bank', $employee->bank) == 'CIH Bank' ? 'selected' : '' }}>CIH Bank</option>
+                            <option value="Crédit Agricole du Maroc" {{ old('bank', $employee->bank) == 'Crédit Agricole du Maroc' ? 'selected' : '' }}>Crédit Agricole du Maroc</option>
+                            <option value="BMCE Bank" {{ old('bank', $employee->bank) == 'BMCE Bank' ? 'selected' : '' }}>BMCE Bank</option>
+                            <option value="CFG Bank" {{ old('bank', $employee->bank) == 'CFG Bank' ? 'selected' : '' }}>CFG Bank</option>
+                            <option value="Société Générale Maroc" {{ old('bank', $employee->bank) == 'Société Générale Maroc' ? 'selected' : '' }}>Société Générale Maroc</option>
+                            <option value="Al Barid Bank" {{ old('bank', $employee->bank) == 'Al Barid Bank' ? 'selected' : '' }}>Al Barid Bank</option>
+                        </optgroup>
+                        <option value="Autre">Autre...</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>RIB</label>
@@ -195,14 +211,8 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>Temps de travail (h/semaine)</label>
-                    <select name="work_hours" class="form-control">
-                        <option value="">Sélectionner...</option>
-                        <option value="24" {{ old('work_hours', $employee->work_hours) == '24' ? 'selected' : '' }}>24h/semaine (Mi-temps)</option>
-                        <option value="36" {{ old('work_hours', $employee->work_hours) == '36' ? 'selected' : '' }}>36h/semaine (3/4 temps)</option>
-                        <option value="40" {{ old('work_hours', $employee->work_hours) == '40' ? 'selected' : '' }}>40h/semaine (Temps plein)</option>
-                        <option value="44" {{ old('work_hours', $employee->work_hours) == '44' ? 'selected' : '' }}>44h/semaine (Surcroit)</option>
-                        <option value="48" {{ old('work_hours', $employee->work_hours) == '48' ? 'selected' : '' }}>48h/semaine (Temps plein +)</option>
-                    </select>
+                    <input type="number" name="work_hours" class="form-control" value="{{ old('work_hours', $employee->work_hours) }}" min="0" step="0.5" placeholder="ex: 40">
+                    @error('work_hours') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group">
                     <label>Début du contrat</label>

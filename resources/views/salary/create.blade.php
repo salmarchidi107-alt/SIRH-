@@ -206,9 +206,7 @@
 
 </div>
 
-{{-- ════════════════════════════════════════════════════════════
-     COLONNE DROITE — RETENUES
-════════════════════════════════════════════════════════════ --}}
+
 <div>
 
     {{-- ── TABLEAU RETENUES ──────────────────────────────────── --}}
@@ -339,29 +337,7 @@
         </div>
     </div>
 
-    {{-- ── CHARGES PATRONALES (info) ─────────────────────────── --}}
-    <div class="card mb-4" style="border-left:3px solid #BA7517">
-        <div class="card-header">
-            <div class="card-title">Charges patronales <span style="font-size:0.8rem;font-weight:400;color:var(--text-muted)">(non déduites du net)</span></div>
-        </div>
-        <div class="card-body" style="padding:0">
-            <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
-                <tr style="border-bottom:1px solid var(--border-color)">
-                    <td style="padding:8px 14px">CNSS patronale</td>
-                    <td style="padding:8px 14px;text-align:right;color:var(--text-muted)">10,29% (plafonné 6 000)</td>
-                </tr>
-                <tr style="border-bottom:1px solid var(--border-color)">
-                    <td style="padding:8px 14px">AMO patronale</td>
-                    <td style="padding:8px 14px;text-align:right;color:var(--text-muted)">2,26% du brut</td>
-                </tr>
-                <tr>
-                    <td style="padding:8px 14px">TFP (Formation prof.)</td>
-                    <td style="padding:8px 14px;text-align:right;color:var(--text-muted)">1,60% du brut</td>
-                </tr>
-            </table>
-        </div>
-    </div>
-
+    
     {{-- Boutons --}}
     <div style="display:flex;gap:12px">
         <button type="submit" class="btn btn-primary" style="flex:1;font-size:1rem;padding:12px">

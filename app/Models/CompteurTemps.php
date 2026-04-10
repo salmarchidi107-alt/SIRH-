@@ -5,6 +5,9 @@ namespace App\Models;
 // Removed CentralTenant import
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\DTOs\CompteurMoisDTO;
+use App\Models\Employee;
+use App\Models\Pointage;
 use Illuminate\Database\Eloquent\Model;
 
 class CompteurTemps extends Model
@@ -69,6 +72,7 @@ class CompteurTemps extends Model
         return 0;
     }
 
+<<<<<<< HEAD
 
     public static function getOuCreeParMois($employeeId, $annee, $mois)
     {
@@ -87,12 +91,25 @@ class CompteurTemps extends Model
 
         $employee = Employee::find($employeeId);
         $heuresPlanifiees = 35 * 4;
+=======
+   
+    public static function getOuCreeParMois($employeeId, $annee, $mois): CompteurMoisDTO
+    {
+        if (!$employeeId) {
+            return new CompteurMoisDTO(140, 0, 0);
+        }
+        
+        $heuresPlanifiees = 35 * 4; 
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
         $compteur = self::where('employee_id', $employeeId)
             ->where('annee', $annee)
             ->where('mois', $mois)
             ->first();
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
         if (!$compteur) {
             $compteur = self::create([
                 'employee_id' => $employeeId,
@@ -105,9 +122,15 @@ class CompteurTemps extends Model
             ]);
         }
 
+<<<<<<< HEAD
 
         $pointages = Pointage::parEmployee($employeeId)
             ->parMois($annee, $mois)
+=======
+        $pointages = Pointage::where('employee_id', $employeeId)
+            ->whereYear('date', $annee)
+            ->whereMonth('date', $mois)
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
             ->get();
 
         $compteur->heures_realisees = $pointages->sum('heures_travaillees');
@@ -115,7 +138,7 @@ class CompteurTemps extends Model
         $compteur->solde_compteur = $compteur->heures_realisees - $compteur->heures_planifiees;
         $compteur->save();
 
-        return $compteur;
+        return CompteurMoisDTO::fromModel($compteur);
     }
 
 

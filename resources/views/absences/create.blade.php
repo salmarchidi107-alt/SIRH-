@@ -32,7 +32,7 @@
 @else
                     <select name="employee_id" class="form-control" required>
                         <option value="">Sélectionner un employé</option>
-                        @if(isset($employees) && $employees->count() > 0)
+                        @if($employees ?? [])
                             @foreach($employees as $emp)
                                 <option value="{{ $emp->id }}" {{ old('employee_id', request('employee_id')) == $emp->id ? 'selected' : '' }}>
                                     {{ $emp->full_name }} — {{ $emp->department }}
@@ -67,7 +67,7 @@
                     <label>Employé de remplacement</label>
                     <select name="replacement_id" class="form-control">
                         <option value="">Aucun</option>
-                        @if(isset($employees) && $employees->count() > 0)
+                        @if($employees ?? [])
                             @foreach($employees as $emp)
                                 <option value="{{ $emp->id }}">{{ $emp->full_name }}</option>
                             @endforeach

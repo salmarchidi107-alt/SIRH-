@@ -19,6 +19,7 @@ class PayrollService
 
         DB::beginTransaction();
 
+<<<<<<< HEAD
         try {
             // Delete existing draft for same month/year
             $employee->salaries()
@@ -32,6 +33,16 @@ class PayrollService
             $overtimeDay = ($data['overtime_day_hours'] ?? 0) * 12; // 12 MAD/hour assumed
             $overtimeNight = ($data['overtime_night_hours'] ?? 0) * 18;
             $overtimeWeekend = ($data['overtime_weekend_hours'] ?? 0) * 24;
+=======
+        // 1. Éléments variables du mois (ajoutés via l'interface)
+$variables = $employee->variableElements()
+            ->where('month', $month)
+            ->where('year', $year)
+            ->get();
+
+$variableGains    = $variables->where('type', \App\Enums\VariableElementType::GAIN)->sum('amount');
+        $variableRetenues = $variables->where('type', \App\Enums\VariableElementType::RETENUE)->sum('amount');
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
 
             $performanceBonus = $data['performance_bonus'] ?? 0;
             $transport = $data['transport_allowance'] ?? 0;
@@ -109,6 +120,7 @@ class PayrollService
      */
     public function getMonthlySummary(int $month, int $year): array
     {
+<<<<<<< HEAD
         $summary = Salary::selectRaw('
             SUM(base_salary + bonuses + overtime_pay) as total_gross,
             SUM(cnss_deduction) as total_cnss,
@@ -130,6 +142,51 @@ class PayrollService
             'count' => $summary->count ?? 0,
             'validated_count' => $summary->validated_count ?? 0,
         ];
+=======
+        $cacheKey = "payroll.summary.{$month}.{$year}";
+        
+        return cache()->remember($cacheKey, now()->addHour(), function () use ($month, $year) {
+            $stats = Salary::where('month', $month)
+                ->where('year', $year)
+                ->selectRaw('
+                    COUNT(*) as count,
+                    SUM(gross_salary) as total_gross,
+                    SUM(cnss_deduction) as total_cnss_sal,
+                    SUM(amo_deduction) as total_amo_sal,
+                    SUM(ir_deduction) as total_ir,
+                    SUM(net_salary) as total_net,
+                    SUM(CASE WHEN status = "validated" THEN 1 ELSE 0 END) as count_validated,
+                    SUM(CASE WHEN status = "paid" THEN 1 ELSE 0 END) as count_paid,
+                    SUM(CASE WHEN status = "draft" THEN 1 ELSE 0 END) as count_draft,
+                    SUM(LEAST(gross_salary, ' . self::CNSS_CEILING . ')) as cnss_bases,
+                    SUM(gross_salary) as total_gross_for_rates
+                ')
+                ->first();
+
+            $cnssCeilSum = $stats->cnss_bases ?? 0;
+            $grossSum = $stats->total_gross_for_rates ?? 0;
+
+            return [
+                'total_gross'           => (float) ($stats->total_gross ?? 0),
+                'total_cnss_sal'        => (float) ($stats->total_cnss_sal ?? 0),
+                'total_amo_sal'         => (float) ($stats->total_amo_sal ?? 0),
+                'total_ir'              => (float) ($stats->total_ir ?? 0),
+                'total_net'             => (float) ($stats->total_net ?? 0),
+                'count'                 => (int) $stats->count,
+                'count_validated'       => (int) $stats->count_validated,
+                'count_paid'            => (int) $stats->count_paid,
+                'count_draft'           => (int) $stats->count_draft,
+                'total_employer_cnss'   => round($cnssCeilSum * self::CNSS_RATE_PAT, 2),
+                'total_employer_amo'    => round($grossSum * self::AMO_RATE, 2),
+                'total_employer_tfp'    => round($grossSum * self::TFP_RATE, 2),
+                'total_employer_cost'   => round(
+                    $cnssCeilSum * self::CNSS_RATE_PAT + 
+                    $grossSum * self::AMO_RATE + 
+                    $grossSum * self::TFP_RATE, 2
+                ),
+            ];
+        });
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
     }
 }
 

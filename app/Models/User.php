@@ -37,7 +37,12 @@ return $this->belongsTo(\App\Models\Tenant::class, 'tenant_id');
 
     public function employee()
     {
-        return $this->belongsTo(Employee::class);
+        return $this->belongsTo(Employee::class, 'employee_id');
+    }
+
+    public function getEmployeeByLegacyKeyAttribute()
+    {
+        return Employee::where('user_id', $this->id)->first();
     }
 
     public function scopeTenant($query)
@@ -69,12 +74,31 @@ return $this->belongsTo(\App\Models\Tenant::class, 'tenant_id');
 
     public function getRoleDisplayName(): string
     {
+<<<<<<< HEAD
         return match($this->role) {
             self::ROLE_SUPERADMIN => 'Super Administrateur',
             self::ROLE_ADMIN => 'Administrateur',
             self::ROLE_EMPLOYEE => 'Employé',
             default => 'Employé',
         };
+=======
+        return \App\Enums\UserRole::tryFrom($this->role)?->label() ?? 'Employé';
+    }
+
+    public function isAdminOrRh(): bool
+    {
+        return in_array($this->role, [\App\Enums\UserRole::Admin->value, \App\Enums\UserRole::Rh->value]);
+    }
+
+    public function can($abilities, $arguments = []): bool
+    {
+        if (is_string($abilities)) {
+            $permissions = config('roles.permissions', []);
+            $allowedRoles = $permissions[$abilities] ?? [];
+            return in_array($this->role, $allowedRoles);
+        }
+        return parent::can($abilities, $arguments);
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
     }
 }
 

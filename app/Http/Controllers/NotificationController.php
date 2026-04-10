@@ -25,12 +25,24 @@ class NotificationController extends Controller
         $recentNews = News::orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
+<<<<<<< HEAD
 
 
         $newsCount = News::count();
 
         $employees = Employee::where('status', 'active')->orderBy('first_name')->paginate(25);
 
+=======
+        
+        
+$totalCount = Absence::where('status', 'pending')->count() + News::count();
+        $pendingCount = Absence::where('status', 'pending')->count();
+        $newsCount = News::count();
+        
+        
+        $employees = Employee::active()->orderBy('first_name')->get();
+        
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
         return view('notifications.index', compact('pendingAbsences', 'recentNews', 'pendingCount', 'newsCount', 'employees'));
     }
 
@@ -50,10 +62,17 @@ class NotificationController extends Controller
         $recentNews = News::orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
+<<<<<<< HEAD
 
         $totalCount = $pendingCount + News::count();
 
 
+=======
+        
+        
+$totalCount = Absence::where('status', 'pending')->count() + News::count();
+        
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
         return response()->json([
             'absences' => $pendingAbsences->map(function($absence) {
                 return [

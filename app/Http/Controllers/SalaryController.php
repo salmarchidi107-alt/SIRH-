@@ -7,53 +7,62 @@ use App\Models\Salary;
 use App\Services\PayrollService;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Exports\SalariesExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class SalaryController extends Controller
 {
     public function __construct(private PayrollService $payrollService) {}
 
-    public function getMonthlySummary(int $month, int $year): array
-    {
-        $salaries = Salary::where('month', $month)
-            ->where('year', $year)
-            ->get();
 
-        return [
-            'total_gross' => $salaries->sum('gross_salary'),
-            'total_cnss_sal' => $salaries->sum('cnss_deduction'),
-            'total_amo_sal' => $salaries->sum('amo_deduction'),
-            'total_ir' => $salaries->sum('ir_deduction'),
-            'total_net' => $salaries->sum('net_salary'),
-            'count' => $salaries->count(),
-            'count_validated' => $salaries->where('status', 'validated')->count(),
-            'count_paid' => $salaries->where('status', 'paid')->count(),
-            'total_employer_cost' => 0,
-            'total_employer_cnss' => 0,
-            'total_employer_amo' => 0,
-            'total_employer_tfp' => 0,
-            'count_draft' => $salaries->where('status', 'draft')->count(),
-        ];
-    }
 
     public function index(Request $request)
     {
         $month = (int) $request->get('month', now()->month);
         $year = (int) $request->get('year', now()->year);
+        $status = $request->get('status');
+        $search = $request->get('search');
 
-        $employees = Employee::with([
+        $query = Employee::with([
             'salaries' => fn($q) => $q->where('month', $month)->where('year', $year),
-        ])
-        ->orderByRaw("CONCAT(first_name, ' ', last_name) ASC")
-        ->get();
+        ]);
+
+        if ($status) {
+            $query->whereHas('salaries', function ($q) use ($status, $month, $year) {
+                $q->where('status', $status)
+                  ->where('month', $month)
+                  ->where('year', $year);
+            });
+        }
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%$search%")
+                  ->orWhere('last_name', 'like', "%$search%")
+                  ->orWhere('matricule', 'like', "%$search%")
+                  ->orWhere('email', 'like', "%$search%");
+            });
+        }
+
+        $employees = $query->orderByRaw("CONCAT(first_name, ' ', last_name) ASC")
+            ->paginate(15);
 
         $summary = $this->getMonthlySummary($month, $year);
 
+<<<<<<< HEAD
         return view('salary.index', compact('employees', 'month', 'year', 'summary'));
 
+=======
+        return view('salary.index', compact('employees', 'month', 'year', 'summary', 'status', 'search'));
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
     }
 
     public function show(Employee $employee)
     {
+        if (auth()->user()->isEmployee() && auth()->user()->employee_id !== $employee->id) {
+            abort(403, 'Accès non autorisé.');
+        }
+
         $salaries = $employee->salaries()
             ->orderByDesc('year')
             ->orderByDesc('month')
@@ -110,6 +119,12 @@ class SalaryController extends Controller
     public function validateSalary(Salary $salary)
     {
         abort_if(
+            auth()->user()->isEmployee(),
+            403,
+            'Accès non autorisé.'
+        );
+
+        abort_if(
             $salary->status !== 'draft',
             403,
             'Ce bulletin ne peut pas être validé.'
@@ -122,6 +137,12 @@ class SalaryController extends Controller
 
     public function markPaid(Salary $salary)
     {
+        abort_if(
+            auth()->user()->isEmployee(),
+            403,
+            'Accès non autorisé.'
+        );
+
         abort_if(
             $salary->status !== 'validated',
             403,
@@ -152,9 +173,39 @@ class SalaryController extends Controller
 
     public function pdf(Salary $salary)
     {
+        if (auth()->user()->isEmployee() && auth()->user()->employee_id !== $salary->employee_id) {
+            abort(403, 'Accès non autorisé.');
+        }
+
         $salary->load('employee');
 
-        $pdf = Pdf::loadView('salary.pdf', compact('salary'))
+        // Préparer données pour bulletin
+        $paie = [
+'salaire_base' => $salary->base_salary,
+            'prime_anciennete' => $salary->seniority_bonus ?? 0,
+            'salaire_brut' => $salary->gross_salary,
+            'net_a_payer' => $salary->net_salary,
+            'cotisation_cnss' => $salary->cnss_deduction,
+            'cotisation_amo' => $salary->amo_deduction,
+            'ir_deduction' => $salary->ir_deduction,
+            // Ajoutez autres champs selon besoin
+        ];
+
+        $employe = [
+            'matricule' => $salary->employee->employee_code ?? $salary->employee->id,
+            'nom' => $salary->employee->full_name,
+            'fonction' => $salary->employee->position ?? 'Employé',
+            'depart' => $salary->employee->department ?? '',
+            'date_embauche' => $salary->employee->hire_date ? $salary->employee->hire_date->format('d/m/Y') : '',
+            // Ajoutez autres champs
+        ];
+
+        $periode = [
+            'debut' => \Carbon\Carbon::create($salary->year, $salary->month, 1)->format('d/m/Y'),
+            'fin' => \Carbon\Carbon::create($salary->year, $salary->month)->endOfMonth()->format('d/m/Y'),
+        ];
+
+        $pdf = Pdf::loadView('salary.bulletin_de_paie', compact('salary', 'paie', 'employe', 'periode'))
             ->setPaper('a4', 'portrait');
 
         $filename = 'bulletin-' .
@@ -172,22 +223,19 @@ class SalaryController extends Controller
             'year' => 'required|integer|min:2000',
         ]);
 
-        $count = 0;
-
-        foreach (Employee::all() as $emp) {
-            $this->payrollService->calculate($emp, [
-                'month' => $request->month,
-                'year' => $request->year,
-                'base_salary' => $emp->base_salary,
-            ]);
-            $count++;
-        }
+        \App\Jobs\GeneratePayrollJob::dispatch($request->month, $request->year);
 
         return redirect()
             ->route('salary.index', [
                 'month' => $request->month,
                 'year' => $request->year
             ])
-            ->with('success', "Paie générée pour $count employés.");
+            ->with('success', 'Génération des paies lancée en arrière-plan (file d\'attente).');
+    }
+
+    public function export()
+    {
+        return Excel::download(new SalariesExport, 'salaires.xlsx');
     }
 }
+

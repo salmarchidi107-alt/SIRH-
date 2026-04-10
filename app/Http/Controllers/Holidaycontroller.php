@@ -8,7 +8,28 @@ use Illuminate\Support\Facades\Cache;
 
 class HolidayController extends Controller
 {
+<<<<<<< HEAD
 
+=======
+    
+    public function debug(): JsonResponse
+    {
+        $response = Http::withoutVerifying()->withHeaders([
+            'accept'    => 'application/json',
+            'X-API-KEY' => 'ff0292833c26ea7056ebc413bfbcaaa48f75fbd235c85615',
+        ])->get("https://calendar-api.ma/api/v1/holidays/2026", [
+            'holiday_type' => 'ND',
+        ]);
+
+
+
+        return response()->json([
+            'status'  => $response->status(),
+            'headers' => $response->headers(),
+            'body'    => $response->json() ?? $response->body(),
+        ]);
+    }
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
 
 
 
@@ -23,10 +44,12 @@ class HolidayController extends Controller
 
             $response = Http::withoutVerifying()->withHeaders([
                 'accept'    => 'application/json',
-                'x-api-key' => config('services.calendarapi.key'),
+            'X-API-KEY' => 'ff0292833c26ea7056ebc413bfbcaaa48f75fbd235c85615',
             ])->get("https://calendar-api.ma/api/v1/holidays/{$year}", [
                 'holiday_type' => 'ND',
             ]);
+
+
 
             if ($response->failed()) {
                 return null;

@@ -12,7 +12,12 @@ use Carbon\Carbon;
 
 class EmployeeDashboardController extends Controller
 {
+<<<<<<< HEAD
 public function index()
+=======
+
+    public function index()
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
     {
         $user     = Auth::user();
         $employee = Employee::where('user_id', $user->id)->firstOrFail();
@@ -122,4 +127,8 @@ public function index()
             'recentNews'
         ));
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06

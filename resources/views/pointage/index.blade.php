@@ -202,6 +202,7 @@
         <div class="pt-topbar-left">
             <span class="pt-title">Pointage — Badgeuse</span>
             <div class="pt-tabs">
+<<<<<<< HEAD
                 <a href="{{ route('pointage.index', ['date' => $currentDate->toDateString(), 'vue' => 'journee']) }}"
                    class="pt-tab {{ request('vue', 'journee') === 'journee' ? 'active' : '' }}">
                     Journée
@@ -209,6 +210,19 @@
                 <a href="{{ route('pointage.index', ['date' => $currentDate->toDateString(), 'vue' => 'employes']) }}"
                    class="pt-tab {{ request('vue') === 'employes' ? 'active' : '' }}">
                     Employés
+=======
+                <a href="{{ route('pointage.index', array_merge(request()->only(['search', 'department']), ['date' => $currentDate->toDateString(), 'vue' => 'tous'])) }}"
+                   class="pt-tab {{ ($vue ?? request('vue', 'tous')) === 'tous' ? 'active' : '' }}">
+                    Tous
+                </a>
+                <a href="{{ route('pointage.index', array_merge(request()->only(['search', 'department']), ['date' => $currentDate->toDateString(), 'vue' => 'pointe'])) }}"
+                   class="pt-tab {{ ($vue ?? request('vue')) === 'pointe' ? 'active' : '' }}">
+                    Pointe
+                </a>
+                <a href="{{ route('pointage.index', array_merge(request()->only(['search', 'department']), ['date' => $currentDate->toDateString(), 'vue' => 'non_pointe'])) }}"
+                   class="pt-tab {{ ($vue ?? request('vue')) === 'non_pointe' ? 'active' : '' }}">
+                    Non pointe
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
                 </a>
             </div>
         </div>
@@ -219,6 +233,19 @@
                 <span>Sync tablette <strong id="sync-ago">—</strong></span>
             </div>
             @endif
+<<<<<<< HEAD
+=======
+
+            {{-- Export PDF Button --}}
+            <div class="pdf-export-dropdown">
+                <a href="{{ route('pointage.pdf', request()->only(['date', 'department', 'search', 'vue'])) }}"
+                   class="pt-btn-export" title="Exporter PDF (filtres actuels)"
+                   style="background: var(--p-primary): #22c55e;; padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; transition: background .15s; white-space: nowrap;">
+                    PDF
+                </a>
+            </div>
+        
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
             <button class="pt-btn-validate" id="btn-validate"
                     data-date="{{ $currentDate->toDateString() }}"
                     data-url="{{ route('pointage.valider-journee') }}">
@@ -227,6 +254,7 @@
         </div>
     </div>
 
+<<<<<<< HEAD
     {{-- ── Week nav ─────────────────────────────────────────── --}}
     <div class="pt-weeknav">
         @php
@@ -234,12 +262,48 @@
             $nextDate = $currentDate->copy()->addWeek();
         @endphp
         <a href="{{ route('pointage.index', ['date' => $prevDate->toDateString()]) }}" class="pt-weeknav-btn">&#8249;</a>
+=======
+    {{-- ── FILTERS BAR - NOUVEAU ────────────────────────────── --}}
+    <div style="background: var(--p-surface); border-bottom: 1px solid var(--p-border); padding: 0.75rem 1.5rem; display: flex; gap: 0.75rem; align-items: center; font-size: 13px;">
+         <strong>Filtrer:</strong> 
+        <form method="GET" action="{{ route('pointage.index') }}" style="display: flex; gap: 0.5rem; align-items: center; flex: 1;">
+            <input type="hidden" name="date" value="{{ $currentDate->toDateString() }}">
+            <input type="hidden" name="vue" value="{{ $vue ?? request('vue', 'tous') }}">
+
+            <input type="text" name="search" placeholder="Nom employé..." value="{{ request('search') }}" onchange="this.form.submit()" style="flex: 1; padding: 0.5rem; border: 1px solid var(--p-border); border-radius: 6px;">
+            <select name="department" onchange="this.form.submit()" style="padding: 0.5rem; border: 1px solid var(--p-border); border-radius: 6px;">
+                <option value=""> Tous départements</option>
+                @foreach($departments as $dept)
+                <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>{{ $dept }}</option>
+                @endforeach
+            </select>
+@if(request()->hasAny(['search', 'department']))
+                <a href="{{ route('pointage.index', ['date' => $currentDate->toDateString(), 'vue' => request('vue')]) }}" style="padding: 0.5rem 1rem; background: var(--p-red-bg); color: var(--p-red); border-radius: 6px; text-decoration: none; font-weight: 500;">✕ Reset</a>
+            @endif
+        </form>
+    </div>
+
+    {{-- ── Week nav ─────────────────────────────────────────── --}}
+    <div class="pt-weeknav">
+
+@php
+            $prevDate = $currentDate->copy()->subWeek();
+            $nextDate = $currentDate->copy()->addWeek();
+            $filterParams = request()->only(['search', 'department']);
+        @endphp
+        <a href="{{ route('pointage.index', array_merge($filterParams, ['date' => $prevDate->toDateString()])) }}" class="pt-weeknav-btn">&#8249;</a>
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
         <span class="pt-week-label">
             {{ $startOfWeek->translatedFormat('d M') }} – {{ $endOfWeek->translatedFormat('d M Y') }}
         </span>
         <span class="pt-week-badge">Semaine {{ $currentDate->weekOfYear }}</span>
+<<<<<<< HEAD
         <a href="{{ route('pointage.index', ['date' => $nextDate->toDateString()]) }}" class="pt-weeknav-btn">&#8250;</a>
         <a href="{{ route('pointage.index', ['date' => today()->toDateString()]) }}"
+=======
+        <a href="{{ route('pointage.index', array_merge($filterParams, ['date' => $nextDate->toDateString()])) }}" class="pt-weeknav-btn">&#8250;</a>
+        <a href="{{ route('pointage.index', array_merge($filterParams, ['date' => today()->toDateString()])) }}"
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
            class="pt-weeknav-btn" title="Aujourd'hui" style="font-size:11px;width:auto;padding:0 10px;">
             Aujourd'hui
         </a>
@@ -250,8 +314,13 @@
 
         {{-- Day sidebar --}}
         <div class="pt-days">
+<<<<<<< HEAD
             @foreach($weekDays as $day)
             <a href="{{ route('pointage.index', ['date' => $day['date']->toDateString()]) }}"
+=======
+@foreach($weekDays as $day)
+            <a href="{{ route('pointage.index', array_merge($filterParams, ['date' => $day['date']->toDateString()])) }}"
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
                class="pt-day {{ $day['isSelected'] ? 'active' : '' }}">
                 <div>
                     <div class="pt-day-name">{{ $day['label'] }}</div>
@@ -272,12 +341,21 @@
                         <th style="width:44px">Validé</th>
                         <th>Employé</th>
                         <th>Absence</th>
+<<<<<<< HEAD
                         <th>Heures travaillées</th>
                         <th>Pause</th>
                         <th>Shifts rémunérés</th>
                         <th style="width:72px;text-align:center">Pause (min)</th>
                         <th style="width:80px">Total</th>
                         <th>Action</th>
+=======
+                    <th>Heures travaillées</th>
+                    <th>Pause total</th>
+                    <th>Pause début / fin</th>
+                    <th style="width:80px">Total travaillé</th>
+                    <th>Action</th>
+
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
                     </tr>
                 </thead>
                 <tbody>
@@ -287,7 +365,11 @@
                     $statut  = $p?->statut ?? 'pas_de_badge';
                     $valide  = $p?->valide ?? false;
                     $isDimmed = $p && $p->total_heures && $p->total_heures < 1;
+<<<<<<< HEAD
                     $isAbsent = in_array($statut, ['absent','absence_injustifiee']);
+=======
+                    $isAbsent = in_array($statut, ['absent','absence']);
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
                     $isNoBadge = $statut === 'pas_de_badge' && !$p?->heure_entree;
                     $isMidnight = $p?->heure_sortie === '00:00:00' || $p?->heure_sortie === '00:00';
                 @endphp
@@ -317,6 +399,7 @@
                     </td>
 
                     {{-- Absence --}}
+<<<<<<< HEAD
                     <td>
                         @if($isAbsent)
                         <span class="pt-badge pt-badge-absent">Absence injustifiée</span>
@@ -324,6 +407,23 @@
                         <input type="checkbox" style="accent-color:var(--p-teal);width:15px;height:15px;" {{ $isAbsent ? 'checked' : '' }} disabled>
                         @endif
                     </td>
+=======
+            <td>
+    <input type="checkbox"
+           class="absent-checkbox"
+           data-employee="{{ $emp['id'] }}"
+           data-date="{{ $currentDate->toDateString() }}"
+           data-url="{{ route('pointage.toggle-absence') }}"
+           style="accent-color:var(--p-teal);width:15px;height:15px;"
+           {{ $isAbsent ? 'checked' : '' }}
+           onchange="toggleAbsence(this)">
+
+    <span class="pt-badge pt-badge-absent"
+          style="{{ !$isAbsent ? 'display:none;' : '' }}">
+        Absence 
+    </span>
+</td>
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
 
                     {{-- Heures travaillées --}}
                     <td>
@@ -350,17 +450,26 @@
                         @endif
                     </td>
 
+<<<<<<< HEAD
                     {{-- Pause --}}
                     <td>
                         @if($p && !$isAbsent && !$isNoBadge)
                         <span class="pt-pause {{ $p->pause_minutes > 0 ? 'pt-pause-on' : 'pt-pause-off' }}">
                             {{ $p->pause_minutes }} mn
+=======
+                    {{-- Pause total --}}
+                    <td>
+                        @if($p && !$isAbsent && !$isNoBadge)
+                        <span class="pt-pause {{ $p->pause_minutes > 0 ? 'pt-pause-on' : 'pt-pause-off' }}">
+                            {{ $p->pause_formatee }}
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
                         </span>
                         @else
                         <span style="color:var(--p-text-light)">—</span>
                         @endif
                     </td>
 
+<<<<<<< HEAD
                     {{-- Shifts rémunérés --}}
                     <td class="pt-shift">
                         @if($p && $p->heure_entree && $p->heure_sortie)
@@ -381,6 +490,26 @@
                         @if($p && $p->total_heures)
                         <span class="pt-total {{ $p->total_heures > 10 ? 'long' : '' }}">
                             {{ number_format($p->total_heures, 2) }}h
+=======
+                    {{-- Pause début / fin --}}
+                    <td>
+                        @if($p && $p->pause_debut && $p->pause_fin)
+                        <span class="pt-time-pill pt-pill-start">{{ $p->pause_debut }}</span>
+                        <span class="pt-time-sep">–</span>
+                        <span class="pt-time-pill pt-pill-end">{{ $p->pause_fin }}</span>
+@elseif($p?->pause_debut)
+                        <span class="pt-time-pill pt-pill-start">{{ $p->pause_debut }}</span> <span style="color:var(--p-text-light);font-size:11px;">en cours</span>
+                        @else
+                        <span style="color:var(--p-text-light)">—</span>
+                        @endif
+                    </td>
+
+                    {{-- Total travaillé --}}
+                    <td>
+                        @if($p && $p->total_heures)
+                        <span class="pt-total {{ $p->total_heures > 10 ? 'long' : '' }}">
+                            {{ $p->total_heures_formate }}
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
                         </span>
                         @else
                         <span style="color:var(--p-border)">—</span>
@@ -388,6 +517,10 @@
                     </td>
 
                     {{-- Action --}}
+<<<<<<< HEAD
+=======
+
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
                     <td>
                         @if($p)
                         <button class="pt-action-btn {{ $p->ignore_badge ? '' : 'keep' }}"
@@ -446,7 +579,11 @@
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
 
+<<<<<<< HEAD
 /* ── Sync temps affiché ─────────────────────────────── */
+=======
+ /* ── Sync temps affiché ─────────────────────────────── */
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
 @if($dernierSync)
 (function() {
     const syncedAt = new Date('{{ $dernierSync->derniere_connexion?->toIso8601String() }}');
@@ -460,12 +597,21 @@ const CSRF = document.querySelector('meta[name="csrf-token"]').content;
         if (el) el.textContent = label;
     }
     updateSyncLabel();
+<<<<<<< HEAD
     setInterval(updateSyncLabel, 30000);
 })();
 @endif
 
 /* ── Polling auto-refresh toutes les 60s ────────────── */
 setTimeout(() => location.reload(), 60000);
+=======
+    setInterval(updateSyncLabel, 3000000);
+})();
+@endif
+
+
+
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
 
 /* ── Valider la journée ─────────────────────────────── */
 document.getElementById('btn-validate').addEventListener('click', async function() {
@@ -485,7 +631,11 @@ document.getElementById('btn-validate').addEventListener('click', async function
         const data = await res.json();
         btn.textContent = '✓ ' + data.message;
         btn.style.background = '#0f766e';
+<<<<<<< HEAD
         setTimeout(() => { btn.textContent = '✓ Valider la journée'; btn.style.background = ''; btn.disabled = false; }, 3000);
+=======
+        setTimeout(() => { btn.textContent = '✓ Valider la journée'; btn.style.background = ''; btn.disabled = false; }, 300000);
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
     } catch(e) {
         btn.textContent = 'Erreur !';
         btn.style.background = '#dc2626';
@@ -493,7 +643,11 @@ document.getElementById('btn-validate').addEventListener('click', async function
     }
 });
 
+<<<<<<< HEAD
 /* ── Toggle validé ──────────────────────────────────── */
+=======
+ /* ── Toggle validé ──────────────────────────────────── */
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06
 async function toggleValider(btn) {
     const url = btn.dataset.url;
     try {
@@ -521,5 +675,43 @@ async function toggleIgnore(btn) {
         btn.textContent = data.ignore_badge ? '⊘ Ignorer' : '👁 Garder';
     } catch(e) { console.error(e); }
 }
+<<<<<<< HEAD
 </script>
 @endpush
+=======
+async function toggleAbsence(checkbox) {
+    const url = checkbox.dataset.url;
+    const employeeId = checkbox.dataset.employee;
+    const date = checkbox.dataset.date;
+    const badge = checkbox.parentElement.querySelector('.pt-badge-absent');
+
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': CSRF,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                employee_id: employeeId,
+                date: date,
+                absent: checkbox.checked
+            })
+        });
+
+        const data = await res.json();
+
+        // UI update
+        badge.style.display = checkbox.checked ? 'inline-block' : 'none';
+
+    } catch (e) {
+        console.error(e);
+        checkbox.checked = !checkbox.checked;
+    }
+}
+
+</script>
+@endpush
+
+>>>>>>> 6b5799881c0e6344d7e3c861606c54fdeaa2dc06

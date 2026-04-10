@@ -14,7 +14,7 @@
 <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px">
     <div class="card">
         <div class="card-header">
-            <div class="card-title">📋 Informations</div>
+            <div class="card-title"> Informations</div>
         </div>
         <div class="card-body">
             <div class="detail-grid">

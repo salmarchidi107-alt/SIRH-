@@ -7,15 +7,44 @@
 <div class="page-header">
     <div class="page-header-left">
         <h1> Compteurs de Congés</h1>
-        <p>Année {{ $year }} — Calcul des droits acquis</p>
+        <p>Année {{ $year }} — Calcul des droits acquis {{ $search ? ' | Recherche: ' . $search : '' }} {{ $department ? ' | Service: ' . $department : '' }}</p>
     </div>
-    <div style="display:flex;gap:10px;align-items:center">
-        <form method="GET" action="{{ route('absences.counters') }}">
-            <select name="year" class="filter-select" onchange="this.form.submit()" style="padding:8px 12px;border-radius:6px;border:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
+        
+        
+        
+        {{-- Filters Form --}}
+        <form method="GET" action="{{ route('absences.counters') }}" style="display:flex;gap:12px;align-items:end;flex-wrap:wrap">
+            <input type="hidden" name="year" value="{{ $year }}">
+            
+            {{-- Search --}}
+            <div class="search-bar" style="position:relative">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--text-muted)">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" name="search" placeholder="Rechercher employé..." value="{{ $search ?? '' }}" style="padding:10px 12px 10px 40px;border:1px solid var(--border);border-radius:8px;min-width:220px">
+            </div>
+            
+            {{-- Department --}}
+            <select name="department" style="padding:10px 12px;border:1px solid var(--border);border-radius:8px;min-width:160px">
+                <option value="">Tous services</option>
+                @foreach($departments as $dept)
+                    <option value="{{ $dept }}" {{ $department == $dept ? 'selected' : '' }}>{{ $dept }}</option>
+                @endforeach
+            </select>
+            
+            {{-- Year --}}
+            <select name="year" style="padding:10px 12px;border:1px solid var(--border);border-radius:8px">
                 @for($y = now()->year + 1; $y >= now()->year - 3; $y--)
                     <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>{{ $y }}</option>
                 @endfor
             </select>
+            
+            <button type="submit" class="btn btn-primary" style="padding:10px 24px">Filtrer</button>
+            
+            @if($search || $department)
+                <a href="{{ route('absences.counters', ['year' => $year]) }}" class="btn btn-ghost">✕ Réinitialiser</a>
+            @endif
         </form>
     </div>
 </div>
@@ -72,7 +101,7 @@
                     <th style="text-align:center">Pris</th>
                     <th style="text-align:center">En attente</th>
                     <th style="text-align:center">Solde</th>
-                    <th style="text-align:center">Si approved</th>
+                    <th style="text-align:center">Statut</th>
                 </tr>
             </thead>
             <tbody>

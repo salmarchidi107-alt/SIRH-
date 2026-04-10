@@ -3,11 +3,6 @@
 @section('title', $employee->full_name)
 @section('page-title', 'Fiche Employé')
 
-@if(auth()->user()->role === 'employee' && auth()->user()->employee_id != $employee->id)
-    <script>
-        document.body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);"><h2>Accès restreint</h2><p>Vous ne pouvez voir que votre propre profil.</p><a href="/trombinoscope" class="btn btn-primary mt-4">← Retour trombinoscope</a></div>';
-    </script>
-@endif
 
 @section('content')
 <!-- Hero Profile Banner -->

@@ -7,9 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class News extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\HasTenantScope;
 
     protected $fillable = [
+        'tenant_id',
         'title',
         'description',
         'image',
@@ -43,3 +44,5 @@ class News extends Model
                     ->orderBy('event_date');
     }
 }
+
+

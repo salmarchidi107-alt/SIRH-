@@ -1,9 +1,11 @@
-   <?php
+<?php
 
 namespace Database\Factories;
 
 use App\Models\Employee;
+use App\Models\Department;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 class EmployeeFactory extends Factory
 {
@@ -15,13 +17,16 @@ class EmployeeFactory extends Factory
         $positions = ['Médecin', 'Infirmier', 'Administrateur', 'Technicien', 'Comptable'];
         $contract_types = ['CDI', 'CDD', 'Intérim'];
 
+        $deptName = $this->faker->randomElement($departments);
+        $dept = Department::firstOrCreate(['name' => $deptName]);
+
         return [
             'matricule' => 'EMP' . str_pad($this->faker->unique()->numberBetween(1, 9999), 4, '0', STR_PAD_LEFT),
             'first_name' => $this->faker->firstName,
             'last_name' => $this->faker->lastName,
             'email' => $this->faker->unique()->safeEmail,
             'phone' => $this->faker->phoneNumber,
-            'department' => $this->faker->randomElement($departments),
+            'department_id' => $dept->id,
             'position' => $this->faker->randomElement($positions),
             'contract_type' => $this->faker->randomElement($contract_types),
             'hire_date' => $this->faker->dateTimeBetween('-10 years', 'now'),
@@ -33,3 +38,4 @@ class EmployeeFactory extends Factory
         ];
     }
 }
+

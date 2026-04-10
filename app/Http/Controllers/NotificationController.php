@@ -12,45 +12,48 @@ class NotificationController extends Controller
 {
     public function index()
     {
-        
+
+
         $pendingAbsences = Absence::with('employee')
             ->where('status', 'pending')
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
-        
-        
+
+        $pendingCount = Absence::where('status', 'pending')->count();
+
         $recentNews = News::orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
-        
-        
-        $pendingCount = $pendingAbsences->count();
-        $newsCount = $recentNews->count();
-        
-        
-        $employees = Employee::where('status', 'active')->orderBy('first_name')->get();
-        
+
+
+        $newsCount = News::count();
+
+        $employees = Employee::where('status', 'active')->orderBy('first_name')->paginate(25);
+
         return view('notifications.index', compact('pendingAbsences', 'recentNews', 'pendingCount', 'newsCount', 'employees'));
     }
-    
+
+
     public function data()
     {
-        
+
+
         $pendingAbsences = Absence::with('employee')
             ->where('status', 'pending')
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
-        
-        
+
+        $pendingCount = Absence::where('status', 'pending')->count();
+
         $recentNews = News::orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
-        
-        
-        $totalCount = $pendingAbsences->count() + $recentNews->count();
-        
+
+        $totalCount = $pendingCount + News::count();
+
+
         return response()->json([
             'absences' => $pendingAbsences->map(function($absence) {
                 return [
@@ -70,7 +73,11 @@ class NotificationController extends Controller
                     'id' => $news->id,
                     'type' => 'news',
                     'title' => $news->title,
-                    'message' => \Str::limit($news->content, 50),
+
+
+            'message' => substr($news->content, 0, 50) . (strlen($news->content) > 50 ? '...' : ''),
+
+
                     'date' => $news->created_at,
                     'created_at' => $news->created_at->format('d/m/Y H:i'),
                     'url' => route('news.show', $news->id),

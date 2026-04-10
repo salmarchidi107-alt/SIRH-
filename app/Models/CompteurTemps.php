@@ -2,16 +2,19 @@
 
 namespace App\Models;
 
+// Removed CentralTenant import
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class CompteurTemps extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\HasTenantScope;
 
     protected $table = 'compteurs_temps';
 
     protected $fillable = [
+        'tenant_id',
         'employee_id',
         'annee',
         'mois',
@@ -66,11 +69,11 @@ class CompteurTemps extends Model
         return 0;
     }
 
-   
+
     public static function getOuCreeParMois($employeeId, $annee, $mois)
     {
         if (!$employeeId) {
-            
+
             $result = new \stdClass();
             $result->heures_planifiees = 140;
             $result->heures_realisees = 0;
@@ -80,16 +83,16 @@ class CompteurTemps extends Model
             $result->taux_realisation = 0;
             return $result;
         }
-        
-        
+
+
         $employee = Employee::find($employeeId);
-        $heuresPlanifiees = 35 * 4; 
+        $heuresPlanifiees = 35 * 4;
         $compteur = self::where('employee_id', $employeeId)
             ->where('annee', $annee)
             ->where('mois', $mois)
             ->first();
 
-       
+
         if (!$compteur) {
             $compteur = self::create([
                 'employee_id' => $employeeId,
@@ -102,7 +105,7 @@ class CompteurTemps extends Model
             ]);
         }
 
-        
+
         $pointages = Pointage::parEmployee($employeeId)
             ->parMois($annee, $mois)
             ->get();
@@ -115,7 +118,7 @@ class CompteurTemps extends Model
         return $compteur;
     }
 
-   
+
     public static function getParAnnee($employeeId, $annee)
     {
         return self::parEmployee($employeeId)
@@ -123,5 +126,8 @@ class CompteurTemps extends Model
             ->orderBy('mois')
             ->get();
     }
+
+    // No tenant relation/scope needed in tenant DB
 }
+
 

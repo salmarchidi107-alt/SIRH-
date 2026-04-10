@@ -11,17 +11,10 @@ public function index()
     {
         $user = Auth::user();
 
-        if (!$user->employee_id && !$user->email) {
-            return redirect()->route('dashboard')->with('error', 'Aucun profil employé associé à ce compte.');
-        }
-
-        $employee = Employee::where('id', $user->employee_id)
-            ->orWhere('email', $user->email)
-            ->first();
-
-        if (!$employee) {
-            return redirect()->route('dashboard')->with('error', 'Profil employé non trouvé.');
-        }
+    $employee = $user->employee ?? Employee::where('email', $user->email)->first();
+    if (!$employee) {
+        return redirect()->route('dashboard')->with('error', 'Profil employé non trouvé.');
+    }
 
         return redirect()->route('employees.show', $employee);
     }

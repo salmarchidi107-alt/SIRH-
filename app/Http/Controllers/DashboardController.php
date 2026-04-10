@@ -10,6 +10,7 @@ use App\Models\CompteurTemps;
 use App\Models\Pointage;
 use App\Models\DroitAbsence;
 use Illuminate\Http\Request;
+use App\Services\Dashboard\HolidayService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
@@ -18,43 +19,12 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        
-        $holidays = [];
-        try {
-            $response = Http::get('https://calendar-api.ma/api/holidays?year=' . date('Y'));
-            if ($response->successful()) {
-                $holidaysData = $response->json();
-                if (isset($holidaysData['holidays'])) {
-                    $holidays = $holidaysData['holidays'];
-                } elseif (is_array($holidaysData)) {
-                    $holidays = $holidaysData;
-                }
-            }
-        } catch (\Exception $e) {
-            \Log::error('Calendar API Error: ' . $e->getMessage());
-        }
 
-       
-        if (empty($holidays)) {
-            $currentYear = date('Y');
-            $holidays = [
-                ['name' => 'Nouvel An', 'date' => $currentYear . '-01-01'],
-                ['name' => 'Manifeste de l\'Indépendance', 'date' => $currentYear . '-01-11'],
-                ['name' => 'Fête du Travail', 'date' => $currentYear . '-05-01'],
-                ['name' => 'Fête de la Throne', 'date' => $currentYear . '-07-30'],
-                ['name' => 'Fête de la Révolution', 'date' => $currentYear . '-08-14'],
-                ['name' => 'Fête de la Jeunesse', 'date' => $currentYear . '-08-21'],
-                ['name' => 'Mort du Roi Hassan II', 'date' => $currentYear . '-07-30'],
-                ['name' => 'Anniversaire du Roi', 'date' => $currentYear . '-08-21'],
-                ['name' => 'Aïd al-Fitr', 'date' => ''], 
-                ['name' => 'Aïd al-Adha', 'date' => ''], 
-                ['name' => 'Nouvel An Hégirien', 'date' => ''], 
-                ['name' => 'Fête de l’Indépendance', 'date' => $currentYear . '-11-18'],
-            ];
-        }
+// $holidays = app(HolidayService::class)->getCurrentYearHolidays(); // Missing service
+
 
 $user = Auth::user();
-        $isAdminOrRH = $user && in_array($user->role, ['admin', 'rh']);
+$isAdminOrRH = $user && ($user->isAdmin() || $user->isRh());
 
         $stats = [
             'total_employees' => Employee::count(),
@@ -88,23 +58,31 @@ $user = Auth::user();
             ->whereDate('date', today())
             ->get();
 
-    
-        $monthly_absences = [];
-        for ($i = 5; $i >= 0; $i--) {
-            $month = now()->subMonths($i);
-            $monthly_absences[] = [
-                'month' => $month->format('M Y'),
-                'count' => Absence::whereYear('start_date', $month->year)
-                    ->whereMonth('start_date', $month->month)
-                    ->count()
-            ];
-        }
 
-    
+$monthly_absences_raw = Absence::selectRaw('
+            YEAR(start_date) year,
+            MONTH(start_date) month_num,
+            COUNT(*) count
+        ')
+        ->where('start_date', '>=', now()->subMonths(6))
+        ->groupBy('year', 'month_num')
+        ->orderBy('year', 'desc')
+        ->orderBy('month_num', 'desc')
+        ->get();
+
+$monthly_absences = $monthly_absences_raw->map(function ($row) {
+            $month = Carbon::create($row->year, $row->month_num, 1);
+            return [
+                'month' => $month->format('M Y'),
+                'count' => (int) $row->count
+            ];
+        })->values()->toArray();
+
+
         $currentMonth = now()->month;
         $currentYear = now()->year;
-        
-        $birthdays = Employee::whereNotNull('birth_date')
+
+$birthdays = Employee::with('user')->whereNotNull('birth_date')
             ->whereMonth('birth_date', $currentMonth)
             ->where('status', 'active')
             ->get()
@@ -114,44 +92,45 @@ $user = Auth::user();
             })
             ->sortBy('birthday_this_year');
 
-        
+
         $upcomingNews = News::active()
             ->upcoming()
             ->take(5)
             ->get();
 
-        
+
         $recentNews = News::active()
             ->where('event_date', '>=', now()->subDays(7))
             ->orderBy('event_date', 'desc')
             ->take(3)
             ->get();
 
-        
-        $conflicts = [];
-        $allApprovedAbsences = Absence::with('employee')
+
+$approvedAbsences = Absence::with('employee')
             ->where('status', 'approved')
+            ->orderBy('employee_id')
+            ->orderBy('start_date')
             ->get();
 
-        foreach ($allApprovedAbsences as $a) {
-            foreach ($allApprovedAbsences as $b) {
-                if ($a->id >= $b->id) continue;
-                if ($a->employee_id === $b->employee_id) {
-                    $overlapStart = max($a->start_date, $b->start_date);
-                    $overlapEnd = min($a->end_date, $b->end_date);
-                    if ($overlapStart <= $overlapEnd) {
-                        $exists = false;
-                        foreach ($conflicts as $c) {
-                            if ($c['employee_id'] == $a->employee_id && 
-                                $c['a_id'] == $a->id && 
-                                $c['b_id'] == $b->id) {
-                                $exists = true;
-                                break;
-                            }
-                        }
-                        if (!$exists) {
+        $conflicts = [];
+        $currentEmployeeId = null;
+        $employeeAbsences = collect();
+
+        foreach ($approvedAbsences as $absence) {
+            if ($absence->employee_id !== $currentEmployeeId) {
+                // Process previous employee
+                $sorted = $employeeAbsences->sortBy('start_date');
+                for ($i = 0; $i < $sorted->count() - 1; $i++) {
+                    $a = $sorted[$i];
+                    $nextIndex = $i + 1;
+                    while ($nextIndex < $sorted->count()) {
+                        $b = $sorted[$nextIndex];
+                        if ($a->end_date < $b->start_date) break; // No more overlaps
+                        $overlapStart = max($a->start_date, $b->start_date);
+                        $overlapEnd = min($a->end_date, $b->end_date);
+                        if ($overlapStart <= $overlapEnd) {
                             $conflicts[] = [
-                                'employee_id' => $a->employee_id,
+                                'employee_id' => $currentEmployeeId,
                                 'a_id' => $a->id,
                                 'b_id' => $b->id,
                                 'employee' => $a->employee->full_name,
@@ -161,37 +140,72 @@ $user = Auth::user();
                                 'end' => $overlapEnd->format('d/m/Y'),
                             ];
                         }
+                        $nextIndex++;
                     }
+                }
+                // Start new employee
+                $currentEmployeeId = $absence->employee_id;
+                $employeeAbsences = collect([$absence]);
+            } else {
+                $employeeAbsences->push($absence);
+            }
+        }
+
+        // Process last employee
+        if ($currentEmployeeId) {
+            $sorted = $employeeAbsences->sortBy('start_date');
+            for ($i = 0; $i < $sorted->count() - 1; $i++) {
+                $a = $sorted[$i];
+                $nextIndex = $i + 1;
+                while ($nextIndex < $sorted->count()) {
+                    $b = $sorted[$nextIndex];
+                    if ($a->end_date < $b->start_date) break;
+                    $overlapStart = max($a->start_date, $b->start_date);
+                    $overlapEnd = min($a->end_date, $b->end_date);
+                    if ($overlapStart <= $overlapEnd) {
+                        $conflicts[] = [
+                            'employee_id' => $currentEmployeeId,
+                            'a_id' => $a->id,
+                            'b_id' => $b->id,
+                            'employee' => $a->employee->full_name,
+                            'absence1' => \App\Models\Absence::TYPES[$a->type] ?? $a->type,
+                            'absence2' => \App\Models\Absence::TYPES[$b->type] ?? $b->type,
+                            'start' => $overlapStart->format('d/m'),
+                            'end' => $overlapEnd->format('d/m/Y'),
+                        ];
+                    }
+                    $nextIndex++;
                 }
             }
         }
 
-       
-        $user = Auth::user();
-        $currentYear = now()->year;
+
+
         $currentMonth = now()->month;
-        
+
         $employee = null;
-        
+
         if ($user) {
-           
+
             $employee = Employee::with('user')->where('user_id', $user->id)->first();
             if (!$employee) {
                 $employee = Employee::with('user')->where('email', $user->email)->first();
             }
-           
+
             if (!$employee && $user->employee_id) {
                 $employee = Employee::with('user')->find($user->employee_id);
             }
         }
-        
+
         $tempsWidget = null;
         $droitsWidget = null;
-        
+
         if ($employee && $employee->id) {
             $tempsWidget = CompteurTemps::getOuCreeParMois($employee->id, $currentYear, $currentMonth);
             $droitsWidget = DroitAbsence::getOuCreeParAnnee($employee->id, $currentYear);
         }
+
+        $holidays = []; // Fallback for missing HolidayService
 
         return view('dashboard.index', compact(
             'stats',

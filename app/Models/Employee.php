@@ -9,16 +9,17 @@ use Carbon\Carbon;
 
 class Employee extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\HasTenantScope;
 
     protected $fillable = [
         'matricule',
+        'tenant_id',
+        'department_id',
         'first_name',
         'last_name',
         'email',
         'phone',
         'photo',
-        'department',
         'position',
         'diploma_type',
         'skills',
@@ -46,6 +47,7 @@ class Employee extends Model
         'cp_days',
         'work_hours_counter',
         'user_id',
+        'is_manager',
     ];
 
     protected $casts = [
@@ -95,9 +97,9 @@ class Employee extends Model
         return $this->hasMany(Salary::class);
     }
 
-    public function variableElements()
+    public function pointages()
     {
-        return $this->hasMany(VariableElement::class);
+        return $this->hasMany(Pointage::class);
     }
 
     public function getPhotoUrlAttribute(): string
@@ -111,6 +113,47 @@ class Employee extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    public function scopeSearch($query, string $search)
+    {
+        return $query->where(function($q) use ($search) {
+            $q->where('first_name', 'like', "%{$search}%")
+              ->orWhere('last_name', 'like', "%{$search}%")
+              ->orWhere('matricule', 'like', "%{$search}%")
+              ->orWhere('email', 'like', "%{$search}%");
+        });
+    }
+
+    public function scopeByDepartment($query, $department)
+    {
+        if (!$department) {
+            return $query;
+        }
+        if (is_numeric($department)) {
+            return $query->where('department_id', $department);
+        }
+        return $query->whereHas('department', fn($q) => $q->where('name', $department));
+    }
+
+    public function scopeByStatus($query, ?string $status)
+    {
+        return $status ? $query->where('status', $status) : $query;
+    }
+
+    public function scopeExcluding($query, int $excludeId)
+    {
+        return $query->where('id', '!=', $excludeId);
     }
 }
 

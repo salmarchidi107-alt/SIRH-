@@ -189,22 +189,8 @@
                         </td>
                     </tr>
 
-                    {{-- Éléments variables gains du mois --}}
-                    @if($variableElements->where('category','gain')->count())
-                    <tr style="background:#f0fff4">
-                        <td colspan="2" style="padding:10px 14px">
-                            <div style="font-weight:600;font-size:0.82rem;color:#065f46;margin-bottom:6px">
-                                Autres gains (éléments variables saisis)
-                            </div>
-                            @foreach($variableElements->where('category','gain') as $ve)
-                            <div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:3px 0">
-                                <span>{{ $ve->label }}</span>
-                                <span class="bonus font-semibold">+{{ number_format($ve->amount,2,',',' ') }} MAD</span>
-                            </div>
-                            @endforeach
-                        </td>
-                    </tr>
-                    @endif
+                    {{-- No variable elements section --}}
+
 
                     {{-- Ligne total gains --}}
                     <tr style="background:#d1fae5">
@@ -296,22 +282,8 @@
                         </td>
                     </tr>
 
-                    {{-- Éléments variables retenues --}}
-                    @if($variableElements->where('category','retenue')->count())
-                    <tr style="background:#fff0f0">
-                        <td colspan="2" style="padding:10px 14px">
-                            <div style="font-weight:600;font-size:0.82rem;color:#991b1b;margin-bottom:6px">
-                                Autres retenues (éléments variables saisis)
-                            </div>
-                            @foreach($variableElements->where('category','retenue') as $ve)
-                            <div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:3px 0">
-                                <span>{{ $ve->label }}</span>
-                                <span class="deduction font-semibold">-{{ number_format($ve->amount,2,',',' ') }} MAD</span>
-                            </div>
-                            @endforeach
-                        </td>
-                    </tr>
-                    @endif
+                    {{-- No variable elements section --}}
+
 
                     {{-- Total retenues salariales --}}
                     <tr style="background:#fecaca;border-top:2px solid #f87171">
@@ -395,10 +367,6 @@
         <button type="submit" class="btn btn-primary" style="flex:1;font-size:1rem;padding:12px">
             Calculer & Enregistrer la paie
         </button>
-        <a href="{{ route('variables.index', ['month'=>$month,'year'=>$year]) }}"
-           class="btn btn-ghost">
-            Éléments variables
-        </a>
     </div>
 
 </div>

@@ -8,31 +8,19 @@ use Illuminate\Support\Facades\Cache;
 
 class HolidayController extends Controller
 {
-    
-    public function debug(): JsonResponse
-    {
-        $response = Http::withoutVerifying()->withHeaders([
-            'accept'    => 'application/json',
-            'x-api-key' => config('services.calendarapi.key'),
-        ])->get("https://calendar-api.ma/api/v1/holidays/2026", [
-            'holiday_type' => 'ND',
-        ]);
 
-        return response()->json([
-            'status'  => $response->status(),
-            'headers' => $response->headers(),
-            'body'    => $response->json() ?? $response->body(),
-        ]);
-    }
 
-    
+
+
+
+
     public function index(int $year, int $month): JsonResponse
     {
         $cacheKey = "holidays_{$year}_{$month}";
 
         $holidays = Cache::remember($cacheKey, now()->addHours(24), function () use ($year, $month) {
 
-           
+
             $response = Http::withoutVerifying()->withHeaders([
                 'accept'    => 'application/json',
                 'x-api-key' => config('services.calendarapi.key'),
@@ -47,7 +35,7 @@ class HolidayController extends Controller
             $json = $response->json();
             $all  = is_array($json) ? $json : ($json['data'] ?? $json['holidays'] ?? []);
 
-            
+
             return array_values(array_filter($all, function ($h) use ($month) {
                 return isset($h['month']) && (int) $h['month'] === $month;
             }));

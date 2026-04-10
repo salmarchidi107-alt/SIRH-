@@ -7,6 +7,9 @@ use App\Models\Employee;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
+use App\Http\Resources\Planning\PlanningResource;
+use App\Http\Resources\Planning\DragDropResponseResource;
+
 class PlanningController extends Controller
 {
     public function index(Request $request)
@@ -15,32 +18,44 @@ class PlanningController extends Controller
         $month = $request->month ?? now()->month;
         $year = $request->year ?? now()->year;
 
-        $employees = Employee::where('status', 'active')->get();
+        $user_employee_id = null;
+        if (auth()->check() && auth()->user()->role === 'employer' && auth()->user()->employee_id) {
+            $user_employee_id = auth()->user()->employee_id;
+        }
+
+$employees = Employee::with(['user', 'manager'])->where('status', 'active')->when($user_employee_id, fn($q) => $q->where('id', $user_employee_id))->get();
         $plannings = Planning::with('employee')
             ->whereMonth('date', $month)
             ->whereYear('date', $year)
             ->when($employee_id, fn($q) => $q->where('employee_id', $employee_id))
+            ->when($user_employee_id, fn($q) => $q->where('employee_id', $user_employee_id))
             ->get();
 
         return view('planning.index', compact('plannings', 'employees', 'month', 'year', 'employee_id'));
     }
 
-    
+
     public function weekly(Request $request)
     {
         $week = $request->week ?? now()->weekOfYear;
         $year = $request->year ?? now()->year;
-        
-       
+
+
         $search = $request->search;
         $department = $request->department;
-        
-    
+
+        $user_employee_id = null;
+        if (auth()->check() && auth()->user()->role === 'employer' && auth()->user()->employee_id) {
+            $user_employee_id = auth()->user()->employee_id;
+        }
+
+
         $startOfWeek = Carbon::now()->setISODate($year, $week)->startOfWeek(Carbon::MONDAY);
         $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
-        
-       
+
+
         $employees = Employee::where('status', 'active')
+            ->when($user_employee_id, fn($q) => $q->where('id', $user_employee_id))
             ->when($search, fn($q) => $q->where(function($query) use ($search) {
                 $query->where('first_name', 'like', "%{$search}%")
                     ->orWhere('last_name', 'like', "%{$search}%")
@@ -50,20 +65,21 @@ class PlanningController extends Controller
             ->orderBy('first_name')
             ->orderBy('last_name')
             ->get();
-        
-       
+
+
         $plannings = Planning::with('employee')
             ->whereDate('date', '>=', $startOfWeek)
             ->whereDate('date', '<=', $endOfWeek)
+            ->when($user_employee_id, fn($q) => $q->where('employee_id', $user_employee_id))
             ->get()
             ->groupBy('employee_id');
-        
-       
+
+
         $departments = Employee::whereNotNull('department')
             ->distinct()
             ->pluck('department');
-        
-        
+
+
         $weekDays = [];
         for ($i = 0; $i < 7; $i++) {
             $day = $startOfWeek->copy()->addDays($i);
@@ -77,22 +93,28 @@ class PlanningController extends Controller
         return view('planning.weekly', compact('employees', 'plannings', 'weekDays', 'week', 'year', 'startOfWeek', 'endOfWeek', 'search', 'department', 'departments'));
     }
 
-   
+
     public function monthly(Request $request)
     {
         $month = $request->month ?? now()->month;
         $year = $request->year ?? now()->year;
-        
-        
+
+
         $search = $request->search;
         $department = $request->department;
-        
-        
+
+        $user_employee_id = null;
+        if (auth()->check() && auth()->user()->role === 'employer' && auth()->user()->employee_id) {
+            $user_employee_id = auth()->user()->employee_id;
+        }
+
+
         $startOfMonth = Carbon::create($year, $month, 1)->startOfMonth();
         $endOfMonth = $startOfMonth->copy()->endOfMonth();
-        
-       
+
+
         $employees = Employee::where('status', 'active')
+            ->when($user_employee_id, fn($q) => $q->where('id', $user_employee_id))
             ->when($search, fn($q) => $q->where(function($query) use ($search) {
                 $query->where('first_name', 'like', "%{$search}%")
                     ->orWhere('last_name', 'like', "%{$search}%")
@@ -102,24 +124,24 @@ class PlanningController extends Controller
             ->orderBy('first_name')
             ->orderBy('last_name')
             ->get();
-        
-       
+
+
         $plannings = Planning::with('employee')
             ->whereDate('date', '>=', $startOfMonth)
             ->whereDate('date', '<=', $endOfMonth)
             ->get()
             ->groupBy('employee_id');
-        
-        
+
+
         $departments = Employee::whereNotNull('department')
             ->distinct()
             ->pluck('department');
-        
-       
+
+
         $calendarDays = [];
         $startDay = $startOfMonth->copy();
         $endDay = $endOfMonth->copy();
-        
+
         for ($i = 0; $i <= $endDay->diffInDays($startDay); $i++) {
             $day = $startDay->copy()->addDays($i);
             $calendarDays[] = [
@@ -134,22 +156,28 @@ class PlanningController extends Controller
         return view('planning.monthly', compact('employees', 'plannings', 'calendarDays', 'month', 'year', 'startOfMonth', 'endOfMonth', 'search', 'department', 'departments'));
     }
 
-   
+
     public function global(Request $request)
     {
         $month = $request->month ?? now()->month;
         $year = $request->year ?? now()->year;
-        
-      
+
+
         $search = $request->search;
         $department = $request->department;
-        
-      
+
+        $user_employee_id = null;
+        if (auth()->check() && auth()->user()->role === 'employer' && auth()->user()->employee_id) {
+            $user_employee_id = auth()->user()->employee_id;
+        }
+
+
         $startOfMonth = Carbon::create($year, $month, 1)->startOfMonth();
         $endOfMonth = $startOfMonth->copy()->endOfMonth();
-        
-     
+
+
         $employees = Employee::where('status', 'active')
+            ->when($user_employee_id, fn($q) => $q->where('id', $user_employee_id))
             ->when($search, fn($q) => $q->where(function($query) use ($search) {
                 $query->where('first_name', 'like', "%{$search}%")
                     ->orWhere('last_name', 'like', "%{$search}%")
@@ -159,24 +187,25 @@ class PlanningController extends Controller
             ->orderBy('first_name')
             ->orderBy('last_name')
             ->get();
-        
-        
+
+
         $plannings = Planning::with('employee')
             ->whereDate('date', '>=', $startOfMonth)
             ->whereDate('date', '<=', $endOfMonth)
+            ->when($user_employee_id, fn($q) => $q->where('employee_id', $user_employee_id))
             ->get()
             ->groupBy('employee_id');
-        
-      
+
+
         $departments = Employee::whereNotNull('department')
             ->distinct()
             ->pluck('department');
-        
-        
+
+
         $calendarDays = [];
         $startDay = $startOfMonth->copy();
         $endDay = $endOfMonth->copy();
-        
+
         for ($i = 0; $i <= $endDay->diffInDays($startDay); $i++) {
             $day = $startDay->copy()->addDays($i);
             $calendarDays[] = [
@@ -193,34 +222,34 @@ class PlanningController extends Controller
 
     public function show(Request $request, Employee $employee = null)
     {
-       
+
         if (!$employee) {
             $employee_id = $request->employee_id;
             if ($employee_id) {
                 $employee = Employee::findOrFail($employee_id);
             }
         }
-        
+
         if (!$employee) {
             return redirect()->route('planning.weekly');
         }
 
-       
+
         $week = $request->week ?? now()->weekOfYear;
         $year = $request->year ?? now()->year;
-        
-        
+
+
         $startOfWeek = Carbon::now()->setISODate($year, $week)->startOfWeek(Carbon::MONDAY);
         $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
-        
-       
+
+
         $plannings = Planning::where('employee_id', $employee->id)
             ->whereDate('date', '>=', $startOfWeek)
             ->whereDate('date', '<=', $endOfWeek)
             ->get()
             ->keyBy('date');
-        
-       
+
+
         $weekDays = [];
         for ($i = 0; $i < 7; $i++) {
             $day = $startOfWeek->copy()->addDays($i);
@@ -244,6 +273,8 @@ class PlanningController extends Controller
             'shift_type' => 'required|in:' . implode(',', array_keys(Planning::SHIFT_TYPES)),
             'notes' => 'nullable|string',
         ]);
+
+        $validated['tenant_id'] = config('app.current_tenant_id');
 
         Planning::updateOrCreate(
             ['employee_id' => $validated['employee_id'], 'date' => $validated['date']],
@@ -284,14 +315,15 @@ class PlanningController extends Controller
 
         $planning = Planning::findOrFail($validated['planning_id']);
         $planning->date = $validated['new_date'];
-        
+
         if ($validated['new_employee_id']) {
             $planning->employee_id = $validated['new_employee_id'];
         }
-        
+
+        $planning->load('employee');
         $planning->save();
 
-        return response()->json(['success' => true, 'message' => 'Planning mis à jour']);
+        return (new DragDropResponseResource(true, new PlanningResource($planning), 'Planning mis à jour avec succès'))->toResponse($request);
     }
 
     public function events(Request $request)

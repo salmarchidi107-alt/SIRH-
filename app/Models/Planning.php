@@ -7,9 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Planning extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\HasTenantScope;
 
     protected $fillable = [
+        'tenant_id',
         'employee_id',
         'date',
         'shift_start',
@@ -35,3 +36,5 @@ class Planning extends Model
         return $this->belongsTo(Employee::class);
     }
 }
+
+

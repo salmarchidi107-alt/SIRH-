@@ -30,32 +30,25 @@
 
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px">
     @forelse($employees as $employee)
-@if(auth()->user()->role === 'employee' && auth()->user()->employee_id != $employee->id)
-    <div class="trombino-card" onclick="alert('Accès restreint - Vous ne pouvez voir que votre profil.'); return false;">
-    @else
-    <a href="{{ route('employees.show', $employee) }}" class="trombino-card">
-    @endif
-        <div class="trombino-photo">
-            @if($employee->photo)
-                <img src="{{ $employee->photo_url }}" alt="{{ $employee->full_name }}">
-            @else
-                {{ strtoupper(substr($employee->first_name,0,1).substr($employee->last_name,0,1)) }}
-            @endif
-        </div>
-        <div class="trombino-name">{{ $employee->full_name }}</div>
-        <div class="trombino-role">{{ $employee->position }}</div>
-        <div class="trombino-dept">{{ $employee->department }}</div>
-@if(auth()->user()->role === 'employee' && auth()->user()->employee_id != $employee->id)
+<a href="{{ route('employees.show', $employee) }}" class="trombino-card">
+    <div class="trombino-photo">
+        @if($employee->photo)
+            <img src="{{ $employee->photo_url }}" alt="{{ $employee->full_name }}">
+        @else
+            {{ strtoupper(substr($employee->first_name,0,1).substr($employee->last_name,0,1)) }}
+        @endif
     </div>
-    @else
-    </a>
-    @endif
-    @empty
+    <div class="trombino-name">{{ $employee->full_name }}</div>
+    <div class="trombino-role">{{ $employee->position }}</div>
+    <div class="trombino-dept">{{ $employee->department }}</div>
+</a>   {{-- ← ICI la fermeture manquait --}}
+
+@empty
     <div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text-muted)">
         <div style="font-size:2.5rem;margin-bottom:12px">👥</div>
         <div>Aucun employé trouvé</div>
     </div>
-    @endforelse
+@endforelse
 </div>
 
 <style>

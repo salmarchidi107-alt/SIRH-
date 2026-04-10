@@ -35,10 +35,6 @@
                 Générer tout le mois
             </button>
         </form>
-        <a href="{{ route('variables.index', ['month'=>$month,'year'=>$year]) }}" class="btn btn-ghost">
-            Éléments variables
-        </a>
-        <a href="{{ route('payroll.settings') }}" class="btn btn-ghost">Paramétrage</a>
     </div>
 </div>
 

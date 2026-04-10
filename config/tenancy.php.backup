@@ -1,0 +1,58 @@
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Central Domains
+    |--------------------------------------------------------------------------
+    |
+    | Central domains are domains that belong to the central app. These
+    | domains will not be identified as tenants and will use the
+    | central database connection.
+    |
+    */
+
+    'central_domains' => [
+        'localhost',
+        '127.0.0.1',
+        'hospitalrh.test',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tenant Database Manager
+    |--------------------------------------------------------------------------
+    |
+    | This class is responsible for creating tenant databases. By default
+    | we use the single database strategy, but you may want to switch
+    | to separate databases per tenant.
+    |
+    */
+
+'database_manager' => \Stancl\Tenancy\DatabaseManagers\MySQLDatabaseManager::class,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tenant Identifier
+    |--------------------------------------------------------------------------
+    |
+    | The class that identifies tenants from requests.
+    |
+    */
+
+'tenant_identifier' => null,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tenant Model
+    |--------------------------------------------------------------------------
+    |
+    | The model used to store tenants.
+    |
+    */
+
+    'tenant_model' => \App\Models\Tenant::class,
+
+];
+

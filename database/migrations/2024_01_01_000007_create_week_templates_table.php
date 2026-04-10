@@ -10,6 +10,8 @@ return new class extends Migration
     {
         Schema::create('week_templates', function (Blueprint $table) {
             $table->id();
+            $table->uuid('tenant_id');
+            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
             $table->string('name');
             $table->string('monday_shift_type')->nullable();
             $table->time('monday_start')->nullable();

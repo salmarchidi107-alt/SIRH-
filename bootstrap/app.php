@@ -10,11 +10,17 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
+    ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'auth' => \Illuminate\Auth\Middleware\Authenticate::class,
+            'identify-tenant' => \App\Http\Middleware\IdentifyTenant::class,
+            'admin'           => \App\Http\Middleware\Admin::class,
+            'employee'        => \App\Http\Middleware\Employee::class,
+            'superadmin'      => \App\Http\Middleware\SuperAdmin::class,
+            'domain-tenant'   => \App\Http\Middleware\DomainTenant::class,
+            'tenant-user'     => \App\Http\Middleware\Authenticated::class,
         ]);
     })
-    ->withExceptions(function (Exceptions $exceptions): void {
+    ->withExceptions(function (Exceptions $exceptions) {
         //
-    })->create();
+    })
+    ->create();

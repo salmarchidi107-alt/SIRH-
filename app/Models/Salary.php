@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Salary extends Model
 {
+    use \App\Traits\HasTenantScope;
     protected $fillable = [
+        'tenant_id',
         'employee_id', 'month', 'year',
         // Gains
         'base_salary', 'seniority_bonus',
@@ -27,6 +29,8 @@ class Salary extends Model
         // Net
         'net_salary', 'status', 'notes',
     ];
+
+    // ── Relations ──────────────────────────────────────────────────
 
     protected $casts = [
         'base_salary'              => 'decimal:2',

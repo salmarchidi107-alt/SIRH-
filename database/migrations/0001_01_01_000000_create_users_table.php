@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->enum('role', ['superadmin', 'admin', 'employee'])->default('employee');
+            $table->foreignUuid('tenant_id')->nullable()->constrained('tenants')->nullOnDelete();
             $table->rememberToken();
             $table->timestamps();
         });

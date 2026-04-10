@@ -8,9 +8,10 @@ use Carbon\Carbon;
 
 class WeekTemplate extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\HasTenantScope;
 
     protected $fillable = [
+        'tenant_id',
         'name',
         'monday_shift_type',
         'monday_start',
@@ -39,6 +40,9 @@ class WeekTemplate extends Model
     {
         return $this->hasMany(Planning::class);
     }
+}
+
+
 
     public function applyToEmployee($employeeId, $startDate)
     {
@@ -53,7 +57,7 @@ class WeekTemplate extends Model
         ];
 
         $date = $startDate->copy()->startOfWeek(Carbon::MONDAY);
-        
+
         foreach ($days as $dayName => $shift) {
             if ($shift['shift_type']) {
                 Planning::updateOrCreate(

@@ -6,16 +6,23 @@ use App\Models\Employee;
 use App\Models\Absence;
 use App\Models\Planning;
 use App\Models\Salary;
+use App\Models\Department;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->call([
+$this->call([
             UserSeeder::class,
+            PlanSeeder::class,
         ]);
-        $departments = ['Médecine Générale', 'Chirurgie', 'Urgences', 'Pédiatrie', 'Radiologie', 'Laboratoire', 'Administration', 'Pharmacie', 'Ressources Humaines'];
+
+        // Create required departments for seed
+        $seedDepartments = ['Médecine Générale', 'Chirurgie', 'Urgences', 'Pédiatrie', 'Radiologie', 'Laboratoire', 'Administration', 'Pharmacie', 'Ressources Humaines'];
+        foreach ($seedDepartments as $name) {
+            Department::firstOrCreate(['name' => $name]);
+        }
 
         $employeesData = [
             ['first_name' => 'Karim', 'last_name' => 'Benali', 'position' => 'Directeur RH', 'department' => 'Ressources Humaines', 'salary' => 18000],
@@ -37,13 +44,14 @@ class DatabaseSeeder extends Seeder
 
         $employees = [];
         foreach ($employeesData as $i => $data) {
+            $dept = Department::firstWhere('name', $data['department']);
             $emp = Employee::create([
                 'matricule' => 'EMP' . str_pad($i + 1, 4, '0', STR_PAD_LEFT),
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'],
                 'email' => strtolower($data['first_name'] . '.' . $data['last_name'] . '@hospitalrh.ma'),
                 'phone' => '06' . rand(10000000, 99999999),
-                'department' => $data['department'],
+                'department_id' => $dept ? $dept->id : null,
                 'position' => $data['position'],
                 'contract_type' => ['CDI', 'CDD', 'CDI', 'CDI', 'CDI'][$i % 5],
                 'hire_date' => now()->subYears(rand(1, 15))->subMonths(rand(0, 11)),
@@ -141,3 +149,4 @@ class DatabaseSeeder extends Seeder
         return 44000 + ($annual - 180000) * 0.38;
     }
 }
+

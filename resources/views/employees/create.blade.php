@@ -229,10 +229,10 @@
         </div>
         <div class="card-body">
             <div class="form-group">
-                <label>
-                    <input type="checkbox" name="create_account" value="1" id="create_account">
+                <label for="create_account">
                     Créer un compte utilisateur pour cet employé
                 </label>
+                <input type="checkbox" name="create_account" value="1" id="create_account">
             </div>
             <div id="account_fields" style="display:none;">
                 <div class="form-grid">
@@ -298,8 +298,8 @@
             <div class="form-group full" style="margin-top: 16px;">
                 <label style="font-weight: 600; margin-bottom: 12px; display: block;"> Jours de travail habituels</label>
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #f1f5f9; border-radius: 8px;">
-                        <input type="checkbox" name="work_days[]" value="lundi" {{ is_array(old('work_days')) && in_array('lundi', old('work_days')) ? 'checked' : '' }}>
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #f1f5f9; border-radius: 8px;">
+                        <input type="checkbox" name="work_days[]" value="lundi" id="work_lundi" {{ is_array(old('work_days')) && in_array('lundi', old('work_days')) ? 'checked' : '' }}>
                         Lun
                     </label>
                     <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #f1f5f9; border-radius: 8px;">

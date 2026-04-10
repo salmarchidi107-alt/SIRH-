@@ -46,9 +46,10 @@ class SalaryController extends Controller
         ->orderByRaw("CONCAT(first_name, ' ', last_name) ASC")
         ->get();
 
-        $summary = $this->payrollService->getMonthlySummary($month, $year);
+        $summary = $this->getMonthlySummary($month, $year);
 
         return view('salary.index', compact('employees', 'month', 'year', 'summary'));
+
     }
 
     public function show(Employee $employee)
@@ -71,17 +72,11 @@ class SalaryController extends Controller
             ->where('year', $year)
             ->first();
 
-        $variableElements = $employee->variableElements()
-            ->where('month', $month)
-            ->where('year', $year)
-            ->get();
-
         return view('salary.create', compact(
             'employee',
             'month',
             'year',
-            'existing',
-            'variableElements'
+            'existing'
         ));
     }
 

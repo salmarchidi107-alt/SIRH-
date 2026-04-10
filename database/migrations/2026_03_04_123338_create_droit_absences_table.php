@@ -10,6 +10,8 @@ return new class extends Migration
     {
         Schema::create('droits_absences', function (Blueprint $table) {
             $table->id();
+            $table->uuid('tenant_id');
+            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
             $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
             $table->integer('annee');
             $table->decimal('jours_acquis', 5, 2)->default(0);
@@ -20,7 +22,7 @@ return new class extends Migration
             $table->decimal('rtt_pris', 5, 2)->default(0);
             $table->timestamps();
 
-            $table->unique(['employee_id', 'annee']);
+            $table->unique(['tenant_id', 'employee_id', 'annee']);
         });
     }
 

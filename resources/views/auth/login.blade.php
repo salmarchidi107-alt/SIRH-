@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Connexion - HospitalRH</title>
+    <title>Connexion - {{ $name ?? 'HospitalRH' }}</title>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <style>
         :root {
-            --primary: #0f6b7c;
+            --primary: {{ $tenantData['brand_color'] ?? '#0f6b7c' }};
             --primary-light: #1a8fa5;
             --accent: #00c9a7;
             --navy: #0d2137;
@@ -41,7 +41,7 @@
         }
 
         .auth-header {
-            background: linear-gradient(135deg, var(--navy) 0%, var(--primary-dark) 100%);
+            background: linear-gradient(135deg, var(--navy) 0%, var(--primary) 100%);
             padding: 32px 24px;
             text-align: center;
             position: relative;
@@ -69,7 +69,7 @@
         .auth-brand-icon {
             width: 48px;
             height: 48px;
-            background: linear-gradient(135deg, var(--primary-light), var(--accent));
+            background: linear-gradient(135deg, var(--primary), var(--accent));
             border-radius: 12px;
             display: flex;
             align-items: center;
@@ -77,6 +77,13 @@
             font-size: 22px;
             color: white;
             box-shadow: 0 4px 12px rgba(0, 201, 167, 0.35);
+            overflow: hidden;
+        }
+
+        .auth-logo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .auth-brand-name {
@@ -218,8 +225,14 @@
         <div class="auth-card">
             <div class="auth-header">
                 <div class="auth-brand">
-                    <div class="auth-brand-icon">🏥</div>
-                    <div class="auth-brand-name">HospitalRH</div>
+                    <div class="auth-brand-icon">
+                        @if(isset($tenantData['logo_path']) && $tenantData['logo_path'])
+                            <img src="{{ asset('storage/' . $tenantData['logo_path']) }}" alt="{{ $tenantData['name'] ?? 'HospitalRH' }}" class="auth-logo-img">
+                        @else
+                            🏥
+                        @endif
+                    </div>
+                    <div class="auth-brand-name">{{ $tenantData['name'] ?? 'HospitalRH' }}</div>
                 </div>
                 <p class="auth-subtitle">Connexion à votre compte</p>
             </div>
@@ -262,25 +275,18 @@
                         >
                     </div>
 
-
-
                     <div class="auth-checkbox">
                         <input type="checkbox" id="remember" name="remember">
                         <label for="remember">Se souvenir de moi</label>
                     </div>
 
                     <button type="submit" class="auth-btn">
-                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                            <polyline points="10 17 15 12 10 7"/>
-                            <line x1="15" y1="12" x2="3" y2="12"/>
+                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
                         </svg>
-                        Se connecter
+                        Connexion
                     </button>
                 </form>
-
-                <div class="auth-footer">
-                </div>
             </div>
         </div>
     </div>

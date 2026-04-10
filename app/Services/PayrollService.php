@@ -4,187 +4,132 @@ namespace App\Services;
 
 use App\Models\Employee;
 use App\Models\Salary;
-use App\Models\VariableElement;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PayrollService
 {
-    // ─── Taux légaux marocains ─────────────────────────────────────
-
-    const CNSS_RATE_SAL   = 0.0448;  // Salariale
-    const CNSS_RATE_PAT   = 0.1029;  // Patronale
-    const CNSS_CEILING    = 6000;    // Plafond mensuel MAD
-    const AMO_RATE        = 0.0226;  // Salariale & patronale
-    const TFP_RATE        = 0.016;   // Taxe formation professionnelle (patronale)
-    const FP_RATE         = 0.20;    // Frais professionnels
-    const FP_MAX_MONTHLY  = 2500;    // Plafond mensuel frais pro
-    const OT_DAY_RATE     = 1.25;    // Heures supp. jour (25%)
-    const OT_NIGHT_RATE   = 1.50;    // Heures supp. nuit (50%)
-    const LEGAL_HOURS     = 191;     // Heures légales mensuelles
-
-    // ─── Barème IR (annuel) ────────────────────────────────────────
-
-    const IR_BRACKETS = [
-        [0,      30000,  0.00, 0],
-        [30001,  50000,  0.10, 3000],
-        [50001,  60000,  0.20, 8000],
-        [60001,  80000,  0.30, 14000],
-        [80001,  180000, 0.34, 17200],
-        [180001, PHP_INT_MAX, 0.38, 24400],
-    ];
-
-    // ─── Calcul principal ──────────────────────────────────────────
-
+    /**
+     * Calculate salary for employee and create/update bulletin.
+     */
     public function calculate(Employee $employee, array $data): Salary
     {
-        $month = (int) $data['month'];
-        $year  = (int) $data['year'];
+        $month = $data['month'];
+        $year = $data['year'];
 
-        $base           = (float) ($data['base_salary'] ?? $employee->base_salary);
-        $overtimeHours  = (float) ($data['overtime_hours'] ?? 0);
-        $bonuses        = (float) ($data['bonuses'] ?? 0);
-        $transportAllow = (float) ($data['transport_allowance'] ?? 0);
+        DB::beginTransaction();
 
-        // 1. Éléments variables du mois (ajoutés via l'interface)
-        $variables = VariableElement::where('employee_id', $employee->id)
-            ->where('month', $month)
-            ->where('year', $year)
-            ->get();
+        try {
+            // Delete existing draft for same month/year
+            $employee->salaries()
+                ->where('month', $month)
+                ->where('year', $year)
+                ->where('status', 'draft')
+                ->delete();
 
-        $variableGains    = $variables->where('type', 'gain')->sum('amount');
-        $variableRetenues = $variables->where('type', 'retenue')->sum('amount');
+            // Calculate components
+            $baseSalary = $data['base_salary'] ?? $employee->base_salary;
+            $overtimeDay = ($data['overtime_day_hours'] ?? 0) * 12; // 12 MAD/hour assumed
+            $overtimeNight = ($data['overtime_night_hours'] ?? 0) * 18;
+            $overtimeWeekend = ($data['overtime_weekend_hours'] ?? 0) * 24;
 
-        // 2. Prime d'ancienneté
-        $seniorityBonus = round($base * $employee->seniority_rate, 2);
+            $performanceBonus = $data['performance_bonus'] ?? 0;
+            $transport = $data['transport_allowance'] ?? 0;
+            $meal = $data['meal_allowance'] ?? 0;
+            $housing = $data['housing_allowance'] ?? 0;
+            $responsibility = $data['responsibility_allowance'] ?? 0;
 
-        // 3. Heures supplémentaires (taux jour par défaut)
-        $hourlyRate   = $base / self::LEGAL_HOURS;
-        $otAmount     = round($hourlyRate * $overtimeHours * (self::OT_DAY_RATE - 1), 2);
+            $absenceDeduction = ($data['absence_days'] ?? 0) * ($baseSalary / 26 / 8 * 8); // Daily rate
+            $advance = $data['advance_deduction'] ?? 0;
+            $loan = $data['loan_deduction'] ?? 0;
+            $garnishment = $data['garnishment_deduction'] ?? 0;
 
-        // 4. Salaire brut total
-        $grossSalary = $base
-            + $seniorityBonus
-            + $otAmount
-            + $bonuses
-            + $transportAllow
-            + $variableGains
-            - $variableRetenues;
+            // Gross salary
+            $grossSalary = $baseSalary + $overtimeDay + $overtimeNight + $overtimeWeekend
+                         + $performanceBonus + $transport + $meal + $housing + $responsibility;
 
-        $grossSalary = max(0, round($grossSalary, 2));
+            // CNSS Employee  (4.28% + 2.26% AMO)
+            $cnssEmployee = $grossSalary * 0.0678; // Approx 6.78%
+            $cnssDeduction = min($cnssEmployee, 600); // CNSS cap
 
-        // 5. CNSS salariale (plafonné à 6 000 MAD)
-        $cnssBase   = min($grossSalary, self::CNSS_CEILING);
-        $cnss       = round($cnssBase * self::CNSS_RATE_SAL, 2);
+            // IR (simplified progressive tax ~10-30%)
+            $taxable = $grossSalary - $cnssDeduction - $absenceDeduction;
+            $irDeduction = $taxable * 0.15; // Simplified 15%
 
-        // 6. AMO salariale
-        $amo = round($grossSalary * self::AMO_RATE, 2);
+            // Net salary
+            $netSalary = $grossSalary - $cnssDeduction - $irDeduction - $advance - $loan - $garnishment + $absenceDeduction * -1;
 
-        // 7. Frais professionnels (20%, max 2 500/mois)
-        $fp = min(round($grossSalary * self::FP_RATE, 2), self::FP_MAX_MONTHLY);
+            // Create bulletin
+            $salary = $employee->salaries()->create([
+                'month' => $month,
+                'year' => $year,
+                'base_salary' => $baseSalary,
+                'overtime_day_hours' => $data['overtime_day_hours'] ?? 0,
+                'overtime_night_hours' => $data['overtime_night_hours'] ?? 0,
+                'overtime_weekend_hours' => $data['overtime_weekend_hours'] ?? 0,
+                'performance_bonus' => $performanceBonus,
+                'transport_allowance' => $transport,
+                'meal_allowance' => $meal,
+                'housing_allowance' => $housing,
+                'responsibility_allowance' => $responsibility,
+                'absence_days' => $data['absence_days'] ?? 0,
+                'advance_deduction' => $advance,
+                'loan_deduction' => $loan,
+                'garnishment_deduction' => $garnishment,
+                'gross_salary' => $grossSalary,
+                'cnss_deduction' => $cnssDeduction,
+                'ir_deduction' => $irDeduction,
+                'net_salary' => $netSalary,
+                'status' => 'draft',
+            ]);
 
-        // 8. Net imposable mensuel
-        $taxableIncome = max(0, round($grossSalary - $cnss - $amo - $fp, 2));
+            DB::commit();
 
-        // 9. IR (calcul annuel ÷ 12)
-        $ir = round($this->calculateIR(
-            $taxableIncome * 12,
-            $employee->family_status ?? 'celibataire',
-            (int) ($employee->children_count ?? 0)
-        ) / 12, 2);
-
-        // 10. Net à payer
-        $netSalary = round($grossSalary - $cnss - $amo - $ir, 2);
-
-        // ─── Persist ──────────────────────────────────────────────
-
-        return Salary::updateOrCreate(
-            [
+            Log::info('Payroll calculated', [
                 'employee_id' => $employee->id,
-                'month'       => $month,
-                'year'        => $year,
-            ],
-            [
-                'base_salary'         => $base,
-                'overtime_hours'      => $overtimeHours,
-                'overtime_amount'     => $otAmount,
-                'seniority_bonus'     => $seniorityBonus,
-                'bonuses'             => $bonuses + $variableGains,
-                'transport_allowance' => $transportAllow,
-                'gross_salary'        => $grossSalary,
-                'cnss_deduction'      => $cnss,
-                'amo_deduction'       => $amo,
-                'fp_deduction'        => $fp,
-                'taxable_income'      => $taxableIncome,
-                'ir_deduction'        => $ir,
-                'net_salary'          => $netSalary,
-                'status'              => 'draft',
-            ]
-        );
-    }
+                'month' => $month,
+                'year' => $year,
+                'net_salary' => $netSalary,
+            ]);
 
-    // ─── Calcul IR barème progressif marocain ──────────────────────
+            return $salary;
 
-    public function calculateIR(float $annualIncome, string $familyStatus, int $children): float
-    {
-        if ($annualIncome <= 0) return 0;
-
-        $ir = 0;
-        foreach (self::IR_BRACKETS as [$min, $max, $rate, $deduction]) {
-            if ($annualIncome > $min) {
-                $ir = ($annualIncome * $rate) - $deduction;
-            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Payroll calculation failed', [
+                'employee_id' => $employee->id,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
         }
-
-        // Déductions familiales
-        $familyDeduction = 0;
-        if ($familyStatus === 'marie') {
-            $familyDeduction += 360;
-        }
-        $familyDeduction += min($children, 6) * 360; // Plafonné à 6 enfants
-
-        return max(0, $ir - $familyDeduction);
     }
 
-    // ─── Simulation (sans persist) ─────────────────────────────────
-
-    public function simulate(Employee $employee, array $data): array
-    {
-        $salary = $this->calculate($employee, $data);
-
-        // Retour d'une simulation sans sauvegarder
-        // On récupère le record puis on le supprime si c'était draft
-        $result = $salary->toArray();
-        return $result;
-    }
-
-    // ─── Résumé masse salariale mensuelle ─────────────────────────
-
+    /**
+     * Get monthly payroll summary for dashboard/reports.
+     */
     public function getMonthlySummary(int $month, int $year): array
     {
-        $salaries = Salary::where('month', $month)->where('year', $year)->get();
-
-
-        $totalPatronal = $salaries->sum(function ($s) {
-            $base = min($s->gross_salary, self::CNSS_CEILING);
-            return $base * self::CNSS_RATE_PAT + $s->gross_salary * self::AMO_RATE + $s->gross_salary * self::TFP_RATE;
-        });
+        $summary = Salary::selectRaw('
+            SUM(base_salary + bonuses + overtime_pay) as total_gross,
+            SUM(cnss_deduction) as total_cnss,
+            SUM(ir_deduction) as total_ir,
+            SUM(net_salary) as total_net,
+            COUNT(*) as count,
+            SUM(CASE WHEN status = "validated" THEN 1 ELSE 0 END) as validated_count
+        ')
+        ->where('month', $month)
+        ->where('year', $year)
+        ->where('tenant_id', config('app.current_tenant_id'))
+        ->first();
 
         return [
-            'total_gross'      => $salaries->sum('gross_salary'),
-            'total_cnss_sal'   => $salaries->sum('cnss_deduction'),
-            'total_amo_sal'    => $salaries->sum('amo_deduction'),
-            'total_ir'         => $salaries->sum('ir_deduction'),
-            'total_net'        => $salaries->sum('net_salary'),
-            'count'            => $salaries->count(),
-            'count_validated'  => $salaries->where('status', 'validated')->count(),
-            'count_paid'       => $salaries->where('status', 'paid')->count(),
-            'count_draft'      => $salaries->where('status', 'draft')->count(),
-            'total_employer_cnss' => $salaries->sum(function ($s) {
-                return min($s->gross_salary, self::CNSS_CEILING) * self::CNSS_RATE_PAT;
-            }),
-            'total_employer_amo'  => $salaries->sum('gross_salary') * self::AMO_RATE,
-            'total_employer_tfp'  => $salaries->sum('gross_salary') * self::TFP_RATE,
-            'total_employer_cost' => $totalPatronal,
+            'total_gross' => $summary->total_gross ?? 0,
+            'total_cnss' => $summary->total_cnss ?? 0,
+            'total_ir' => $summary->total_ir ?? 0,
+            'total_net' => $summary->total_net ?? 0,
+            'count' => $summary->count ?? 0,
+            'validated_count' => $summary->validated_count ?? 0,
         ];
     }
-
 }
+

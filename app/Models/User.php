@@ -2,89 +2,79 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
         'role',
-        'employee_id',
+        'tenant_id',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password'          => 'hashed',
+        'tenant_id'         => 'string',
+    ];
+
+    public function tenant()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+return $this->belongsTo(\App\Models\Tenant::class, 'tenant_id');
     }
 
-    
-    const ROLE_ADMIN = 'admin';
-    const ROLE_RH = 'rh';
-    const ROLE_EMPLOYEE = 'employee';
-
-    
-    public function isAdmin(): bool
-    {
-        return $this->role === self::ROLE_ADMIN;
-    }
-
-    
-    public function isRh(): bool
-    {
-        return $this->role === self::ROLE_RH;
-    }
-
-  
-    public function isEmployee(): bool
-    {
-        return $this->role === self::ROLE_EMPLOYEE;
-    }
-
-   
     public function employee()
     {
         return $this->belongsTo(Employee::class);
     }
 
-   
+    public function scopeTenant($query)
+    {
+        $tenantId = config('app.current_tenant_id');
+        return $tenantId ? $query->where('tenant_id', $tenantId) : $query;
+    }
+
+    // ─── Roles Constants ────────────────────────────────────────────────────────
+
+    const ROLE_ADMIN = 'admin';
+    const ROLE_EMPLOYEE = 'employee';
+    const ROLE_SUPERADMIN = 'superadmin';
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === self::ROLE_SUPERADMIN || is_null($this->tenant_id);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    public function isEmployee(): bool
+    {
+        return $this->role === self::ROLE_EMPLOYEE;
+    }
+
     public function getRoleDisplayName(): string
     {
         return match($this->role) {
+            self::ROLE_SUPERADMIN => 'Super Administrateur',
             self::ROLE_ADMIN => 'Administrateur',
-            self::ROLE_RH => 'Responsable RH',
             self::ROLE_EMPLOYEE => 'Employé',
             default => 'Employé',
         };
     }
 }
+

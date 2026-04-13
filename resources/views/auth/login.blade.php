@@ -227,12 +227,12 @@
                 <div class="auth-brand">
                     <div class="auth-brand-icon">
                         @if(isset($tenantData['logo_path']) && $tenantData['logo_path'])
-                            <img src="{{ asset('storage/' . $tenantData['logo_path']) }}" alt="{{ $tenantData['name'] ?? 'HospitalRH' }}" class="auth-logo-img">
+                            <img src="{{ asset('storage/' . $tenantData['logo_path']) }}" alt="{{ $tenantData['name'] ?? 'Login' }}" class="auth-logo-img">
                         @else
-                            🏥
+                            <img src="{{ asset('images/login-icon.svg') }}" width="36">
                         @endif
                     </div>
-                    <div class="auth-brand-name">{{ $tenantData['name'] ?? 'HospitalRH' }}</div>
+                    <div class="auth-brand-name">{{ $tenantData['name'] ?? 'Login' }}</div>
                 </div>
                 <p class="auth-subtitle">Connexion à votre compte</p>
             </div>

@@ -268,35 +268,47 @@
 
 @push('scripts')
 <script>
-function getInitials(name){ return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?'; }
+function getInitials(name) {
+    return name.trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '?';
+}
 
-function updatePreview(){
-    const name  = document.getElementById('company-name').value || 'App';
-    const slug  = document.getElementById('slug').value || 'app';
-    const brand = document.getElementById('brand-color').value;
-    const sidebar = document.getElementById('sidebar-color').value;
-    const ini   = getInitials(name);
+function updatePreview() {
+    const name    = document.getElementById('company-name').value || 'App';
+    const slug    = document.getElementById('slug').value || 'app';
+    const brand   = document.getElementById('brand-color').value || '#1a8fa5';
+    const sidebar = document.getElementById('sidebar-color')?.value || '#0d2137';
+    const ini     = getInitials(name);
 
-    // Initiales + couleur principale sur logos
-    ['prev-nav-logo','prev-logo-big'].forEach(id => {
-        document.getElementById(id).textContent = ini;
-        document.getElementById(id).style.background = brand;
+    // ── Logos : initiales + couleur principale ──
+    ['prev-nav-logo', 'prev-logo-big'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = ini;
+            el.style.setProperty('background', brand, 'important');
+        }
     });
 
-    // Textes
-    document.getElementById('prev-nav-name').textContent = name;
-    document.getElementById('prev-slug').textContent     = slug + '.tenantes.io';
-    document.getElementById('prev-title').textContent    = name;
+    // ── Textes ──
+    const navName = document.getElementById('prev-nav-name');
+    const prevSlug = document.getElementById('prev-slug');
+    const prevTitle = document.getElementById('prev-title');
+    if (navName)   navName.textContent  = name;
+    if (prevSlug)  prevSlug.textContent = slug + '.hospitalrh.test';
+    if (prevTitle) prevTitle.textContent = name;
 
-    // Bouton login = couleur principale
-    document.getElementById('prev-btn').style.background = brand;
+    // ── Bouton login = couleur principale ──
+    const btn = document.getElementById('prev-btn');
+    if (btn) btn.style.setProperty('background', brand, 'important');
 
-    // Sidebar preview = couleur sidebar
-    document.getElementById('prev-sidebar').style.background = sidebar;
+    // ── Sidebar preview = couleur sidebar ──
+    const sidebarEl = document.getElementById('prev-sidebar');
+    if (sidebarEl) sidebarEl.style.setProperty('background', sidebar, 'important');
 
-    // Sync hex inputs
-    document.getElementById('brand-hex').value   = brand;
-    document.getElementById('sidebar-hex').value = sidebar;
+    // ── Sync hex inputs ──
+    const brandHex   = document.getElementById('brand-hex');
+    const sidebarHex = document.getElementById('sidebar-hex');
+    if (brandHex)   brandHex.value   = brand;
+    if (sidebarHex) sidebarHex.value = sidebar;
 }
 
 function syncColor(type) {
@@ -310,6 +322,7 @@ function syncColor(type) {
 function setColor(type, color, el) {
     document.getElementById(type + '-color').value = color;
     document.getElementById(type + '-hex').value   = color;
+
     // Retirer active uniquement sur les swatches du même groupe
     const selector = type === 'sidebar' ? '.sidebar-swatch' : '.sa-swatch:not(.sidebar-swatch)';
     document.querySelectorAll(selector).forEach(s => s.classList.remove('active'));
@@ -317,23 +330,47 @@ function setColor(type, color, el) {
     updatePreview();
 }
 
-function handleFile(input){
-    if(!input.files||!input.files[0])return;
-    const r=new FileReader();
-    r.onload=e=>{
-        document.getElementById('logo-preview-icon').innerHTML=`<img src="${e.target.result}" style="width:40px;height:40px;object-fit:contain;border-radius:8px;">`;
-        document.getElementById('upload-text').textContent=input.files[0].name+' ✓';
+function handleFile(input) {
+    if (!input.files || !input.files[0]) return;
+    const r = new FileReader();
+    r.onload = e => {
+        document.getElementById('logo-preview-icon').innerHTML =
+            `<img src="${e.target.result}" style="width:40px;height:40px;object-fit:contain;border-radius:8px;">`;
+        document.getElementById('upload-text').textContent = input.files[0].name + ' ✓';
     };
     r.readAsDataURL(input.files[0]);
 }
 
-function selectPlan(el,val){
-    document.querySelectorAll('.sa-radio-opt').forEach(o=>{o.classList.remove('selected');o.querySelector('.sa-radio-dot').classList.remove('on');});
+function selectPlan(el, val) {
+    document.querySelectorAll('.sa-radio-opt').forEach(o => {
+        o.classList.remove('selected');
+        o.querySelector('.sa-radio-dot').classList.remove('on');
+    });
     el.classList.add('selected');
     el.querySelector('.sa-radio-dot').classList.add('on');
-    document.getElementById('plan-input').value=val;
+    document.getElementById('plan-input').value = val;
 }
 
-updatePreview();
+// Lancer la preview au chargement
+document.addEventListener('DOMContentLoaded', updatePreview);
 </script>
+@endpush
+
+@push('styles')
+<style>
+/* Override forcé pour que le JS puisse changer le background de la sidebar preview */
+#prev-sidebar {
+    background: #0d2137 !important; /* valeur par défaut, le JS va l'écraser */
+    transition: background 0.3s ease;
+}
+#prev-sidebar * {
+    transition: background 0.3s ease, color 0.3s ease;
+}
+#prev-btn {
+    transition: background 0.3s ease !important;
+}
+#prev-nav-logo, #prev-logo-big {
+    transition: background 0.3s ease !important;
+}
+</style>
 @endpush

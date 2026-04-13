@@ -286,7 +286,7 @@
         </nav>
 
         {{-- ── Footer sidebar ─────────────────────────────────────────────── --}}
-        <div class="sidebar-footer">
+         <div class="sidebar-footer">
             @auth
             <div class="user-card">
                 <div class="user-avatar">{{ substr(Auth::user()->name, 0, 1) }}</div>
@@ -295,10 +295,10 @@
                     <div class="user-role">{{ Auth::user()->getRoleDisplayName() }}</div>
                 </div>
             </div>
-            <form method="POST" action="{{ route('logout') }}" class="mt-2">
+            <form method="POST" action="{{ route('logout') }}">
                 @csrf
-                <button type="submit" class="btn btn-sm btn-outline w-100"
-                        style="color:#fff;border-color:rgba(255,255,255,0.3);display:flex;align-items:center;gap:6px;">
+                {{-- ↓ Suppression de class="mt-2" et style inline (géré par CSS) --}}
+                <button type="submit" class="btn btn-sm btn-outline w-100">
                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                         <polyline points="16 17 21 12 16 7"/>
@@ -308,12 +308,12 @@
                 </button>
             </form>
             @else
-            <a href="{{ route('login') }}" class="btn btn-sm btn-outline w-100"
-               style="color:#fff;border-color:rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;text-decoration:none;">
+            <a href="{{ route('login') }}" class="btn btn-sm btn-outline w-100">
                 Connexion
             </a>
             @endauth
         </div>
+
     </aside>
 
     {{-- ═══════════════════════════════════════════════════ MAIN CONTENT ═══ --}}

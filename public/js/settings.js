@@ -1,19 +1,27 @@
-
+/* ════════════════════════════════════════════════════
+   public/js/superadmin/settings.js
+   ════════════════════════════════════════════════════ */
 'use strict';
 
 /* ─── TABS ─── */
 function switchTab(name) {
-    const tabNames = ['global', 'plans', 'clients'];
-
-    tabNames.forEach(n => {
-        // Bouton
-        const btn = document.getElementById('btn-' + n);
-        if (btn) btn.classList.toggle('active', n === name);
-
-        // Panneau
-        const panel = document.getElementById('tab-' + n);
-        if (panel) panel.classList.toggle('active', n === name);
+    // Désactiver tous les boutons
+    document.querySelectorAll('.sa-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
     });
+
+    // Cacher tous les panneaux
+    document.querySelectorAll('.sa-tab-panel').forEach(panel => {
+        panel.classList.remove('active');
+    });
+
+    // Activer le bouton cliqué
+    const activeBtn = document.getElementById('btn-' + name);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    // Afficher le panneau correspondant
+    const activePanel = document.getElementById('tab-' + name);
+    if (activePanel) activePanel.classList.add('active');
 
     // Fermer le formulaire si on quitte l'onglet clients
     if (name !== 'clients') closeForm();
@@ -33,24 +41,21 @@ function filterClients(query) {
 
 /* ─── SÉLECTION CLIENT ─── */
 function selectClient(id, name, email, company) {
-    // Surbrillance
     document.querySelectorAll('.sa-client-row').forEach(r => r.classList.remove('selected'));
+
     const clicked = document.querySelector(`.sa-client-row[onclick*="selectClient(${id},"]`);
     if (clicked) clicked.classList.add('selected');
 
-    // Remplir l'en-tête du formulaire
     document.getElementById('ef-avatar').textContent  = name.substring(0, 2).toUpperCase();
     document.getElementById('ef-name').textContent    = name;
     document.getElementById('ef-company').textContent = company || email;
 
-    // Action du formulaire → route Laravel
-    document.getElementById('access-form').action = `/superadmin/settings/clients/${id}/access`;
+    document.getElementById('access-form').action =
+        `/superadmin/settings/clients/${id}/access`;
 
-    // Vider les champs
     clearFields();
     hideAlert();
 
-    // Afficher le formulaire
     const form = document.getElementById('edit-form');
     form.classList.add('visible');
     form.setAttribute('aria-hidden', 'false');
@@ -80,14 +85,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const pwd          = document.getElementById('field-pwd').value;
         const pwdConfirm   = document.getElementById('field-pwd-confirm').value;
 
-        // Au moins un champ requis
         if (!email && !pwd) {
             e.preventDefault();
             showAlert('Veuillez remplir au moins un champ (email ou mot de passe).', 'error');
             return;
         }
-
-        // Validation email
         if (email) {
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
                 e.preventDefault();
@@ -100,8 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
         }
-
-        // Validation mot de passe
         if (pwd) {
             if (pwd.length < 8) {
                 e.preventDefault();

@@ -59,14 +59,23 @@ class PayrollService
             // Net salary
             $netSalary = $grossSalary - $cnssDeduction - $irDeduction - $advance - $loan - $garnishment + $absenceDeduction * -1;
 
+// Calculate aggregates for existing columns (backward compatibility)
+            $bonuses = $performanceBonus + $transport + $meal + $housing + $responsibility;
+            $deductions = $advance + $loan + $garnishment;
+            $overtimePay = $overtimeDay + $overtimeNight + $overtimeWeekend;
+
             // Create bulletin
             $salary = $employee->salaries()->create([
+                'tenant_id' => $employee->tenant_id,
                 'month' => $month,
                 'year' => $year,
                 'base_salary' => $baseSalary,
+                'bonuses' => $bonuses,
+                'deductions' => $deductions,
                 'overtime_day_hours' => $data['overtime_day_hours'] ?? 0,
                 'overtime_night_hours' => $data['overtime_night_hours'] ?? 0,
                 'overtime_weekend_hours' => $data['overtime_weekend_hours'] ?? 0,
+                'overtime_pay' => $overtimePay,
                 'performance_bonus' => $performanceBonus,
                 'transport_allowance' => $transport,
                 'meal_allowance' => $meal,

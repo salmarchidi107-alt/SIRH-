@@ -24,6 +24,7 @@ class Tenant extends BaseTenant
         'sector',
         'logo_path',
         'brand_color',
+        'sidebar_color',   // ← AJOUTÉ
         'plan',
         'status',
         'region',
@@ -35,8 +36,6 @@ class Tenant extends BaseTenant
         'status' => TenantStatus::class,
     ];
 
-    // ✅ Obligatoire : dire à stancl que ces colonnes sont réelles
-    // Sans ça, stancl les met dans data[] et rien ne persiste
     public static function getCustomColumns(): array
     {
         return [
@@ -46,6 +45,7 @@ class Tenant extends BaseTenant
             'sector',
             'logo_path',
             'brand_color',
+            'sidebar_color',   // ← AJOUTÉ
             'plan',
             'status',
             'region',
@@ -62,8 +62,7 @@ class Tenant extends BaseTenant
 
     public function admin(): HasOne
     {
-        return $this->hasOne(User::class, 'tenant_id')
-                    ->where('role', 'admin');
+        return $this->hasOne(User::class, 'tenant_id')->where('role', 'admin');
     }
 
     // ─── Scopes ───────────────────────────────────────────────────────────────

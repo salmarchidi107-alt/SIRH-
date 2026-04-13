@@ -54,45 +54,41 @@ Route::middleware(['auth', 'superadmin'])
 
         Route::get('/personnalise',  [SuperAdminSettings::class, 'index'])->name('personnalise.index');
         Route::post('/personnalise', [SuperAdminSettings::class, 'update'])->name('personnalise.update');
-        Route::get('/settings',      [SuperAdminSettings::class, 'index'])->name('settings.index');
-        Route::put('/settings/plans/{plan}',  [SuperAdminSettings::class, 'updatePlan'])->name('settings.plans.update');
-        Route::put('/settings/global',        [SuperAdminSettings::class, 'updateGlobal'])->name('settings.global.update');
 
+        // ── Settings (Accès Clients uniquement) ───────────────────────────────
+        Route::get('/settings', [SuperAdminSettings::class, 'index'])->name('settings.index');
+        Route::post('/settings/clients/{user}/access', [SuperAdminSettings::class, 'updateClientAccess'])
+             ->name('settings.clients.updateAccess');
+
+        // ── Tenants ───────────────────────────────────────────────────────────
         Route::resource('tenants', TenantController::class);
         Route::post('tenants/{tenant}/suspend',    [TenantController::class, 'suspend'])->name('tenants.suspend');
         Route::post('tenants/{tenant}/reactivate', [TenantController::class, 'reactivate'])->name('tenants.reactivate');
 
+        // ── Clients ───────────────────────────────────────────────────────────
         Route::get('clients',          [ClientController::class, 'index'])->name('clients.index');
         Route::get('clients/{tenant}', [ClientController::class, 'show'])->name('clients.show');
 
+        // ── Rôles ─────────────────────────────────────────────────────────────
         Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
     });
 
 // ─── Application principale (tenant requis) ───────────────────────────────────
 Route::middleware(['web', 'domain-tenant', 'auth', 'identify-tenant'])->group(function () {
 
-    // ── Routes partagées : accessibles à l'employé ET à l'admin ──────────────
     Route::middleware(['tenant-user'])->group(function () {
-
-        // Profil & Notifications
         Route::get('/profile',                [ProfileController::class, 'index'])->name('profile');
         Route::get('/notifications',          [NotificationController::class, 'index'])->name('notifications.index');
         Route::get('/api/notifications/data', [NotificationController::class, 'data'])->name('api.notifications.data');
-
-        // Trombinoscope
         Route::get('/trombinoscope', [TrombinoscopeController::class, 'index'])->name('trombinoscope');
-
-        // ← Route employees.show accessible à tous (logique d'autorisation dans le contrôleur)
         Route::get('/employees/{employee}', [EmployeeController::class, 'show'])->name('employees.show');
 
-        // Planning (consultation uniquement)
         Route::prefix('planning')->name('planning.')->group(function () {
             Route::get('/weekly',           [PlanningController::class, 'weekly'])->name('weekly');
             Route::get('/monthly',          [PlanningController::class, 'monthly'])->name('monthly');
             Route::get('/show/{employee?}', fn () => redirect()->route('planning.weekly'))->name('show');
         });
 
-        // Absences (consultation + demandes employé)
         Route::prefix('absences')->name('absences.')->group(function () {
             Route::get('/',               [AbsenceController::class, 'index'])->name('index');
             Route::get('/create',         [AbsenceController::class, 'create'])->name('create');
@@ -106,25 +102,19 @@ Route::middleware(['web', 'domain-tenant', 'auth', 'identify-tenant'])->group(fu
         });
     });
 
-    // ── Employé uniquement ────────────────────────────────────────────────────
     Route::middleware(['employee'])->group(function () {
         Route::get('/employer/dashboard', [EmployeeDashboardController::class, 'index'])->name('employee.dashboard');
     });
 
-    // ── Admin uniquement ──────────────────────────────────────────────────────
     Route::middleware(['admin'])->group(function () {
-
         Route::get('/', fn () => redirect()->route('admin.dashboard'));
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
-        // ─ Personnel (show est géré dans tenant-user, on exclut ici) ──────────
         Route::resource('news',      NewsController::class);
         Route::resource('employees', EmployeeController::class)->except(['show']);
 
-        // ─ Temps & Présence ───────────────────────────────────────────────────
         Route::get('/temps/vue-ensemble', [VueEnsembleController::class, 'index'])->name('temps.vue-ensemble');
 
-        // Planning (gestion complète admin)
         Route::prefix('planning')->name('planning.')->group(function () {
             Route::get('/global',        [PlanningController::class, 'global'])->name('global');
             Route::post('/',             [PlanningController::class, 'store'])->name('store');
@@ -142,20 +132,17 @@ Route::middleware(['web', 'domain-tenant', 'auth', 'identify-tenant'])->group(fu
             });
         });
 
-        // ─ Pointage ───────────────────────────────────────────────────────────
         Route::get('/pointage',                            [PointageController::class, 'index'])->name('pointage.index');
         Route::post('/pointage/valider-journee',           [PointageController::class, 'validerJournee'])->name('pointage.valider-journee');
         Route::post('/pointage/{pointage}/toggle-valider', [PointageController::class, 'toggleValider'])->name('pointage.toggle-valider');
         Route::post('/pointage/{pointage}/toggle-ignore',  [PointageController::class, 'toggleIgnore'])->name('pointage.toggle-ignore');
         Route::put('/pointage/{pointage}',                 [PointageController::class, 'update'])->name('pointage.update');
 
-        // ─ Absences admin (approbation / rejet) ───────────────────────────────
         Route::prefix('absences')->name('absences.')->group(function () {
             Route::post('/{absence}/approve', [AbsenceController::class, 'approve'])->name('approve');
             Route::post('/{absence}/reject',  [AbsenceController::class, 'reject'])->name('reject');
         });
 
-        // ─ Paie ───────────────────────────────────────────────────────────────
         Route::prefix('salary')->name('salary.')->group(function () {
             Route::get('/',                    [SalaryController::class, 'index'])->name('index');
             Route::post('/generate-all',       [SalaryController::class, 'generateAll'])->name('generate-all');
@@ -168,7 +155,6 @@ Route::middleware(['web', 'domain-tenant', 'auth', 'identify-tenant'])->group(fu
             Route::get('/{salary}/pdf',        [SalaryController::class, 'pdf'])->name('pdf');
         });
 
-        // ─ API interne ────────────────────────────────────────────────────────
         Route::prefix('api')->group(function () {
             Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
             Route::get('/planning/events', [PlanningController::class, 'events']);

@@ -68,90 +68,69 @@ class TenantController extends Controller
     // ─── Store ────────────────────────────────────────────────────────────────
 
     public function store(Request $request)
-    {
-        $data = $request->validate([
-            'company_name'  => 'required|string|max:100',
-            'slug'          => 'required|string|max:50|unique:tenants,slug|regex:/^[a-z0-9\-]+$/',
-            'sector'        => 'nullable|string|max:50',
-            'logo'          => 'nullable|image|max:2048',
-            'brand_color'   => 'required|regex:/^#[0-9a-fA-F]{6}$/',
-            'plan'          => ['required', Rule::enum(TenantPlan::class)],
-            'status'        => ['required', Rule::enum(TenantStatus::class)],
-            'region'        => 'required|string',
-            'first_name'    => 'required|string|max:50',
-            'last_name'     => 'required|string|max:50',
-            'admin_email'   => 'required|email|unique:users,email',
-            'temp_password' => 'required|string|min:8',
+{
+    $data = $request->validate([
+        'company_name'  => 'required|string|max:100',
+        'slug'          => 'required|string|max:50|unique:tenants,slug|regex:/^[a-z0-9\-]+$/',
+        'sector'        => 'nullable|string|max:50',
+        'logo'          => 'nullable|image|max:2048',
+        'brand_color'   => 'required|regex:/^#[0-9a-fA-F]{6}$/',
+        'sidebar_color' => 'required|regex:/^#[0-9a-fA-F]{6}$/', // ← AJOUTÉ
+        'plan'          => ['required', Rule::enum(TenantPlan::class)],
+        'status'        => ['required', Rule::enum(TenantStatus::class)],
+        'region'        => 'required|string',
+        'first_name'    => 'required|string|max:50',
+        'last_name'     => 'required|string|max:50',
+        'admin_email'   => 'required|email|unique:users,email',
+        'temp_password' => 'required|string|min:8',
+    ]);
+
+    DB::transaction(function () use ($data, $request) {
+
+        $logoPath = $request->hasFile('logo')
+            ? $request->file('logo')->store('tenants/logos', 'public')
+            : null;
+
+        $tenant = Tenant::create([
+            'id'            => Str::uuid()->toString(),
+            'name'          => $data['company_name'],
+            'slug'          => $data['slug'],
+            'sector'        => $data['sector'] ?? null,
+            'logo_path'     => $logoPath,
+            'brand_color'   => $data['brand_color'],
+            'sidebar_color' => $data['sidebar_color'], // ← AJOUTÉ
+            'plan'          => $data['plan'],
+            'status'        => $data['status'],
+            'region'        => $data['region'],
+            'database_name' => 'tenant_' . str_replace('-', '_', $data['slug']),
         ]);
 
-        DB::transaction(function () use ($data, $request) {
+        $domainName   = $data['slug'] . '.hospitalrh.test';
+        $domainRecord = DB::table('domains')->where('domain', $domainName)->first();
 
-            // Logo
-            $logoPath = $request->hasFile('logo')
-                ? $request->file('logo')->store('tenants/logos', 'public')
-                : null;
-
-            // ✅ Création directe avec toutes les colonnes
-            $tenant = Tenant::create([
-                'id'            => Str::uuid()->toString(),
-                'name'          => $data['company_name'],
-                'slug'          => $data['slug'],
-                'sector'        => $data['sector'] ?? null,
-                'logo_path'     => $logoPath,
-                'brand_color'   => $data['brand_color'],
-                'plan'          => $data['plan'],
-                'status'        => $data['status'],
-                'region'        => $data['region'],
-                'database_name' => 'tenant_' . str_replace('-', '_', $data['slug']),
+        if ($domainRecord) {
+            throw ValidationException::withMessages([
+                'slug' => "Le domaine {$domainName} existe déjà.",
             ]);
+        }
 
-            // Domain
-            $domainName   = $data['slug'] . '.hospitalrh.test';
-            $domainRecord = DB::table('domains')->where('domain', $domainName)->first();
-
-            if ($domainRecord) {
-                throw ValidationException::withMessages([
-                    'slug' => "Le domaine {$domainName} existe déjà. Choisissez un autre slug.",
-                ]);
-            }
-
-            $tenant->domains()->create([
-                'id'     => Str::uuid()->toString(),
-                'domain' => $domainName,
-            ]);
-
-            // Admin user
-            User::create([
-                'name'      => $data['first_name'] . ' ' . $data['last_name'],
-                'email'     => $data['admin_email'],
-                'password'  => Hash::make($data['temp_password']),
-                'role'      => 'admin',
-                'tenant_id' => $tenant->id,
-            ]);
-        });
-
-        return redirect()->route('superadmin.tenants.index')
-            ->with('success', 'Tenant créé avec succès.');
-    }
-
-    // ─── Show ─────────────────────────────────────────────────────────────────
-
-    public function show(Tenant $tenant)
-    {
-        $tenant->load('admin', 'users');
-        return view('superadmin.tenants.show', compact('tenant'));
-    }
-
-    // ─── Edit ─────────────────────────────────────────────────────────────────
-
-    public function edit(Tenant $tenant)
-    {
-        return view('superadmin.tenants.edit', [
-            'tenant'   => $tenant,
-            'plans'    => TenantPlan::cases(),
-            'statuses' => TenantStatus::cases(),
+        $tenant->domains()->create([
+            'id'     => Str::uuid()->toString(),
+            'domain' => $domainName,
         ]);
-    }
+
+        User::create([
+            'name'      => $data['first_name'] . ' ' . $data['last_name'],
+            'email'     => $data['admin_email'],
+            'password'  => Hash::make($data['temp_password']),
+            'role'      => 'admin',
+            'tenant_id' => $tenant->id,
+        ]);
+    });
+
+    return redirect()->route('superadmin.tenants.index')
+        ->with('success', 'Tenant créé avec succès.');
+}
 
     // ─── Update ───────────────────────────────────────────────────────────────
 
@@ -217,5 +196,13 @@ class TenantController extends Controller
     {
         $tenant->update(['status' => TenantStatus::Active->value]);
         return back()->with('success', "Tenant \"{$tenant->name}\" réactivé.");
+    }
+
+    public function edit(Tenant $tenant)
+    {
+        $plans = TenantPlan::cases();
+        $statuses = TenantStatus::cases();
+
+        return view('superadmin.tenants.edit', compact('tenant', 'plans', 'statuses'));
     }
 }

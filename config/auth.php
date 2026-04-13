@@ -35,10 +35,14 @@ return [
     |
     */
 
-    'guards' => [
-        'web' => [
-            'driver' => 'session',
-            'provider' => 'users',
+'guards' => [
+        "web" => [
+            "driver" => "session",
+            "provider" => "users",
+        ],
+        "badge" => [
+            "driver" => "session", 
+            "provider" => "users",
         ],
     ],
 

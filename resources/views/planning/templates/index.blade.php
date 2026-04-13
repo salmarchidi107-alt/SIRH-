@@ -6,7 +6,7 @@
 @section('content')
 <div class="page-header">
     <div class="page-header-left">
-        <h1>📋 Semaines Types</h1>
+        <h1> Semaines Types</h1>
         <p>Créer et gérer des modèles de planification réutilisables</p>
     </div>
     <div class="page-header-right">
@@ -78,7 +78,7 @@
                 @empty
                 <tr>
                     <td colspan="3" style="text-align:center;padding:48px;color:var(--text-muted)">
-                        <div style="font-size:2.5rem;margin-bottom:12px">📋</div>
+                        <div style="font-size:2.5rem;margin-bottom:12px">  </div>
                         <div>Aucune semaine type créée</div>
                         <a href="{{ route('planning.templates.create') }}" class="btn btn-primary" style="margin-top:12px">Créer une semaine type</a>
                     </td>

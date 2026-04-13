@@ -6,16 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Carbon\Carbon;
+use \App\Traits\HasTenantScope;
+
+
 
 class Pointage extends Model
 {
-    use \App\Traits\HasTenantScope;
     protected $fillable = [
         'tenant_id',
         'employee_id',
         'date',
         'heure_entree',
         'heure_sortie',
+        'pause_start',
+        'pause_end',
         'pause_minutes',
         'total_heures',
         'statut',
@@ -31,6 +35,8 @@ class Pointage extends Model
 
     protected $casts = [
         'date'          => 'date',
+        'pause_start'   => 'datetime:H:i:s',
+        'pause_end'     => 'datetime:H:i:s',
         'valide'        => 'boolean',
         'ignore_badge'  => 'boolean',
         'total_heures'  => 'decimal:2',
@@ -66,6 +72,27 @@ class Pointage extends Model
             'pas_de_badge'        => 'Pas de badge',
             default               => '—',
         };
+    }
+
+    public function getPauseFormateeAttribute(): string
+    {
+        if (!$this->pause_minutes || $this->pause_minutes === 0) {
+            return '—';
+        }
+        $hours = floor($this->pause_minutes / 60);
+        $mins = $this->pause_minutes % 60;
+        $label = $hours ? $hours . 'h ' . $mins . 'm' : $mins . 'm';
+        return $label;
+    }
+
+    public function getPauseDebutAttribute(): ?string
+    {
+        return $this->pause_start?->format('H:i') ?? null;
+    }
+
+    public function getPauseFinAttribute(): ?string
+    {
+        return $this->pause_end?->format('H:i') ?? null;
     }
 
     // ── Scopes ─────────────────────────────────────────────────

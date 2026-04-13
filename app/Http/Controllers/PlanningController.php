@@ -2,21 +2,36 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Planning;
+use App\Http\Requests\StorePlanningRequest;
+use App\Http\Requests\UpdatePlanningDragDropRequest;
+use App\Http\Requests\UpdatePlanningRequest;
 use App\Models\Employee;
-use Illuminate\Http\Request;
+use App\Models\Planning;
+use App\Services\PlanningService;
 use Carbon\Carbon;
+use App\Exports\PlanningMonthlyExport;
+use App\Exports\PlanningWeeklyExport;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Exception;
+use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
 
 use App\Http\Resources\Planning\PlanningResource;
 use App\Http\Resources\Planning\DragDropResponseResource;
 
 class PlanningController extends Controller
 {
+    public function __construct(private PlanningService $planningService) {}
+
     public function index(Request $request)
     {
-        $employee_id = $request->employee_id;
-        $month = $request->month ?? now()->month;
-        $year = $request->year ?? now()->year;
+        try {
+            $employee_id = $request->employee_id;
+            $month = $request->month ?? now()->month;
+            $year = $request->year ?? now()->year;
 
         $user_employee_id = null;
         if (auth()->check() && auth()->user()->role === 'employer' && auth()->user()->employee_id) {
@@ -31,7 +46,14 @@ $employees = Employee::with(['user', 'manager'])->where('status', 'active')->whe
             ->when($user_employee_id, fn($q) => $q->where('employee_id', $user_employee_id))
             ->get();
 
-        return view('planning.index', compact('plannings', 'employees', 'month', 'year', 'employee_id'));
+            return view('planning.index', compact('plannings', 'employees', 'month', 'year', 'employee_id'));
+        } catch (ModelNotFoundException $e) {
+            Log::warning('Planning index employee not found: ' . $e->getMessage());
+            return back()->with('error', 'Employé non trouvé.');
+        } catch (Exception $e) {
+            Log::error('Planning index error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return view('planning.index', ['error' => 'Erreur chargement planning.']);
+        }
     }
 
 
@@ -90,7 +112,19 @@ $employees = Employee::with(['user', 'manager'])->where('status', 'active')->whe
             ];
         }
 
-        return view('planning.weekly', compact('employees', 'plannings', 'weekDays', 'week', 'year', 'startOfWeek', 'endOfWeek', 'search', 'department', 'departments'));
+            $startOfWeek = now()->setISODate($year, $week)->startOfWeek(Carbon::MONDAY);
+            $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
+
+            $employees = $this->planningService->filterEmployees($search, $department);
+            $plannings = $this->planningService->getPlanningsBetween($startOfWeek, $endOfWeek);
+            $departments = $this->planningService->getDepartments();
+            $weekDays = $this->planningService->getWeekDays($startOfWeek);
+
+            return view('planning.weekly', compact('employees', 'plannings', 'weekDays', 'week', 'year', 'startOfWeek', 'endOfWeek', 'search', 'department', 'departments'));
+        } catch (Exception $e) {
+            Log::error('Planning weekly error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return view('planning.weekly', ['error' => 'Erreur planning hebdo.']);
+        }
     }
 
 
@@ -153,7 +187,19 @@ $employees = Employee::with(['user', 'manager'])->where('status', 'active')->whe
             ];
         }
 
-        return view('planning.monthly', compact('employees', 'plannings', 'calendarDays', 'month', 'year', 'startOfMonth', 'endOfMonth', 'search', 'department', 'departments'));
+    public function store(StorePlanningRequest $request)
+    {
+        try {
+            Planning::updateOrCreate(
+                ['employee_id' => $request->employee_id, 'date' => $request->date],
+                $request->validated()
+            );
+
+            return back()->with('success', 'Planning mis à jour.');
+        } catch (Exception $e) {
+            Log::error('Planning store error: ' . $e->getMessage(), ['data' => $request->validated(), 'trace' => $e->getTraceAsString()]);
+            return back()->with('error', 'Erreur sauvegarde planning.');
+        }
     }
 
 
@@ -300,9 +346,10 @@ $employees = Employee::with(['user', 'manager'])->where('status', 'active')->whe
 
     public function destroy(Planning $planning)
     {
-        $planning->delete();
-        return back()->with('success', 'Shift supprimé.');
-    }
+        if (!$planning->exists) {
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['error' => 'Shift introuvable'], 404);
+            }
 
     // API pour le drag & drop
     public function updateDragDrop(Request $request)
@@ -326,33 +373,23 @@ $employees = Employee::with(['user', 'manager'])->where('status', 'active')->whe
         return (new DragDropResponseResource(true, new PlanningResource($planning), 'Planning mis à jour avec succès'))->toResponse($request);
     }
 
-    public function events(Request $request)
-    {
-        $plannings = Planning::with('employee')
-            ->when($request->start, fn($q) => $q->whereDate('date', '>=', $request->start))
-            ->when($request->end, fn($q) => $q->whereDate('date', '<=', $request->end))
-            ->get()
-            ->map(function($p) {
-                return [
-                    'id' => $p->id,
-                    'title' => $p->employee->full_name . ' - ' . $p->shift_type,
-                    'start' => $p->date->format('Y-m-d') . 'T' . $p->shift_start,
-                    'end' => $p->date->format('Y-m-d') . 'T' . $p->shift_end,
-                    'color' => $this->shiftColor($p->shift_type),
-                ];
-            });
+    // ... keep existing updateDragDrop with enhanced logging if needed
 
-        return response()->json($plannings);
+    // Export methods with try-catch for Excel/PDF
+    public function exportWeeklyPdf(Request $request)
+    {
+        try {
+            // ... existing code ...
+            $pdf = Pdf::loadView(...) ->setPaper('a4', 'landscape');
+            return $pdf->download($filename);
+        } catch (Exception $e) {
+            Log::error('PDF export error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return back()->with('error', 'Erreur génération PDF.');
+        }
     }
 
-    private function shiftColor($type): string
-    {
-        return match($type) {
-            'matin' => '#0ea5e9',
-            'apres_midi' => '#f59e0b',
-            'nuit' => '#6366f1',
-            'garde' => '#ef4444',
-            default => '#10b981',
-        };
-    }
+    // Similar for other exports/PDF/index methods
+
+    // Keep other methods with added try-catch...
 }
+

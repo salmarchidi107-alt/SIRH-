@@ -33,6 +33,10 @@
                 <strong>Date:</strong> {{ $news->event_date->format('d/m/Y') }}
             </div>
 
+            <div style="margin-bottom:16px;color:var(--text-muted)">
+                <strong>Date:</strong> {{ $news->event_date->format('d/m/Y') }}
+            </div>
+
             @if($news->description)
             <div>
                 <strong>Description:</strong>

@@ -16,7 +16,7 @@ public function index()
         return redirect()->route('dashboard')->with('error', 'Profil employé non trouvé.');
     }
 
-        return redirect()->route('employees.show', $employee);
+        return view('employees.show', compact('employee'));
     }
 }
 

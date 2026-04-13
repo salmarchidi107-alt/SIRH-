@@ -25,7 +25,15 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void {
         // Chemin migrations landlord
         $this->loadMigrationsFrom(database_path('migrations/landlord'));
+
+        \Illuminate\Support\Facades\Schema::defaultStringLength(191);
+
+        \App\Models\Employee::observe(\App\Observers\EmployeeObserver::class);
+
+        // Share cached holidays globally (eliminates per-page API calls)
+        view()->composer('*', function ($view) {
+            $view->with('globalHolidays', app(\App\Services\HolidayService::class)->getCurrentYearHolidays());
+        });
     }
 }
-
 

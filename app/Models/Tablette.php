@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use \App\Traits\HasTenantScope;
 use Illuminate\Database\Eloquent\Model;
 
 class Tablette extends Model
 {
-    use \App\Traits\HasTenantScope;
 
     protected $fillable = [
         'tenant_id',
@@ -18,6 +18,12 @@ class Tablette extends Model
     ];
 
     protected $casts = [
+        'derniere_connexion' => 'datetime',
         'active' => 'boolean',
     ];
+
+    public function pointages()
+    {
+        return $this->hasMany(Pointage::class);
+    }
 }

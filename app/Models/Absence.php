@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Absence extends Model
@@ -57,6 +58,46 @@ class Absence extends Model
     public function replacement()
     {
         return $this->belongsTo(Employee::class, 'replacement_id');
+    }
+
+    public function scopeStatus(Builder $query, ?string $status): Builder
+    {
+        return $status ? $query->where('status', $status) : $query;
+    }
+
+    public function scopeType(Builder $query, ?string $type): Builder
+    {
+        return $type ? $query->where('type', $type) : $query;
+    }
+
+    public function scopeForEmployee(Builder $query, ?int $employeeId): Builder
+    {
+        return $employeeId ? $query->where('employee_id', $employeeId) : $query;
+    }
+
+    public function scopeSearchEmployee(Builder $query, ?string $term): Builder
+    {
+        if (!$term) {
+            return $query;
+        }
+
+        $term = "%{$term}%";
+
+        return $query->whereHas('employee', function (Builder $q) use ($term) {
+            $q->where('first_name', 'like', $term)
+              ->orWhere('last_name', 'like', $term);
+        });
+    }
+
+    public function scopeDepartment(Builder $query, ?string $department): Builder
+    {
+        if (!$department) {
+            return $query;
+        }
+
+        return $query->whereHas('employee', function (Builder $q) use ($department) {
+            $q->where('department', $department);
+        });
     }
 
     public function approver()

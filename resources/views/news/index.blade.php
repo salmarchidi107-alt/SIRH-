@@ -119,6 +119,27 @@
     flex-wrap: wrap;
     gap: 12px;
 }
+
+
+
+
+
+
+
+.holiday-calendar-card .card-body {
+    padding: 12px;
+}
+
+.cal-day {
+    min-height: 24px !important;
+    font-size: .65rem !important;
+    padding: 2px !important;
+}
+
+.cal-day {
+    min-height: 32px;
+    font-size: .75rem;
+}
 .calendar-nav {
     display: flex;
     align-items: center;
@@ -139,7 +160,7 @@
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
+    gap: 2px;
 }
 .cal-day {
     position: relative;

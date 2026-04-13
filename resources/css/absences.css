@@ -1,0 +1,94 @@
+/* Absences Views Styles - Extracted from absences/*.blade.php */
+
+/* Filters bar */
+.filters-bar-inline {
+  margin: 0;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Action buttons */
+.absences-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* Date timestamp */
+.timestamp-small {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.timestamp-small time {
+  display: block;
+  font-size: 0.75rem;
+}
+
+/* Alert warning */
+.alert-inline {
+  margin-bottom: 20px;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 48px;
+  color: var(--text-muted);
+}
+
+.empty-state-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+
+/* Pagination wrapper */
+.pagination-wrapper {
+  padding: 0 16px;
+}
+
+/* Employee selected preview */
+.employee-preview {
+  padding: 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 24px;
+}
+
+.employee-preview h3 {
+  margin: 0 0 8px 0;
+  color: var(--primary);
+  font-size: 1.1rem;
+}
+
+.employee-preview-meta {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+/* Status badges custom */
+.badge-large {
+  font-size: 1rem;
+  padding: 8px 16px;
+}
+
+/* Approval buttons container */
+.approval-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* Detail grid */
+.detail-grid {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .detail-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
+

@@ -37,7 +37,12 @@ return $this->belongsTo(\App\Models\Tenant::class, 'tenant_id');
 
     public function employee()
     {
-        return $this->belongsTo(Employee::class);
+        return $this->belongsTo(Employee::class, 'employee_id');
+    }
+
+    public function getEmployeeByLegacyKeyAttribute()
+    {
+        return Employee::where('user_id', $this->id)->first();
     }
 
     public function scopeTenant($query)

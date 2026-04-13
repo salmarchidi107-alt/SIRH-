@@ -22,8 +22,30 @@ class Department extends Model
         return $this->hasMany(Employee::class);
     }
 
-    public function scopeActive($query)
+    public static function names(): Collection
     {
-        return $query->whereHas('employees');
+        if (Schema::hasTable('departments')) {
+            return self::orderBy('name')->pluck('name');
+        }
+
+        return Employee::whereNotNull('department')
+            ->distinct()
+            ->pluck('department')
+            ->filter()
+            ->sort()
+            ->values();
+    }
+
+    public static function counts(): Collection
+    {
+        if (Schema::hasTable('departments')) {
+            return self::withCount('employees')
+                ->orderBy('name')
+                ->pluck('employees_count', 'name');
+        }
+
+        return Employee::groupBy('department')
+            ->selectRaw('department, count(*) as total')
+            ->pluck('total', 'department');
     }
 }

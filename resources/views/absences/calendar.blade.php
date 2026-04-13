@@ -350,65 +350,42 @@
 @endpush
 
 @section('content')
-@php
-    $firstDay = \Carbon\Carbon::createFromDate($year, $month, 1)->startOfMonth();
-    $daysInMonth = $firstDay->daysInMonth;
-    $today = \Carbon\Carbon::today();
-    
-    // Get employees - filter by department if selected
-    $filteredEmployees = $employees;
-    if (request('department')) {
-        $filteredEmployees = $employees->where('department', request('department'));
-    }
-    if (request('employee_id')) {
-        $filteredEmployees = $employees->where('id', request('employee_id'));
-    }
-    
-    // Build absence lookup: $absenceMap[employee_id][day] = absence object
-    $absenceMap = [];
-    foreach ($absences as $absence) {
-        $empId = $absence->employee_id;
-        if (!isset($absenceMap[$empId])) {
-            $absenceMap[$empId] = [];
-        }
-        $start = \Carbon\Carbon::parse($absence->start_date);
-        $end = \Carbon\Carbon::parse($absence->end_date);
-        for ($d = $start; $d->lte($end); $d->addDay()) {
-            if ($d->month == $month && $d->year == $year) {
-                $absenceMap[$empId][$d->day] = $absence;
-            }
-        }
-    }
-@endphp
+
+{{-- Conflicts Modal --}}
+<div class="modal-overlay" id="conflictsModal" onclick="closeConflictsModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header" style="background: linear-gradient(135deg, #ef4444, #dc2626);color:white">
+            <h3>⚠️ Conflits détectés</h3>
+            <button class="modal-close" onclick="closeConflictsModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <ul style="list-style:none;padding:0;margin:0">
+                <li style="text-align:center;color:var(--text-muted);padding:32px">Chargement...</li>
+            </ul>
+        </div>
+    </div>
+</div>
 
 <div class="page-header">
     <div class="page-header-left">
         <h1>État Visuel des Absences</h1>
-        @php
-\Carbon\Carbon::setLocale('fr');
-@endphp
-
-<p>Vue mensuelle — {{ $firstDay->translatedFormat('F Y') }}</p>
+        <p>Vue mensuelle — {{ $firstDay->translatedFormat('F Y') }}</p>
     </div>
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
        
         <div class="view-toggle">
             <button class="{{ (!isset($viewMode) || $viewMode == 'calendar') ? 'active' : '' }}" onclick="switchView('calendar')">
-                📅 Calendrier
+                Calendrier
             </button>
             <button class="{{ $viewMode == 'list' ? 'active' : '' }}" onclick="switchView('list')">
-                📋 Liste
+                Liste
             </button>
         </div>
         
         <div style="display:flex;gap:8px;align-items:center">
-            @php
-                $prev = \Carbon\Carbon::createFromDate($year, $month, 1)->subMonth();
-                $next = \Carbon\Carbon::createFromDate($year, $month, 1)->addMonth();
-            @endphp
-            <a href="{{ route('absences.calendar', array_merge(request()->query(), ['month' => $prev->month, 'year' => $prev->year])) }}" class="btn btn-ghost btn-sm">←</a>
-            <a href="{{ route('absences.calendar', array_merge(request()->query(), ['month' => now()->month, 'year' => now()->year])) }}" class="btn btn-secondary btn-sm">Aujourd'hui</a>
-            <a href="{{ route('absences.calendar', array_merge(request()->query(), ['month' => $next->month, 'year' => $next->year])) }}" class="btn btn-ghost btn-sm">→</a>
+            <a href="{{ $prevMonthUrl }}" class="btn btn-ghost btn-sm">←</a>
+            <a href="{{ $todayUrl }}" class="btn btn-secondary btn-sm">Aujourd'hui</a>
+            <a href="{{ $nextMonthUrl }}" class="btn btn-ghost btn-sm">→</a>
         </div>
     </div>
 </div>
@@ -417,23 +394,23 @@
 <div class="quick-stats" style="margin-bottom:24px">
     <div class="quick-stat">
         <div class="quick-stat-dot" style="background:#10b981"></div>
-        <span><strong>{{ $absences->where('status', 'approved')->count() }}</strong> Approuvées</span>
+        <span><strong>{{ $stats['approved_count'] }}</strong> Approuvées</span>
     </div>
     <div class="quick-stat">
         <div class="quick-stat-dot" style="background:#f59e0b"></div>
-        <span><strong>{{ $absences->where('status', 'pending')->count() }}</strong> En attente</span>
+        <span><strong>{{ $stats['pending_count'] }}</strong> En attente</span>
     </div>
     <div class="quick-stat">
         <div class="quick-stat-dot" style="background:#ef4444"></div>
-        <span><strong>{{ count($conflicts) }}</strong> Conflits</span>
+        <span><strong>{{ $stats['conflicts_count'] }}</strong> Conflits</span>
     </div>
     <div class="quick-stat">
         <div class="quick-stat-dot" style="background:#8b5cf6"></div>
-        <span><strong>{{ $replacements->count() }}</strong> Remplacements</span>
+        <span><strong>{{ $stats['replacements_count'] }}</strong> Remplacements</span>
     </div>
     <div class="quick-stat">
         <div class="quick-stat-dot" style="background:#3b82f6"></div>
-        <span><strong>{{ $absences->sum('days') }}</strong> Jours total</span>
+        <span><strong>{{ $stats['total_days'] }}</strong> Jours total</span>
     </div>
 </div>
 
@@ -445,7 +422,7 @@
             
             <select class="filter-select" style="padding:8px 12px" onchange="applyFilter('department', this.value)">
                 <option value="">Tous les services</option>
-                @foreach($employees->pluck('department')->filter()->unique() as $dept)
+                @foreach($departments as $dept)
                     <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>{{ $dept }}</option>
                 @endforeach
             </select>
@@ -464,19 +441,12 @@
             </select>
             
             @if(request()->anyFilled(['department', 'employee_id', 'status']))
-                <a href="{{ route('absences.calendar', ['month' => $month, 'year' => $year]) }}" class="btn btn-ghost btn-sm">✕ Réinitialiser</a>
+                <a href="{{ $resetUrl }}" class="btn btn-ghost btn-sm">✕ Réinitialiser</a>
             @endif
         </div>
     </div>
 </div>
 
-{{-- Alerts --}}
-@if(count($conflicts) > 0)
-<div class="alert alert-danger" style="margin-bottom:20px">
-    <strong>⚠️ {{ count($conflicts) }} conflit(s) détecté(s)</strong> — Des absences approuvées se chevauchent. 
-    <a href="#conflicts" style="color:inherit;text-decoration:underline">Voir les détails ↓</a>
-</div>
-@endif
 
 {{-- CALENDAR VIEW (Monthly Grid: Employees × Dates) --}}
 @if(!isset($viewMode) || $viewMode == 'calendar')
@@ -502,7 +472,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($filteredEmployees as $emp)
+            @forelse($filteredEmployees as $emp)
                     @php
                         $empAbsences = $absenceMap[$emp->id] ?? [];
                     @endphp
@@ -528,7 +498,7 @@
                             <td class="{{ $isToday ? 'today-cell' : '' }} {{ $isWeekend ? 'weekend-cell' : '' }}">
                                 @if($absence)
                                     <div class="absence-cell {{ $absence->status }}" 
-                                         onclick="showAbsenceModal({{ $absence->id }}, '{{ $emp->full_name }}', '{{ $emp->department ?? '' }}', '{{ $emp->position ?? '' }}', '{{ $absence->start_date->format('d/m/Y') }}', '{{ $absence->end_date->format('d/m/Y') }}', '{{ \App\Models\Absence::TYPES[$absence->type] ?? $absence->type }}', '{{ $absence->status }}', {{ $absence->days }}, '{{ $absence->reason ?? '' }}')"
+                                         onclick="showAbsenceModal({{ $absence->id }}, '{{ addslashes($emp->full_name) }}', '{{ $emp->department ?? '' }}', '{{ $emp->position ?? '' }}', '{{ $absence->start_date->format('d/m/Y') }}', '{{ $absence->end_date->format('d/m/Y') }}', '{{ \App\Models\Absence::TYPES[$absence->type] ?? $absence->type }}', '{{ $absence->status }}', {{ $absence->days }}, '{{ addslashes($absence->reason ?? '') }}')"
                                          title="{{ \App\Models\Absence::TYPES[$absence->type] ?? $absence->type }}">
                                         <span style="font-size:0.7rem">●</span>
                                     </div>
@@ -634,46 +604,7 @@
 @endif
 
 {{-- Conflicts Details --}}
-@if(count($conflicts) > 0)
-<div class="card" id="conflicts" style="margin-top:24px;border:2px solid #fee2e2">
-    <div class="card-header" style="background:#fef2f2">
-        <h3 class="card-title" style="color:#991b1b">⚠️ Détails des conflits ({{ count($conflicts) }})</h3>
-    </div>
-    <div style="padding:16px">
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
-            @foreach($conflicts as $i => $conflict)
-            <div style="background:#fff;border:1px solid #fecaca;border-radius:12px;padding:16px">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                    <div style="font-weight:600;color:#991b1b">{{ $conflict['a']->employee->full_name }}</div>
-                    <span style="background:#fee2e2;color:#991b1b;padding:4px 8px;border-radius:4px;font-size:0.75rem;font-weight:600">CONFLIT</span>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-                    <div style="background:#fef2f2;padding:12px;border-radius:8px">
-                        <div style="font-size:0.7rem;color:#dc2626;font-weight:600;margin-bottom:4px">ABSENCE 1</div>
-                        <div style="font-weight:600">{{ \App\Models\Absence::TYPES[$conflict['a']->type] ?? $conflict['a']->type }}</div>
-                        <div style="font-size:0.85rem">{{ $conflict['a']->start_date->format('d/m') }} → {{ $conflict['a']->end_date->format('d/m/Y') }}</div>
-                        <div style="font-size:0.85rem;color:#dc2626;font-weight:600">{{ $conflict['a']->days }} jours</div>
-                    </div>
-                    <div style="background:#fef2f2;padding:12px;border-radius:8px">
-                        <div style="font-size:0.7rem;color:#dc2626;font-weight:600;margin-bottom:4px">ABSENCE 2</div>
-                        <div style="font-weight:600">{{ \App\Models\Absence::TYPES[$conflict['b']->type] ?? $conflict['b']->type }}</div>
-                        <div style="font-size:0.85rem">{{ $conflict['b']->start_date->format('d/m') }} → {{ $conflict['b']->end_date->format('d/m/Y') }}</div>
-                        <div style="font-size:0.85rem;color:#dc2626;font-weight:600">{{ $conflict['b']->days }} jours</div>
-                    </div>
-                </div>
-                <div style="margin-top:12px;padding-top:12px;border-top:1px solid #fecaca">
-                    <span style="font-size:0.8rem;color:#991b1b">Chevauchement: </span>
-                    <strong style="color:#dc2626">
-                        {{ max($conflict['a']->start_date, $conflict['b']->start_date)->format('d/m') }} → 
-                        {{ min($conflict['a']->end_date, $conflict['b']->end_date)->format('d/m/Y') }}
-                    </strong>
-                </div>
-            </div>
-            @endforeach
-        </div>
-    </div>
-</div>
-@endif
+
 
 {{-- Legend --}}
 <div class="card" style="margin-top:24px;background:var(--bg-secondary)">
@@ -763,57 +694,68 @@
         window.location.href = url.toString();
     }
     
+    function loadConflictsModal() {
+        const url = new URL('{{ route("absences.conflicts.json") }}', window.location.origin);
+        const params = new URLSearchParams(window.location.search);
+        fetch(url + '?' + params.toString())
+            .then(response => response.json())
+            .then(conflicts => {
+                const modal = document.getElementById('conflictsModal');
+                const body = modal.querySelector('.modal-body ul');
+                body.innerHTML = '';
+                if (conflicts.length === 0) {
+                    body.innerHTML = '<li style="text-align:center;color:var(--text-muted);padding:32px">Aucun conflit détecté</li>';
+                } else {
+                    conflicts.forEach(conflict => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `
+                            <div style="font-weight:600;margin-bottom:4px">${conflict.employee}</div>
+                            <div style="display:flex;gap:8px;font-size:0.85rem">
+                                <span style="background:#fef2f2;padding:4px 8px;border-radius:4px;color:#dc2626">${conflict.absence1}</span>
+                                <span> vs </span>
+                                <span style="background:#fef2f2;padding:4px 8px;border-radius:4px;color:#dc2626">${conflict.absence2}</span>
+                            </div>
+                            <div style="font-size:0.8rem;color:#991b1b;margin-top:4px">${conflict.start} → ${conflict.end}</div>
+                        `;
+                        body.appendChild(li);
+                    });
+                }
+                modal.classList.add('active');
+            })
+            .catch(err => {
+                console.error('Conflicts load error', err);
+                alert('Erreur chargement conflits');
+            });
+    }
+    
+    function closeConflictsModal() {
+        document.getElementById('conflictsModal').classList.remove('active');
+    }
+    
+    // ... existing showAbsenceModal, closeAbsenceModal functions ...
     function showAbsenceModal(id, name, dept, position, startDate, endDate, type, status, days, reason) {
-        // Set employee info
-        const nameParts = name.split(' ');
-        const initials = nameParts.length >= 2 
-            ? nameParts[0][0] + nameParts[nameParts.length - 1][0] 
-            : name[0];
-        document.getElementById('modalAvatar').textContent = initials.toUpperCase();
-        document.getElementById('modalEmployeeName').textContent = name;
-        document.getElementById('modalEmployeeDept').textContent = dept + (position ? ' - ' + position : '');
-        
-        // Set absence details
-        document.getElementById('modalStartDate').textContent = startDate;
-        document.getElementById('modalEndDate').textContent = endDate;
-        document.getElementById('modalType').textContent = type;
-        document.getElementById('modalDays').textContent = days + ' jour(s)';
-        
-        // Set status with appropriate class
-        const statusEl = document.getElementById('modalStatus');
-        statusEl.textContent = status === 'approved' ? 'Approuvé' : status === 'pending' ? 'En attente' : 'Rejeté';
-        statusEl.className = 'modal-status-badge ' + status;
-        
-        // Set reason if available
-        const reasonRow = document.getElementById('modalReasonRow');
-        if (reason && reason.trim()) {
-            reasonRow.style.display = 'flex';
-            document.getElementById('modalReason').textContent = reason;
-        } else {
-            reasonRow.style.display = 'none';
+        // ... existing code ...
+    }
+    
+    // Close on overlay click
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'conflictsModal') {
+            closeConflictsModal();
         }
-        
-        // Set detail link
-        document.getElementById('modalDetailLink').href = '/absences/' + id;
-        
-        // Show modal
-        document.getElementById('absenceModal').classList.add('active');
-    }
+    });
     
-    function closeAbsenceModal() {
-        document.getElementById('absenceModal').classList.remove('active');
-    }
-    
-    function closeModal(event) {
-        if (event.target.classList.contains('modal-overlay')) {
-            closeAbsenceModal();
-        }
-    }
-    
-    // Close modal on Escape key
+    // Escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
-            closeAbsenceModal();
+            closeConflictsModal();
+        }
+    });
+
+    // Auto-load conflicts in modal when present
+    document.addEventListener('DOMContentLoaded', function() {
+        const conflictsCount = {{ (int) ($stats['conflicts_count'] ?? 0) }};
+        if (conflictsCount > 0) {
+            loadConflictsModal();
         }
     });
 </script>

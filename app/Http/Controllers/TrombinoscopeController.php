@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Department;
 use App\Models\Employee;
+use App\Models\Pointage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Exports\TrombinoscopeExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Carbon\Carbon;
 
 class TrombinoscopeController extends Controller
 {
@@ -12,24 +17,27 @@ class TrombinoscopeController extends Controller
     {
         $query = Employee::query();
 
-        if ($request->department) {
-            $query->where('department', $request->department);
-        }
-
-        if ($request->search) {
-            $query->where(function($q) use ($request) {
+        $query->when($request->department, fn($q) => $q->where('department', $request->department))
+            ->when($request->search, fn($q) => $q->where(function ($q) use ($request) {
                 $q->where('first_name', 'like', "%{$request->search}%")
                   ->orWhere('last_name', 'like', "%{$request->search}%")
                   ->orWhere('position', 'like', "%{$request->search}%");
-            });
-        }
+            }));
 
-$employees = $query->where('status', 'active')->get();
-        $departments = Employee::distinct()->pluck('department');
-        $departments = Employee::distinct()->pluck('department');
+        $employees = $query->active()->get();
+        $departments = Department::names();
 
+        $today = Carbon::today()->toDateString();
 
-        return view('trombinoscope.index', compact('employees', 'departments'));
+        $pointages = Pointage::where('date', $today)
+            ->get()
+            ->keyBy('employee_id');
 
+        return view('trombinoscope.index', compact('employees', 'departments', 'pointages'));
+    }
+
+    public function export()
+    {
+        return Excel::download(new TrombinoscopeExport, 'trombinoscope.xlsx');
     }
 }

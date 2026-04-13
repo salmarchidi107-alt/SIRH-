@@ -202,13 +202,17 @@
         <div class="pt-topbar-left">
             <span class="pt-title">Pointage — Badgeuse</span>
             <div class="pt-tabs">
-                <a href="{{ route('pointage.index', ['date' => $currentDate->toDateString(), 'vue' => 'journee']) }}"
-                   class="pt-tab {{ request('vue', 'journee') === 'journee' ? 'active' : '' }}">
-                    Journée
+                <a href="{{ route('pointage.index', array_merge(request()->only(['search', 'department']), ['date' => $currentDate->toDateString(), 'vue' => 'tous'])) }}"
+                   class="pt-tab {{ ($vue ?? request('vue', 'tous')) === 'tous' ? 'active' : '' }}">
+                    Tous
                 </a>
-                <a href="{{ route('pointage.index', ['date' => $currentDate->toDateString(), 'vue' => 'employes']) }}"
-                   class="pt-tab {{ request('vue') === 'employes' ? 'active' : '' }}">
-                    Employés
+                <a href="{{ route('pointage.index', array_merge(request()->only(['search', 'department']), ['date' => $currentDate->toDateString(), 'vue' => 'pointe'])) }}"
+                   class="pt-tab {{ ($vue ?? request('vue')) === 'pointe' ? 'active' : '' }}">
+                    Pointe
+                </a>
+                <a href="{{ route('pointage.index', array_merge(request()->only(['search', 'department']), ['date' => $currentDate->toDateString(), 'vue' => 'non_pointe'])) }}"
+                   class="pt-tab {{ ($vue ?? request('vue')) === 'non_pointe' ? 'active' : '' }}">
+                    Non pointe
                 </a>
             </div>
         </div>
@@ -219,6 +223,16 @@
                 <span>Sync tablette <strong id="sync-ago">—</strong></span>
             </div>
             @endif
+
+            {{-- Export PDF Button --}}
+            <div class="pdf-export-dropdown">
+                <a href="{{ route('pointage.pdf', request()->only(['date', 'department', 'search', 'vue'])) }}"
+                   class="pt-btn-export" title="Exporter PDF (filtres actuels)"
+                   style="background: var(--p-primary): #22c55e;; padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; transition: background .15s; white-space: nowrap;">
+                    PDF
+                </a>
+            </div>
+
             <button class="pt-btn-validate" id="btn-validate"
                     data-date="{{ $currentDate->toDateString() }}"
                     data-url="{{ route('pointage.valider-journee') }}">
@@ -227,13 +241,35 @@
         </div>
     </div>
 
+    {{-- ── FILTERS BAR - NOUVEAU ────────────────────────────── --}}
+    <div style="background: var(--p-surface); border-bottom: 1px solid var(--p-border); padding: 0.75rem 1.5rem; display: flex; gap: 0.75rem; align-items: center; font-size: 13px;">
+         <strong>Filtrer:</strong>
+        <form method="GET" action="{{ route('pointage.index') }}" style="display: flex; gap: 0.5rem; align-items: center; flex: 1;">
+            <input type="hidden" name="date" value="{{ $currentDate->toDateString() }}">
+            <input type="hidden" name="vue" value="{{ $vue ?? request('vue', 'tous') }}">
+
+            <input type="text" name="search" placeholder="Nom employé..." value="{{ request('search') }}" onchange="this.form.submit()" style="flex: 1; padding: 0.5rem; border: 1px solid var(--p-border); border-radius: 6px;">
+            <select name="department" onchange="this.form.submit()" style="padding: 0.5rem; border: 1px solid var(--p-border); border-radius: 6px;">
+                <option value=""> Tous départements</option>
+                @foreach($departments as $dept)
+                <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>{{ $dept }}</option>
+                @endforeach
+            </select>
+@if(request()->hasAny(['search', 'department']))
+                <a href="{{ route('pointage.index', ['date' => $currentDate->toDateString(), 'vue' => request('vue')]) }}" style="padding: 0.5rem 1rem; background: var(--p-red-bg); color: var(--p-red); border-radius: 6px; text-decoration: none; font-weight: 500;">✕ Reset</a>
+            @endif
+        </form>
+    </div>
+
     {{-- ── Week nav ─────────────────────────────────────────── --}}
     <div class="pt-weeknav">
-        @php
+
+@php
             $prevDate = $currentDate->copy()->subWeek();
             $nextDate = $currentDate->copy()->addWeek();
+            $filterParams = request()->only(['search', 'department']);
         @endphp
-        <a href="{{ route('pointage.index', ['date' => $prevDate->toDateString()]) }}" class="pt-weeknav-btn">&#8249;</a>
+        <a href="{{ route('pointage.index', array_merge($filterParams, ['date' => $prevDate->toDateString()])) }}" class="pt-weeknav-btn">&#8249;</a>
         <span class="pt-week-label">
             {{ $startOfWeek->translatedFormat('d M') }} – {{ $endOfWeek->translatedFormat('d M Y') }}
         </span>
@@ -272,12 +308,12 @@
                         <th style="width:44px">Validé</th>
                         <th>Employé</th>
                         <th>Absence</th>
-                        <th>Heures travaillées</th>
-                        <th>Pause</th>
-                        <th>Shifts rémunérés</th>
-                        <th style="width:72px;text-align:center">Pause (min)</th>
-                        <th style="width:80px">Total</th>
-                        <th>Action</th>
+                    <th>Heures travaillées</th>
+                    <th>Pause total</th>
+                    <th>Pause début / fin</th>
+                    <th style="width:80px">Total travaillé</th>
+                    <th>Action</th>
+
                     </tr>
                 </thead>
                 <tbody>
@@ -287,7 +323,7 @@
                     $statut  = $p?->statut ?? 'pas_de_badge';
                     $valide  = $p?->valide ?? false;
                     $isDimmed = $p && $p->total_heures && $p->total_heures < 1;
-                    $isAbsent = in_array($statut, ['absent','absence_injustifiee']);
+                    $isAbsent = in_array($statut, ['absent','absence']);
                     $isNoBadge = $statut === 'pas_de_badge' && !$p?->heure_entree;
                     $isMidnight = $p?->heure_sortie === '00:00:00' || $p?->heure_sortie === '00:00';
                 @endphp
@@ -317,13 +353,21 @@
                     </td>
 
                     {{-- Absence --}}
-                    <td>
-                        @if($isAbsent)
-                        <span class="pt-badge pt-badge-absent">Absence injustifiée</span>
-                        @else
-                        <input type="checkbox" style="accent-color:var(--p-teal);width:15px;height:15px;" {{ $isAbsent ? 'checked' : '' }} disabled>
-                        @endif
-                    </td>
+            <td>
+    <input type="checkbox"
+           class="absent-checkbox"
+           data-employee="{{ $emp['id'] }}"
+           data-date="{{ $currentDate->toDateString() }}"
+           data-url="{{ route('pointage.toggle-absence') }}"
+           style="accent-color:var(--p-teal);width:15px;height:15px;"
+           {{ $isAbsent ? 'checked' : '' }}
+           onchange="toggleAbsence(this)">
+
+    <span class="pt-badge pt-badge-absent"
+          style="{{ !$isAbsent ? 'display:none;' : '' }}">
+        Absence
+    </span>
+</td>
 
                     {{-- Heures travaillées --}}
                     <td>
@@ -521,5 +565,38 @@ async function toggleIgnore(btn) {
         btn.textContent = data.ignore_badge ? '⊘ Ignorer' : '👁 Garder';
     } catch(e) { console.error(e); }
 }
+async function toggleAbsence(checkbox) {
+    const url = checkbox.dataset.url;
+    const employeeId = checkbox.dataset.employee;
+    const date = checkbox.dataset.date;
+    const badge = checkbox.parentElement.querySelector('.pt-badge-absent');
+
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': CSRF,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                employee_id: employeeId,
+                date: date,
+                absent: checkbox.checked
+            })
+        });
+
+        const data = await res.json();
+
+        // UI update
+        badge.style.display = checkbox.checked ? 'inline-block' : 'none';
+
+    } catch (e) {
+        console.error(e);
+        checkbox.checked = !checkbox.checked;
+    }
+}
+
 </script>
 @endpush
+

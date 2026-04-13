@@ -78,12 +78,21 @@ class Salary extends Model
 
     public function getMonthNameAttribute(): string
     {
-        $months = [
-            1=>'Janvier',2=>'Février',3=>'Mars',4=>'Avril',
-            5=>'Mai',6=>'Juin',7=>'Juillet',8=>'Août',
-            9=>'Septembre',10=>'Octobre',11=>'Novembre',12=>'Décembre',
-        ];
-        return $months[$this->month] ?? '';
+        return match ($this->month) {
+            1 => 'Janvier',
+            2 => 'Février',
+            3 => 'Mars',
+            4 => 'Avril',
+            5 => 'Mai',
+            6 => 'Juin',
+            7 => 'Juillet',
+            8 => 'Août',
+            9 => 'Septembre',
+            10 => 'Octobre',
+            11 => 'Novembre',
+            12 => 'Décembre',
+            default => '',
+        };
     }
 
     public function getStatusLabelAttribute(): string

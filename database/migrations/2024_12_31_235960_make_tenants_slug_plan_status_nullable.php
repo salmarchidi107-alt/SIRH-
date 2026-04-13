@@ -6,21 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::table('tenants', function (Blueprint $table) {
-            $table->string('slug')->nullable()->change();
-            $table->enum('plan', ['starter', 'pro', 'enterprise'])->nullable()->change();
-            $table->enum('status', ['trial', 'active', 'suspended'])->nullable()->change();
+            $table->string('name')->nullable()->change();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::table('tenants', function (Blueprint $table) {
-            $table->string('slug')->nullable(false)->change();
-            $table->enum('plan', ['starter', 'pro', 'enterprise'])->default('starter')->change();
-            $table->enum('status', ['trial', 'active', 'suspended'])->default('trial')->change();
+            $table->string('name')->nullable(false)->change();
         });
     }
 };

@@ -582,8 +582,7 @@ tbody tr:last-child td { border-bottom: none; }
   color: white;
 }
 
-.btn-success { background: var(--success); color: white; }
-.btn-success:hover { background: #059669; transform: translateY(-1px); color: white; }
+
 
 .btn-danger { background: var(--danger); color: white; }
 .btn-danger:hover { background: #dc2626; transform: translateY(-1px); color: white; }

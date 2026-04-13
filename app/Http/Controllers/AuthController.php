@@ -5,15 +5,22 @@ namespace App\Http\Controllers;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Stancl\Tenancy\Database\Models\Domain;
-
+use Illuminate\Support\Facades\Hash;
+ use App\Ai\Agents\AssistantRH;
 class AuthController extends Controller
 {
-    /**
-     * Affiche le formulaire de login.
-     * Résout le tenant depuis le domaine (landlord uniquement).
-     */
+
+
+public function ask(Request $request)
+{
+    $agent = app(AssistantRH::class);
+
+    $response = $agent->prompt($request->message);
+
+    return response()->json([
+        'reply' => $response->text
+    ]);
+}
     public function showLoginForm()
     {
         try {
@@ -57,11 +64,35 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-        // ── Tentative d'authentification ──────────────────────────────────────
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
-            return back()->withErrors([
-                'email' => 'Email ou mot de passe incorrect.',
-            ])->onlyInput('email');
+        if (Auth::attempt($credentials)) {
+            $request->session()->regenerate();
+
+
+            $user = Auth::user();
+
+
+            if (!$user->role) {
+                $user->role = User::ROLE_EMPLOYEE;
+                $user->save();
+            }
+
+
+            if (!$user->employee_id) {
+                $employee = Employee::where('email', $user->email)->first();
+                if ($employee) {
+                    $employee->user_id = $user->id;
+                    $employee->save();
+                    $user->employee_id = $employee->id;
+                    $user->save();
+                }
+            }
+
+            $defaultRedirect = $user->role === User::ROLE_EMPLOYEE
+                ? route('employee.dashboard')
+                : route('dashboard');
+
+            return redirect()->intended($defaultRedirect)
+                ->with('success', 'Connexion réussie! Bienvenue ' . $user->name);
         }
 
         $request->session()->regenerate();

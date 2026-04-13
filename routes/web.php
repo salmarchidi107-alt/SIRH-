@@ -21,11 +21,6 @@ use App\Http\Controllers\SuperAdmin\ClientController;
 use App\Http\Controllers\SuperAdmin\RoleController;
 use Illuminate\Support\Facades\Route;
 
-// ─── Auth (public) ────────────────────────────────────────────────────────────
-Route::get('/login',   [AuthController::class, 'showLoginForm'])->name('login');
-Route::post('/login',  [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
 // ─── Utilitaires dev ─────────────────────────────────────────────────────────
 Route::get('/link-users', function () {
     $linked = 0;
@@ -44,6 +39,11 @@ Route::get('/link-users', function () {
 Route::get('/holidays/debug',         [\App\Http\Controllers\HolidayController::class, 'debug']);
 Route::get('/holidays/{year}/{month}', [\App\Http\Controllers\HolidayController::class, 'index']);
 Route::get('/actualites',             [NewsController::class, 'index']);
+
+// ─── Auth (public) ────────────────────────────────────────────────────────────
+Route::get('/login',   [AuthController::class, 'showLoginForm'])->name('login');
+Route::post('/login',  [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // ─── SuperAdmin ───────────────────────────────────────────────────────────────
 Route::middleware(['auth', 'superadmin'])
@@ -97,7 +97,7 @@ Route::middleware(['web', 'domain-tenant', 'auth', 'identify-tenant'])->group(fu
             Route::get('/counters',       [AbsenceController::class, 'counters'])->name('counters');
             Route::get('/{absence}',      [AbsenceController::class, 'show'])->name('show');
             Route::get('/{absence}/edit', [AbsenceController::class, 'edit'])->name('edit');
-            Route::put('/{absence}',      [AbsenceController::class, 'update'])->name('update');
+            Route::put('/{absence}',      [AbsenceController::class, 'update'])->name('show');
             Route::delete('/{absence}',   [AbsenceController::class, 'destroy'])->name('destroy');
         });
     });

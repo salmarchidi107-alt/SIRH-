@@ -5,6 +5,9 @@ namespace App\Models;
 // Removed CentralTenant import
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\DTOs\CompteurMoisDTO;
+use App\Models\Employee;
+use App\Models\Pointage;
 use Illuminate\Database\Eloquent\Model;
 
 class CompteurTemps extends Model
@@ -92,7 +95,6 @@ class CompteurTemps extends Model
             ->where('mois', $mois)
             ->first();
 
-
         if (!$compteur) {
             $compteur = self::create([
                 'employee_id' => $employeeId,
@@ -105,9 +107,9 @@ class CompteurTemps extends Model
             ]);
         }
 
-
-        $pointages = Pointage::parEmployee($employeeId)
-            ->parMois($annee, $mois)
+        $pointages = Pointage::where('employee_id', $employeeId)
+            ->whereYear('date', $annee)
+            ->whereMonth('date', $mois)
             ->get();
 
         $compteur->heures_realisees = $pointages->sum('heures_travaillees');
@@ -115,7 +117,7 @@ class CompteurTemps extends Model
         $compteur->solde_compteur = $compteur->heures_realisees - $compteur->heures_planifiees;
         $compteur->save();
 
-        return $compteur;
+        return CompteurMoisDTO::fromModel($compteur);
     }
 
 

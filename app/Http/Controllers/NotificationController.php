@@ -27,9 +27,12 @@ class NotificationController extends Controller
             ->get();
 
 
+$totalCount = Absence::where('status', 'pending')->count() + News::count();
+        $pendingCount = Absence::where('status', 'pending')->count();
         $newsCount = News::count();
 
-        $employees = Employee::where('status', 'active')->orderBy('first_name')->paginate(25);
+
+        $employees = Employee::active()->orderBy('first_name')->get();
 
         return view('notifications.index', compact('pendingAbsences', 'recentNews', 'pendingCount', 'newsCount', 'employees'));
     }

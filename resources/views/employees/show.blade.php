@@ -32,7 +32,7 @@
     </div>
     <div class="profile-meta">
             <div class="profile-meta-item">
-            <div class="profile-meta-value">{{ $employee->hire_date ? round($employee->hire_date->floatDiffInYears(now()), 1) : 'N/A' }}</div>
+            <div class="profile-meta-value">{{ $employee->hire_date ? round(\Carbon\Carbon::parse($employee->hire_date)->floatDiffInYears(now()), 1) : 'N/A' }}</div>
             <div class="profile-meta-label">Années d'ancienneté</div>
         </div>
         <div class="profile-meta-item">
@@ -64,7 +64,7 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-label"> Date de naissance</div>
-                        <div class="detail-value">{{ $employee->birth_date ? $employee->birth_date->format('d/m/Y') : '—' }}</div>
+                        <div class="detail-value">{{ $employee->birth_date ? \Carbon\Carbon::parse($employee->birth_date)->format('d/m/Y') : '—' }}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label"> CIN</div>
@@ -130,7 +130,7 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-label"> Date d'embauche</div>
-                        <div class="detail-value">{{ $employee->hire_date->format('d/m/Y') }}</div>
+                        <div class="detail-value">{{ $employee->hire_date ? \Carbon\Carbon::parse($employee->hire_date)->format('d/m/Y') : '—' }}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label"> Diplôme</div>

@@ -2,25 +2,35 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Seeder;
+use App\Models\Tenant;
+use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
 class SuperAdminSeeder extends Seeder
 {
     public function run(): void
     {
-        User::updateOrCreate(
-            ['email' => 'superadmin@tenantes.io'],
+        $tenantId = Tenant::where('slug', 'superadmin')->first()?->id ?? Tenant::create([
+            'id' => 'superadmin-tenant-id',
+            'name' => 'SuperAdmin',
+            'slug' => 'superadmin',
+            'status' => 'active',
+            'plan_status' => 'pro',
+        ])->id;
+
+        $user = User::updateOrCreate(
+            ['email' => 'superadmin@hospitalrh.com'],
             [
-                'name'           => 'Super Admin',
-                'password'       => Hash::make('SuperAdmin@2024!'),
-                'is_super_admin' => true,
-'role'           => User::ROLE_SUPER_ADMIN,
-                'tenant_id'      => null,
+                'name' => 'Super Admin',
+                'email' => 'superadmin@hospitalrh.com',
+                'password' => Hash::make('password'),
+                'role' => 'superadmin',
             ]
         );
 
-        $this->command->info('✅ Super Admin créé : superadmin@tenantes.io');
+        $this->command->info("SuperAdmin created: {$user->email} / password");
     }
 }
+?>
+

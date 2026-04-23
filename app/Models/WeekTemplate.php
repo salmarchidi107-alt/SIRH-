@@ -13,6 +13,7 @@ class WeekTemplate extends Model
     protected $fillable = [
         'tenant_id',
         'name',
+        'department',
         'monday_shift_type',
         'monday_start',
         'monday_end',
@@ -40,9 +41,6 @@ class WeekTemplate extends Model
     {
         return $this->hasMany(Planning::class);
     }
-}
-
-
 
     public function applyToEmployee($employeeId, $startDate)
     {
@@ -62,6 +60,7 @@ class WeekTemplate extends Model
             if ($shift['shift_type']) {
                 Planning::updateOrCreate(
                     [
+                        'tenant_id' => config('app.current_tenant_id'),
                         'employee_id' => $employeeId,
                         'date' => $date->format('Y-m-d'),
                     ],

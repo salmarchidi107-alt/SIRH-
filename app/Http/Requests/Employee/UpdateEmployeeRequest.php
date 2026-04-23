@@ -23,8 +23,9 @@ class UpdateEmployeeRequest extends FormRequest
             'last_name' => 'required|string|max:100',
             'email' => ['required', 'email', Rule::unique('employees', 'email')->ignore($employeeId)],
             'phone' => 'nullable|string|max:20',
-'department' => 'nullable|string|max:100',
+            'department' => 'required|string|max:100',
             'position' => 'required|string|max:100',
+
             'diploma_type' => 'nullable|string|max:100',
             'skills' => 'nullable|string',
             'contract_type' => 'required|in:CDI,CDD,Interim,Stage',

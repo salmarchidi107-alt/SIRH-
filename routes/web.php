@@ -1,12 +1,17 @@
 <?php
 
 use App\Http\Controllers\AbsenceController;
+use App\Http\Controllers\AssistantRhController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Badge\BadgeAuthController;
+use App\Http\Controllers\Badge\BadgeDashboardController;
+use App\Http\Controllers\Badge\BadgePointageController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeDashboardController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PdfDownloadController;
 use App\Http\Controllers\PlanningController;
 use App\Http\Controllers\PointageController;
 use App\Http\Controllers\ProfileController;
@@ -21,20 +26,7 @@ use App\Http\Controllers\SuperAdmin\ClientController;
 use App\Http\Controllers\SuperAdmin\RoleController;
 use Illuminate\Support\Facades\Route;
 
-// ─── Utilitaires dev ─────────────────────────────────────────────────────────
-Route::get('/link-users', function () {
-    $linked = 0;
-    foreach (\App\Models\User::all() as $user) {
-        $employee = \App\Models\Employee::where('email', $user->email)->first();
-        if ($employee && ! $employee->user_id) {
-            $employee->user_id = $user->id;
-            $employee->save();
-            $linked++;
-            echo "Linked: {$user->email} → {$employee->first_name} {$employee->last_name}<br>";
-        }
-    }
-    echo $linked > 0 ? "<br>Linked {$linked} user(s)!" : "No new links.";
-});
+
 
 Route::get('/holidays/debug',         [\App\Http\Controllers\HolidayController::class, 'debug']);
 Route::get('/holidays/{year}/{month}', [\App\Http\Controllers\HolidayController::class, 'index']);
@@ -55,33 +47,32 @@ Route::middleware(['auth', 'superadmin'])
         Route::get('/personnalise',  [SuperAdminSettings::class, 'index'])->name('personnalise.index');
         Route::post('/personnalise', [SuperAdminSettings::class, 'update'])->name('personnalise.update');
 
-        // ── Settings (Accès Clients uniquement) ───────────────────────────────
         Route::get('/settings', [SuperAdminSettings::class, 'index'])->name('settings.index');
         Route::post('/settings/clients/{user}/access', [SuperAdminSettings::class, 'updateClientAccess'])
              ->name('settings.clients.updateAccess');
 
-        // ── Tenants ───────────────────────────────────────────────────────────
         Route::resource('tenants', TenantController::class);
         Route::post('tenants/{tenant}/suspend',    [TenantController::class, 'suspend'])->name('tenants.suspend');
         Route::post('tenants/{tenant}/reactivate', [TenantController::class, 'reactivate'])->name('tenants.reactivate');
 
-        // ── Clients ───────────────────────────────────────────────────────────
         Route::get('clients',          [ClientController::class, 'index'])->name('clients.index');
         Route::get('clients/{tenant}', [ClientController::class, 'show'])->name('clients.show');
 
-        // ── Rôles ─────────────────────────────────────────────────────────────
         Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
     });
 
 // ─── Application principale (tenant requis) ───────────────────────────────────
 Route::middleware(['web', 'domain-tenant', 'auth', 'identify-tenant'])->group(function () {
 
+    // ── Accessible à tous les utilisateurs connectés du tenant ───────────────
     Route::middleware(['tenant-user'])->group(function () {
         Route::get('/profile',                [ProfileController::class, 'index'])->name('profile');
         Route::get('/notifications',          [NotificationController::class, 'index'])->name('notifications.index');
         Route::get('/api/notifications/data', [NotificationController::class, 'data'])->name('api.notifications.data');
-        Route::get('/trombinoscope', [TrombinoscopeController::class, 'index'])->name('trombinoscope');
-        Route::get('/employees/{employee}', [EmployeeController::class, 'show'])->name('employees.show');
+        Route::get('/trombinoscope',          [TrombinoscopeController::class, 'index'])->name('trombinoscope');
+
+        // !! show ici, AVANT les routes admin qui enregistrent {employee} !!
+        Route::get('/employees/{employee}', [EmployeeController::class, 'show'])->where("employee","[0-9]+")->name('employees.show');
 
         Route::prefix('planning')->name('planning.')->group(function () {
             Route::get('/weekly',           [PlanningController::class, 'weekly'])->name('weekly');
@@ -95,23 +86,44 @@ Route::middleware(['web', 'domain-tenant', 'auth', 'identify-tenant'])->group(fu
             Route::post('/',              [AbsenceController::class, 'store'])->name('store');
             Route::get('/calendar',       [AbsenceController::class, 'calendar'])->name('calendar');
             Route::get('/counters',       [AbsenceController::class, 'counters'])->name('counters');
+            Route::get('/conflicts.json', [AbsenceController::class, 'getConflicts'])->name('conflicts.json');
             Route::get('/{absence}',      [AbsenceController::class, 'show'])->name('show');
             Route::get('/{absence}/edit', [AbsenceController::class, 'edit'])->name('edit');
-            Route::put('/{absence}',      [AbsenceController::class, 'update'])->name('show');
+            Route::put('/{absence}',      [AbsenceController::class, 'update'])->name('update');
             Route::delete('/{absence}',   [AbsenceController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('salary')->name('salary.')->group(function () {
+            Route::get('/{employee}',   [SalaryController::class, 'show'])->name('show');
+            Route::get('/{salary}/pdf', [SalaryController::class, 'pdf'])->name('pdf');
         });
     });
 
+    // ── Employé connecté (dashboard employé) ─────────────────────────────────
     Route::middleware(['employee'])->group(function () {
         Route::get('/employer/dashboard', [EmployeeDashboardController::class, 'index'])->name('employee.dashboard');
     });
 
+    // ── Admin seulement ───────────────────────────────────────────────────────
     Route::middleware(['admin'])->group(function () {
         Route::get('/', fn () => redirect()->route('admin.dashboard'));
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
-        Route::resource('news',      NewsController::class);
-        Route::resource('employees', EmployeeController::class)->except(['show']);
+        Route::resource('news', NewsController::class);
+
+        // ── Routes employees : segments statiques EN PREMIER ─────────────────
+        Route::get('employees',                             [EmployeeController::class, 'index'])->name('employees.index');
+        Route::get('employees/create',                      [EmployeeController::class, 'create'])->name('employees.create');
+        Route::post('employees',                            [EmployeeController::class, 'store'])->name('employees.store');
+        Route::get('employees/export-pdf',                  [EmployeeController::class, 'exportPdf'])->name('employees.export-pdf');
+        Route::get('employees/export-pdf-dept/{department}',[EmployeeController::class, 'exportPdfByDept'])->name('employees.export-pdf-dept');
+        Route::post('employees/reorder',                    [EmployeeController::class, 'reorder'])->name('employees.reorder');
+        Route::get('employees/ajax',                        [EmployeeController::class, 'ajax'])->name('employees.ajax');
+
+        // ── Routes employees : segments dynamiques {employee} ENSUITE ─────────
+        Route::post('employees/{employee}/regenerate-pin',  [EmployeeController::class, 'regeneratePin'])->name('employees.regeneratePin');
+        Route::resource('employees', EmployeeController::class)->only(['edit', 'update', 'destroy']);
+        // ─────────────────────────────────────────────────────────────────────
 
         Route::get('/temps/vue-ensemble', [VueEnsembleController::class, 'index'])->name('temps.vue-ensemble');
 
@@ -121,6 +133,7 @@ Route::middleware(['web', 'domain-tenant', 'auth', 'identify-tenant'])->group(fu
             Route::put('/{planning}',    [PlanningController::class, 'update'])->name('update');
             Route::delete('/{planning}', [PlanningController::class, 'destroy'])->name('destroy');
             Route::post('/drag-drop',    [PlanningController::class, 'updateDragDrop'])->name('dragDrop');
+            Route::get('weekly/pdf',     [PlanningController::class, 'exportWeeklyPdf'])->name('exportWeeklyPdf');
 
             Route::prefix('templates')->name('templates.')->group(function () {
                 Route::get('/',              [WeekTemplateController::class, 'index'])->name('index');
@@ -133,6 +146,8 @@ Route::middleware(['web', 'domain-tenant', 'auth', 'identify-tenant'])->group(fu
         });
 
         Route::get('/pointage',                            [PointageController::class, 'index'])->name('pointage.index');
+        Route::get('/pointage/pdf',                        [PointageController::class, 'exportPdf'])->name('pointage.pdf');
+        Route::post('/pointage/toggle-absence',            [PointageController::class, 'toggleAbsence'])->name('pointage.toggle-absence');
         Route::post('/pointage/valider-journee',           [PointageController::class, 'validerJournee'])->name('pointage.valider-journee');
         Route::post('/pointage/{pointage}/toggle-valider', [PointageController::class, 'toggleValider'])->name('pointage.toggle-valider');
         Route::post('/pointage/{pointage}/toggle-ignore',  [PointageController::class, 'toggleIgnore'])->name('pointage.toggle-ignore');
@@ -147,17 +162,41 @@ Route::middleware(['web', 'domain-tenant', 'auth', 'identify-tenant'])->group(fu
             Route::get('/',                    [SalaryController::class, 'index'])->name('index');
             Route::post('/generate-all',       [SalaryController::class, 'generateAll'])->name('generate-all');
             Route::get('/{employee}/create',   [SalaryController::class, 'create'])->name('create');
-            Route::get('/{employee}',          [SalaryController::class, 'show'])->name('show');
             Route::post('/{employee}',         [SalaryController::class, 'store'])->name('update');
             Route::patch('/{salary}/validate', [SalaryController::class, 'validateSalary'])->name('validate');
             Route::patch('/{salary}/paid',     [SalaryController::class, 'markPaid'])->name('paid');
             Route::delete('/{salary}',         [SalaryController::class, 'destroy'])->name('destroy');
-            Route::get('/{salary}/pdf',        [SalaryController::class, 'pdf'])->name('pdf');
+        });
+
+        Route::middleware(['admin'])->prefix('variables')->name('variables.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\VariableElementController::class, 'index'])->name('index');
         });
 
         Route::prefix('api')->group(function () {
             Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
             Route::get('/planning/events', [PlanningController::class, 'events']);
+        });
+
+        Route::post('/ask-ai', AssistantRhController::class);
+
+        //── Badge ─────────────────────────────────────────────────────────────────
+        Route::prefix('badge')->name('badge.')->group(function () {
+
+            Route::get('/', function () {
+                return view('badge.pointage');
+            })->name('pointage');
+
+            Route::get('/auth/{action?}', [BadgeAuthController::class, 'showAuth'])->name('auth.show');
+            Route::post('/auth/validate', [BadgeAuthController::class, 'authAction'])->name('auth.validate');
+
+            Route::middleware(['badge.auth'])->group(function () {
+                Route::post('/logout',   [BadgeAuthController::class,    'logout'])      ->name('logout');
+                Route::get('/dashboard', [BadgeDashboardController::class,'index'])      ->name('dashboard');
+                Route::post('/entree',   [BadgePointageController::class, 'entree'])     ->name('entree');
+                Route::post('/sortie',   [BadgePointageController::class, 'sortie'])     ->name('sortie');
+                Route::post('/action',   [BadgePointageController::class, 'handleAction'])->name('action');
+                Route::get('/result',    [BadgePointageController::class, 'result'])     ->name('result');
+            });
         });
     });
 });

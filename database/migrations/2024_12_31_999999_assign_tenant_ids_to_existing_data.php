@@ -13,7 +13,7 @@ return new class extends Migration
     {
         // Skip if already migrated (check multiple tables)
         $alreadyMigrated = false;
-        foreacha (['employees', 'absences', 'plannings', 'salaries'] as $table) {
+foreach (['employees', 'absences', 'plannings', 'salaries'] as $table) {
             if (Schema::hasTable($table) && DB::table($table)->whereNotNull('tenant_id')->count() > 0) {
                 $alreadyMigrated = true;
                 break;

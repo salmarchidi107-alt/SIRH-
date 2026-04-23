@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Collection;
 
 class Department extends Model
 {
@@ -22,7 +24,7 @@ class Department extends Model
         return $this->hasMany(Employee::class);
     }
 
-    public static function names(): Collection
+    public static function names(): \Illuminate\Support\Collection
     {
         if (Schema::hasTable('departments')) {
             return self::orderBy('name')->pluck('name');
@@ -36,7 +38,7 @@ class Department extends Model
             ->values();
     }
 
-    public static function counts(): Collection
+    public static function counts(): \Illuminate\Support\Collection
     {
         if (Schema::hasTable('departments')) {
             return self::withCount('employees')

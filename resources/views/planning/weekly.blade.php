@@ -17,7 +17,6 @@
     @if(!(isset($isEmployee) && $isEmployee))
     <div class="page-header-right" style="display:flex;gap:8px">
         <a href="{{ route('planning.monthly') }}" class="btn btn-outline">Vue Mensuelle</a>
-        <a href="{{ route('planning.weekly.pdf', request()->query()) }}" class="btn btn-outline" target="_blank">Exporter PDF</a>
         <a href="{{ route('planning.templates.index') }}" class="btn btn-outline">Semaines Types</a>
         <a href="{{ route('planning.templates.apply') }}" class="btn btn-outline">➕ Appliquer Semaine Type</a>
         <button type="button" class="btn btn-primary" onclick="openPlanningModal()">
@@ -39,10 +38,8 @@
             <h2 style="margin:0;font-size:1.25rem">Créer un planning</h2>
             <button type="button" onclick="closePlanningModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-muted)">×</button>
         </div>
-
         <form method="POST" action="{{ route('planning.store') }}">
             @csrf
-
             <div style="margin-bottom:16px">
                 @if(!isset($isEmployee) || !$isEmployee)
                 <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Employé</label>
@@ -207,14 +204,10 @@
             </select>
             <a href="{{ route('planning.weekly', ['week' => $week + 1, 'year' => $year, 'search' => $search, 'department' => $department]) }}" class="btn btn-sm btn-outline">Semaine suivante →</a>
         </div>
-
-        <!-- Search -->
         <div style="display:flex;gap:8px;margin-left:auto">
-<input type="text" name="search" value="{{ $search }}" placeholder="Rechercher par nom..." class="filter-input" style="min-width:180px;border-radius:20px;padding-left:16px;padding-right:16px">
-</xai:function_call >
-<xai:function_call name="edit_file">
-<parameter name="path">d:/Projects/HospitalRh/resources/views/planning/weekly.blade.php
-               Tous les services</option>
+            <input type="text" name="search" value="{{ $search }}" placeholder="Rechercher par nom..." style="min-width:180px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem">
+            <select name="department" style="min-width:150px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem">
+                <option value="">Tous les services</option>
                 @foreach($departments as $dept)
                     <option value="{{ $dept }}" {{ $department == $dept ? 'selected' : '' }}>{{ $dept }}</option>
                 @endforeach
@@ -252,7 +245,7 @@
                 </tr>
             </thead>
             <tbody>
-@forelse($employees as $emp)
+                @forelse($employees as $emp)
                 @php
                     $empPlannings = $plannings->get($emp->id, collect());
                 @endphp
@@ -274,7 +267,7 @@
                         </div>
                     </td>
 
-                    <!-- Day Cells -->
+                    {{-- Cellules jours --}}
                     @foreach($weekDays as $date => $day)
                     @php
                         $dayPlanning = $empPlannings->firstWhere('date', $day['date']);
@@ -316,6 +309,7 @@
                             </div>
                             @endif
 
+                            {{-- Bloc Après-midi --}}
                             @if(in_array($dayPlanning->shift_type, ['apres_midi', 'journee']))
                             <div style="background:linear-gradient(135deg,#f59e0b,#fbbf24);color:white;padding:6px 8px;border-radius:6px;font-size:0.72rem;position:relative">
                                 <div style="font-weight:700">Après-midi</div>
@@ -326,6 +320,7 @@
                             </div>
                             @endif
 
+                            {{-- Bloc Nuit --}}
                             @if($dayPlanning->shift_type === 'nuit')
                             <div style="background:linear-gradient(135deg,#6366f1,#818cf8);color:white;padding:6px 8px;border-radius:6px;font-size:0.72rem;position:relative">
                                 <div style="font-weight:700">Nuit</div>
@@ -336,6 +331,7 @@
                             </div>
                             @endif
 
+                            {{-- Bloc Garde --}}
                             @if($dayPlanning->shift_type === 'garde')
                             <div style="background:linear-gradient(135deg,#ef4444,#f87171);color:white;padding:6px 8px;border-radius:6px;font-size:0.72rem;position:relative">
                                 <div style="font-weight:700">Garde</div>
@@ -436,17 +432,10 @@ function drop(event, newDate, newEmployeeId) {
             _token: csrfToken
         })
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Live UI update using structured data
-            updatePlanningCell(oldCell, targetCell, data.data);
-            // Clear old cell
-            clearCell(oldCell);
-            draggedPlanningId = null;
-        } else {
-            alert(data.message || 'Erreur lors de la mise à jour du planning');
-        }
+
+    .then(r => {
+        console.log('Response status', r.status);
+        return r.json();
     })
     .then(data => {
         console.log('Response data', data);
@@ -456,99 +445,14 @@ function drop(event, newDate, newEmployeeId) {
         console.error('Fetch error', err);
         alert('Erreur réseau');
     });
+
+    draggedPlanningId = null;
 }
 
-function updatePlanningCell(oldCell, newCell, planningData) {
-    // Create shift HTML based on shift_type
-    const shiftHtml = createShiftHtml(planningData);
-    newCell.innerHTML = shiftHtml;
-    newCell.dataset.planningId = planningData.id;
-    newCell.querySelectorAll('.shift-card').forEach(card => {
-        card.draggable = true;
-        card.addEventListener('dragstart', (e) => drag(e, planningData.id));
-    });
-}
 
-function createShiftHtml(planning) {
-    const type = planning.shift_type;
-    let html = '<div style="display:flex;flex-direction:column;gap:4px">';
-
-    const colors = {
-        matin: 'linear-gradient(135deg, #0ea5e9, #38bdf8)',
-        apres_midi: 'linear-gradient(135deg, #f59e0b, #fbbf24)',
-        nuit: 'linear-gradient(135deg, #6366f1, #818cf8)',
-        garde: 'linear-gradient(135deg, #ef4444, #f87171)',
-        journee: 'linear-gradient(135deg, #10b981, #34d399)'
-    };
-
-    const labels = {
-        matin: 'Matin',
-        apres_midi: 'Après-midi',
-        nuit: 'Nuit',
-        journee: 'Journée complète',
-        garde: 'Garde'
-    };
-
-    if (type === 'matin' || type === 'journee') {
-        html += `<div class="shift-card" style="background:${colors.matin || colors.journee};color:white;padding:6px 8px;border-radius:6px;font-size:0.7rem">
-            <div style="font-weight:600">${labels[type] || type}</div>
-            <div>${planning.shift_start}</div>
-        </div>`;
-    }
-
-    if (type === 'apres_midi' || type === 'journee') {
-        html += `<div class="shift-card" style="background:${colors.apres_midi};color:white;padding:6px 8px;border-radius:6px;font-size:0.7rem">
-            <div style="font-weight:600">Après-midi</div>
-            <div>${planning.shift_end}</div>
-        </div>`;
-    }
-
-    if (type === 'nuit') {
-        html += `<div class="shift-card" style="background:${colors.nuit};color:white;padding:6px 8px;border-radius:6px;font-size:0.7rem">
-            <div style="font-weight:600">Nuit</div>
-            <div>${planning.shift_start} - ${planning.shift_end}</div>
-        </div>`;
-    }
-
-    if (type === 'garde') {
-        html += `<div class="shift-card" style="background:${colors.garde};color:white;padding:6px 8px;border-radius:6px;font-size:0.7rem">
-            <div style="font-weight:600">Garde</div>
-            <div>${planning.shift_start} - ${planning.shift_end}</div>
-        </div>`;
-    }
-
-    html += '</div>';
-    return html;
-}
-
-function clearCell(cell) {
-    cell.innerHTML = '<div style="color:var(--text-muted);font-size:0.7rem;min-height:40px;display:flex;align-items:center;justify-content:center;border:2px dashed var(--border);border-radius:6px">—</div>';
-    delete cell.dataset.planningId;
-}
-
-// Add data-planning-id to existing shift cells
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('td[data-date]').forEach(cell => {
-        const shifts = cell.querySelectorAll('.shift-card');
-        if (shifts.length > 0) {
-            // Note: Would need server-side planning ID; for now use placeholder
-            cell.dataset.planningId = cell.dataset.planningId || 'existing';
-            shifts.forEach(shift => {
-                shift.draggable = true;
-                shift.addEventListener('dragstart', function(e) {
-                    const planningId = cell.dataset.planningId;
-                    if (planningId && planningId !== 'existing') {
-                        drag(e, planningId);
-                    }
-                });
-            });
-        }
-    });
-});
-
-// Reset opacity when drag ends
-document.addEventListener('dragend', function(event) {
-    event.target.style.opacity = '1';
+document.addEventListener('dragend', e => {
+    const el = e.target.closest('[data-planning-id]');
+    if (el) el.style.opacity = '1';
 });
 
 // ── Modal Créer ──────────────────────────────────

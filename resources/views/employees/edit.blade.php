@@ -41,7 +41,7 @@
                 </div>
                 <div class="form-group">
                     <label>Date de naissance</label>
-                    <input type="date" name="birth_date" class="form-control" value="{{ old('birth_date', $employee->birth_date?->format('Y-m-d')) }}">
+                    <input type="date" name="birth_date" class="form-control" value="{{ old('birth_date', $employee->birth_date ? $employee->birth_date : '') }}">
                 </div>
                 <div class="form-group">
                     <label>CIN</label>
@@ -133,7 +133,7 @@
                 </div>
                 <div class="form-group">
                     <label>Date d'embauche *</label>
-                    <input type="date" name="hire_date" class="form-control" value="{{ old('hire_date', $employee->hire_date->format('Y-m-d')) }}" required>
+                    <input type="date" name="hire_date" class="form-control" value="{{ old('hire_date', $employee->hire_date ? $employee->hire_date : '') }}" required>
                 </div>
                 <div class="form-group">
                     <label>Statut</label>
@@ -216,11 +216,11 @@
                 </div>
                 <div class="form-group">
                     <label>Début du contrat</label>
-                    <input type="date" name="contract_start_date" class="form-control" value="{{ old('contract_start_date', $employee->contract_start_date?->format('Y-m-d')) }}">
+                    <input type="date" name="contract_start_date" class="form-control" value="{{ old('contract_start_date', $employee->contract_start_date ? $employee->contract_start_date : '') }}">
                 </div>
                 <div class="form-group">
                     <label>Date de fin (si CDD)</label>
-                    <input type="date" name="contract_end_date" class="form-control" value="{{ old('contract_end_date', $employee->contract_end_date?->format('Y-m-d')) }}">
+                    <input type="date" name="contract_end_date" class="form-control" value="{{ old('contract_end_date', $employee->contract_end_date ? $employee->contract_end_date : '') }}">
                 </div>
                 <div class="form-group">
                     <label>Compteur Congés Payés (jours)</label>

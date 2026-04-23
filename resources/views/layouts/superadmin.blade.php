@@ -91,7 +91,7 @@
         align-items: center;
         gap: 10px;
         padding: 18px 16px 14px;
-        border-bottom: 1px solid rgba(255,255,255,.06);
+        border-bottom: 1px solid rgba(0,201,167,.3);
     }
     .sa-brand-icon {
         width: 36px;
@@ -168,11 +168,7 @@
         background: rgba(255,255,255,.05);
         color: rgba(255,255,255,.8);
     }
-    .sa-item.active {
-        background: rgba(0,201,167,.1);
-        color: var(--accent-light);
-        border-left-color: var(--accent);
-    }
+
     /* CRITIQUE : icônes fixées à 16px */
     .sa-item svg {
         width: 16px !important;
@@ -181,16 +177,11 @@
         display: block;
     }
 
-    .sa-divider {
-        height: 1px;
-        background: rgba(255,255,255,.06);
-        margin: 6px 16px;
-    }
 
     /* Footer sidebar */
     .sa-footer {
         padding: 12px 16px;
-        border-top: 1px solid rgba(255,255,255,.06);
+        border-top: 1px solid #1a8fa5;
     }
     .sa-user {
         display: flex;
@@ -211,7 +202,7 @@
         color: #fff;
         flex-shrink: 0;
     }
-    .sa-user-name { font-size: 12px; font-weight: 600; color: #fff; }
+    .sa-user-namee { font-size: 12px; font-weight: 600; color: #ffffff !important;}
     .sa-user-role { font-size: 10px; color: rgba(255,255,255,.3); margin-top: 1px; }
     .sa-logout {
         display: flex;
@@ -430,7 +421,7 @@
     .sa-badge-suspended { background: var(--warning-bg); color: var(--warning); }
     .sa-badge-trial     { background: var(--info-bg);    color: var(--info); }
     .sa-badge-inactive  { background: var(--surface-2);  color: var(--text-muted); }
-    .sa-badge-ent       { background: #1e1b4b; color: #a5b4fc; }
+    .sa-badge-ent       { background: #1a8fa5; color: #a5b4fc; }
     .sa-badge-pro       { background: #1c1917; color: #fcd34d; }
     .sa-badge-starter   { background: var(--surface-2); color: var(--text-muted); }
 
@@ -657,12 +648,12 @@
 
         {{-- Brand --}}
         <div class="sa-brand">
-            <div class="sa-brand-icon">SU</div>
+            <div class="sa-brand-icon">SA</div>
             <div>
                 <div class="sa-brand-name">Super<span>Admin</span></div>
                 <div class="sa-brand-sub">Super Admin</div>
             </div>
-            <span class="sa-badge-sa">SU</span>
+            <span class="sa-badge-sa">SA</span>
         </div>
 
         {{-- Nav --}}
@@ -711,9 +702,6 @@
                 </svg>
                 Tous les clients
             </a>
-
-            <div class="sa-divider"></div>
-
             <a href="{{ route('superadmin.roles.index') }}"
                class="sa-item {{ request()->routeIs('superadmin.roles*') ? 'active' : '' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -739,8 +727,7 @@
             <div class="sa-user">
                 <div class="sa-avatar">{{ strtoupper(substr(auth()->user()->name ?? 'SA', 0, 2)) }}</div>
                 <div>
-                    <div class="sa-user-name">{{ auth()->user()->name ?? 'Super Admin' }}</div>
-                    <div class="sa-user-role">Super Administrateur</div>
+                    <div class="sa-user-namee">{{ auth()->user()->name ?? 'Super Admin' }}</div>
                 </div>
             </div>
             <form method="POST" action="{{ route('logout') }}">
@@ -755,13 +742,13 @@
         </div>
     </aside>
 
-    {{-- ══════════════════════════════════════════════════ MAIN CONTENT ═══ --}}
+    {{-- ═══ MAIN CONTENT ═══ --}}
     <div class="sa-main">
 
         {{-- Topbar --}}
         <div class="sa-topbar">
-            <div class="sa-topbar-title">@yield('page-title', 'Super Admin')</div>
-            <span class="sa-topbar-badge">super admin</span>
+            <div class="sa-topbar-title">@yield('page-title', 'Gestion des Accès')</div>
+            <span class="sa-topbar-badge">Super Admin </span>
 
         </div>
 

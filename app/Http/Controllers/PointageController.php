@@ -43,11 +43,9 @@ class PointageController extends Controller
         $date        = $request->get('date', today()->toDateString());
         $currentDate = Carbon::parse($date);
 
-        // Semaine courante (lundi → dimanche)
-        $startOfWeek = $currentDate->copy()->startOfWeek(Carbon::MONDAY);
+Carbon::setLocale('fr');     $startOfWeek = $currentDate->copy()->startOfWeek(Carbon::MONDAY);
         $endOfWeek   = $currentDate->copy()->endOfWeek(Carbon::SUNDAY);
 
-        // Jours de la semaine avec statut
         $weekDays = collect();
         for ($d = $startOfWeek->copy(); $d->lte($endOfWeek); $d->addDay()) {
             $weekDays->push([
@@ -94,8 +92,9 @@ $departments = \App\Models\Department::names();
             }
 
             if (!$pointage || !$pointage->ignore_badge) {
-                $shift = BadgeRecord::where('employee_id', $emp->id)
+                $shift = Pointage::where('employee_id', $emp->id)
                     ->whereDate('created_at', $currentDate->toDateString())
+                    ->orderByDesc("created_at")
                     ->get();
 
                 if ($shift->isNotEmpty()) {
@@ -130,7 +129,6 @@ $departments = \App\Models\Department::names();
             'total'      => $employees->count(),
         ];
 
-        // Dernière tablette connectée
         $dernierSync = null;
         try {
             $dernierSync = Tablette::where('active', true)
@@ -155,7 +153,6 @@ $departments = \App\Models\Department::names();
 
         return response()->json([
             'success' => true,
-            'message' => "{$count} pointage(s) validé(s)",
             'count'   => $count,
         ]);
     }
@@ -170,9 +167,6 @@ $departments = \App\Models\Department::names();
         ]);
     }
 
-    /**
-     * Toggle ignorer/garder un badge.
-     */
     public function toggleIgnore(Pointage $pointage): JsonResponse
     {
         $pointage->update(['ignore_badge' => !$pointage->ignore_badge]);
@@ -203,6 +197,7 @@ $departments = \App\Models\Department::names();
 
     private function syncPointageFromBadgeRecords(int $employeeId, Carbon $date, Collection $shift): Pointage
     {
+
         $pointage = Pointage::firstOrCreate(
             [
                 'employee_id' => $employeeId,
@@ -218,20 +213,17 @@ $departments = \App\Models\Department::names();
             return $pointage;
         }
 
-        $firstEntree = $shift->where('type', 'entree')->first()?->created_at;
-        $lastSortie = $shift->where('type', 'sortie')->last()?->created_at;
+        $firstEntree = $shift->whereNotNull('heure_entree')->first()?->heure_entree;
+        $lastSortie = $shift->whereNotNull('heure_sortie')->last()?->heure_sortie;
 
-        $pointage->heure_entree = $firstEntree?->format('H:i');
-        $pointage->heure_sortie = $lastSortie?->format('H:i');
+        $pointage->heure_entree = $firstEntree;//?->format('H:i');
+        $pointage->heure_sortie = $lastSortie;//?->format('H:i');
 
         $pointage->pause_minutes = $this->calcPauseMinutes($shift);
-
-        $workedMinutes = $this->calcWorkedMinutes($shift);
-        $pointage->total_heures = round(($workedMinutes - $pointage->pause_minutes) / 60, 2);
-
         $pointage->statut = 'present';
-
+        // dd("pointqge", $pointage);
         $pointage->save();
+        $pointage->calculerTotalHeures();
 
         return $pointage->fresh();
     }
@@ -324,8 +316,9 @@ public function exportPdf(Request $request)
                     }
 
                     if (!$pointage || !$pointage->ignore_badge) {
-                        $shift = BadgeRecord::where('employee_id', $emp->id)
+                        $shift = Pointage::where('employee_id', $emp->id)
                             ->whereDate('created_at', $currentDate->toDateString())
+                            ->orderByDesc("created_at")
                             ->get();
 
                         if ($shift->isNotEmpty()) {
@@ -400,4 +393,3 @@ public function exportPdf(Request $request)
         }
     }
 }
-

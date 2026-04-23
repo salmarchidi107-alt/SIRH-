@@ -6,10 +6,14 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use Symfony\Component\HttpFoundation\Response;
 
 class BadgeGuard
 {
-    public function handle(Request $request, Closure $next): mixed
+    /**
+     * Handle an incoming request.
+     */
+    public function handle(Request $request, Closure $next): Response
     {
         $userId = $request->session()->get('badge_user_id');
 
@@ -18,15 +22,16 @@ class BadgeGuard
         }
 
         $user = User::find($userId);
+
         if (!$user) {
             $request->session()->forget('badge_user_id');
             return redirect()->route('badge.auth.show', ['action' => 'entree']);
         }
 
-        // Injecter l'utilisateur dans le guard badge pour que auth('badge')->user() fonctionne
+        // Inject badge user into guard so auth('badge')->user() works
         Auth::guard('badge')->setUser($user);
 
         return $next($request);
     }
-    
 }
+

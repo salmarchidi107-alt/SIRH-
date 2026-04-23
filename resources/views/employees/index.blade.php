@@ -19,8 +19,8 @@
         </a>
 
         {{-- PDF global ou filtré --}}
-        <a href="{{ route('employees.export-pdf', request()->query()) }}" 
-           class="btn btn-success" 
+        <a href="{{ route('employees.export-pdf', request()->query()) }}"
+           class="btn btn-success"
            title="Exporter en PDF">
             📄 PDF
         </a>
@@ -35,13 +35,14 @@
         @endif
     </div>
 @endif
+
     </div>
 <!-- Filter Buttons: Tous / Actifs -->
 <div class="filters-bar">
 
     <div style="display:flex;gap:8px;flex-direction:row-reverse">
         @if(in_array(auth()->user()->role ?? '', ['admin', 'rh']))
-       
+
         @endif
         <a href="{{ route('employees.index', ['filter' => 'all']) }}"
            class="btn {{ $filter == 'all' ? 'btn-primary' : 'btn-outline' }}">
@@ -110,7 +111,7 @@
                         </div>
                     </td>
                     <td>
-                        <span class="badge badge-neutral">{{ $employee->department ?? 'N/A' }}</span>
+                        <span class="badge badge-neutral">{{ $employee->department->name ?? 'N/A' }}</span>
                     </td>
                     <td class="text-sm">{{ $employee->position }}</td>
                     <td>
@@ -121,7 +122,7 @@
                     <td>
 {{ $employee->status_label ?? $employee->status }}
                     </td>
-                    <td class="text-sm text-muted">{{ $employee->hire_date->format('d/m/Y') }}</td>
+                    <td class="text-sm text-muted">{{ $employee->hire_date ? \Carbon\Carbon::parse($employee->hire_date)->format('d/m/Y') : '' }}</td>
 <td>
                         <div style="display:flex;gap:6px">
                             <a href="{{ route('employees.show', $employee) }}" class="btn btn-ghost btn-sm btn-icon" title="Voir">
@@ -197,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
         dragClass: 'sortable-drag',
         onEnd: function (evt) {
             const order = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.employeeId || tr.querySelector('a')?.href.split('/').pop());
-            fetch('{{ route("employees.reorder") }}', {
+            fetch('/employees/reorder', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -210,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
               }).catch(err => console.error('Reorder error', err));
         }
     });
-    
+
     // Set employee ID data attr (for loaded rows)
     tbody.querySelectorAll('tr').forEach(tr => {
         const link = tr.querySelector('a[href*="/employees/"]');
@@ -290,7 +291,6 @@ async function ajaxEmployees(page = 1, append = false) {
         spinner.style.display = 'none';
         loadMoreBtn.disabled = false;
     }
-}
 
 function buildEmployeeRow(employee) {
     const tr = document.createElement('tr');
@@ -303,7 +303,7 @@ function buildEmployeeRow(employee) {
         <td>
             <div class="table-employee">
                 <div class="table-avatar">
-                    ${employee.photo ? `<img src="${employee.photo_url}" alt="">` : 
+                    ${employee.photo ? `<img src="${employee.photo_url}" alt="">` :
                       `<span>${(employee.first_name?.[0] || '') + (employee.last_name?.[0] || '')}</span>`}
                 </div>
                 <div>

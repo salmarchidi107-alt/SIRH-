@@ -18,7 +18,7 @@ class StoreEmployeeRequest extends FormRequest
         return [
             'first_name'           => 'required|string|max:100',
             'last_name'            => 'required|string|max:100',
-            'email'                => 'required|email|unique:employees',
+'email'                => ['required','email','unique:employees'],
             'phone'                => 'nullable|string|max:20',
 
             // ✅ department est un texte libre (le Creator gère la conversion en department_id)
@@ -28,7 +28,7 @@ class StoreEmployeeRequest extends FormRequest
             'position'             => 'required|string|max:100',
             'diploma_type'         => 'nullable|string|max:100',
             'skills'               => 'nullable|string',
-            'contract_type'        => 'required|in:CDI,CDD,Interim,Stage',
+'contract_type'        => 'required|string|max:50',
             'hire_date'            => 'required|date',
             'birth_date'           => 'nullable|date',
             'base_salary'          => 'nullable|numeric|min:0',
@@ -56,6 +56,7 @@ class StoreEmployeeRequest extends FormRequest
             'user_role'            => ['required_if:create_account,1', Rule::in(['employee', 'rh', 'admin'])],
             'user_password'        => 'required_if:create_account,1|nullable|min:8|confirmed',
             'photo'                => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'pin'                  => 'nullable|string|size:6|regex:/^[0-9]{4}[A-Z]{2}$/',
         ];
     }
 
@@ -66,10 +67,11 @@ class StoreEmployeeRequest extends FormRequest
             'first_name.required'    => 'Le prénom est obligatoire.',
             'last_name.required'     => 'Le nom est obligatoire.',
             'email.required'         => 'L\'email est obligatoire.',
-            'email.unique'           => 'Cet email est déjà utilisé.',
+            'email.unique'           => 'Cet email existe déjà pour un autre employé.',
             'contract_type.required' => 'Le type de contrat est obligatoire.',
             'hire_date.required'     => 'La date d\'embauche est obligatoire.',
             'position.required'      => 'Le poste est obligatoire.',
+            'pin.regex'              => 'Le PIN doit être 4 chiffres + 2 lettres majuscules (ex: 1234AB).',
         ];
     }
 }

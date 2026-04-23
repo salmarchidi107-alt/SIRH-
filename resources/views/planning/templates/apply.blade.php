@@ -13,21 +13,21 @@
 
 <form method="POST" action="{{ route('planning.templates.apply') }}">
     @csrf
-    
+
     <div class="card">
         <div class="card-header">
             <div class="card-title">Sélection</div>
         </div>
         <div class="card-body">
             <div style="display:grid;gap:16px;max-width:600px">
-                
+
                 <div>
                     <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Modèle de semaine</label>
                     <select name="template_id" required style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;background:white">
                         <option value="">Sélectionner un modèle</option>
-                        @foreach($templates as $template)
-                            <option value="{{ $template->id }}" {{ request('template_id') == $template->id ? 'selected' : '' }}>
-                                {{ $template->name }}
+                        @foreach($templates as $t)
+                            <option value="{{ $t->id }}" {{ request('template_id') == $t->id ? 'selected' : '' }}>
+                                {{ $t->name }}
                             </option>
                         @endforeach
                     </select>
@@ -35,12 +35,12 @@
 
                 <div>
                     <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">
-                        {{ $template->department ? 'Département ciblé' : 'Employé / Département' }}
+                        {{ $template && $template->department ? 'Département ciblé' : 'Employé / Département' }}
                     </label>
-                    @if($template->department)
+                    @if($template && $template->department)
                         {{-- Auto department --}}
                         <div style="padding:12px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border);font-weight:500">
-                            📍 {{ $template->department }} 
+                            📍 {{ $template->department }}
                             <span style="font-size:0.85rem;color:var(--text-muted);font-weight:400">
                                 ({{ \App\Models\Employee::where('department', $template->department)->where('status', 'active')->count() }} employés)
                             </span>

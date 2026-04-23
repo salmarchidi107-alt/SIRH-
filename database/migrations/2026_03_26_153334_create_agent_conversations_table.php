@@ -2,9 +2,9 @@
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Laravel\Ai\Migrations\AiMigration;
+use Illuminate\Database\Migrations\Migration;
 
-return new class extends AiMigration
+return new class extends Migration
 {
     /**
      * Run the migrations.

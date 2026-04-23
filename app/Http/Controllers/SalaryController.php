@@ -191,7 +191,7 @@ class SalaryController extends Controller
             'nom' => $salary->employee->full_name,
             'fonction' => $salary->employee->position ?? 'Employé',
             'depart' => $salary->employee->department ?? '',
-            'date_embauche' => $salary->employee->hire_date ? $salary->employee->hire_date->format('d/m/Y') : '',
+            'date_embauche' => $salary->employee->hire_date ? \Carbon\Carbon::parse($salary->employee->hire_date)->format('d/m/Y') : '',
             // Ajoutez autres champs
         ];
 
@@ -231,6 +231,27 @@ class SalaryController extends Controller
     public function export()
     {
         return Excel::download(new SalariesExport, 'salaires.xlsx');
+    }
+
+    public function getMonthlySummary(int $month, int $year): array
+    {
+        $salariesQuery = Salary::where('month', $month)
+                              ->where('year', $year);
+
+        return [
+            // Counts by status
+            'count' => (clone $salariesQuery)->count(),
+            'count_draft' => (clone $salariesQuery)->where('status', 'draft')->count(),
+            'count_validated' => (clone $salariesQuery)->where('status', 'validated')->count(),
+            'count_paid' => (clone $salariesQuery)->where('status', 'paid')->count(),
+
+            // Totals (only calculated salaries)
+            'total_gross' => (clone $salariesQuery)->whereNotNull('gross_salary')->sum('gross_salary'),
+            'total_cnss_sal' => (clone $salariesQuery)->whereNotNull('cnss_deduction')->sum('cnss_deduction'),
+            'total_amo_sal' => (clone $salariesQuery)->whereNotNull('amo_deduction')->sum('amo_deduction'),
+            'total_ir' => (clone $salariesQuery)->whereNotNull('ir_deduction')->sum('ir_deduction'),
+            'total_net' => (clone $salariesQuery)->whereNotNull('net_salary')->sum('net_salary'),
+        ];
     }
 }
 

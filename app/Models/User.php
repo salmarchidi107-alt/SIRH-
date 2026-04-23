@@ -7,9 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
 
     protected $fillable = [
         'name',
@@ -17,6 +17,7 @@ class User extends Authenticatable
         'password',
         'role',
         'tenant_id',
+        'employee_id',
     ];
 
     protected $hidden = [
@@ -37,7 +38,7 @@ return $this->belongsTo(\App\Models\Tenant::class, 'tenant_id');
 
     public function employee()
     {
-        return $this->belongsTo(Employee::class, 'employee_id');
+        return $this->hasOne(Employee::class, 'user_id');
     }
 
     public function getEmployeeByLegacyKeyAttribute()
@@ -80,6 +81,30 @@ return $this->belongsTo(\App\Models\Tenant::class, 'tenant_id');
             self::ROLE_EMPLOYEE => 'Employé',
             default => 'Employé',
         };
+    }
+
+    /**
+     * Override parent can() method for custom role-based permissions from config/roles.php
+     */
+    public function can($abilities, $arguments = []): bool
+    {
+        // Handle string permission (existing usage)
+        if (is_string($abilities)) {
+            $permissions = config('roles.permissions', []);
+            if (isset($permissions[$abilities])) {
+                $allowedRoles = $permissions[$abilities];
+                return in_array($this->role, (array) $allowedRoles);
+            }
+            return false;
+        }
+
+        // Delegate to parent for other cases (array, Gate, etc.)
+        return parent::can($abilities, $arguments);
+    }
+
+    public function roles()
+    {
+        return $this->morphToMany(config('permission.models.role'), 'modelable');
     }
 }
 

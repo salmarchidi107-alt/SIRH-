@@ -16,7 +16,6 @@ class EmployeeCreator
     public function create(array $validated, Request $request): Employee
     {
         return DB::transaction(function () use ($validated, $request) {
-
             // ── 1. Département string → Department model ──────────────────────
             if (filled($validated['department'] ?? null)) {
                 $deptName   = trim($validated['department']);
@@ -51,17 +50,25 @@ class EmployeeCreator
 
             // ── 5. Nettoyer les champs non-colonnes ───────────────────────────
             unset(
-                $validated['department'],
                 $validated['create_account'],
                 $validated['user_role'],
                 $validated['user_password'],
                 $validated['user_password_confirmation']
             );
 
-            // ── 6. Tenant ID + matricule temporaire ───────────────────────────
+            // ── 5b. PIN handling ─────────────────────────────────────────────
+            if (isset($validated['pin']) && filled($validated['pin'])) {
+                $validated['plain_pin'] = $validated['pin'];
+                $validated['pin'] = Hash::make($validated['pin']);
+            }
+
+// ── 5c. Matricule et Tenant ID (AVANT create) ──────────────────────
             $tenantId = config('app.current_tenant_id');
+            if (empty($validated['matricule'])) {
+                $validated['matricule'] = 'TMP-' . strtoupper(uniqid());
+            }
             $validated['tenant_id'] = $tenantId;
-            $validated['matricule']  = 'TMP-' . Str::random(8);
+            $validated['sort_order'] = Employee::where('tenant_id', $tenantId)->max('sort_order') + 1;
 
             // ── 7. Création employee ──────────────────────────────────────────
             $employee = Employee::create($validated);
@@ -93,4 +100,43 @@ class EmployeeCreator
             return $employee->fresh();
         });
     }
+
+    public function update(Employee $employee, array $validated, Request $request): bool
+    {
+        return DB::transaction(function () use ($employee, $validated, $request) {
+            // ── Photo ──────────────────────────────────────────────────────
+            if ($request->hasFile('photo')) {
+                $validated['photo'] = $request->file('photo')->store('photos', 'public');
+            }
+
+            // ── Département ─────────────────────────────────────────────────
+            if (isset($validated['department']) && filled($validated['department'])) {
+                $deptName = trim($validated['department']);
+                $department = Department::firstOrCreate([
+                    'name' => $deptName,
+                    'tenant_id' => config('app.current_tenant_id'),
+                ], ['slug' => Str::slug($deptName)]);
+                $validated['department_id'] = $department->id;
+            }
+
+            // ── JSON fields ─────────────────────────────────────────────────
+            if (isset($validated['skills']) && !empty($validated['skills'])) {
+                $validated['skills'] = json_encode(is_array($validated['skills']) ? $validated['skills'] : [$validated['skills']]);
+            }
+            if (isset($validated['work_days']) && is_array($validated['work_days'])) {
+                $validated['work_days'] = json_encode($validated['work_days']);
+            }
+
+            // ── Clean non-db fields ──────────────────────────────────────────
+            $nonFields = ['create_account', 'user_role', 'user_password', 'user_password_confirmation'];
+            foreach ($nonFields as $field) {
+                unset($validated[$field]);
+            }
+
+            $employee->update($validated);
+
+            return true;
+        });
+    }
 }
+

@@ -90,13 +90,15 @@ class CompteurTemps extends Model
 
         $employee = Employee::find($employeeId);
         $heuresPlanifiees = 35 * 4;
-        $compteur = self::where('employee_id', $employeeId)
+        $compteur = self::where('tenant_id', $employee->tenant_id)
+            ->where('employee_id', $employeeId)
             ->where('annee', $annee)
             ->where('mois', $mois)
             ->first();
 
         if (!$compteur) {
             $compteur = self::create([
+                'tenant_id' => $employee->tenant_id,
                 'employee_id' => $employeeId,
                 'annee' => $annee,
                 'mois' => $mois,
@@ -129,7 +131,6 @@ class CompteurTemps extends Model
             ->get();
     }
 
-    // No tenant relation/scope needed in tenant DB
-}
+    }
 
 

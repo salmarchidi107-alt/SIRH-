@@ -24,8 +24,9 @@
     }
 @endphp
 
-@if(auth()->user()->role === 'employee' && auth()->user()->employee_id != $employee->id)
+@if(auth()->user()->role === 'employee' && (auth()->user()->employee?->id ?? null) != $employee->id)
     <div class="trombino-card" style="border:2px solid {{ $statusColor }}" onclick="alert('Accès restreint'); return false;">
+
 @else
     <a href="{{ route('employees.show', $employee) }}" class="trombino-card" style="border:2px solid {{ $statusColor }}">
 @endif

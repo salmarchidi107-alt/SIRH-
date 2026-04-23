@@ -2,39 +2,54 @@
 
 namespace App\Http\Requests\SuperAdmin;
 
-use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateClientAccessRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
+
     public function authorize(): bool
     {
-        return true; // Super admin access
-    }
+        return true;
 
-    /**
-     * Get the validation rules that apply to the request.
-     */
+
     public function rules(): array
     {
+        $userId = $this->route('user')?->id;
+
         return [
-            'email' => ['nullable', 'string', 'email', 'max:255', "unique:users,email,{$this->user->id}"],
-            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'email'    => [
+                'nullable',
+                'string',
+                'email',
+                'max:255',
+                "unique:users,email,{$userId}",
+            ],
+            'password' => [
+                'nullable',
+                'string',
+                'min:8',
+                'confirmed',
+            ],
         ];
     }
 
-    /**
-     * Get custom attributes for validator errors.
-     */
+
+    public function messages(): array
+    {
+        return [
+            'email.email'    => "L'adresse email n'est pas valide.",
+            'email.unique'   => "Cette adresse email est déjà utilisée.",
+            'password.min'   => "Le mot de passe doit contenir au moins 8 caractères.",
+            'password.confirmed' => "Les mots de passe ne correspondent pas.",
+        ];
+    }
+
+
     public function attributes(): array
     {
         return [
-            'email' => 'email address',
-            'password' => 'password',
+            'email'    => 'adresse email',
+            'password' => 'mot de passe',
         ];
     }
 }
-

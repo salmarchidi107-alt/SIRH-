@@ -48,6 +48,7 @@ class WeekTemplateController extends Controller
             'sunday_end' => 'nullable',
         ]);
 
+        $validated['tenant_id'] = config('app.current_tenant_id');
         WeekTemplate::create($validated);
 
         return redirect()->route('planning.templates.index')->with('success', 'Semaine type créée avec succès.');
@@ -63,7 +64,8 @@ class WeekTemplateController extends Controller
     {
         $templates = WeekTemplate::all();
         $employees = Employee::active()->get();
-        return view('planning.templates.apply', compact('templates', 'employees'));
+        $template = request('template_id') ? WeekTemplate::find(request('template_id')) : null;
+        return view('planning.templates.apply', compact('templates', 'employees', 'template'));
     }
 
     public function apply(Request $request)
@@ -82,7 +84,7 @@ class WeekTemplateController extends Controller
             $employees = Employee::where('department', $validated['department_target'])
                 ->active()
                 ->get();
-            
+
             foreach ($employees as $employee) {
                 $template->applyToEmployee($employee->id, $startDate);
             }

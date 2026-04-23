@@ -14,15 +14,26 @@ class EmployeeQueryService
      */
     public function list(Request $request): array
     {
-        $query = Employee::with(['department', 'user'])
+$query = Employee::with(['departmentRelation', 'user'])
+            ->select([
+                'employees.*',
+                DB::raw("CASE
+                    WHEN status = 'active' THEN 'Actif'
+                    WHEN status = 'leave' THEN 'Congé'
+                    WHEN status = 'inactive' THEN 'Inactif'
+                    ELSE status
+                END as status_label")
+            ])
             ->where('tenant_id', config('app.current_tenant_id'))
             ->when($request->search, function ($q) use ($request) {
                 $q->where('matricule', 'like', "%{$request->search}%")
                   ->orWhere('last_name', 'like', "%{$request->search}%")
                   ->orWhere('first_name', 'like', "%{$request->search}%");
             })
+            ->when($request->filled('department'), fn($q) => $q->department($request->department))
             ->when($request->department_id, fn($q, $v) => $q->where('department_id', $v))
             ->when($request->manager, fn($q) => $q->where('is_manager', true));
+
 
         $employees = $query->paginate(15)->appends($request->query());
 

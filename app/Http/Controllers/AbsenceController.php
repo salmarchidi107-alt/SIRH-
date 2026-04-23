@@ -18,6 +18,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\AbsencesExport;
 use App\Exports\CountersExport;
 use App\Exports\DroitsAbsenceExport;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class AbsenceController extends Controller
 {
@@ -63,11 +64,31 @@ class AbsenceController extends Controller
 
         if (auth()->user()->isEmployee() && auth()->user()->employee_id) {
             $employee = Employee::find(auth()->user()->employee_id);
-            return view('absences.create', compact('employee'));
+            $employees = Employee::active()
+                ->where('id', '!=', $employee->id)
+                ->select(['id', 'first_name', 'last_name', 'matricule', 'department'])
+                ->get();
+            $departments = Department::names();
+            $employeeOptions = $employees->map(function ($emp) {
+                return [
+                    'id' => $emp->id,
+                    'label' => $emp->full_name . ' — ' . $emp->department,
+                    'department' => $emp->department,
+                ];
+            })->values();
+            return view('absences.create', compact('employee', 'employees', 'departments', 'employeeOptions'));
         }
 
         $employees = Employee::active()->when(auth()->user()->isEmployee(), fn($q) => $q->where('id', auth()->user()->employee_id))->select(['id', 'first_name', 'last_name', 'matricule', 'department'])->get();
-        return view('absences.create', compact('employees'));
+        $departments = Department::names();
+        $employeeOptions = $employees->map(function ($emp) {
+            return [
+                'id' => $emp->id,
+                'label' => $emp->full_name . ' — ' . $emp->department,
+                'department' => $emp->department,
+            ];
+        })->values();
+        return view('absences.create', compact('employees', 'departments', 'employeeOptions'));
     }
 
     public function store(StoreAbsenceRequest $request)
@@ -212,7 +233,7 @@ class AbsenceController extends Controller
             ->select(['id', 'first_name', 'last_name', 'department', 'matricule', 'hire_date'])
             ->get();
 
-        $countersData = []; 
+        $countersData = [];
 
         foreach ($employees as $emp) {
             $hireDate = $emp->hire_date ? Carbon::parse($emp->hire_date) : Carbon::create($year, 1, 1);
@@ -395,8 +416,8 @@ $departments = $this->getDepartments();
 
         return view('absences.calendar', compact(
             'absences', 'conflicts', 'replacements', 'employees', 'employeesWithAbsences',
-            'month', 'year', 'firstDay', 'today', 'daysInMonth', 'startOfMonth', 'endOfMonth', 
-            'viewMode', 'filteredEmployees', 'absenceMap', 'stats', 'prevMonthUrl', 
+            'month', 'year', 'firstDay', 'today', 'daysInMonth', 'startOfMonth', 'endOfMonth',
+            'viewMode', 'filteredEmployees', 'absenceMap', 'stats', 'prevMonthUrl',
             'nextMonthUrl', 'todayUrl', 'resetUrl', 'departments'
         ));
     }
@@ -474,6 +495,26 @@ $departments = $this->getDepartments();
 
         return response()->json($conflicts);
     }
+    // Dans app/Http/Controllers/AbsenceController.php
+public function downloadPdf(Absence $absence)
+{
+    $absence->load(['employee', 'replacement', 'approver']);
+    \Carbon\Carbon::setLocale('fr');
+
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('absences.pdf', compact('absence'))
+        ->setPaper('a4', 'portrait')
+        ->setOptions([
+            'defaultFont'          => 'DejaVu Sans',
+            'isRemoteEnabled'      => false,
+            'isHtml5ParserEnabled' => true,
+        ]);
+
+    $filename = 'demande_absence_'
+        . str_replace(' ', '_', strtolower($absence->employee->full_name))
+        . '_' . $absence->start_date->format('Y-m-d') . '.pdf';
+
+    return $pdf->download($filename);
+}
 
     public function counters(Request $request)
     {
@@ -491,36 +532,50 @@ $departments = $this->getDepartments();
 
         $countersData = [];
 
-        foreach ($employees as $emp) {
-            $droit = \App\Models\DroitAbsence::where('employee_id', $emp->id)
-                ->where('annee', $year)
-                ->first();
-            
-            $acquis = $droit ? $droit->jours_acquis : 0;
-            $taken = Absence::where('employee_id', $emp->id)
-                ->where('status', 'approved')
-                ->whereYear('start_date', $year)
-                ->whereIn('type', ['conge_annuel', 'conge_sans_solde', 'conge_maladie', 'absence_justifiee'])
-                ->sum('days');
-            $solde = $droit ? $droit->jours_solde : 0;
-            $pending = Absence::where('employee_id', $emp->id)
-                ->where('status', 'pending')
-                ->whereYear('start_date', $year)
-                ->sum('days');
 
-            $countersData[] = [
-                'employee'      => $emp,
-                'months_worked' => $droit ? round($droit->jours_acquis / 1.5) : 0,
-                'acquis'        => $acquis,
-                'taken'         => $taken,
-                'pending'       => $pending,
-                'solde'         => $solde,
-                'solde_if_pending' => $solde - $pending,
-            ];
-        }
 
+foreach ($employees as $emp) {
+
+    $startDate = Carbon::parse($emp->hire_date);
+    $now = Carbon::now();
+
+
+    $monthsWorked = $startDate->diffInMonths($now);
+
+
+    $acquis = round($monthsWorked * 1.5, 1);
+
+
+    $taken = Absence::where('employee_id', $emp->id)
+        ->where('status', 'approved')
+        ->whereDate('start_date', '>=', $startDate)
+        ->whereIn('type', [
+            'conge_annuel',
+            'conge_sans_solde',
+            'conge_maladie',
+            'absence_justifiee'
+        ])
+        ->sum('days');
+
+
+    $pending = Absence::where('employee_id', $emp->id)
+        ->where('status', 'pending')
+        ->whereDate('start_date', '>=', $startDate)
+        ->sum('days');
+
+
+    $solde = $acquis - $taken;
+
+    $countersData[] = [
+        'employee' => $emp,
+        'months_worked' => $monthsWorked,
+        'acquis' => $acquis,
+        'taken' => $taken,
+        'pending' => $pending,
+        'solde' => $solde,
+        'solde_if_pending' => $solde - $pending,
+    ];
+}
         return view('absences.counters', compact('countersData', 'year', 'search', 'department', 'departments'));
     }
 }
-
-

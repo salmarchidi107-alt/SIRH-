@@ -4,17 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\PointageScanController;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-| Toutes ces routes sont préfixées par /api (via RouteServiceProvider)
-| et utilisent le middleware "api" (stateless, pas de session).
-|
-| La tablette s'authentifie via : Authorization: Bearer {token_tablette}
-| (token stocké dans la table "tablettes", généré une seule fois)
-|--------------------------------------------------------------------------
-*/
+
 
 // ─── Pointage tablette (authentification par token Bearer) ───────────────────
 Route::prefix('pointage')->group(function () {
@@ -31,8 +21,3 @@ Route::prefix('pointage')->group(function () {
     // POST /api/pointage/heartbeat
     Route::post('/heartbeat', [PointageScanController::class, 'heartbeat']);
 });
-
-// ─── Route auth Sanctum (optionnel, si tu utilises Sanctum plus tard) ────────
-// Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-//     return $request->user();
-// });

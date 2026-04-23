@@ -7,7 +7,7 @@
     <title>@yield('title', config('app.name', 'HospitalRH')) — {{ config('app.name', 'HospitalRH') }}</title>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkR4j8R2G1QXQh5l+e2n5p3p6Y9Q3U8p4aQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     @stack('styles')
     <style>
         .nav-submenu  { padding-left: 20px; margin: 4px 0; }
@@ -95,7 +95,6 @@
                 </svg>
                 Tableau de bord
             </a>
-            @endif
 
             {{-- ── Profil (employee uniquement) ───────────────────────────── --}}
 @if(Auth::check() && Auth::user()->role === 'employee')
@@ -264,25 +263,6 @@
         } catch (\Exception $e) {}
     @endphp
 
-    <a href="{{ route('pointage.index') }}"
-       class="nav-item {{ request()->routeIs('pointage.*') ? 'active' : '' }}"
-       style="display:flex;align-items:center;gap:10px;">
-
-        {{-- Icône badgeuse --}}
-        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="3" width="8" height="18" rx="1.5"/>
-            <rect x="13" y="3" width="8" height="8" rx="1.5"/>
-            <rect x="13" y="13" width="8" height="18" rx="1.5"/>
-        </svg>
-
-        Pointage
-
-        @if($pointageEnAttente > 0)
-            <span class="badge">{{ $pointageEnAttente }}</span>
-        @endif
-
-    </a>
-
 @endif
 @endauth
 
@@ -313,11 +293,6 @@
                 </svg>
                 Mon Salaire
             </a>
-            @endif
-
-            {{-- ── Configuration (admin tenant) ───────────────────────────── --}}
-            @if(Auth::check() && Auth::user()->role === 'admin')
-            <div class="nav-section-label">Paramètres</div>
             @endif
 
         </nav>
@@ -395,35 +370,25 @@
                         </svg>
                     </button>
                     <div class="export-dropdown" id="exportDropdown" style="display: none; position: absolute; top: 100%; right: 0; width: 280px; background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 1000; margin-top: 8px; max-height: 400px; overflow-y: auto;">
-                        <div style="padding: 12px 16px; border-bottom: 1px solid #eee; font-weight: 600; color: var(--primary);"><i class="fa-solid fa-chart-column" aria-hidden="true"></i> Fichier Excel Imprimable</div>
-                        <a href="{{ route('employees.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
-                              Liste du Personnel
+                        <div style="padding: 12px 16px; border-bottom: 1px solid #eee; font-weight: 600; color: var(--primary);"><i class="fa-solid fa-chart-column" aria-hidden="true"></i> Exports</div>
+                        <a href="{{ route('employees.export-pdf') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                              Liste Personnel (PDF)
                         </a>
-                        <a href="{{ route('trombinoscope.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                        <a href="{{ route('trombinoscope') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
                               Trombinoscope
                         </a>
                         <a href="/salary/export" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
-                              Bulletins de Paie
+                              Bulletins Paie
                         </a>
-                        <a href="{{ route('absences.droits.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
-                              Droits d'Absences
-                        </a>
-                        <a href="{{ route('absences.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
-                              Demandes d'Absences
-                        </a>
-                        <a href="{{ route('absences.counters.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                        <a href="{{ route('absences.counters') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
                               Compteurs Absences
                         </a>
-                        <a href="{{ route('absences.droits.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
-                              Droits d'Absences
-                        </a>
-<a href="{{ route('planning.monthly.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                        <a href="{{ route('planning.monthly') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
                               Planning Mensuel
                         </a>
-                        <a href="{{ route('planning.weekly.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
-                              Planning Hebdomadaire
+                        <a href="{{ route('planning.weekly') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                              Planning Hebdo
                         </a>
-
                     </div>
                 </div>
             </div>
@@ -700,7 +665,7 @@ async function sendWhatsAppMessage() {
     messages.scrollTop = messages.scrollHeight;
 
     try {
-        const res = await fetch('{{ route("assistant-rh.chat") }}', {
+        const res = await fetch('/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

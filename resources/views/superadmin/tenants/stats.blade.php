@@ -57,12 +57,6 @@
         @endforeach
     </div>
 
-    <select name="sort" onchange="this.form.submit()"
-            style="margin-left:auto;font-size:12px;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);cursor:pointer;outline:none;font-family:inherit;">
-        <option value="created_at" {{ request('sort','created_at')==='created_at'?'selected':'' }}>Trier : Date</option>
-        <option value="name"       {{ request('sort')==='name'?'selected':'' }}>Trier : Nom</option>
-        <option value="users"      {{ request('sort')==='users'?'selected':'' }}>Trier : Utilisateurs</option>
-    </select>
 </form>
 
 {{-- Cards --}}

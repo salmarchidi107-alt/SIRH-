@@ -147,8 +147,6 @@
 @push('scripts')
 <script>
 // Horloge live
-@push('scripts')
-<script>
 function updateClock() {
   document.getElementById('liveClock').textContent =
     new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
@@ -157,4 +155,3 @@ updateClock();
 setInterval(updateClock, 1000);
 </script>
 @endpush
-

@@ -205,4 +205,15 @@ class TenantController extends Controller
 
         return view('superadmin.tenants.edit', compact('tenant', 'plans', 'statuses'));
     }
+
+    // ─── Show ─────────────────────────────────────────────────────────────────
+
+    public function show(Tenant $tenant)
+    {
+        $tenant->load('admin')->withCount('users');
+        $plans = TenantPlan::cases();
+        $statuses = TenantStatus::cases();
+
+        return view('superadmin.tenants.show', compact('tenant', 'plans', 'statuses'));
+    }
 }

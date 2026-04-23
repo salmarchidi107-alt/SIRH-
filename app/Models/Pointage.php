@@ -45,6 +45,22 @@ class Pointage extends Model
         'heures_supplementaires' => 'decimal:2',
     ];
 
+    /**
+     * Boot method for auto-calculating hours on save
+     */
+    public static function boot()
+    {
+        parent::boot();
+
+        static::saving(function ($pointage) {
+            if ($pointage->heure_entree && $pointage->heure_sortie && $pointage->statut !== 'absent') {
+
+                $should_save=false;
+                $pointage->calculerTotalHeures($should_save);
+            }
+        });
+    }
+
     // ── Relations ──────────────────────────────────────────────
     public function employee(): BelongsTo
     {
@@ -98,7 +114,7 @@ class Pointage extends Model
     // ── Scopes ─────────────────────────────────────────────────
     public function scopeForDate($query, string $date)
     {
-        return $query->where('date', $date);
+        return $query->whereDate('date', $date);
     }
 
     public function scopeForWeek($query, Carbon $start, Carbon $end)
@@ -132,7 +148,7 @@ class Pointage extends Model
     }
 
     // ── Méthodes ───────────────────────────────────────────────
-    public function calculerTotalHeures(): void
+    public function calculerTotalHeures($save=true): void
     {
         if ($this->heure_entree && $this->heure_sortie) {
             $entree = Carbon::parse($this->date->toDateString() . ' ' . $this->heure_entree);
@@ -143,9 +159,16 @@ class Pointage extends Model
                 $sortie->addDay();
             }
 
-            $minutes = $entree->diffInMinutes($sortie) - $this->pause_minutes;
-            $this->total_heures = round($minutes / 60, 2);
-            $this->save();
+            $minutes = $entree->diffInMinutes($sortie) - ($this->pause_minutes ?? 0);
+            $totalHeures = round($minutes / 60, 2);
+
+            // Split normal vs supp (standard 8h/jour)
+            $this->heures_travaillees = min($totalHeures, 8.0);
+            $this->heures_supplementaires = max(0, $totalHeures - 8.0);
+            $this->total_heures = $totalHeures;
+
+            if($save && false)
+             $this->save();
         }
     }
 }

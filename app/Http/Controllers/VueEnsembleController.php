@@ -9,6 +9,7 @@ use App\Models\CompteurTemps;
 use App\DTOs\CompteurMoisDTO;
 use App\Services\GraphService;
 use Carbon\Carbon;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -271,7 +272,7 @@ class VueEnsembleController extends Controller
         $ecart                 = ($heuresRealisees + $heuresSupplementaires) - $heuresPlanifiees;
 
         $compteur = CompteurTemps::updateOrCreate(
-            ['employee_id' => $employee->id, 'annee' => $annee, 'mois' => $mois],
+            ['tenant_id' => $employee->tenant_id, 'employee_id' => $employee->id, 'annee' => $annee, 'mois' => $mois],
             [
                 'heures_planifiees'      => $heuresPlanifiees,
                 'heures_realisees'       => $heuresRealisees,
@@ -315,7 +316,7 @@ class VueEnsembleController extends Controller
     private function getJoursDetails(int $employeeId, int $annee, int $mois): array
     {
         $cacheKey = "vue_ensemble_jours_{$employeeId}_{$annee}_{$mois}";
-        
+
         return Cache::remember($cacheKey, 3600, function () use ($employeeId, $annee, $mois) {
             $dateRange = $this->getDateRange($annee, $mois);
             $pointages = Pointage::where('employee_id', $employeeId)
@@ -324,13 +325,12 @@ class VueEnsembleController extends Controller
                 ->keyBy('date');
 
             $jours = [];
-            
-            foreach (CarbonPeriod::create($dateRange['debut_obj'])->days() as $current) {
-                if ($current > $dateRange['fin_obj']) break;
-                
+
+            $current = $dateRange['debut_obj']->copy();
+            while ($current <= $dateRange['fin_obj']) {
                 $dateStr = $current->format('Y-m-d');
                 $pointage = $pointages->get($dateStr);
-                
+
                 $jours[] = [
                     'date' => $dateStr,
                     'jour' => $current->format('d'),
@@ -338,30 +338,30 @@ class VueEnsembleController extends Controller
                     'is_weekend' => $current->isWeekend(),
                     'heures_travaillees' => $pointage ? (float) $pointage->heures_travaillees : 0,
                     'heures_supplementaires' => $pointage ? (float) $pointage->heures_supplementaires : 0,
-                    'total' => $pointage 
-                        ? (float) $pointage->heures_travaillees + (float) $pointage->heures_supplementaires 
+                    'total' => $pointage
+                        ? (float) $pointage->heures_travaillees + (float) $pointage->heures_supplementaires
                         : 0,
-                    'statut' => $pointage 
+                    'statut' => $pointage
                         ? ($pointage->heure_entree ? 'present' : 'absent')
                         : ($current->isWeekend() ? 'weekend' : 'non_defini'),
                 ];
+
+                $current->addDay();
             }
 
             return $jours;
         });
     }
 
-    /**
-     * Get optimized weekly summary with caching & collection grouping
-     */
+
     private function getSemainesDuMois(Employee $employee, int $annee, int $mois): array
     {
         $cacheKey = "vue_ensemble_semaines_{$employee->id}_{$annee}_{$mois}";
         $heuresPlanifieesSemaine = (float) ($employee->work_hours ?? 35);
-        
+
         return Cache::remember($cacheKey, 3600, function () use ($employee, $annee, $mois, $heuresPlanifieesSemaine) {
             $dateRange = $this->getDateRange($annee, $mois);
-            
+
             $pointagesMois = Pointage::where('employee_id', $employee->id)
                 ->whereBetween('date', [$dateRange['debut'], $dateRange['fin']])
                 ->get()
@@ -373,7 +373,7 @@ class VueEnsembleController extends Controller
 
             // Group by week start for O(1) lookups
             $pointagesByWeek = $pointagesMois->groupBy('week_start');
-            
+
             $semaines = [];
             $debutMoisObj = $dateRange['debut_obj']->copy()->startOfWeek(Carbon::MONDAY);
             $finMoisObj = $dateRange['fin_obj'];
@@ -382,7 +382,7 @@ class VueEnsembleController extends Controller
             while ($debutMoisObj->lte($finMoisObj)) {
                 $weekStart = $debutMoisObj->format('Y-m-d');
                 $weekEnd = $debutMoisObj->copy()->endOfWeek(Carbon::SUNDAY);
-                
+
                 $ptsSemaine = $pointagesByWeek->get($weekStart, collect());
                 $heuresTravaillees = (float) $ptsSemaine->sum('heures_travaillees');
                 $heuresSupp = (float) $ptsSemaine->sum('heures_supplementaires');
@@ -433,7 +433,7 @@ class VueEnsembleController extends Controller
     {
         $debut = Carbon::create($annee, $mois, 1)->startOfMonth();
         $fin = Carbon::create($annee, $mois, 1)->endOfMonth();
-        
+
         return [
             'debut' => $debut->format('Y-m-d'),
             'fin' => $fin->format('Y-m-d'),

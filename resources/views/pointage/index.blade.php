@@ -307,14 +307,16 @@
                     <tr>
                         <th style="width:44px">Validé</th>
                         <th>Employé</th>
+                        <th style="width:140px">Département</th>
                         <th>Absence</th>
-                    <th>Heures travaillées</th>
-                    <th>Pause total</th>
-                    <th>Pause début / fin</th>
-                    <th style="width:80px">Total travaillé</th>
-                    <th>Action</th>
+                        <th>Heures travaillées</th>
+                        <th>Pause total</th>
+                        <th>Pause début / fin</th>
+                        <th style="width:80px">Total travaillé</th>
+                        <th>Action</th>
 
                     </tr>
+
                 </thead>
                 <tbody>
                 @foreach($employees as $emp)
@@ -352,8 +354,16 @@
                         </div>
                     </td>
 
+                    {{-- Département --}}
+                    <td style="min-width:120px;">
+                        <span class="pt-badge" style="background: var(--p-gray-bg); color: var(--p-text-muted); padding: 3px 8px; border-radius: 6px; font-size: 11px;">
+                            {{ $emp['department'] ?? 'N/A' }}
+                        </span>
+                    </td>
+
                     {{-- Absence --}}
-            <td>
+                    <td>
+
     <input type="checkbox"
            class="absent-checkbox"
            data-employee="{{ $emp['id'] }}"

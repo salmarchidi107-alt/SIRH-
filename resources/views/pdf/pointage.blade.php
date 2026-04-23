@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>Pointage</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 10px; padding: 0; }
 
 body {
     font-family: "Times New Roman", Times, serif;

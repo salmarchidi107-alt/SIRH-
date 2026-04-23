@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tenant;
+use App\Models\User;
+use Stancl\Tenancy\Database\Models\Domain;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
- use App\Ai\Agents\AssistantRH;
+use Illuminate\Support\Facades\Log;
+use App\Models\Employee;
+use App\Ai\Agents\AssistantRH;
 class AuthController extends Controller
 {
 
@@ -66,17 +70,15 @@ public function ask(Request $request)
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
+            $user = auth()->user();
 
-
-            $user = Auth::user();
-
-
+            // Handle missing role
             if (!$user->role) {
                 $user->role = User::ROLE_EMPLOYEE;
                 $user->save();
             }
 
-
+            // Handle missing employee_id
             if (!$user->employee_id) {
                 $employee = Employee::where('email', $user->email)->first();
                 if ($employee) {
@@ -87,66 +89,60 @@ public function ask(Request $request)
                 }
             }
 
-            $defaultRedirect = $user->role === User::ROLE_EMPLOYEE
-                ? route('employee.dashboard')
-                : route('dashboard');
+            // ── Réinitialiser toute tenancy active ────────────────────────────────
+            if (tenancy()->initialized) {
+                tenancy()->end();
+            }
 
-            return redirect()->intended($defaultRedirect)
-                ->with('success', 'Connexion réussie! Bienvenue ' . $user->name);
+            // ── Superadmin : pas de tenant, redirect direct ───────────────────────
+            if ($user->role === User::ROLE_SUPERADMIN) {
+                return redirect()->route('superadmin.dashboard');
+            }
+
+            // ── Vérifier que l'user a bien un tenant assigné ──────────────────────
+            if (! $user->tenant_id) {
+                Auth::logout();
+                Log::warning('Login sans tenant_id', [
+                    'email'     => $user->email,
+                    'role'      => $user->role,
+                    'tenant_id' => null,
+                ]);
+                return redirect()->route('login')->withErrors([
+                    'email' => 'Aucun espace de travail assigné à ce compte. Contactez le super administrateur.',
+                ]);
+            }
+
+            // ── Résoudre le tenant ────────────────────────────────────────────────
+            $tenant = Tenant::find($user->tenant_id);
+
+            if (! $tenant) {
+                Auth::logout();
+                Log::error('Tenant introuvable lors du login', [
+                    'email'     => $user->email,
+                    'tenant_id' => $user->tenant_id,
+                ]);
+                return redirect()->route('login')->withErrors([
+                    'email' => 'Espace de travail introuvable. Contactez le super administrateur.',
+                ]);
+            }
+
+            // ── Initialiser la tenancy via service ───────────────────────────────
+            app(\App\Services\Auth\PostLoginService::class)->initialize($tenant);
+
+            // ── Redirect par rôle ─────────────────────────────────────────────────
+            return match ($user->role) {
+                User::ROLE_ADMIN    => redirect()->route('admin.dashboard')
+                                    ->with('success', 'Bienvenue, ' . $user->name . ' !'),
+                User::ROLE_EMPLOYEE => redirect()->route('employee.dashboard')
+                                    ->with('success', 'Bienvenue, ' . $user->name . ' !'),
+                default => $this->invalidRole(),
+            };
         }
 
-        $request->session()->regenerate();
-
-        $user = Auth::user();
-
-        // ── Réinitialiser toute tenancy active ────────────────────────────────
-        if (tenancy()->initialized) {
-            tenancy()->end();
-        }
-
-        // ── Superadmin : pas de tenant, redirect direct ───────────────────────
-        if ($user->role === 'superadmin') {
-            return redirect()->route('superadmin.dashboard');
-        }
-
-        // ── Vérifier que l'user a bien un tenant assigné ──────────────────────
-        if (! $user->tenant_id) {
-            Auth::logout();
-            Log::warning('Login sans tenant_id', [
-                'email'     => $user->email,
-                'role'      => $user->role,
-                'tenant_id' => null,
+        return redirect()->back()
+            ->withErrors([
+                'email' => 'Les identifiants fournis sont incorrects.',
             ]);
-            return redirect()->route('login')->withErrors([
-                'email' => 'Aucun espace de travail assigné à ce compte. Contactez le super administrateur.',
-            ]);
-        }
-
-        // ── Résoudre le tenant ────────────────────────────────────────────────
-        $tenant = Tenant::find($user->tenant_id);
-
-        if (! $tenant) {
-            Auth::logout();
-            Log::error('Tenant introuvable lors du login', [
-                'email'     => $user->email,
-                'tenant_id' => $user->tenant_id,
-            ]);
-            return redirect()->route('login')->withErrors([
-                'email' => 'Espace de travail introuvable. Contactez le super administrateur.',
-            ]);
-        }
-
-// ── Initialiser la tenancy via service ───────────────────────────────
-        app(\App\Services\Auth\PostLoginService::class)->initialize($tenant);
-
-        // ── Redirect par rôle ─────────────────────────────────────────────────
-        return match ($user->role) {
-            'admin'    => redirect()->route('admin.dashboard')
-                            ->with('success', 'Bienvenue, ' . $user->name . ' !'),
-            'employee' => redirect()->route('employee.dashboard')
-                            ->with('success', 'Bienvenue, ' . $user->name . ' !'),
-            default => $this->invalidRole(),
-        };
     }
 
     /**

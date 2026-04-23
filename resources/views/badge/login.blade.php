@@ -159,20 +159,20 @@
         <label class="form-label">Choisissez votre action</label>
         @if($intent === 'entree')
         <label style="display:block; margin-bottom:12px; font-weight:600; color:rgba(255,255,255,.8);">
-          <input type="radio" name="action_sub" value="debut" checked style="margin-right:8px; accent-color:var(--teal);"> 
+          <input type="radio" name="action_sub" value="debut" checked style="margin-right:8px; accent-color:var(--teal);">
           Début de shift
         </label>
         <label style="display:block; font-weight:600; color:rgba(255,255,255,.8);">
-          <input type="radio" name="action_sub" value="retour_pause" style="margin-right:8px; accent-color:var(--teal);"> 
+          <input type="radio" name="action_sub" value="retour_pause" style="margin-right:8px; accent-color:var(--teal);">
           Retour de pause
         </label>
         @elseif($intent === 'sortie')
         <label style="display:block; margin-bottom:12px; font-weight:600; color:rgba(255,255,255,.8);">
-          <input type="radio" name="action_sub" value="fin_shift" checked style="margin-right:8px; accent-color:var(--amber);"> 
+          <input type="radio" name="action_sub" value="fin_shift" checked style="margin-right:8px; accent-color:var(--amber);">
           Fin de shift
         </label>
         <label style="display:block; font-weight:600; color:rgba(255,255,255,.8);">
-          <input type="radio" name="action_sub" value="sortie_pause" style="margin-right:8px; accent-color:var(--amber);"> 
+          <input type="radio" name="action_sub" value="sortie_pause" style="margin-right:8px; accent-color:var(--amber);">
           Sortie en pause
         </label>
         @endif
@@ -220,7 +220,7 @@
   }
   updateClock();
   setInterval(updateClock, 1000);
-  
+
   // Signature canvas
   const canvas = document.getElementById('signatureCanvas');
   const ctx = canvas.getContext('2d');
@@ -286,6 +286,6 @@
     signatureData.value = '';
     submitBtn.disabled = true;
   });
- 
+
 </script>
 @endpush

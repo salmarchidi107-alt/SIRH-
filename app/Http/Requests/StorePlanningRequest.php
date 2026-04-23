@@ -10,7 +10,7 @@ class StorePlanningRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->user()?->can('manage_plannings') ?? true;
+         return true; //return auth()->user()?->can('manage_plannings') ?? true;
     }
 
     public function rules(): array

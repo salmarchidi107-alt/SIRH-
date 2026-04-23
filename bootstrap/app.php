@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'superadmin'      => \App\Http\Middleware\SuperAdmin::class,
             'domain-tenant'   => \App\Http\Middleware\DomainTenant::class,
             'tenant-user'     => \App\Http\Middleware\Authenticated::class,
+            'badge.auth'      => \App\Http\Middleware\BadgeGuard::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

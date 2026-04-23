@@ -14,6 +14,18 @@
 </div>
 @endif
 
+@if (session('error'))
+<div class="alert alert-danger">
+    {{ session('error') }}
+</div>
+@endif
+
+@if (session('success'))
+<div class="alert alert-success">
+    {{ session('success') }}
+</div>
+@endif
+
 <div class="page-header">
     <div class="page-header-left">
         <h1>+ Nouvel Employé</h1>
@@ -85,20 +97,20 @@
                 <div class="form-group">
                     <label>Code PIN Badge </label>
                     <div class="input-group">
-                        <input type="text" 
-                               name="pin" 
-                               id="pin_field" 
-                               class="form-control" 
+                        <input type="text"
+                               name="pin"
+                               id="pin_field"
+                               class="form-control"
                                placeholder="1234AB"
                                pattern="[0-9]{4}[A-Z]{2}"
                                maxlength="6"
-                               readonly
                                value="{{ old('pin') }}">
                         <button type="button" id="generate_pin" class="btn btn-outline-primary">
                             Générer
                         </button>
                     </div>
-                
+                    @error('pin') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+
                 </div>
             </div>
         </div>
@@ -127,18 +139,18 @@
         // Générateur PIN Badge
         document.getElementById('generate_pin').addEventListener('click', function() {
             const digits = Math.floor(1000 + Math.random() * 9000); // 1000-9999
-            const letters = Array.from({length: 2}, () => 
+            const letters = Array.from({length: 2}, () =>
                 String.fromCharCode(65 + Math.floor(Math.random() * 26))
             ).join('');
-            
+
             const pin = digits + letters;
             document.getElementById('pin_field').value = pin;
-            
+
             // Feedback visuel
             this.textContent = ' ' + pin;
             this.style.background = '#10b981';
             this.style.color = 'white';
-            
+
             setTimeout(() => {
                 this.textContent = ' Générer';
                 this.style.background = '';
@@ -215,7 +227,14 @@
                 </div>
                 <div class="form-group">
                     <label>Type de contrat *</label>
-                    <input type="text" name="contract_type" class="form-control" value="{{ old('contract_type') }}" required placeholder="ex: CDI, CDD, Freelance">
+                    <select name="contract_type" class="form-control" required>
+                        <option value="">Sélectionner...</option>
+                        <option value="CDI" {{ old('contract_type') == 'CDI' ? 'selected' : '' }}>CDI</option>
+                        <option value="CDD" {{ old('contract_type') == 'CDD' ? 'selected' : '' }}>CDD</option>
+                        <option value="Interim" {{ old('contract_type') == 'Interim' ? 'selected' : '' }}>Intérim</option>
+                        <option value="Stage" {{ old('contract_type') == 'Stage' ? 'selected' : '' }}>Stage</option>
+                        <option value="Freelance" {{ old('contract_type') == 'Freelance' ? 'selected' : '' }}>Freelance</option>
+                    </select>
                     @error('contract_type') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group">
@@ -481,7 +500,7 @@ document.querySelectorAll('.toggle-password').forEach(btn => {
         const targetId = this.dataset.target;
         const input = document.getElementById(targetId);
         const icon = this.querySelector('svg');
-        
+
         if (input.type === 'password') {
             input.type = 'text';
             icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';

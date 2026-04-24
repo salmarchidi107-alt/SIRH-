@@ -1,14 +1,9 @@
-# Fix Chatbot "⚠️ Impossible de contacter le serveur"
+# Fix RouteNotFoundException: planning.monthly.pdf
 
-## Problèmes identifiés
-1. Route `/ask-ai` absente de `routes/web.php` → 404
-2. `SalaryTool` non instancié/non géré dans `AssistantRH.php`
-3. Chatbot dupliqué + chat WhatsApp inline obsolète dans `layouts/app.blade.php`
+## Steps
+- [x] Understand the issue: `route('planning.monthly.pdf')` is used in monthly.blade.php but not defined.
+- [x] Add route `GET /planning/monthly/pdf` -> `PlanningController::exportMonthlyPdf` in `routes/web.php`
+- [x] Add `exportMonthlyPdf()` method in `PlanningController.php`
+- [x] Clear route cache
+- [x] Verified route exists: `GET planning/monthly/pdf` -> `PlanningController@exportMonthlyPdf`
 
-## Étapes
-
-- [x] 1. Créer TODO.md
-- [ ] 2. Ajouter route `/ask-ai` dans `routes/web.php`
-- [ ] 3. Ajouter `SalaryTool` dans `app/Ai/Agents/AssistantRH.php`
-- [ ] 4. Nettoyer `resources/views/layouts/app.blade.php`
-- [ ] 5. Vider le cache des routes

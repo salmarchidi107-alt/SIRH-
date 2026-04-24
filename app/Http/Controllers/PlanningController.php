@@ -320,6 +320,44 @@ $pdf = Pdf::loadView('planning.weekly_pdf', compact('employees', 'plannings', 'w
         }
     }
 
+    public function exportMonthlyPdf(Request $request)
+    {
+        try {
+            $month = $request->month ?? now()->month;
+            $year = $request->year ?? now()->year;
+            $search = $request->search;
+            $department = $request->department;
+
+            $startOfMonth = Carbon::create($year, $month, 1)->startOfMonth();
+            $endOfMonth = $startOfMonth->copy()->endOfMonth();
+
+            $employees = Employee::where('status', 'active')
+                ->when($search, fn($q) => $q->where(function($query) use ($search) {
+                    $query->where('first_name', 'like', '%' . $search . '%')
+                        ->orWhere('last_name', 'like', '%' . $search . '%')
+                        ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
+                }))
+                ->when($department, fn($q) => $q->where('department', $department))
+                ->orderBy('first_name')
+                ->orderBy('last_name')
+                ->get();
+
+            $plannings = Planning::with('employee')
+                ->whereDate('date', '>=', $startOfMonth)
+                ->whereDate('date', '<=', $endOfMonth)
+                ->get()
+                ->groupBy('employee_id');
+
+            $pdf = Pdf::loadView('planning.monthly_pdf', compact('employees', 'plannings', 'month', 'year', 'startOfMonth', 'endOfMonth', 'search', 'department'));
+            $filename = 'planning-mensuel-' . $startOfMonth->format('Y-m') . '.pdf';
+
+            return $pdf->download($filename);
+        } catch (Exception $e) {
+            Log::error('Monthly PDF export error: ' . $e->getMessage());
+            return back()->with('error', 'Erreur génération PDF.');
+        }
+    }
+
     private function getFilteredEmployees(Request $request, $user_employee_id)
     {
         $search = $request->search;

@@ -6,41 +6,56 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class PdfDownloadController extends Controller
 {
-    public function download(Request $request, $filename)
+    public function download(Request $request, string $filename)
     {
-        // Remove pdfs/ prefix if present, security check
-        $cleanFilename = str_replace('pdfs/', '', $filename);
-        if (!Str::endsWith($cleanFilename, '.pdf') || Str::contains($cleanFilename, '../') || Str::contains($cleanFilename, '..\\')) {
+        // Sécurité : uniquement des noms de fichier simples .pdf
+        $cleanFilename = basename($filename);
+
+        if (
+            !Str::endsWith($cleanFilename, '.pdf') ||
+            Str::contains($cleanFilename, ['..', '/', '\\'])
+        ) {
             abort(404, 'Fichier invalide');
         }
 
+        // Chercher dans storage/app/public/pdfs/
         $fullPath = storage_path('app/public/pdfs/' . $cleanFilename);
-        
+
+        Log::debug('[PdfDownload] Recherche fichier', [
+            'filename' => $cleanFilename,
+            'path'     => $fullPath,
+            'exists'   => file_exists($fullPath),
+        ]);
+
         if (!file_exists($fullPath)) {
-            abort(404, 'PDF not found');
+            abort(404, 'PDF introuvable : ' . $cleanFilename);
         }
 
-        return Response::download($fullPath, basename($filename), [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="' . basename($filename) . '"',
+        return Response::download($fullPath, $cleanFilename, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $cleanFilename . '"',
         ]);
     }
 
-    public function stream(Request $request, $filename)
+    public function stream(Request $request, string $filename)
     {
-        // Same security
-        $cleanFilename = str_replace('pdfs/', '', $filename);
-        if (!Str::endsWith($cleanFilename, '.pdf') || Str::contains($cleanFilename, '../') || Str::contains($cleanFilename, '..\\')) {
+        $cleanFilename = basename($filename);
+
+        if (
+            !Str::endsWith($cleanFilename, '.pdf') ||
+            Str::contains($cleanFilename, ['..', '/', '\\'])
+        ) {
             abort(404, 'Fichier invalide');
         }
 
         $fullPath = storage_path('app/public/pdfs/' . $cleanFilename);
-        
+
         if (!file_exists($fullPath)) {
-            abort(404, 'PDF not found');
+            abort(404, 'PDF introuvable : ' . $cleanFilename);
         }
 
         return Response::file($fullPath, [

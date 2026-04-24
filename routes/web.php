@@ -26,12 +26,29 @@ use App\Http\Controllers\SuperAdmin\ClientController;
 use App\Http\Controllers\SuperAdmin\RoleController;
 use Illuminate\Support\Facades\Route;
 
+// ─── DEBUG temporaire — À SUPPRIMER APRÈS TEST ────────────────────────────────
+Route::get('/debug-ai-key', function () {
+    $configKey = config('ai.providers.openrouter.key');
+    $envKey    = env('OPENROUTER_API_KEY');
 
+    return response()->json([
+        'config_key'    => $configKey ? '✅ Trouvée' : '❌ Null',
+        'env_key'       => $envKey    ? '✅ Trouvée' : '❌ Null',
+        'key_preview'   => $configKey ? substr($configKey, 0, 12) . '...' : 'N/A',
+        'app_env'       => config('app.env'),
+        'config_cached' => app()->configurationIsCached() ? '✅ Oui (config:cache actif)' : '❌ Non',
+    ]);
+})->middleware('auth');
+// ─────────────────────────────────────────────────────────────────────────────
 
 Route::get('/holidays/debug',         [\App\Http\Controllers\HolidayController::class, 'debug']);
 Route::get('/holidays/{year}/{month}', [\App\Http\Controllers\HolidayController::class, 'index']);
 Route::get('/actualites',             [NewsController::class, 'index']);
 
+// ─── PDF Download ─────────────────────────────────────────────────────────────
+Route::get('/pdf/{filename}', [PdfDownloadController::class, 'download'])
+    ->where('filename', '[^/]+\.pdf')
+    ->name('pdf.download');
 // ─── Auth (public) ────────────────────────────────────────────────────────────
 Route::get('/login',   [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login',  [AuthController::class, 'login']);
@@ -66,13 +83,18 @@ Route::middleware(['web', 'domain-tenant', 'auth', 'identify-tenant'])->group(fu
 
     // ── Accessible à tous les utilisateurs connectés du tenant ───────────────
     Route::middleware(['tenant-user'])->group(function () {
+
+        // CORRECTION : ->name('assistant-rh.chat') ajouté pour correspondre
+        // à l'appel route('assistant-rh.chat') dans layouts/app.blade.php
+        Route::post('/ask-ai', AssistantRhController::class)->name('assistant-rh.chat');
+
         Route::get('/profile',                [ProfileController::class, 'index'])->name('profile');
         Route::get('/notifications',          [NotificationController::class, 'index'])->name('notifications.index');
         Route::get('/api/notifications/data', [NotificationController::class, 'data'])->name('api.notifications.data');
         Route::get('/trombinoscope',          [TrombinoscopeController::class, 'index'])->name('trombinoscope');
 
         // !! show ici, AVANT les routes admin qui enregistrent {employee} !!
-        Route::get('/employees/{employee}', [EmployeeController::class, 'show'])->where("employee","[0-9]+")->name('employees.show');
+        Route::get('/employees/{employee}', [EmployeeController::class, 'show'])->where('employee', '[0-9]+')->name('employees.show');
 
         Route::prefix('planning')->name('planning.')->group(function () {
             Route::get('/weekly',           [PlanningController::class, 'weekly'])->name('weekly');
@@ -112,16 +134,16 @@ Route::middleware(['web', 'domain-tenant', 'auth', 'identify-tenant'])->group(fu
         Route::resource('news', NewsController::class);
 
         // ── Routes employees : segments statiques EN PREMIER ─────────────────
-        Route::get('employees',                             [EmployeeController::class, 'index'])->name('employees.index');
-        Route::get('employees/create',                      [EmployeeController::class, 'create'])->name('employees.create');
-        Route::post('employees',                            [EmployeeController::class, 'store'])->name('employees.store');
-        Route::get('employees/export-pdf',                  [EmployeeController::class, 'exportPdf'])->name('employees.export-pdf');
-        Route::get('employees/export-pdf-dept/{department}',[EmployeeController::class, 'exportPdfByDept'])->name('employees.export-pdf-dept');
-        Route::post('employees/reorder',                    [EmployeeController::class, 'reorder'])->name('employees.reorder');
-        Route::get('employees/ajax',                        [EmployeeController::class, 'ajax'])->name('employees.ajax');
+        Route::get('employees',                              [EmployeeController::class, 'index'])->name('employees.index');
+        Route::get('employees/create',                       [EmployeeController::class, 'create'])->name('employees.create');
+        Route::post('employees',                             [EmployeeController::class, 'store'])->name('employees.store');
+        Route::get('employees/export-pdf',                   [EmployeeController::class, 'exportPdf'])->name('employees.export-pdf');
+        Route::get('employees/export-pdf-dept/{department}', [EmployeeController::class, 'exportPdfByDept'])->name('employees.export-pdf-dept');
+        Route::post('employees/reorder',                     [EmployeeController::class, 'reorder'])->name('employees.reorder');
+        Route::get('employees/ajax',                         [EmployeeController::class, 'ajax'])->name('employees.ajax');
 
         // ── Routes employees : segments dynamiques {employee} ENSUITE ─────────
-        Route::post('employees/{employee}/regenerate-pin',  [EmployeeController::class, 'regeneratePin'])->name('employees.regeneratePin');
+        Route::post('employees/{employee}/regenerate-pin', [EmployeeController::class, 'regeneratePin'])->name('employees.regeneratePin');
         Route::resource('employees', EmployeeController::class)->only(['edit', 'update', 'destroy']);
         // ─────────────────────────────────────────────────────────────────────
 
@@ -134,6 +156,7 @@ Route::middleware(['web', 'domain-tenant', 'auth', 'identify-tenant'])->group(fu
             Route::delete('/{planning}', [PlanningController::class, 'destroy'])->name('destroy');
             Route::post('/drag-drop',    [PlanningController::class, 'updateDragDrop'])->name('dragDrop');
             Route::get('weekly/pdf',     [PlanningController::class, 'exportWeeklyPdf'])->name('exportWeeklyPdf');
+            Route::get('monthly/pdf',    [PlanningController::class, 'exportMonthlyPdf'])->name('monthly.pdf');
 
             Route::prefix('templates')->name('templates.')->group(function () {
                 Route::get('/',              [WeekTemplateController::class, 'index'])->name('index');
@@ -177,8 +200,6 @@ Route::middleware(['web', 'domain-tenant', 'auth', 'identify-tenant'])->group(fu
             Route::get('/planning/events', [PlanningController::class, 'events']);
         });
 
-        Route::post('/ask-ai', AssistantRhController::class);
-
         //── Badge ─────────────────────────────────────────────────────────────────
         Route::prefix('badge')->name('badge.')->group(function () {
 
@@ -190,12 +211,12 @@ Route::middleware(['web', 'domain-tenant', 'auth', 'identify-tenant'])->group(fu
             Route::post('/auth/validate', [BadgeAuthController::class, 'authAction'])->name('auth.validate');
 
             Route::middleware(['badge.auth'])->group(function () {
-                Route::post('/logout',   [BadgeAuthController::class,    'logout'])      ->name('logout');
-                Route::get('/dashboard', [BadgeDashboardController::class,'index'])      ->name('dashboard');
-                Route::post('/entree',   [BadgePointageController::class, 'entree'])     ->name('entree');
-                Route::post('/sortie',   [BadgePointageController::class, 'sortie'])     ->name('sortie');
-                Route::post('/action',   [BadgePointageController::class, 'handleAction'])->name('action');
-                Route::get('/result',    [BadgePointageController::class, 'result'])     ->name('result');
+                Route::post('/logout',   [BadgeAuthController::class,     'logout'])       ->name('logout');
+                Route::get('/dashboard', [BadgeDashboardController::class, 'index'])       ->name('dashboard');
+                Route::post('/entree',   [BadgePointageController::class,  'entree'])      ->name('entree');
+                Route::post('/sortie',   [BadgePointageController::class,  'sortie'])      ->name('sortie');
+                Route::post('/action',   [BadgePointageController::class,  'handleAction'])->name('action');
+                Route::get('/result',    [BadgePointageController::class,  'result'])      ->name('result');
             });
         });
     });

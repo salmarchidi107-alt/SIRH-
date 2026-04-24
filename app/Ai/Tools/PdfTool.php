@@ -66,7 +66,7 @@ class PdfTool
 
         $filename = 'absences_' . $today->format('Y-m-d') . '_' . uniqid() . '.pdf';
         Storage::disk('public')->put('pdfs/' . $filename, $pdf->output());
-        $url = url("pdf/{$filename}");
+        $url = route('pdf.download', ['filename' => $filename]);
 
         return "PDF_DOWNLOAD::{$url}::{$filename}::Absences du "
              . $today->format('d/m/Y') . " (" . $absences->count() . " absence(s))";
@@ -91,7 +91,7 @@ class PdfTool
 
         $filename = 'employes_' . now()->format('Y-m-d') . '_' . uniqid() . '.pdf';
         Storage::disk('public')->put('pdfs/' . $filename, $pdf->output());
-        $url = url("pdf/{$filename}");
+        $url = route('pdf.download', ['filename' => $filename]);
 
         return "PDF_DOWNLOAD::{$url}::{$filename}::Liste des employés actifs ({$employees->count()})";
     }
@@ -133,7 +133,7 @@ class PdfTool
 
         $filename = 'planning_' . $matricule . '_' . $weekStart->format('Y-m-d') . '_' . uniqid() . '.pdf';
         Storage::disk('public')->put('pdfs/' . $filename, $pdf->output());
-        $url = url("pdf/{$filename}");
+        $url = route('pdf.download', ['filename' => $filename]);
 
         $label = "Planning {$employee->first_name} {$employee->last_name} — sem. " . $weekStart->format('d/m');
 

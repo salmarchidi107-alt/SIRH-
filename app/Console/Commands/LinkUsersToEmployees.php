@@ -23,25 +23,31 @@ class LinkUsersToEmployees extends Command
     /**
      * Execute the console command.
      */
-   public function handle()
-{
-    $linked = 0;
+    public function handle()
+    {
+        $linked = 0;
 
-    foreach (\App\Models\User::all() as $user) {
-        $employee = \App\Models\Employee::where('email', $user->email)->first();
+        foreach (\App\Models\User::all() as $user) {
+            $employee = \App\Models\Employee::where('email', $user->email)->first();
 
-        if ($employee && ! $employee->user_id) {
-            $employee->user_id = $user->id;
-            $employee->save();
-            $linked++;
+            if ($employee && ! $employee->user_id) {
+                $employee->user_id = $user->id;
+                $employee->save();
 
-            $this->info("Linked: {$user->email} → {$employee->first_name} {$employee->last_name}");
+                if (! $user->employee_id) {
+                    $user->employee_id = $employee->id;
+                    $user->save();
+                }
+
+                $linked++;
+
+                $this->info("Linked: {$user->email} → {$employee->first_name} {$employee->last_name}");
+            }
         }
-    }
 
-    $this->info($linked > 0
-        ? "Linked {$linked} user(s)!"
-        : "No new links."
-    );
-}
+        $this->info($linked > 0
+            ? "Linked {$linked} user(s)!"
+            : "No new links."
+        );
+    }
 }

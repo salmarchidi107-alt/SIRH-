@@ -77,6 +77,16 @@ class Employee extends Model
         return "{$this->first_name} {$this->last_name}";
     }
 
+    public function getNomAttribute(): string
+    {
+        return $this->last_name;
+    }
+
+    public function getPrenomAttribute(): string
+    {
+        return $this->first_name;
+    }
+
     public function getStatusLabelAttribute(): string
     {
         return \App\Enums\EmployeeStatus::tryFrom($this->status)?->label() ?? $this->status;

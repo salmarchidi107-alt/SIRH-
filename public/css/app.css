@@ -236,8 +236,8 @@ button, input, select, textarea { font-family: inherit; }
 
 /* ============ MAIN CONTENT ============ */
 .main-content {
-  margin-left: var(--sidebar-w);
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -1358,12 +1358,17 @@ select.form-control { cursor: pointer; }
    SIDEBAR
 ════════════════════════════ */
 .sidebar {
-  width: 220px;
-  background: var(--sidebar-bg);
+  width: var(--sidebar-w);
+  background: var(--navy);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  flex-shrink: 0;
+  z-index: 100;
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
-  overflow-y: auto;
+  overflow: hidden;
+  transition: width 0.25s ease;
 }
 .sidebar-logo {
   padding: 18px 16px;
@@ -1611,3 +1616,11 @@ input:focus {
   .content   { padding: 16px; }
 }
 
+/* ── Collapse ── */
+.sidebar.collapsed { width: 64px; }
+
+@media (max-width: 768px) {
+  .sidebar { position: fixed; top: 0; left: 0; bottom: 0; transform: translateX(-100%); transition: transform .3s ease; }
+  .sidebar.open { transform: translateX(0); }
+  .main-content { margin-left: 0 !important; }
+}

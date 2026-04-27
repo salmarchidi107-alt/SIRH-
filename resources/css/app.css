@@ -80,12 +80,13 @@ button, input, select, textarea { font-family: inherit; }
 .app-wrapper {
   display: flex;
   min-height: 100vh;
+  gap: 0 !important;
 }
 
 /* ============ SIDEBAR ============ */
 .sidebar {
   width: var(--sidebar-w);
-  background: var(--navy);
+  background: #0d2238 !important;;
   position: fixed;
   top: 0; left: 0; bottom: 0;
   z-index: 100;
@@ -236,7 +237,7 @@ button, input, select, textarea { font-family: inherit; }
 
 /* ============ MAIN CONTENT ============ */
 .main-content {
-  margin-left: var(--sidebar-w);
+   margin-left: 0 !important;
   flex: 1;
   display: flex;
   flex-direction: column;

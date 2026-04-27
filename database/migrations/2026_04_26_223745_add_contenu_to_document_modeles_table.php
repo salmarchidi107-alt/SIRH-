@@ -10,21 +10,19 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-{
-    Schema::table('tenants', function (Blueprint $table) {
-        if (!Schema::hasColumn('tenants', 'sidebar_color')) {
-            $table->string('sidebar_color')->nullable();
-        }
-    });
-}
+    {
+        Schema::table('document_modeles', function (Blueprint $table) {
+            $table->longText('contenu')->nullable()->after('categorie');
+        });
+    }
 
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::table('tenants', function (Blueprint $table) {
-            $table->dropColumn('sidebar_color');
+        Schema::table('document_modeles', function (Blueprint $table) {
+            $table->dropColumn('contenu');
         });
     }
 };

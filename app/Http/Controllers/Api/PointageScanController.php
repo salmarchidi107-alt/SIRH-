@@ -135,7 +135,7 @@ class PointageScanController extends Controller
         $date = $request->get('date', today()->toDateString());
 
         $pointages = Pointage::forDate($date)
-            ->with('employee:id,nom,prenom')
+            ->with('employee:id,first_name,last_name')
             ->get()
             ->map(fn($p) => [
                 'employee_id'  => $p->employee_id,

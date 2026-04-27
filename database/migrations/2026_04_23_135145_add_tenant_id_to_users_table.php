@@ -9,10 +9,12 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+   public function up(): void
 {
     Schema::table('users', function (Blueprint $table) {
-        $table->uuid('tenant_id')->nullable()->after('id');
+        if (!Schema::hasColumn('users', 'tenant_id')) {
+            $table->char('tenant_id', 36)->nullable()->after('id');
+        }
     });
 }
 

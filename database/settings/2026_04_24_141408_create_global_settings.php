@@ -2,23 +2,14 @@
 
 use Spatie\LaravelSettings\Migrations\SettingsMigration;
 
-/**
- * Migration Spatie Settings — groupe "global"
- *
- * Commande pour générer ce fichier :
- *   php artisan make:settings-migration CreateGlobalSettings
- *
- * Commande pour exécuter :
- *   php artisan migrate
- */
 class CreateGlobalSettings extends SettingsMigration
 {
     public function up(): void
     {
-        $this->migrator->add('global.mode_maintenance',    false);
+        $this->migrator->add('global.mode_maintenance', false);
         $this->migrator->add('global.notifications_email', true);
-        $this->migrator->add('global.email_support',       'support@hospitalrh.ma');
-        $this->migrator->add('global.nom_plateforme',      'HospitalRH');
+        $this->migrator->add('global.email_support', 'support@hospitalrh.ma');
+        $this->migrator->add('global.nom_plateforme', 'HospitalRH');
     }
 
     public function down(): void

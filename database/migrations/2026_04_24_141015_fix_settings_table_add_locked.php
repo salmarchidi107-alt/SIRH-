@@ -8,14 +8,18 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('settings', function (Blueprint $table) {
-            $table->boolean('locked')->default(false);
+            if (!Schema::hasColumn('settings', 'locked')) {
+                $table->boolean('locked')->default(false);
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('settings', function (Blueprint $table) {
-            $table->dropColumn('locked');
+            if (Schema::hasColumn('settings', 'locked')) {
+                $table->dropColumn('locked');
+            }
         });
     }
 };

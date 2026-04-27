@@ -24,7 +24,10 @@ use App\Http\Controllers\SuperAdmin\TenantController;
 use App\Http\Controllers\SuperAdmin\SettingsController as SuperAdminSettings;
 use App\Http\Controllers\SuperAdmin\ClientController;
 use App\Http\Controllers\SuperAdmin\RoleController;
+use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\DocumentModeleController;
 use Illuminate\Support\Facades\Route;
+
 
 // ─── DEBUG temporaire — À SUPPRIMER APRÈS TEST ────────────────────────────────
 Route::get('/debug-ai-key', function () {
@@ -219,5 +222,19 @@ Route::middleware(['web', 'domain-tenant', 'auth', 'identify-tenant'])->group(fu
                 Route::get('/result',    [BadgePointageController::class,  'result'])      ->name('result');
             });
         });
-    });
+
+
+Route::get('/ged',                      [DocumentController::class, 'index'])  ->name('ged.index');
+Route::post('/ged',                     [DocumentController::class, 'store'])  ->name('ged.store');
+Route::get('/ged/{document}/edit',      [DocumentController::class, 'edit'])   ->name('ged.edit');    // ← NOUVEAU
+Route::put('/ged/{document}',           [DocumentController::class, 'update']) ->name('ged.update');
+Route::delete('/ged/{document}',        [DocumentController::class, 'destroy'])->name('ged.destroy');
+Route::get('/ged/{document}/download',  [DocumentController::class, 'download'])->name('ged.download');
+
+// Modèles GED
+Route::get('/ged/modeles',              [DocumentModeleController::class, 'index'])  ->name('ged.modeles.index');
+Route::post('/ged/modeles',             [DocumentModeleController::class, 'store'])  ->name('ged.modeles.store');
+Route::put('/ged/modeles/{modele}',     [DocumentModeleController::class, 'update']) ->name('ged.modeles.update');
+Route::delete('/ged/modeles/{modele}',  [DocumentModeleController::class, 'destroy'])->name('ged.modeles.destroy');
+});
 });

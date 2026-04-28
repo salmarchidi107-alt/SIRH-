@@ -7,9 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Salary extends Model
 {
-    use \App\Traits\HasTenantScope;
     protected $fillable = [
-        'tenant_id',
         'employee_id', 'month', 'year',
         // Gains
         'base_salary', 'seniority_bonus',
@@ -28,9 +26,12 @@ class Salary extends Model
         'employer_cnss', 'employer_amo', 'employer_tfp', 'employer_total_cost',
         // Net
         'net_salary', 'status', 'notes',
+        // ─── NEW: Mode cotisations et type salaire ─────────
+        'mode_cotisation', 'cnss_deduction_manual', 'amo_deduction_manual', 'fp_deduction_manual',
+        'salary_type', 'hourly_rate', 'working_hours',
+        'overtime_hours_day', 'overtime_hours_night', 'overtime_hours_weekend',
+        'absence_hours', 'delay_hours',
     ];
-
-    // ── Relations ──────────────────────────────────────────────────
 
     protected $casts = [
         'base_salary'              => 'decimal:2',
@@ -65,6 +66,17 @@ class Salary extends Model
         'employer_tfp'             => 'decimal:2',
         'employer_total_cost'      => 'decimal:2',
         'net_salary'               => 'decimal:2',
+        // ─── NEW: New fields casting ────────────────────────────
+        'cnss_deduction_manual'    => 'decimal:2',
+        'amo_deduction_manual'     => 'decimal:2',
+        'fp_deduction_manual'      => 'decimal:2',
+        'hourly_rate'              => 'decimal:2',
+        'working_hours'            => 'decimal:2',
+        'overtime_hours_day'       => 'decimal:2',
+        'overtime_hours_night'     => 'decimal:2',
+        'overtime_hours_weekend'   => 'decimal:2',
+        'absence_hours'            => 'decimal:2',
+        'delay_hours'              => 'decimal:2',
     ];
 
     // ── Relations ──────────────────────────────────────────────────
@@ -163,4 +175,63 @@ class Salary extends Model
             $this->ir_deduction, 2
         );
     }
+
+    // ── Helpers cotisations ────────────────────────────────────────
+
+    public function isCotisationAuto(): bool
+    {
+        return $this->mode_cotisation === 'auto';
+    }
+
+    public function isCotisationManual(): bool
+    {
+        return $this->mode_cotisation === 'manual';
+    }
+
+    public function isHourlyPayroll(): bool
+    {
+        return $this->salary_type === 'hourly';
+    }
+
+    public function isMonthlyPayroll(): bool
+    {
+        return $this->salary_type === 'monthly';
+    }
+
+    /**
+     * Récupère les cotisations effectives (auto ou manuelles)
+     */
+    public function getEffectiveCnss(): float
+    {
+        return $this->isCotisationManual() && $this->cnss_deduction_manual !== null
+            ? (float) $this->cnss_deduction_manual
+            : (float) $this->cnss_deduction;
+    }
+
+    public function getEffectiveAmo(): float
+    {
+        return $this->isCotisationManual() && $this->amo_deduction_manual !== null
+            ? (float) $this->amo_deduction_manual
+            : (float) $this->amo_deduction;
+    }
+
+    public function getEffectiveFp(): float
+    {
+        return $this->isCotisationManual() && $this->fp_deduction_manual !== null
+            ? (float) $this->fp_deduction_manual
+            : (float) $this->fp_deduction;
+    }
+
+    /**
+     * Total heures supplémentaires
+     */
+    public function getTotalOvertimeHours(): float
+    {
+        return round(
+            ($this->overtime_hours_day ?? 0) +
+            ($this->overtime_hours_night ?? 0) +
+            ($this->overtime_hours_weekend ?? 0), 2
+        );
+    }
 }
+

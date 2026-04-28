@@ -31,7 +31,7 @@
             height: 100vh;
             position: sticky;
             top: 0;
-            overflow: hidden;
+            overflow: visible !important;
             transition: width .25s ease;
             z-index: 100;
         }
@@ -55,27 +55,28 @@
         }
 
         /* ── Bouton collapse ── */
-        .sidebar-collapse-btn {
-            position: absolute;
-            top: 50%;
-            right: -14px;
-            transform: translateY(-50%);
-            width: 28px;
-            height: 28px;
-            background: #14b8a6;
-            border: none;
-            border-radius: 50%;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 200;
-            box-shadow: 0 2px 8px rgba(0,0,0,.25);
-            transition: background .2s;
-            font-size: 10px;
-            line-height: 1;
-        }
+       .sidebar-collapse-btn {
+    position: absolute;
+    top: 50%;
+    right: -14px;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    background: #14b8a6;
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 200;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    transition: background .2s;
+    font-size: 10px;
+    line-height: 1;
+    overflow: visible;
+}
         .sidebar-collapse-btn:hover { background: #0d9488; }
 
         /* ── État collapsed ── */
@@ -163,7 +164,7 @@
 
             <a href="{{ $dashboardHref }}" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
                 @if($logoPath)
-                    <img src="{{ Storage::url($logoPath) }}" alt="logo"
+                    <img src="{{ asset('storage/' . $logoPath) }}" alt="logo"
                          style="width:36px;height:36px;object-fit:contain;border-radius:8px;flex-shrink:0;">
                 @else
                     <div class="brand-icon-custom" style="background:{{ $brandColor }};">
@@ -414,6 +415,16 @@
             @endif
 
         </nav>
+        <a href="{{ route('ged.entete.index') }}"
+               class="nav-item {{ request()->routeIs('ged.entete.*') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <rect x="4" y="4" width="16" height="16" rx="2"/>
+                <line x1="4" y1="9" x2="20" y2="9"/>
+                <line x1="8" y1="13" x2="16" y2="13"/>
+                <line x1="8" y1="17" x2="14" y2="17"/>
+                </svg>
+                <span>Entête</span>
+            </a>
 
         {{-- ── Footer sidebar ── --}}
         <div class="sidebar-footer">

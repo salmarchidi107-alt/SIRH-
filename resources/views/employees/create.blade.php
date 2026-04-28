@@ -14,18 +14,6 @@
 </div>
 @endif
 
-@if (session('error'))
-<div class="alert alert-danger">
-    {{ session('error') }}
-</div>
-@endif
-
-@if (session('success'))
-<div class="alert alert-success">
-    {{ session('success') }}
-</div>
-@endif
-
 <div class="page-header">
     <div class="page-header-left">
         <h1>+ Nouvel Employé</h1>
@@ -97,20 +85,20 @@
                 <div class="form-group">
                     <label>Code PIN Badge </label>
                     <div class="input-group">
-                        <input type="text"
-                               name="pin"
-                               id="pin_field"
-                               class="form-control"
+                        <input type="text" 
+                               name="pin" 
+                               id="pin_field" 
+                               class="form-control" 
                                placeholder="1234AB"
                                pattern="[0-9]{4}[A-Z]{2}"
                                maxlength="6"
+                               readonly
                                value="{{ old('pin') }}">
                         <button type="button" id="generate_pin" class="btn btn-outline-primary">
                             Générer
                         </button>
                     </div>
-                    @error('pin') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
-
+                
                 </div>
             </div>
         </div>
@@ -139,18 +127,18 @@
         // Générateur PIN Badge
         document.getElementById('generate_pin').addEventListener('click', function() {
             const digits = Math.floor(1000 + Math.random() * 9000); // 1000-9999
-            const letters = Array.from({length: 2}, () =>
+            const letters = Array.from({length: 2}, () => 
                 String.fromCharCode(65 + Math.floor(Math.random() * 26))
             ).join('');
-
+            
             const pin = digits + letters;
             document.getElementById('pin_field').value = pin;
-
+            
             // Feedback visuel
             this.textContent = ' ' + pin;
             this.style.background = '#10b981';
             this.style.color = 'white';
-
+            
             setTimeout(() => {
                 this.textContent = ' Générer';
                 this.style.background = '';
@@ -185,56 +173,24 @@
                 </div>
                 <div class="form-group">
                     <label>Poste / Fonction *</label>
-                    <input type="text" name="position" class="form-control" value="{{ old('position') }}" required placeholder="ex: Médecin Généraliste">
+                    <input type="text" name="position" class="form-control" value="{{ old('position') }}" required placeholder="">
                 </div>
-                <div class="form-group">
-                    <label>Type de diplôme</label>
-                    <select name="diploma_type" class="form-control">
-                        <option value="">Sélectionner...</option>
-                        <option value="Bac" {{ old('diploma_type') == 'Bac' ? 'selected' : '' }}>Bac</option>
-                        <option value="Bac+2" {{ old('diploma_type') == 'Bac+2' ? 'selected' : '' }}>Bac+2 (DUT, BTS)</option>
-                        <option value="Bac+3" {{ old('diploma_type') == 'Bac+3' ? 'selected' : '' }}>Bac+3 (Licence)</option>
-                        <option value="Bac+4" {{ old('diploma_type') == 'Bac+4' ? 'selected' : '' }}>Bac+4 (Master 1)</option>
-                        <option value="Bac+5" {{ old('diploma_type') == 'Bac+5' ? 'selected' : '' }}>Bac+5 (Master 2)</option>
-                        <option value="Doctorat" {{ old('diploma_type') == 'Doctorat' ? 'selected' : '' }}>Doctorat</option>
-                        <option value="Formation professionnelle" {{ old('diploma_type') == 'Formation professionnelle' ? 'selected' : '' }}>Formation professionnelle</option>
-                    </select>
+              <div class="form-group">
+                    <label>Type de diplome*</label>
+                    <input type="text" name="position" class="form-control" value="{{ old('position') }}" required placeholder="">
                 </div>
                 <div class="form-group">
                     <label>Site de travail</label>
-                    <input type="text" name="work_site" class="form-control" value="{{ old('work_site') }}" placeholder="ex: Hôpital Central, Clinique Sud">
+                    <input type="text" name="work_site" class="form-control" value="{{ old('work_site') }}" placeholder="">
                     @error('work_site') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
-                <div class="form-group">
-                    <label>Compétences / Expérience</label>
-                    <select name="skills" class="form-control">
-                        <option value="">Sélectionner...</option>
-                        <option value="Médecine générale" {{ old('skills') == 'Médecine générale' ? 'selected' : '' }}>Médecine générale</option>
-                        <option value="Chirurgie générale" {{ old('skills') == 'Chirurgie générale' ? 'selected' : '' }}>Chirurgie générale</option>
-                        <option value="Urgences et soins intensifs" {{ old('skills') == 'Urgences et soins intensifs' ? 'selected' : '' }}>Urgences et soins intensifs</option>
-                        <option value="Pédiatrie" {{ old('skills') == 'Pédiatrie' ? 'selected' : '' }}>Pédiatrie</option>
-                        <option value="Gynécologie obstétrique" {{ old('skills') == 'Gynécologie obstétrique' ? 'selected' : '' }}>Gynécologie obstétrique</option>
-                        <option value="Cardiologie" {{ old('skills') == 'Cardiologie' ? 'selected' : '' }}>Cardiologie</option>
-                        <option value="Neurologie" {{ old('skills') == 'Neurologie' ? 'selected' : '' }}>Neurologie</option>
-                        <option value="Oncologie" {{ old('skills') == 'Oncologie' ? 'selected' : '' }}>Oncologie</option>
-                        <option value="Radiologie" {{ old('skills') == 'Radiologie' ? 'selected' : '' }}>Radiologie</option>
-                        <option value="Laboratoire" {{ old('skills') == 'Laboratoire' ? 'selected' : '' }}>Laboratoire</option>
-                        <option value="Pharmacie" {{ old('skills') == 'Pharmacie' ? 'selected' : '' }}>Pharmacie</option>
-                        <option value="Anesthésie" {{ old('skills') == 'Anesthésie' ? 'selected' : '' }}>Anesthésie</option>
-                        <option value="Management hospitalier" {{ old('skills') == 'Management hospitalier' ? 'selected' : '' }}>Management hospitalier</option>
-                        <option value="Informatique médicale" {{ old('skills') == 'Informatique médicale' ? 'selected' : '' }}>Informatique médicale</option>
-                    </select>
+               <div class="form-group">
+                    <label>Competance et experience *</label>
+                    <input type="text" name="position" class="form-control" value="{{ old('position') }}" required placeholder="">
                 </div>
                 <div class="form-group">
                     <label>Type de contrat *</label>
-                    <select name="contract_type" class="form-control" required>
-                        <option value="">Sélectionner...</option>
-                        <option value="CDI" {{ old('contract_type') == 'CDI' ? 'selected' : '' }}>CDI</option>
-                        <option value="CDD" {{ old('contract_type') == 'CDD' ? 'selected' : '' }}>CDD</option>
-                        <option value="Interim" {{ old('contract_type') == 'Interim' ? 'selected' : '' }}>Intérim</option>
-                        <option value="Stage" {{ old('contract_type') == 'Stage' ? 'selected' : '' }}>Stage</option>
-                        <option value="Freelance" {{ old('contract_type') == 'Freelance' ? 'selected' : '' }}>Freelance</option>
-                    </select>
+                    <input type="text" name="contract_type" class="form-control" value="{{ old('contract_type') }}" required placeholder="ex: CDI, CDD, Freelance">
                     @error('contract_type') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group">
@@ -337,10 +293,10 @@
         </div>
         <div class="card-body">
             <div class="form-group">
-                <label for="create_account">
+                <label>
+                    <input type="checkbox" name="create_account" value="1" id="create_account">
                     Créer un compte utilisateur pour cet employé
                 </label>
-                <input type="checkbox" name="create_account" value="1" id="create_account">
             </div>
             <div id="account_fields" style="display:none;">
                 <div class="form-grid">
@@ -417,8 +373,8 @@
             <div class="form-group full" style="margin-top: 16px;">
                 <label style="font-weight: 600; margin-bottom: 12px; display: block;"> Jours de travail habituels</label>
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #f1f5f9; border-radius: 8px;">
-                        <input type="checkbox" name="work_days[]" value="lundi" id="work_lundi" {{ is_array(old('work_days')) && in_array('lundi', old('work_days')) ? 'checked' : '' }}>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #f1f5f9; border-radius: 8px;">
+                        <input type="checkbox" name="work_days[]" value="lundi" {{ is_array(old('work_days')) && in_array('lundi', old('work_days')) ? 'checked' : '' }}>
                         Lun
                     </label>
                     <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #f1f5f9; border-radius: 8px;">
@@ -500,7 +456,7 @@ document.querySelectorAll('.toggle-password').forEach(btn => {
         const targetId = this.dataset.target;
         const input = document.getElementById(targetId);
         const icon = this.querySelector('svg');
-
+        
         if (input.type === 'password') {
             input.type = 'text';
             icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';

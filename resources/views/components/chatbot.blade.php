@@ -1,7 +1,7 @@
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <div id="rh-chatbot" class="chatbot-container">
 
-   <!-- Toggle Button -->
+  <!-- Toggle Button -->
   <button class="chatbot-toggle" onclick="toggleChatbot()" title="Assistant RH IA">
     <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" width="24" height="24">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -37,12 +37,8 @@
     <!-- Input -->
     <div class="chatbot-input">
       <div class="input-wrapper">
-        <textarea id="chatInput" placeholder="Posez votre question..." rows="1" onkeydown="handleChatKey(event)" oninput="autoResizeChat(this)"></textarea>
-        <button id="chatSend" onclick="sendMessage()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-          </svg>
-        </button>
+        <textarea id="chatInput" placeholder="Posez votre question..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button id="chatSend" onclick="sendMessage()">➤</button>
       </div>
     </div>
 
@@ -95,7 +91,6 @@
   background: var(--primary-dark, #0f2132);
   color: white; padding: 16px 20px;
   display: flex; align-items: center; gap: 12px;
-  flex-shrink: 0;
 }
 .chatbot-avatar {
   width: 44px; height: 44px;
@@ -120,19 +115,12 @@
 
 /* ── Messages ── */
 .chatbot-messages {
-  flex: 1;
-  padding: 16px;
+  flex: 1; padding: 16px;
   overflow-y: auto;
   background: #f8fafc;
   max-height: 370px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  display: flex; flex-direction: column; gap: 12px;
 }
-.chatbot-messages::-webkit-scrollbar { display: none; }
-
 .message { display: flex; gap: 8px; max-width: 90%; }
 .message.user { align-self: flex-end; flex-direction: row-reverse; }
 .bubble {
@@ -188,17 +176,18 @@
   background: linear-gradient(135deg, rgba(255,255,255,0.08), transparent);
   pointer-events: none;
 }
-.pdf-download-btn:hover:not(:disabled) {
-  opacity: .88;
-  transform: translateY(-1px);
+.pdf-download-btn:hover:not(:disabled) { 
+  opacity: .88; 
+  transform: translateY(-1px); 
   box-shadow: 0 6px 20px rgba(15,33,50,0.35);
 }
 .pdf-download-btn:active:not(:disabled) { transform: translateY(0); }
 .pdf-download-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
 .pdf-download-btn svg { flex-shrink: 0; }
+.pdf-download-btn.success { background: linear-gradient(135deg, #059669, #10b981); }
 
 /* ── Typing ── */
-.typing { display:flex; gap:4px; padding:4px 0; }
+.typing { display:flex; gap:4px; padding:12px 16px; }
 .typing-dot { width:6px; height:6px; background:#94a3b8; border-radius:50%; animation: bounce 1.2s infinite; }
 .typing-dot:nth-child(2) { animation-delay:.2s; }
 .typing-dot:nth-child(3) { animation-delay:.4s; }
@@ -209,7 +198,6 @@
   padding: 12px 16px;
   background: white;
   border-top: 1px solid #f1f5f9;
-  flex-shrink: 0;
 }
 .input-wrapper { display:flex; gap:8px; align-items:flex-end; }
 #chatInput {
@@ -217,10 +205,7 @@
   padding:11px 16px; font-size:14px; font-family:inherit;
   resize:none; max-height:100px; outline:none;
   transition:border-color .2s; line-height:1.4;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
 }
-#chatInput::-webkit-scrollbar { display: none; }
 #chatInput:focus { border-color: var(--primary,#1a8a74); box-shadow: 0 0 0 3px rgba(26,138,116,.12); }
 #chatSend {
   width:44px; height:44px;
@@ -232,6 +217,11 @@
 }
 #chatSend:hover:not(:disabled) { background: var(--accent, #1a8a74); transform:scale(1.05); }
 #chatSend:disabled { opacity:.5; cursor:not-allowed; }
+
+/* ── Scrollbar ── */
+.chatbot-messages::-webkit-scrollbar { width:4px; }
+.chatbot-messages::-webkit-scrollbar-track { background:transparent; }
+.chatbot-messages::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:2px; }
 
 /* ── Responsive ── */
 @media (max-width:480px) {
@@ -250,26 +240,23 @@ function toggleChatbot() {
   const isOpen = popup.style.display === 'flex';
   popup.style.display = isOpen ? 'none' : 'flex';
   toggle.classList.toggle('active', !isOpen);
-  if (!isOpen) {
-    setTimeout(() => document.getElementById('chatInput')?.focus(), 200);
-  }
 }
 
 // ── Resize textarea ──────────────────────────────────────────────────────────
-function autoResizeChat(el) {
+function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 100) + 'px';
 }
 
-// ── Touche Entrée (sans Shift) envoie le message ─────────────────────────────
-function handleChatKey(e) {
+// ── Touche Entrée ────────────────────────────────────────────────────────────
+function handleKey(e) {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
     sendMessage();
   }
 }
 
-// ── Ajouter un message ────────────────────────────────────────────────────────
+// ── Ajouter un message texte ─────────────────────────────────────────────────
 function addMessage(role, html, time) {
   time = time || new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
   const messages = document.getElementById('chatbotMessages');
@@ -296,86 +283,102 @@ function addMessage(role, html, time) {
   messages.scrollTop = messages.scrollHeight;
 }
 
-// ── Parser la réponse et détecter PDF_DOWNLOAD:: ─────────────────────────────
+// ── CORRECTION PRINCIPALE : Parser la réponse et détecter PDF_DOWNLOAD:: ────
+// Format retourné par PdfTool : PDF_DOWNLOAD::{url}::{filename}::{label}
+// FIX : regex robuste qui gère les URLs contenant "://" sans casser le split
 function parseReply(rawText) {
-  // Fix URL 127.0.0.1 / localhost → vrai domaine du navigateur
-  rawText = rawText.replace(/https?:\/\/127\.0\.0\.1(:\d+)?/g, window.location.origin);
-  rawText = rawText.replace(/https?:\/\/localhost(:\d+)?/g, window.location.origin);
-
+  const lines      = rawText.split('\n');
+  const textLines  = [];
   const pdfButtons = [];
 
-  // Extraire tous les tags PDF_DOWNLOAD:: (n'importe où dans le texte, même collés)
-  const pdfRegex = /PDF_DOWNLOAD::([^\s:][^\s]*?)::([^:\s]+\.pdf)::([^\n]+)/g;
-  let match;
-  while ((match = pdfRegex.exec(rawText)) !== null) {
-    pdfButtons.push({
-      url:      match[1].trim(),
-      filename: match[2].trim(),
-      label:    match[3].trim(),
-    });
+  // Regex corrigée :
+  // - Capture l'URL complète (y compris http://) en s'arrêtant au pattern "::<non-slash>"
+  // - Utilise un lookahead pour délimiter sans casser les URLs
+  const pdfRegex = /^PDF_DOWNLOAD::(https?:\/\/\S+?)::([^:\n]+(?::[^:\n]+)*)::(.+)$/;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Tester d'abord si la ligne contient un tag PDF
+    const m = trimmed.match(pdfRegex);
+    if (m) {
+      pdfButtons.push({
+        url:      m[1].trim(),
+        filename: m[2].trim(),
+        label:    m[3].trim(),
+      });
+      // Ne jamais ajouter cette ligne au texte visible
+      continue;
+    }
+
+    // Ignorer les lignes vides multiples consécutives (garder max 1 ligne vide)
+    if (trimmed === '' && textLines.length > 0 && textLines[textLines.length - 1] === '') {
+      continue;
+    }
+
+    textLines.push(trimmed);
   }
 
-  // Supprimer les tags PDF_DOWNLOAD du texte affiché
-  let html = rawText
-    .replace(/PDF_DOWNLOAD::[^\s:][^\s]*?::[^:\s]+\.pdf::[^\n]*/g, '')
+  // Construire le HTML du texte (sans les tags PDF)
+  let html = textLines
+    .join('\n')
     .trim()
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g,     '<em>$1</em>')
-    .replace(/\n{2,}/g, '<br><br>')
-    .replace(/\n/g,     '<br>');
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')   // **gras**
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')               // *italique*
+    .replace(/\n/g, '<br>');
 
-  // Ajouter un bouton pour chaque PDF détecté
+  // Ajouter les boutons PDF animés
   for (const btn of pdfButtons) {
-    const safeUrl      = btn.url;
-    const safeFilename = escapeHtml(btn.filename);
-    const safeLabel    = escapeHtml(btn.label);
+    const escapedUrl      = escapeHtml(btn.url);
+    const escapedFilename = escapeHtml(btn.filename);
+    const escapedLabel    = escapeHtml(btn.label);
+
     html += `
-      <button onclick="downloadPdf('${safeUrl}', this)" class="pdf-download-btn" data-filename="${safeFilename}">
+      <button
+        onclick="downloadPdf('${escapedUrl}', '${escapedFilename}', this)"
+        class="pdf-download-btn"
+        data-url="${escapedUrl}"
+        data-filename="${escapedFilename}"
+      >
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a1 1 0 001 1h16a1 1 0 001-1v-3"/>
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a1 1 0 001 1h16a1 1 0 001-1v-3"/>
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M7 7H4a1 1 0 00-1 1v5M17 7h3a1 1 0 011 1v5"/>
+          <rect x="7" y="3" width="10" height="10" rx="2"
+            stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        ⬇ Télécharger — ${safeLabel}
+        Télécharger — ${escapedLabel}
       </button>`;
   }
 
   return html || '…';
 }
 
-// ── Escape HTML ───────────────────────────────────────────────────────────────
+// ── Escape HTML ──────────────────────────────────────────────────────────────
 function escapeHtml(str) {
   if (!str) return '';
   return String(str)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    .replace(/&/g,  '&amp;')
+    .replace(/</g,  '&lt;')
+    .replace(/>/g,  '&gt;')
+    .replace(/"/g,  '&quot;')
+    .replace(/'/g,  '&#39;');
 }
 
-// ── Téléchargement PDF ────────────────────────────────────────────────────────
-function downloadPdf(url, btn) {
-  btn.disabled = true;
-  btn.innerHTML = `<svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.22-8.56"/></svg> Téléchargement…`;
-
-  const a = document.createElement('a');
-  a.href     = url;
-  a.download = btn.dataset.filename || 'document.pdf';
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-
-  setTimeout(() => {
-    btn.disabled = false;
-    btn.innerHTML = `<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a1 1 0 001 1h16a1 1 0 001-1v-3"/></svg> ✅ Téléchargé`;
-  }, 2000);
+// ── Téléchargement PDF (CORRIGÉ : pas de nouvel onglet, feedback visuel) ─────
+function downloadPdf(url) {
+  window.open(url, '_blank');
 }
 
-// ── Typing indicator ──────────────────────────────────────────────────────────
+// ── Typing indicator ─────────────────────────────────────────────────────────
 function showTyping() {
   const messages = document.getElementById('chatbotMessages');
   const el = document.createElement('div');
   el.className = 'message bot';
   el.id = 'typingIndicator';
   el.innerHTML = `
-    <div class="avatar-small">🤖</div>
+    <div class="avatar-small">⭐</div>
     <div class="bubble">
       <div class="typing">
         <div class="typing-dot"></div>
@@ -388,15 +391,16 @@ function showTyping() {
 }
 
 function hideTyping() {
-  document.getElementById('typingIndicator')?.remove();
+  const el = document.getElementById('typingIndicator');
+  if (el) el.remove();
 }
 
-// ── Envoyer un message ────────────────────────────────────────────────────────
+// ── Envoyer un message ───────────────────────────────────────────────────────
 async function sendMessage() {
   const input   = document.getElementById('chatInput');
   const sendBtn = document.getElementById('chatSend');
   const text    = input.value.trim();
-  if (!text || sendBtn.disabled) return;
+  if (!text) return;
 
   addMessage('user', escapeHtml(text));
   input.value = '';
@@ -405,17 +409,20 @@ async function sendMessage() {
   showTyping();
 
   try {
-    const res = await fetch('{{ route("assistant-rh.chat") }}', {
+    const res = await fetch('/ask-ai', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Accept':       'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        'Content-Type':  'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-TOKEN':  document.querySelector('meta[name="csrf-token"]').content,
       },
+
       body: JSON.stringify({ message: text }),
     });
 
-    if (!res.ok) throw new Error(`Serveur : HTTP ${res.status}`);
+    if (!res.ok) {
+      throw new Error(`Serveur : HTTP ${res.status}`);
+    }
 
     const data = await res.json();
     hideTyping();
@@ -438,7 +445,7 @@ async function sendMessage() {
   }
 }
 
-// ── Fermer sur clic extérieur ─────────────────────────────────────────────────
+// ── Fermer sur clic extérieur / Echap ────────────────────────────────────────
 document.addEventListener('click', (e) => {
   if (!e.target.closest('#rh-chatbot')) {
     document.getElementById('chatbotPopup').style.display = 'none';
@@ -452,9 +459,4 @@ document.addEventListener('keydown', (e) => {
     document.querySelector('.chatbot-toggle')?.classList.remove('active');
   }
 });
-
-// ── Animation spin pour le bouton PDF ────────────────────────────────────────
-const spinStyle = document.createElement('style');
-spinStyle.textContent = `@keyframes spin { to { transform: rotate(360deg); } } .spin { animation: spin .8s linear infinite; }`;
-document.head.appendChild(spinStyle);
 </script>

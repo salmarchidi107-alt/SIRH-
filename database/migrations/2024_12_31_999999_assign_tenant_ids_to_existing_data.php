@@ -14,7 +14,7 @@ return new class extends Migration
         // Skip if already migrated (check multiple tables)
         $alreadyMigrated = false;
 foreach (['employees', 'absences', 'plannings', 'salaries'] as $table) {
-            if (Schema::hasTable($table) && DB::table($table)->whereNotNull('tenant_id')->count() > 0) {
+            if (Schema::hasTable($table) && Schema::hasColumn($table, 'tenant_id') && DB::table($table)->whereNotNull('tenant_id')->count() > 0) {
                 $alreadyMigrated = true;
                 break;
             }
@@ -48,18 +48,18 @@ foreach (['employees', 'absences', 'plannings', 'salaries'] as $table) {
         ];
 
         foreach ($tables as $table) {
-            if (Schema::hasTable($table)) {
+            if (Schema::hasTable($table) && Schema::hasColumn($table, 'tenant_id')) {
                 $count = DB::table($table)
                     ->whereNull('tenant_id')
                     ->update(['tenant_id' => $superadminTenantId]);
                 echo "Updated {$count} records in {$table}\n";
             } else {
-                echo "Skipped {$table} (table does not exist)\n";
+                echo "Skipped {$table} (table or tenant_id column does not exist)\n";
             }
         }
 
         // Update users safely
-        if (Schema::hasTable('users')) {
+        if (Schema::hasTable('users') && Schema::hasColumn('users', 'tenant_id')) {
             $userCount = DB::table('users')
                 ->whereNull('tenant_id')
                 ->update(['tenant_id' => $superadminTenantId]);

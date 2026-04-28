@@ -76,7 +76,7 @@
 
             <div class="flex items-center space-x-4 pt-2">
                 @if($tenant->logo_path)
-                    <img src="{{ Storage::url($tenant->logo_path) }}" alt="Logo" class="w-16 h-16 rounded-lg object-cover shadow-md">
+                    <img src="{{ asset('storage/' . $tenant->logo_path) }}" alt="Logo" class="w-16 h-16 rounded-lg object-cover shadow-md">
                 @endif
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Couleurs</label>
@@ -119,4 +119,3 @@
         </div>
     </div>
 </div>
-

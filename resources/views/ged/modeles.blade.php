@@ -77,64 +77,107 @@
         </div>
     </div>
 
-    {{-- ══ ÉTAPE 2 — TinyMCE ══ --}}
+    {{-- ══ ÉTAPE 2 — TinyMCE + Variables ══ --}}
     <div id="etape2" style="display:none;" class="mb-4">
-        <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
-            <div class="card-header border-0 py-3 px-4 d-flex justify-content-between align-items-center"
-                 style="background:#f0fdfa;">
-                <div class="d-flex align-items-center gap-2">
-                    <span style="background:#14b8a6;color:#fff;width:24px;height:24px;border-radius:50%;
-                                 display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">2</span>
+        <div style="display:grid;grid-template-columns:320px 1fr;gap:24px;align-items:start;">
+
+            {{-- Colonne gauche : variables --}}
+            <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
+                <div class="card-header border-0 py-3 px-4" style="background:#f0fdfa;">
                     <h6 class="mb-0 fw-semibold" style="color:#0d2238;">
-                        Contenu du modèle
-                        <span id="labelNomCat" style="color:#14b8a6;font-size:13px;font-weight:400;margin-left:8px;"></span>
+                        <i class="fas fa-code me-2" style="color:#14b8a6;"></i>
+                        Variables — cliquez pour insérer
                     </h6>
                 </div>
-                <button type="button" onclick="retourEtape1()"
-                        style="background:none;border:none;color:#64748b;font-size:13px;cursor:pointer;">
-                    <i class="fas fa-arrow-left me-1"></i> Retour
-                </button>
-            </div>
-            <div class="card-body p-4">
-                <div class="mb-3 p-3" style="background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;">
-                    <span style="font-size:12px;color:#64748b;font-weight:600;">Variables disponibles : </span>
-                    <code style="font-size:12px;">@{{nom}}</code>
-                    <code style="font-size:12px;margin-left:8px;">@{{prenom}}</code>
-                    <code style="font-size:12px;margin-left:8px;">@{{matricule}}</code>
-                    <code style="font-size:12px;margin-left:8px;">@{{date}}</code>
-                    <code style="font-size:12px;margin-left:8px;">@{{poste}}</code>
-                </div>
+                <div class="card-body p-3" style="display:flex;flex-direction:column;gap:14px;">
 
-                <form id="modeleForm" method="POST" action="{{ route('ged.modeles.store') }}">
-                    @csrf
-                    <input type="hidden" name="_method"  id="methodInput"      value="POST">
-                    <input type="hidden" name="nom"       id="hiddenNom">
-                    <input type="hidden" name="categorie" id="hiddenCategorie">
-
-                    <textarea name="contenu" id="tinymceEditor">{{ old('contenu') }}</textarea>
-
-                    <div class="d-flex gap-3 pt-4" style="border-top:1px solid #e2e8f0;margin-top:16px;">
-                        <button type="submit" class="btn px-4 py-2 fw-semibold"
-                                onclick="syncAvantSoumission()"
-                                style="background:#14b8a6;color:#fff;border-radius:10px;min-width:180px;">
-                            <i class="fas fa-save me-2"></i>Sauvegarder le modèle
-                        </button>
-                        <button type="button" class="btn px-4 py-2 fw-semibold"
-                                onclick="annuler()"
-                                style="background:#f1f5f9;color:#0d2238;border-radius:10px;">
-                            <i class="fas fa-times me-2"></i>Annuler
-                        </button>
+                    <div>
+                        <div class="var-group-label">Employé</div>
+                        <div class="var-chips-row">
+                            <span class="var-chip" onclick="insererVariable(this,'@{{nom}}')"><span class="var-name">@{{nom}}</span></span>
+                            <span class="var-chip" onclick="insererVariable(this,'@{{prenom}}')"><span class="var-name">@{{prenom}}</span></span>
+                            <span class="var-chip" onclick="insererVariable(this,'@{{matricule}}')"><span class="var-name">@{{matricule}}</span></span>
+                            <span class="var-chip" onclick="insererVariable(this,'@{{poste}}')"><span class="var-name">@{{poste}}</span></span>
+                            <span class="var-chip" onclick="insererVariable(this,'@{{departement}}')"><span class="var-name">@{{departement}}</span></span>
+                            <span class="var-chip" onclick="insererVariable(this,'@{{contrat}}')"><span class="var-name">@{{contrat}}</span></span>
+                            <span class="var-chip" onclick="insererVariable(this,'@{{date_embauche}}')"><span class="var-name">@{{date_embauche}}</span></span>
+                            <span class="var-chip" onclick="insererVariable(this,'@{{salaire}}')"><span class="var-name">@{{salaire}}</span></span>
+                        </div>
                     </div>
-                </form>
+
+                    <div>
+                        <div class="var-group-label">Société</div>
+                        <div class="var-chips-row">
+                            <span class="var-chip" onclick="insererVariable(this,'@{{societe}}')"><span class="var-name">@{{societe}}</span></span>
+                            <span class="var-chip" onclick="insererVariable(this,'@{{adresse}}')"><span class="var-name">@{{adresse}}</span></span>
+                            <span class="var-chip" onclick="insererVariable(this,'@{{telephone}}')"><span class="var-name">@{{telephone}}</span></span>
+                            <span class="var-chip" onclick="insererVariable(this,'@{{email_societe}}')"><span class="var-name">@{{email_societe}}</span></span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="var-group-label">Date</div>
+                        <div class="var-chips-row">
+                            <span class="var-chip" onclick="insererVariable(this,'@{{date}}')"><span class="var-name">@{{date}}</span></span>
+                            <span class="var-chip" onclick="insererVariable(this,'@{{aujourd_hui}}')"><span class="var-name">@{{aujourd_hui}}</span></span>
+                            <span class="var-chip" onclick="insererVariable(this,'@{{mois_annee}}')"><span class="var-name">@{{mois_annee}}</span></span>
+                            <span class="var-chip" onclick="insererVariable(this,'@{{annee}}')"><span class="var-name">@{{annee}}</span></span>
+                        </div>
+                    </div>
+
+                </div>
             </div>
+
+            {{-- Colonne droite : TinyMCE --}}
+            <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
+                <div class="card-header border-0 py-3 px-4 d-flex justify-content-between align-items-center"
+                     style="background:#f0fdfa;">
+                    <div class="d-flex align-items-center gap-2">
+                        <span style="background:#14b8a6;color:#fff;width:24px;height:24px;border-radius:50%;
+                                     display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">2</span>
+                        <h6 class="mb-0 fw-semibold" style="color:#0d2238;">
+                            Contenu du modèle
+                            <span id="labelNomCat" style="color:#14b8a6;font-size:13px;font-weight:400;margin-left:8px;"></span>
+                        </h6>
+                    </div>
+                    <button type="button" onclick="retourEtape1()"
+                            style="background:none;border:none;color:#64748b;font-size:13px;cursor:pointer;">
+                        <i class="fas fa-arrow-left me-1"></i> Retour
+                    </button>
+                </div>
+                <div class="card-body p-4">
+                    <form id="modeleForm" method="POST" action="{{ route('ged.modeles.store') }}">
+                        @csrf
+                        <input type="hidden" name="_method"  id="methodInput"      value="POST">
+                        <input type="hidden" name="nom"       id="hiddenNom">
+                        <input type="hidden" name="categorie" id="hiddenCategorie">
+
+                        <textarea name="contenu" id="tinymceEditor"></textarea>
+
+                        <div class="d-flex gap-3 pt-4" style="border-top:1px solid #e2e8f0;margin-top:16px;">
+                            <button type="submit" class="btn px-4 py-2 fw-semibold"
+                                    onclick="syncAvantSoumission()"
+                                    style="background:#14b8a6;color:#fff;border-radius:10px;min-width:180px;">
+                                <i class="fas fa-save me-2"></i>Sauvegarder le modèle
+                            </button>
+                            <button type="button" class="btn px-4 py-2 fw-semibold"
+                                    onclick="annuler()"
+                                    style="background:#f1f5f9;color:#0d2238;border-radius:10px;">
+                                <i class="fas fa-times me-2"></i>Annuler
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
         </div>
     </div>
 
     {{-- ══ TABLE ══ --}}
-    <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
-        <div class="card-header border-0 px-4 d-flex justify-content-between align-items-center"
-             style="background:#f0fdfa;height:54px;">
-            <span class="fw-semibold" style="color:#0d2238;font-size:14px;">Liste des Modèles</span>
+    <div id="tableModeles" class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
+    <div class="card-header border-0 px-4 d-flex justify-content-between align-items-center"
+         style="background:#f0fdfa;height:54px;">
+        <span class="fw-semibold" style="color:#0d2238;font-size:14px;">Liste des Modèles</span>
             <form method="GET" action="{{ route('ged.modeles.index') }}" style="margin:0;">
                 <div style="display:flex;align-items:center;background:#fff;
                             border-radius:50px;border:1.5px solid #e2e8f0;
@@ -178,26 +221,16 @@
                         <td class="py-3 text-muted" style="font-size:13px;">
                             {{ $modele->created_at->format('d/m/Y') }}
                         </td>
-
-                        {{-- ── ACTIONS alignées sur une ligne ── --}}
                         <td class="py-3 px-4" style="white-space:nowrap;">
                             <div style="display:flex;flex-direction:row;align-items:center;gap:6px;flex-wrap:nowrap;">
-
-                                {{-- Modifier → ouvre étape 2 directement --}}
-                                <button title="Modifier"
-                                        style="display:inline-flex;align-items:center;justify-content:center;
-                                               width:32px;height:32px;border-radius:8px;
-                                               border:1.5px solid #e2e8f0;background:#fff;
-                                               color:#374151;cursor:pointer;flex-shrink:0;"
-                                        onclick="editModele(
-                                            {{ $modele->id }},
-                                            '{{ addslashes($modele->nom) }}',
-                                            '{{ addslashes($modele->categorie) }}',
-                                            `{{ addslashes($modele->contenu ?? '') }}`)">
+                                <a href="{{ route('ged.modeles.edit', $modele) }}"
+                                   title="Modifier"
+                                   style="display:inline-flex;align-items:center;justify-content:center;
+                                          width:32px;height:32px;border-radius:8px;flex-shrink:0;
+                                          border:1.5px solid #e2e8f0;background:#fff;
+                                          color:#374151;text-decoration:none;">
                                     <i class="fas fa-pen" style="font-size:12px;"></i>
-                                </button>
-
-                                {{-- Supprimer --}}
+                                </a>
                                 <form action="{{ route('ged.modeles.destroy', $modele) }}" method="POST"
                                       style="display:inline-flex;margin:0;"
                                       onsubmit="return confirm('Supprimer ce modèle ?')">
@@ -210,7 +243,6 @@
                                         <i class="fas fa-trash" style="font-size:12px;"></i>
                                     </button>
                                 </form>
-
                             </div>
                         </td>
                     </tr>
@@ -228,45 +260,67 @@
         </div>
 
         @if($modeles->hasPages())
-        <div class="card-footer bg-white border-0 py-3 px-4">
-            {{ $modeles->links('pagination::bootstrap-5') }}
-        </div>
-        @endif
+<div class="card-footer bg-white border-0 py-3 px-4">
+    <div class="d-flex justify-content-end">
+        <nav>
+            <ul class="pagination mb-0" style="list-style:none;padding-left:0;">
+                @if($modeles->onFirstPage())
+                    <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                @else
+                    <li class="page-item"><a class="page-link" href="{{ $modeles->previousPageUrl() }}">&laquo;</a></li>
+                @endif
+
+                @foreach($modeles->getUrlRange(1, $modeles->lastPage()) as $page => $url)
+                    <li class="page-item {{ $page == $modeles->currentPage() ? 'active' : '' }}">
+                        <a class="page-link" href="{{ $url }}">{{ $page }}</a>
+                    </li>
+                @endforeach
+
+                @if($modeles->hasMorePages())
+                    <li class="page-item"><a class="page-link" href="{{ $modeles->nextPageUrl() }}">&raquo;</a></li>
+                @else
+                    <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                @endif
+            </ul>
+        </nav>
+    </div>
+</div>
+@endif
     </div>
 
 </div>
+
+<div id="varToast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+     background:#0d2238;color:#fff;font-size:12px;padding:8px 18px;border-radius:8px;
+     opacity:0;transition:opacity .2s;pointer-events:none;z-index:9999;white-space:nowrap;"></div>
+
 @endsection
 
 @push('styles')
 <style>
-/* ── Inputs uniformes ── */
 .ged-input {
-    display: block;
-    width: 100%;
-    height: 46px;
-    padding: 0 14px;
-    font-size: 0.875rem;
-    color: #0d2238;
-    background: #fff;
-    border: 2px solid #e2e8f0;
-    border-radius: 10px;
-    transition: border-color .2s, box-shadow .2s;
-    outline: none;
+    display:block;width:100%;height:46px;padding:0 14px;font-size:.875rem;
+    color:#0d2238;background:#fff;border:2px solid #e2e8f0;border-radius:10px;
+    transition:border-color .2s,box-shadow .2s;outline:none;
 }
-.ged-input:focus {
-    border-color: #14b8a6;
-    box-shadow: 0 0 0 3px rgba(20,184,166,.12);
+.ged-input:focus { border-color:#14b8a6;box-shadow:0 0 0 3px rgba(20,184,166,.12); }
+.ged-input::placeholder { color:#94a3b8; }
+.var-group-label { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#94a3b8;margin-bottom:6px; }
+.var-chips-row { display:flex;flex-wrap:wrap;gap:6px; }
+.var-chip {
+    display:inline-flex;align-items:center;padding:5px 10px;border-radius:8px;
+    border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;transition:all .15s;user-select:none;
 }
-.ged-input::placeholder { color: #94a3b8; }
-
-
-.tox-statusbar,
-.tox-promotion,
-.tox-statusbar__branding,
-.tox-statusbar__text-container { display: none !important; }
-.tox-statusbar { border-top: 1px solid #e2e8f0 !important; background: #f8fafc !important; }
-
-.tox-tinymce { border-radius: 10px !important; border: 2px solid #e2e8f0 !important; }
+.var-chip:hover  { background:#f0fdfa;border-color:#14b8a6; }
+.var-chip:active { transform:scale(.96); }
+.var-chip.flash  { background:#14b8a6;border-color:#14b8a6; }
+.var-chip.flash .var-name { color:#fff; }
+.var-name { font-family:monospace;font-size:11px;font-weight:600;color:#0d2238; }
+.tox-tinymce { border-radius:10px !important;border:2px solid #e2e8f0 !important; }
+.tox-statusbar,.tox-promotion,.tox-statusbar__branding,.tox .tox-statusbar { display:none !important; }
+@media (max-width:1024px) {
+    #etape2 > div[style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+}
 </style>
 @endpush
 
@@ -279,27 +333,34 @@ tinymce.init({
     language:    'fr_FR',
     height:      460,
     menubar:     true,
-    statusbar: true,
-    branding: false,
-    elementpath: false,
-    wordcount: false,
+    statusbar:   false,
     promotion:   false,
-    plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
-    toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline | link image media table | align lineheight | numlist bullist indent outdent | charmap | removeformat',
+    branding:    false,
+    elementpath: false,
+    plugins: 'anchor autolink charmap codesample emoticons image lists media searchreplace table visualblocks wordcount',
+    toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline | table | align lineheight | numlist bullist indent outdent | charmap | removeformat',
     content_style: 'body { font-family: Inter, Arial, sans-serif; font-size: 14px; color: #0d2238; }',
     setup: function(editor) {
         editor.on('change', function() { editor.save(); });
     }
 });
 
-/* ── Navigation étapes ── */
+function insererVariable(el, variable) {
+    const editor = tinymce.get('tinymceEditor');
+    if (editor) { editor.insertContent(variable); editor.focus(); }
+    el.classList.add('flash');
+    setTimeout(() => el.classList.remove('flash'), 400);
+    showToast(variable + ' inséré ✓');
+}
+
 function ouvrirEtape1() {
-    document.getElementById('step1Nom').value      = '';
+    document.getElementById('step1Nom').value       = '';
     document.getElementById('step1Categorie').value = '';
-    document.getElementById('modeleForm').action   = "{{ route('ged.modeles.store') }}";
-    document.getElementById('methodInput').value   = 'POST';
+    document.getElementById('modeleForm').action    = "{{ route('ged.modeles.store') }}";
+    document.getElementById('methodInput').value    = 'POST';
     document.getElementById('etape1').style.display = 'block';
     document.getElementById('etape2').style.display = 'none';
+    document.getElementById('tableModeles').style.display = 'none';
     document.getElementById('etape1').scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -329,8 +390,9 @@ function retourEtape1() {
 }
 
 function annuler() {
-    document.getElementById('etape1').style.display = 'none';
-    document.getElementById('etape2').style.display = 'none';
+    document.getElementById('etape1').style.display  = 'none';
+    document.getElementById('etape2').style.display  = 'none';
+    document.getElementById('tableModeles').style.display = 'block';
     if (tinymce.get('tinymceEditor')) tinymce.get('tinymceEditor').setContent('');
 }
 
@@ -339,25 +401,11 @@ function syncAvantSoumission() {
     if (editor) editor.save();
 }
 
-/* ── Modifier : saute directement à l'étape 2 avec contenu chargé ── */
-function editModele(id, nom, categorie, contenu) {
-    document.getElementById('step1Nom').value        = nom;
-    document.getElementById('step1Categorie').value  = categorie;
-    document.getElementById('modeleForm').action     = '/ged/modeles/' + id;
-    document.getElementById('methodInput').value     = 'PUT';
-    document.getElementById('hiddenNom').value       = nom;
-    document.getElementById('hiddenCategorie').value = categorie;
-    document.getElementById('labelNomCat').textContent = '— ' + nom + ' (' + categorie + ')';
-
-    setTimeout(function() {
-        if (tinymce.get('tinymceEditor')) {
-            tinymce.get('tinymceEditor').setContent(contenu || '');
-        }
-    }, 100);
-
-    document.getElementById('etape1').style.display = 'none';
-    document.getElementById('etape2').style.display = 'block';
-    document.getElementById('etape2').scrollIntoView({ behavior: 'smooth' });
+function showToast(msg) {
+    const t = document.getElementById('varToast');
+    t.textContent = msg; t.style.opacity = '1';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.style.opacity = '0'; }, 1800);
 }
 </script>
 @endpush

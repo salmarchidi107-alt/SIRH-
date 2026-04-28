@@ -10,8 +10,10 @@
         <h1>Gestion de la Paie</h1>
         <p>Période : {{ \Carbon\Carbon::create($year, $month)->locale('fr')->isoFormat('MMMM YYYY') }}</p>
     </div>
+    
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <form method="GET" action="{{ route('salary.index') }}" style="display:flex;gap:8px">
+            
             <select name="month" class="form-control" style="width:130px">
                 @for($m=1; $m<=12; $m++)
                     <option value="{{ $m }}" {{ $m==$month?'selected':'' }}>
@@ -38,7 +40,7 @@
         <a href="{{ route('variables.index', ['month'=>$month,'year'=>$year]) }}" class="btn btn-ghost">
             Éléments variables
         </a>
-
+        
     </div>
 </div>
 

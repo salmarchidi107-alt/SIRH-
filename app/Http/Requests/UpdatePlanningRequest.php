@@ -20,6 +20,7 @@ class UpdatePlanningRequest extends FormRequest
             'shift_end' => 'required|string',
             'shift_type' => ['required', Rule::in(array_keys(Planning::SHIFT_TYPES))],
             'notes' => 'nullable|string',
+            'room' => 'nullable|string|max:255',
         ];
     }
 }

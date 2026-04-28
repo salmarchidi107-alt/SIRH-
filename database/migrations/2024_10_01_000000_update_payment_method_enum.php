@@ -9,13 +9,17 @@ return new class extends Migration
 {
     public function up()
     {
-        // Update existing data to valid enum values before changing enum
-        DB::statement("UPDATE employees SET payment_method = 'cash' WHERE payment_method = 'bank'");
+        // Update existing data to valid enum values before changing enum (safe check)
+        if (Schema::hasColumn('employees', 'payment_method')) {
+            DB::statement("UPDATE employees SET payment_method = 'cash' WHERE payment_method = 'bank'");
+        }
 
-        // Modify enum to match form values (French terms)
-        Schema::table('employees', function (Blueprint $table) {
-            $table->enum('payment_method', ['virement', 'cash', 'chèque'])->default('virement')->change();
-        });
+        // Modify enum to match form values (French terms) - only if column exists
+        if (Schema::hasColumn('employees', 'payment_method')) {
+            Schema::table('employees', function (Blueprint $table) {
+                $table->enum('payment_method', ['virement', 'cash', 'chèque'])->default('virement')->change();
+            });
+        }
     }
 
     public function down()

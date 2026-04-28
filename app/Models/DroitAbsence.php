@@ -7,12 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class DroitAbsence extends Model
 {
-    use HasFactory, \App\Traits\HasTenantScope;
+    use HasFactory;
 
     protected $table = 'droits_absences';
 
     protected $fillable = [
-        'tenant_id',
         'employee_id',
         'annee',
         'jours_acquis',
@@ -32,19 +31,19 @@ class DroitAbsence extends Model
         'rtt_pris'          => 'decimal:2',
     ];
 
-
+    
     public function employee()
     {
         return $this->belongsTo(Employee::class);
     }
 
-
+  
     public function scopeParAnnee($query, $annee)
     {
         return $query->where('annee', $annee);
     }
 
-
+    
     public function getRttSoldeAttribute()
     {
         return $this->rtt_acquis - $this->rtt_pris;
@@ -63,11 +62,11 @@ class DroitAbsence extends Model
         return 0;
     }
 
-
+   
     public static function getOuCreeParAnnee($employeeId, $annee)
     {
         if (!$employeeId) {
-
+            
             $result = new \stdClass();
             $result->jours_acquis = 25;
             $result->jours_pris = 0;
@@ -78,7 +77,7 @@ class DroitAbsence extends Model
             $result->rtt_solde = 0;
             return $result;
         }
-
+        
         return self::firstOrCreate(
             ['employee_id' => $employeeId, 'annee' => $annee],
             [
@@ -92,4 +91,3 @@ class DroitAbsence extends Model
         );
     }
 }
-

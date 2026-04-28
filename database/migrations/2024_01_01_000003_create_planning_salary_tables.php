@@ -10,8 +10,6 @@ return new class extends Migration
     {
         Schema::create('plannings', function (Blueprint $table) {
             $table->id();
-            $table->uuid('tenant_id');
-            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
             $table->foreignId('employee_id')->constrained()->cascadeOnDelete();
             $table->date('date');
             $table->time('shift_start');
@@ -19,13 +17,11 @@ return new class extends Migration
             $table->enum('shift_type', ['matin', 'apres_midi', 'nuit', 'journee', 'garde'])->default('journee');
             $table->text('notes')->nullable();
             $table->timestamps();
-            $table->unique(['tenant_id', 'employee_id', 'date']);
+            $table->unique(['employee_id', 'date']);
         });
 
         Schema::create('salaries', function (Blueprint $table) {
             $table->id();
-            $table->uuid('tenant_id');
-            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
             $table->foreignId('employee_id')->constrained()->cascadeOnDelete();
             $table->tinyInteger('month');
             $table->year('year');
@@ -41,7 +37,7 @@ return new class extends Migration
             $table->timestamp('paid_at')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
-            $table->unique(['tenant_id', 'employee_id', 'month', 'year']);
+            $table->unique(['employee_id', 'month', 'year']);
         });
     }
 

@@ -18,6 +18,7 @@ use Exception;
 
 class PointageController extends Controller
 {
+    private const TZ = 'Africa/Casablanca';
     public function marquerAbsent($employee_id)
     {
         $today = today()->toDateString();
@@ -61,9 +62,9 @@ Carbon::setLocale('fr');     $startOfWeek = $currentDate->copy()->startOfWeek(Ca
 $departments = \App\Models\Department::names();
 
         $vue = $request->get('vue', 'tous');
+        
 
-
-
+        
         $employeesQuery = Employee::active()
             ->with(['pointages' => function ($q) use ($currentDate) {
                 $q->forDate($currentDate->toDateString());
@@ -75,7 +76,7 @@ $departments = \App\Models\Department::names();
                 return $q->department($request->department);
             })
             ->defaultOrder();
-
+            
         $employees = $employeesQuery->get()
             ->map(function ($emp) use ($currentDate) {
 
@@ -94,7 +95,7 @@ $departments = \App\Models\Department::names();
             if (!$pointage || !$pointage->ignore_badge) {
                 $shift = Pointage::where('employee_id', $emp->id)
                     ->whereDate('created_at', $currentDate->toDateString())
-                    ->orderByDesc("created_at")
+                    ->orderBy('created_at')
                     ->get();
 
                 if ($shift->isNotEmpty()) {
@@ -144,18 +145,20 @@ $departments = \App\Models\Department::names();
 
 
     public function validerJournee(Request $request): JsonResponse
-    {
-        $date = $request->input('date', today()->toDateString());
-
-        $count = Pointage::forDate($date)
-            ->where('statut', 'present')
-            ->update(['valide' => true]);
-
-        return response()->json([
-            'success' => true,
-            'count'   => $count,
-        ]);
-    }
+{
+    $date = $request->input('date', today()->toDateString());
+ 
+    $count = Pointage::forDate($date)
+        ->where('statut', 'present')
+        ->update(['valide' => true]);
+ 
+    return response()->json([
+        'success' => true,
+        'count'   => $count,
+        'message' => $count . ' pointage(s) validé(s)',   // ← AJOUT
+    ]);
+}
+ 
 
     public function toggleValider(Pointage $pointage): JsonResponse
     {
@@ -215,52 +218,85 @@ $departments = \App\Models\Department::names();
 
         $firstEntree = $shift->whereNotNull('heure_entree')->first()?->heure_entree;
         $lastSortie = $shift->whereNotNull('heure_sortie')->last()?->heure_sortie;
+        
+        $pointage->heure_entree = $firstEntree;
+        $pointage->heure_sortie = $lastSortie;
 
-        $pointage->heure_entree = $firstEntree;//?->format('H:i');
-        $pointage->heure_sortie = $lastSortie;//?->format('H:i');
+        $pauseStart = $shift->whereNotNull('pause_start')->first()?->pause_start;
+        $pauseEnd = $shift->whereNotNull('pause_end')->last()?->pause_end;
 
+        if ($pauseStart) {
+            $pointage->pause_start = $pauseStart;
+            // ->setTimezone(self::TZ)->format('H:i:s');
+        }
+
+        if ($pauseEnd) {
+            $pointage->pause_end = $pauseEnd;
+            // ->setTimezone(self::TZ)->format('H:i:s');
+        }
+        // dd($pointage);
         $pointage->pause_minutes = $this->calcPauseMinutes($shift);
         $pointage->statut = 'present';
-        // dd("pointqge", $pointage);
         $pointage->save();
         $pointage->calculerTotalHeures();
 
         return $pointage->fresh();
     }
 
-    private function calcWorkedMinutes(Collection $shift): float
-    {
-        $entrees = $shift->where('type', 'entree')->pluck('created_at')->toArray();
-        $sorties = $shift->where('type', 'sortie')->pluck('created_at')->toArray();
+  private function calcNetWorkedMinutes(Collection $shift): float
+{
+    $entree = $shift->where('type', 'entree')->first();
+    $sortie = $shift->where('type', 'sortie')->last();
 
-        if (empty($entrees) || empty($sorties)) return 0;
+    if (!$entree || !$sortie) return 0;
 
-        $total = 0;
-        $count = min(count($entrees), count($sorties));
+    // Temps total (entrée → sortie)
+    $total = strtotime($sortie->created_at) - strtotime($entree->created_at);
 
-        for ($i = 0; $i < $count; $i++) {
-            $total += strtotime($sorties[$i]) - strtotime($entrees[$i]);
-        }
+    // Calcul des pauses
+    $pausesStart = $shift->where('type', 'pause_start')->values();
+    $pausesEnd   = $shift->where('type', 'pause_end')->values();
 
-        return $total / 60;
+    $pauseTotal = 0;
+    $count = min($pausesStart->count(), $pausesEnd->count());
+
+    for ($i = 0; $i < $count; $i++) {
+        $pauseTotal += strtotime($pausesEnd[$i]->created_at) - strtotime($pausesStart[$i]->created_at);
     }
 
-    private function calcPauseMinutes(Collection $shift): int
-    {
-        $pauses = $shift->where('type', 'pause')->pluck('created_at')->toArray();
-        $retours = $shift->where('type', 'entree')->slice(1)->pluck('created_at')->toArray();
+    // Temps réel travaillé
+    $worked = $total - $pauseTotal;
 
-        if (empty($pauses) || empty($retours)) return 0;
+    return $worked / 60; // minutes
+}
+private function calcPauseMinutes(Collection $shift): int
+{
+    $pausesStart = $shift->where('type', 'pause_start')
+        ->sortBy('created_at')
+        ->pluck('created_at')
+        ->values();
 
-        $total = 0;
-        $count = min(count($pauses), count($retours));
+    $pausesEnd = $shift->where('type', 'pause_end')
+        ->sortBy('created_at')
+        ->pluck('created_at')
+        ->values();
 
-        for ($i = 0; $i < $count; $i++) {
-            $total += strtotime($retours[$i]) - strtotime($pauses[$i]);
+    if ($pausesStart->isEmpty() || $pausesEnd->isEmpty()) return 0;
+
+    $total = 0;
+    $count = min($pausesStart->count(), $pausesEnd->count());
+
+    for ($i = 0; $i < $count; $i++) {
+        $start = strtotime($pausesStart[$i]);
+        $end   = strtotime($pausesEnd[$i]);
+
+        if ($end > $start) {
+            $total += ($end - $start);
         }
-
-        return floor($total / 60);
     }
+
+    return floor($total / 60);
+}
 
     public function toggleAbsence(Request $request)
     {
@@ -392,4 +428,98 @@ public function exportPdf(Request $request)
             return back()->with('error', 'Erreur génération PDF.');
         }
     }
+    
+    /**
+     * Affiche la liste des badges PIN groupée par département
+     */
+    public function badgesPin(Request $request): \Illuminate\View\View
+    {
+        // Données filtrées pour l'affichage écran (avec search et department filter)
+        $employees = Employee::active()
+            ->when($request->filled('search'), fn($q) => $q->search($request->search))
+            ->when($request->filled('department'), fn($q) => $q->department($request->department))
+            ->defaultOrder()
+            ->get(['id', 'first_name', 'last_name', 'matricule', 'plain_pin', 'department']);
+ 
+        // Grouper par département (affichage filtré)
+        $byDept = $employees->groupBy('department');
+ 
+        // Données complètes pour l'impression (TOUS les employés, TOUS les départements)
+        $allEmployees = Employee::active()
+            ->defaultOrder()
+            ->get(['id', 'first_name', 'last_name', 'matricule', 'plain_pin', 'department']);
+        
+        // Grouper tous les employés par département (pour impression)
+        $allByDept = $allEmployees->groupBy('department');
+ 
+        $departments = \App\Models\Department::names();
+ 
+        return view('pointage.badges-pin', compact('byDept', 'allByDept', 'departments'));
+    }
+ 
+    /**
+     * Régénère le PIN d'un seul employé
+     */
+    public function regenererPin(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $request->validate(['employee_id' => 'required|exists:employees,id']);
+ 
+        $employee = Employee::findOrFail($request->employee_id);
+        $newPin   = $this->generateUniquePin();
+        $employee->update(['plain_pin' => $newPin]);
+ 
+        return response()->json([
+            'success'     => true,
+            'employee_id' => $employee->id,
+            'new_pin'     => $newPin,
+        ]);
+    }
+ 
+    /**
+     * Régénère les PINs de TOUS les employés (ou d'un département)
+     */
+    public function regenererTousPins(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $query = Employee::active();
+ 
+        if ($request->filled('department')) {
+            $query->where('department', $request->department);
+        }
+ 
+        $employees = $query->get();
+        $updated   = [];
+ 
+        foreach ($employees as $emp) {
+            $pin = $this->generateUniquePin($updated);
+            $emp->update(['plain_pin' => $pin]);
+            $updated[] = ['id' => $emp->id, 'pin' => $pin];
+        }
+ 
+        return response()->json([
+            'success' => true,
+            'count'   => count($updated),
+            'pins'    => $updated,
+        ]);
+    }
+ 
+    /**
+     * Génère un PIN unique au format 4 chiffres + 2 lettres (ex: 1234AB)
+     */
+    private function generateUniquePin(array $alreadyUsed = []): string
+    {
+        $usedPins = array_column($alreadyUsed, 'pin');
+
+        do {
+            $digits = str_pad(random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
+            $letter1 = chr(random_int(65, 90)); // A-Z
+            $letter2 = chr(random_int(65, 90)); // A-Z
+            $pin = $digits . $letter1 . $letter2;
+        } while (
+            in_array($pin, $usedPins) ||
+            Employee::where('plain_pin', $pin)->exists()
+        );
+
+        return $pin;
+    }
 }
+

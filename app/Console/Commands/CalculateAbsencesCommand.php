@@ -16,7 +16,7 @@ class CalculateAbsencesCommand extends Command
     public function handle()
     {
         $annee = now()->year;
-        $this->info("Calcul droits absence & compteurs - Année {$annee}");
+        $this->info("🧮 Calcul droits absence & compteurs - Année {$annee}");
 
         $employees = Employee::active()->cursor();
 
@@ -57,7 +57,6 @@ $baseDroits = min(1.5 * $moisTravaillesAnnee, 25); // 1.5j/mois année courante
             $mois = now()->month;
             $compteur = CompteurTemps::updateOrCreate(
                 [
-                    'tenant_id' => $employee->tenant_id,
                     'employee_id' => $employee->id,
                     'annee' => $annee,
                     'mois' => $mois,

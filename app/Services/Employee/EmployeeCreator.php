@@ -80,9 +80,10 @@ class EmployeeCreator
 
             // ── 9. Compte utilisateur optionnel ──────────────────────────────
             if ($request->boolean('create_account') && filled($request->input('user_role'))) {
-                if (User::where('email', $validated['email'])->exists()) {
+                $tenantId = config('app.current_tenant_id');
+                if (User::where('tenant_id', $tenantId)->where('email', $validated['email'])->exists()) {
                     throw ValidationException::withMessages([
-                        'admin_email' => 'Cet email est déjà utilisé pour un compte utilisateur.'
+                        'email' => 'Cet email est déjà utilisé pour un compte utilisateur dans ce tenant.'
                     ]);
                 }
 

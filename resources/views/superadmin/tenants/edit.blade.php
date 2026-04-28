@@ -47,11 +47,10 @@
 
                 <div class="sa-field">
                     <label class="sa-label">Logo (vide = conserver l'actuel)</label>
-                    @if($tenant->logo_path)
-                    <div style="margin-bottom:8px;padding:8px;background:var(--surface-2);border-radius:8px;display:inline-block;">
-                        <img src="{{ Storage::url($tenant->logo_path) }}" style="height:36px;object-fit:contain;border-radius:6px;">
-                    </div>
-                    @endif
+                @if($tenant->logo_path)
+                    <img src="{{ asset('storage/' . $tenant->logo_path) }}" alt="Logo" class="w-32 h-32 object-cover rounded-lg shadow-md">
+                @endif
+
                     <div class="sa-upload" onclick="document.getElementById('file-input').click()">
                         <div id="upload-text" style="font-size:12px;color:var(--text-muted);">Cliquer pour changer le logo</div>
                     </div>

@@ -5,62 +5,55 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
 use App\Models\Department;
 use App\Models\Pointage;
 use Carbon\Carbon;
-use App\Traits\HasTenantScope;
 
 class Employee extends Model
 {
-    use HasFactory, HasTenantScope;
+    use HasFactory;
 
-    protected $fillable = [
-        'matricule',
-        'first_name',
-        'last_name',
-        'email',
-        'phone',
-        'photo',
-        'department',
-        'department_id',
-        'position',
-        'sort_order',
-        'diploma_type',
-        'skills',
-        'contract_type',
-        'hire_date',
-        'birth_date',
-        'status',
-        'base_salary',
-        'manager_id',
-        'cnss',
-        'cin',
-        'address',
-        'family_situation',
-        'children_count',
-        'payment_method',
-        'bank',
-        'rib',
-        'contractual_benefits',
-        'emergency_contact',
-        'emergency_phone',
-        'work_hours',
-        'contract_start_date',
-        'contract_end_date',
-        'work_days',
-        'cp_days',
-        'work_hours_counter',
-        'user_id',
-        'pin',
-        'plain_pin',
-        'signature',
-        'tenant_id',
-        'matricule',
-        'sort_order',
-    ];
-
+  protected $fillable = [
+    'matricule',
+    'first_name',
+    'last_name',
+    'email',
+    'phone',
+    'photo',
+    'department',
+    'department_id',
+    'position',
+    'sort_order',
+    'diploma_type',
+    'skills',
+    'contract_type',
+    'hire_date',
+    'birth_date',
+    'status',
+    'base_salary',
+    'manager_id',
+    'cnss',
+    'cin',
+    'address',
+    'family_situation', 
+    'children_count',
+    'payment_method',
+    'bank',
+    'rib',
+    'contractual_benefits',
+    'emergency_contact',
+    'emergency_phone',
+    'work_hours',
+    'contract_start_date',
+    'contract_end_date',
+    'work_days',
+    'cp_days',
+    'work_hours_counter',
+    'user_id',
+    'pin',
+    'plain_pin',
+];
     protected $casts = [
         'hire_date' => 'date',
         'birth_date' => 'date',
@@ -77,19 +70,32 @@ class Employee extends Model
         return "{$this->first_name} {$this->last_name}";
     }
 
-    public function getNomAttribute(): string
-    {
-        return $this->last_name;
-    }
-
-    public function getPrenomAttribute(): string
-    {
-        return $this->first_name;
-    }
-
     public function getStatusLabelAttribute(): string
     {
         return \App\Enums\EmployeeStatus::tryFrom($this->status)?->label() ?? $this->status;
+    }
+
+    public function getSeniorityYearsAttribute(): int
+    {
+        return (int) ($this->seniority ?? 0);
+    }
+
+    public function getSeniorityRateAttribute(): float
+    {
+        $years = $this->seniority_years;
+        if ($years < 2) return 0.0;
+        if ($years < 5) return 0.05;
+        if ($years < 10) return 0.10;
+        if ($years < 15) return 0.15;
+        if ($years < 20) return 0.20;
+        return 0.25;
+    }
+
+    public function getSeniorityLabelAttribute(): string
+    {
+        $years = $this->seniority_years;
+        $rate = $this->seniority_rate * 100;
+        return "{$years} ans ({$rate}%)";
     }
 
     public function getSeniorityAttribute()
@@ -103,7 +109,7 @@ class Employee extends Model
         return $query->where('status', \App\Enums\EmployeeStatus::Active->value);
     }
 
-    public function scopeDepartment(Builder $query, string $department = null): Builder
+    public function scopeDepartment(Builder $query, ?string $department): Builder
     {
         if (! $department) {
             return $query;
@@ -218,7 +224,7 @@ class Employee extends Model
     public function getPhotoUrlAttribute(): string
     {
         if ($this->photo) {
-            return Storage::url($this->photo);
+            return asset('storage/' . $this->photo);
         }
         return asset(config('constants.employee.default_avatar'));
     }

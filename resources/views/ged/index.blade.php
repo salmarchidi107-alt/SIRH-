@@ -49,7 +49,7 @@
                         <div class="col-lg-6">
                             <label class="ged-label">Nom de Document <span class="text-danger">*</span></label>
                             <input type="text" name="nom" id="inputNom" class="ged-input"
-                                   placeholder="Ex: Attestation de travail - Dupont" required>
+                                   placeholder="Ex: Attestation de travail" required>
                         </div>
                         <div class="col-lg-6">
                             <label class="ged-label">Employé <span class="text-danger">*</span></label>
@@ -102,7 +102,7 @@
     </div>
 
     {{-- ══ TABLE ══ --}}
-    <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
+    <div id="tableDocuments" class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
         <div class="card-header border-0 px-4 d-flex justify-content-between align-items-center"
              style="background:#f0fdfa;height:54px;">
             <span class="fw-semibold" style="color:#0d2238;font-size:14px;">Liste des Documents</span>
@@ -182,11 +182,11 @@
                                 {{-- Modifier --}}
 
                                 <a href="{{ route('ged.edit', $doc) }}"
-                                    title="Modifier"
-                                    style="display:inline-flex;align-items:center;justify-content:center;
-                                        width:32px;height:32px;border-radius:8px;flex-shrink:0;
-                                        border:1.5px solid #e2e8f0;background:#fff;
-                                        color:#374151;text-decoration:none;">
+                                title="Modifier"
+                                style="display:inline-flex;align-items:center;justify-content:center;
+                                    width:32px;height:32px;border-radius:8px;flex-shrink:0;
+                                    border:1.5px solid #e2e8f0;background:#fff;
+                                    color:#374151;text-decoration:none;">
                                     <i class="fas fa-pen" style="font-size:12px;"></i>
                                 </a>
 
@@ -220,10 +220,32 @@
         </div>
 
         @if($documents->hasPages())
-        <div class="card-footer bg-white border-0 py-3 px-4">
-            {{ $documents->links('pagination::bootstrap-5') }}
-        </div>
-        @endif
+<div class="card-footer bg-white border-0 py-3 px-4">
+    <div class="d-flex justify-content-end">
+        <nav>
+            <ul class="pagination mb-0" style="list-style:none;padding-left:0;">
+                @if($documents->onFirstPage())
+                    <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                @else
+                    <li class="page-item"><a class="page-link" href="{{ $documents->previousPageUrl() }}">&laquo;</a></li>
+                @endif
+
+                @foreach($documents->getUrlRange(1, $documents->lastPage()) as $page => $url)
+                    <li class="page-item {{ $page == $documents->currentPage() ? 'active' : '' }}">
+                        <a class="page-link" href="{{ $url }}">{{ $page }}</a>
+                    </li>
+                @endforeach
+
+                @if($documents->hasMorePages())
+                    <li class="page-item"><a class="page-link" href="{{ $documents->nextPageUrl() }}">&raquo;</a></li>
+                @else
+                    <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                @endif
+            </ul>
+        </nav>
+    </div>
+</div>
+@endif
     </div>
 
 </div>
@@ -294,10 +316,15 @@
 <script>
 function toggleForm() {
     const c = document.getElementById('docFormContainer');
+    const table = document.getElementById('tableDocuments');
     const isOpen = c.style.display === 'block';
-    if (isOpen) { c.style.display = 'none'; resetForm(); }
-    else {
+    if (isOpen) {
+        c.style.display = 'none';
+        table.style.display = 'block';
+        resetForm();
+    } else {
         c.style.display = 'block';
+        table.style.display = 'none';
         document.getElementById('formTitle').textContent = 'Nouveau Document';
         document.getElementById('inputDate').value = new Date().toISOString().split('T')[0];
         document.getElementById('inputNom').focus();

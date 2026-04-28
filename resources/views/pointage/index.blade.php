@@ -19,7 +19,7 @@
         --p-teal-light:  #ccfbf1;
         --p-blue:        #1d4ed8;
         --p-blue-bg:     #eff6ff;
-        --p-purple:      #7c3aed;
+        --p-purple:      #0daba6;
         --p-purple-bg:   #f5f3ff;
         --p-amber:       #d97706;
         --p-amber-bg:    #fffbeb;
@@ -232,7 +232,19 @@
                     PDF
                 </a>
             </div>
+            <a href="{{ route('pointage.badges-pin') }}"
+             style="background:#7c3aed;color:white;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
+            Badges PIN
+            </a>
 
+            {{-- Vue d'ensemble link --}}
+            <a href="{{ route('temps.vue-ensemble', ['annee' => $currentDate->year, 'mois' => $currentDate->month]) }}"
+               class="pt-btn-overview" title="Voir vue d'ensemble mensuelle"
+               style="background: #3b82f6; color: white; padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; transition: background .15s;"
+               target="_blank">
+                 Vue Mensuelle
+            </a>
+        
             <button class="pt-btn-validate" id="btn-validate"
                     data-date="{{ $currentDate->toDateString() }}"
                     data-url="{{ route('pointage.valider-journee') }}">
@@ -243,7 +255,7 @@
 
     {{-- ── FILTERS BAR - NOUVEAU ────────────────────────────── --}}
     <div style="background: var(--p-surface); border-bottom: 1px solid var(--p-border); padding: 0.75rem 1.5rem; display: flex; gap: 0.75rem; align-items: center; font-size: 13px;">
-         <strong>Filtrer:</strong>
+         <strong>Filtrer:</strong> 
         <form method="GET" action="{{ route('pointage.index') }}" style="display: flex; gap: 0.5rem; align-items: center; flex: 1;">
             <input type="hidden" name="date" value="{{ $currentDate->toDateString() }}">
             <input type="hidden" name="vue" value="{{ $vue ?? request('vue', 'tous') }}">
@@ -274,8 +286,8 @@
             {{ $startOfWeek->translatedFormat('d M') }} – {{ $endOfWeek->translatedFormat('d M Y') }}
         </span>
         <span class="pt-week-badge">Semaine {{ $currentDate->weekOfYear }}</span>
-        <a href="{{ route('pointage.index', ['date' => $nextDate->toDateString()]) }}" class="pt-weeknav-btn">&#8250;</a>
-        <a href="{{ route('pointage.index', ['date' => today()->toDateString()]) }}"
+        <a href="{{ route('pointage.index', array_merge($filterParams, ['date' => $nextDate->toDateString()])) }}" class="pt-weeknav-btn">&#8250;</a>
+        <a href="{{ route('pointage.index', array_merge($filterParams, ['date' => today()->toDateString()])) }}"
            class="pt-weeknav-btn" title="Aujourd'hui" style="font-size:11px;width:auto;padding:0 10px;">
             Aujourd'hui
         </a>
@@ -286,8 +298,8 @@
 
         {{-- Day sidebar --}}
         <div class="pt-days">
-            @foreach($weekDays as $day)
-            <a href="{{ route('pointage.index', ['date' => $day['date']->toDateString()]) }}"
+@foreach($weekDays as $day)
+            <a href="{{ route('pointage.index', array_merge($filterParams, ['date' => $day['date']->toDateString()])) }}"
                class="pt-day {{ $day['isSelected'] ? 'active' : '' }}">
                 <div>
                     <div class="pt-day-name">{{ $day['label'] }}</div>
@@ -307,16 +319,14 @@
                     <tr>
                         <th style="width:44px">Validé</th>
                         <th>Employé</th>
-                        <th style="width:140px">Département</th>
                         <th>Absence</th>
-                        <th>Heures travaillées</th>
-                        <th>Pause total</th>
-                        <th>Pause début / fin</th>
-                        <th style="width:80px">Total travaillé</th>
-                        <th>Action</th>
+                    <th>Début/Fin shift</th>
+                    <th>Pause total</th>
+                    <th>Pause début / fin</th>
+                    <th style="width:80px">Total travaillé</th>
+                    <th>Action</th>
 
                     </tr>
-
                 </thead>
                 <tbody>
                 @foreach($employees as $emp)
@@ -354,16 +364,8 @@
                         </div>
                     </td>
 
-                    {{-- Département --}}
-                    <td style="min-width:120px;">
-                        <span class="pt-badge" style="background: var(--p-gray-bg); color: var(--p-text-muted); padding: 3px 8px; border-radius: 6px; font-size: 11px;">
-                            {{ $emp['department'] ?? 'N/A' }}
-                        </span>
-                    </td>
-
                     {{-- Absence --}}
-                    <td>
-
+            <td>
     <input type="checkbox"
            class="absent-checkbox"
            data-employee="{{ $emp['id'] }}"
@@ -375,7 +377,7 @@
 
     <span class="pt-badge pt-badge-absent"
           style="{{ !$isAbsent ? 'display:none;' : '' }}">
-        Absence
+        Absence 
     </span>
 </td>
 
@@ -384,6 +386,7 @@
                         @if($p && $p->heure_entree)
                         <div style="display:flex;align-items:center;gap:4px;">
                             <span class="pt-time-pill pt-pill-start">
+                                
                                 {{ \Carbon\Carbon::parse($p->heure_entree)->format('H:i') }}
                             </span>
                             <span class="pt-time-sep">–</span>
@@ -404,37 +407,35 @@
                         @endif
                     </td>
 
-                    {{-- Pause --}}
+                    {{-- Pause total --}}
                     <td>
                         @if($p && !$isAbsent && !$isNoBadge)
                         <span class="pt-pause {{ $p->pause_minutes > 0 ? 'pt-pause-on' : 'pt-pause-off' }}">
-                            {{ $p->pause_minutes }} mn
+                            {{ $p->pause_formatee }}
                         </span>
                         @else
                         <span style="color:var(--p-text-light)">—</span>
                         @endif
                     </td>
 
-                    {{-- Shifts rémunérés --}}
-                    <td class="pt-shift">
-                        @if($p && $p->heure_entree && $p->heure_sortie)
-                        {{ \Carbon\Carbon::parse($p->heure_entree)->format('H:i') }}
-                        – {{ \Carbon\Carbon::parse($p->heure_sortie)->format('H:i') }}
+                    {{-- Pause début / fin --}}
+                    <td>
+                        @if($p && $p->pause_debut && $p->pause_fin)
+                        <span class="pt-time-pill pt-pill-start">{{ $p->pause_debut }}</span>
+                        <span class="pt-time-sep">–</span>
+                        <span class="pt-time-pill pt-pill-end">{{ $p->pause_fin }}</span>
+@elseif($p?->pause_debut)
+                        <span class="pt-time-pill pt-pill-start">{{ $p->pause_debut }}</span> <span style="color:var(--p-text-light);font-size:11px;">en cours</span>
                         @else
-                        <span style="color:var(--p-border)">—</span>
+                        <span style="color:var(--p-text-light)">—</span>
                         @endif
                     </td>
 
-                    {{-- Pause min --}}
-                    <td style="text-align:center;font-size:12px;color:var(--p-text-muted);">
-                        {{ $p ? $p->pause_minutes : 0 }}
-                    </td>
-
-                    {{-- Total --}}
+                    {{-- Total travaillé --}}
                     <td>
                         @if($p && $p->total_heures)
                         <span class="pt-total {{ $p->total_heures > 10 ? 'long' : '' }}">
-                            {{ number_format($p->total_heures, 2) }}h
+                            {{ $p->total_heures_formate }}
                         </span>
                         @else
                         <span style="color:var(--p-border)">—</span>
@@ -442,6 +443,7 @@
                     </td>
 
                     {{-- Action --}}
+
                     <td>
                         @if($p)
                         <button class="pt-action-btn {{ $p->ignore_badge ? '' : 'keep' }}"
@@ -500,7 +502,7 @@
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
 
-/* ── Sync temps affiché ─────────────────────────────── */
+ /* ── Sync temps affiché ─────────────────────────────── */
 @if($dernierSync)
 (function() {
     const syncedAt = new Date('{{ $dernierSync->derniere_connexion?->toIso8601String() }}');
@@ -514,12 +516,12 @@ const CSRF = document.querySelector('meta[name="csrf-token"]').content;
         if (el) el.textContent = label;
     }
     updateSyncLabel();
-    setInterval(updateSyncLabel, 30000);
+    setInterval(updateSyncLabel, 3000000);
 })();
 @endif
 
-/* ── Polling auto-refresh toutes les 60s ────────────── */
-setTimeout(() => location.reload(), 60000);
+
+
 
 /* ── Valider la journée ─────────────────────────────── */
 document.getElementById('btn-validate').addEventListener('click', async function() {
@@ -539,7 +541,7 @@ document.getElementById('btn-validate').addEventListener('click', async function
         const data = await res.json();
         btn.textContent = '✓ ' + data.message;
         btn.style.background = '#0f766e';
-        setTimeout(() => { btn.textContent = '✓ Valider la journée'; btn.style.background = ''; btn.disabled = false; }, 3000);
+        setTimeout(() => { btn.textContent = '✓ Valider la journée'; btn.style.background = ''; btn.disabled = false; }, 300000);
     } catch(e) {
         btn.textContent = 'Erreur !';
         btn.style.background = '#dc2626';
@@ -547,7 +549,7 @@ document.getElementById('btn-validate').addEventListener('click', async function
     }
 });
 
-/* ── Toggle validé ──────────────────────────────────── */
+ /* ── Toggle validé ──────────────────────────────────── */
 async function toggleValider(btn) {
     const url = btn.dataset.url;
     try {

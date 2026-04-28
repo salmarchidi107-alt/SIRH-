@@ -20,7 +20,7 @@ class Admin
         $user = auth()->user();
         $currentTenantId = config('app.current_tenant_id');
 
-        if (! $user->isAdmin()) {
+        if (! $user->isAdminOrRh()) {
             abort(403, 'Accès réservé aux administrateurs du tenant.');
         }
 

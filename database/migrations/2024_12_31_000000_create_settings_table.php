@@ -9,9 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('settings', function (Blueprint $table) {
-            $table->ulid('id')->primary();
-            $table->string('group');
-            $table->string('name');
+            $table->id();
+            $table->string('group', 100);
+            $table->string('name', 100);
             $table->json('payload');
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->useCurrent();

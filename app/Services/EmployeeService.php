@@ -11,28 +11,31 @@ use Exception;
 
 class EmployeeService
 {
-    public function create(array $data): Employee
-    {
-        try {
-            $data = $this->prepareAccountPayload($data);
+   public function create(array $data): Employee
+{
+    try {
+        $data = $this->prepareAccountPayload($data);
+               
+       
+        $data['work_days'] = $data['work_days'] ?? [];
 
-            if (!empty($data['photo']) && $data['photo'] instanceof UploadedFile) {
-                $data['photo'] = $this->storePhoto($data['photo']);
-            }
-
-            // Hash PIN si fourni
-            if (!empty($data['pin'])) {
-                $data['pin'] = Hash::make($data['pin']);
-            }
-
-            $data['matricule'] = $this->generateMatricule();
-
-            return Employee::create($data);
-        } catch (Exception $e) {
-            Log::error('EmployeeService create error: ' . $e->getMessage(), ['data' => $data, 'trace' => $e->getTraceAsString()]);
-            throw $e; // Rethrow for controller handling
+        if (!empty($data['photo']) && $data['photo'] instanceof UploadedFile) {
+            $data['photo'] = $this->storePhoto($data['photo']);
         }
+
+        if (!empty($data['pin'])) {
+            $data['pin'] = Hash::make($data['pin']);
+        }
+
+        $data['matricule'] = $this->generateMatricule();
+
+        return Employee::create($data);
+ dd( $data);
+    } catch (Exception $e) {
+        Log::error('EmployeeService create error: ' . $e->getMessage());
+        throw $e;
     }
+}
 
     public function update(Employee $employee, array $data): Employee
     {

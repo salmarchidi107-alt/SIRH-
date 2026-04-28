@@ -4,7 +4,35 @@
 @section('page-title', 'Trombinoscope')
 
 @section('content')
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px">
+<div class="filters-container" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:24px;display:flex;flex-wrap:wrap;gap:16px;align-items:end;">
+    <form method="GET" action="{{ route('trombinoscope') }}" style="display:flex;flex-wrap:wrap;gap:16px;align-items:end;flex:1;">
+        <div>
+            <label style="display:block;font-weight:500;margin-bottom:4px;color:var(--text);">Recherche par nom</label>
+            <input type="text" name="search" value="{{ request('search', '') }}" placeholder="Nom, prénom, poste..." 
+                   style="width:280px;padding:10px;border:1px solid var(--border);border-radius:var(--radius);font-size:14px;">
+        </div>
+        <div>
+            <label style="display:block;font-weight:500;margin-bottom:4px;color:var(--text);">Département</label>
+            <select name="department" style="width:220px;padding:10px;border:1px solid var(--border);border-radius:var(--radius);font-size:14px;">
+                <option value="">Tous les départements</option>
+                @foreach($departments as $dept)
+                    <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>{{ $dept }}</option>
+                 @endforeach
+            </select>
+        </div>
+        <button type="submit" style="background:var(--primary);color:white;border:none;padding:12px 24px;border-radius:var(--radius);font-weight:600;cursor:pointer;font-size:14px;">
+            Filtrer
+        </button>
+    </form>
+    @if(request()->hasAny(['search', 'department']))
+        <a href="{{ route('trombinoscope') }}" style="padding:12px 24px;border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;color:var(--text);font-weight:500;font-size:14px;">
+            Réinitialiser
+        </a>
+    @endif
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px;">
+
 
 @forelse($employees as $employee)
 
@@ -24,16 +52,15 @@
     }
 @endphp
 
-@if(auth()->user()->role === 'employee' && (auth()->user()->employee?->id ?? null) != $employee->id)
+@if(auth()->user()->role === 'employee' && auth()->user()->employee_id != $employee->id)
     <div class="trombino-card" style="border:2px solid {{ $statusColor }}" onclick="alert('Accès restreint'); return false;">
-
 @else
     <a href="{{ route('employees.show', $employee) }}" class="trombino-card" style="border:2px solid {{ $statusColor }}">
 @endif
 
     <div class="trombino-photo">
         @if($employee->photo)
-            <img src="{{ $employee->photo_url }}">
+            <img src="{{ $employee->photo_url }}" alt="{{ $employee->full_name }}">
         @else
             {{ strtoupper(substr($employee->first_name,0,1).substr($employee->last_name,0,1)) }}
         @endif
@@ -50,7 +77,7 @@
 
     {{-- CONTACT --}}
     <div class="trombino-contact" style="font-size:0.75rem;color:var(--text-muted);margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
-
+        
         <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">
             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">
                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -137,4 +164,3 @@
 }
 </style>
 @endsection
-

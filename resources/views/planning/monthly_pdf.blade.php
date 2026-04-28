@@ -36,6 +36,7 @@
                 <th>Type</th>
                 <th>Début</th>
                 <th>Fin</th>
+                <th>Salle</th>
                 <th>Notes</th>
             </tr>
         </thead>
@@ -50,18 +51,19 @@
                         <td>{{ ucfirst(str_replace('_', ' ', $planning->shift_type)) }}</td>
                         <td>{{ $planning->shift_start }}</td>
                         <td>{{ $planning->shift_end }}</td>
+                        <td>{{ $planning->room ?? '' }}</td>
                         <td>{{ $planning->notes ?? '' }}</td>
                     </tr>
                 @empty
                     <tr>
                         <td>{{ $employee->full_name }}</td>
                         <td>{{ $employee->department }}</td>
-                        <td colspan="5" style="text-align:center;">Aucun shift planifié ce mois-ci</td>
+                        <td colspan="6" style="text-align:center;">Aucun shift planifié ce mois-ci</td>
                     </tr>
                 @endforelse
             @empty
                 <tr>
-                    <td colspan="7" style="text-align:center;">Aucun planning disponible pour cette sélection.</td>
+                    <td colspan="8" style="text-align:center;">Aucun planning disponible pour cette sélection.</td>
                 </tr>
             @endforelse
         </tbody>

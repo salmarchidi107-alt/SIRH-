@@ -3,11 +3,6 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Event;
-use Carbon\Carbon;
-use Stancl\Tenancy\Events\TenantCreated;
-use App\Listeners\CreateTenantDatabase;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -22,13 +17,14 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void {
-        // Chemin migrations landlord
-        $this->loadMigrationsFrom(database_path('migrations/landlord'));
-
+    public function boot(): void
+    {
         \Illuminate\Support\Facades\Schema::defaultStringLength(191);
+        
+\App\Models\Employee::observe(\App\Observers\EmployeeObserver::class);
 
-        \App\Models\Employee::observe(\App\Observers\EmployeeObserver::class);
+        \App\Models\Absence::observe(\App\Observers\AbsenceObserver::class);
+        \App\Models\Pointage::observe(\App\Observers\PointageObserver::class);
 
         // Share cached holidays globally (eliminates per-page API calls)
         view()->composer('*', function ($view) {
@@ -36,4 +32,3 @@ class AppServiceProvider extends ServiceProvider
         });
     }
 }
-

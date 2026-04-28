@@ -36,19 +36,10 @@ class EmployeeObserver
     protected function updateAbsenceRights(Employee $employee)
     {
         $annee = now()->year;
-
+        
         $droits = DroitAbsence::firstOrCreate(
-            [
-                'tenant_id' => $employee->tenant_id,
-                'employee_id' => $employee->id,
-                'annee' => $annee
-            ],
-            [
-                'jours_acquis' => 0,
-                'jours_pris' => 0,
-                'jours_en_attente' => 0,
-                'jours_solde' => 0
-            ]
+            ['employee_id' => $employee->id, 'annee' => $annee],
+            ['jours_acquis' => 0, 'jours_pris' => 0, 'jours_en_attente' => 0, 'jours_solde' => 0]
         );
 
         // Calcul droits basés embauche
@@ -60,7 +51,7 @@ $moisTravaillesAnnee = $hireDate->gt($endMonth) ? 0 : max(1, $hireDate->diffInMo
 
         // 1.5j par mois dans l'année (max 25)
         $baseDroits = min(1.5 * $moisTravaillesAnnee, 25);
-
+        
         // Bonus ancienneté +1j/an après 10 ans
         $bonus = $anciennete >= 10 ? $anciennete - 10 : 0;
         $totalDroits = $baseDroits + $bonus;
@@ -77,7 +68,6 @@ $annee = now()->year;
 
         $compteur = CompteurTemps::firstOrCreate(
             [
-                'tenant_id' => $employee->tenant_id,
                 'employee_id' => $employee->id,
                 'annee' => $annee,
                 'mois' => $mois,
@@ -89,6 +79,8 @@ $annee = now()->year;
                 'solde_compteur' => 0,
             ]
         );
+
+        // TODO : Update depuis pointages
     }
 }
 

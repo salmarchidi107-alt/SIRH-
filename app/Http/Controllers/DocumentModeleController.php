@@ -40,6 +40,13 @@ class DocumentModeleController extends Controller
             ->with('success', 'Modèle créé avec succès.');
     }
 
+    public function edit(DocumentModele $modele)
+{
+    $contenuModele = base64_encode($modele->contenu ?? '');
+
+    return view('ged.modeles-edit', compact('modele', 'contenuModele'));
+}
+
     public function update(Request $request, DocumentModele $modele)
     {
         $request->validate([

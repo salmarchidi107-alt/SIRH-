@@ -8,10 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Absence extends Model
 {
-    use HasFactory, \App\Traits\HasTenantScope;
+    use HasFactory;
 
     protected $fillable = [
-        'tenant_id',
         'employee_id',
         'type',
         'start_date',
@@ -105,5 +104,3 @@ class Absence extends Model
         return $this->belongsTo(Employee::class, 'approved_by');
     }
 }
-
-

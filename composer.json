@@ -8,12 +8,11 @@
     "require": {
         "php": "^8.2",
         "barryvdh/laravel-dompdf": "^3.1",
-        "laravel/ai": "^0.4.0",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
+        "spatie/laravel-permission": "^7.3",
         "spatie/laravel-settings": "^3.7",
-        "stancl/tenancy": "^3.10",
-        "maatwebsite/excel": "^3.1"
+        "stancl/tenancy": "^3.10"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -89,4 +88,3 @@
     "minimum-stability": "stable",
     "prefer-stable": true
 }
-

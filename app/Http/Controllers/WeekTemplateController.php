@@ -6,6 +6,7 @@ use App\Models\WeekTemplate;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use App\Models\Room;
 
 class WeekTemplateController extends Controller
 {
@@ -17,38 +18,60 @@ class WeekTemplateController extends Controller
 
     public function create()
     {
+         $rooms = Room::all(); 
+
+    return view('planning.templates.create', compact('rooms'));
+
         return view('planning.templates.create');
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-'name' => 'required|string|max:255',
+            'name' => 'required|string|max:255',
             'department' => 'nullable|string|max:255',
             'monday_shift_type' => 'nullable|string',
-            'monday_start' => 'nullable',
-            'monday_end' => 'nullable',
+            'monday_start' => 'nullable|date_format:H:i',
+            'monday_end' => 'nullable|date_format:H:i',
+            'monday_room' => 'nullable|exists:rooms,id',
             'tuesday_shift_type' => 'nullable|string',
-            'tuesday_start' => 'nullable',
-            'tuesday_end' => 'nullable',
+            'tuesday_start' => 'nullable|date_format:H:i',
+            'tuesday_end' => 'nullable|date_format:H:i',
+            'tuesday_room' => 'nullable|exists:rooms,id',
             'wednesday_shift_type' => 'nullable|string',
-            'wednesday_start' => 'nullable',
-            'wednesday_end' => 'nullable',
+            'wednesday_start' => 'nullable|date_format:H:i',
+            'wednesday_end' => 'nullable|date_format:H:i',
+            'wednesday_room' => 'nullable|exists:rooms,id',
             'thursday_shift_type' => 'nullable|string',
-            'thursday_start' => 'nullable',
-            'thursday_end' => 'nullable',
+            'thursday_start' => 'nullable|date_format:H:i',
+            'thursday_end' => 'nullable|date_format:H:i',
+            'thursday_room' => 'nullable|exists:rooms,id',
             'friday_shift_type' => 'nullable|string',
-            'friday_start' => 'nullable',
-            'friday_end' => 'nullable',
+            'friday_start' => 'nullable|date_format:H:i',
+            'friday_end' => 'nullable|date_format:H:i',
+            'friday_room' => 'nullable|exists:rooms,id',
             'saturday_shift_type' => 'nullable|string',
-            'saturday_start' => 'nullable',
-            'saturday_end' => 'nullable',
+            'saturday_start' => 'nullable|date_format:H:i',
+            'saturday_end' => 'nullable|date_format:H:i',
+            'saturday_room' => 'nullable|exists:rooms,id',
             'sunday_shift_type' => 'nullable|string',
-            'sunday_start' => 'nullable',
-            'sunday_end' => 'nullable',
+            'sunday_start' => 'nullable|date_format:H:i',
+            'sunday_end' => 'nullable|date_format:H:i',
+            'sunday_room' => 'nullable|exists:rooms,id',
         ]);
 
-        $validated['tenant_id'] = config('app.current_tenant_id');
+        // Convert room IDs to room names
+        $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        foreach ($days as $day) {
+            $roomId = $validated[$day . '_room'];
+            if ($roomId) {
+                $room = Room::find($roomId);
+                $validated[$day . '_room'] = $room ? $room->name : null;
+            } else {
+                $validated[$day . '_room'] = null;
+            }
+        }
+
         WeekTemplate::create($validated);
 
         return redirect()->route('planning.templates.index')->with('success', 'Semaine type créée avec succès.');
@@ -64,8 +87,7 @@ class WeekTemplateController extends Controller
     {
         $templates = WeekTemplate::all();
         $employees = Employee::active()->get();
-        $template = request('template_id') ? WeekTemplate::find(request('template_id')) : null;
-        return view('planning.templates.apply', compact('templates', 'employees', 'template'));
+        return view('planning.templates.apply', compact('templates', 'employees'));
     }
 
     public function apply(Request $request)
@@ -84,7 +106,7 @@ class WeekTemplateController extends Controller
             $employees = Employee::where('department', $validated['department_target'])
                 ->active()
                 ->get();
-
+            
             foreach ($employees as $employee) {
                 $template->applyToEmployee($employee->id, $startDate);
             }

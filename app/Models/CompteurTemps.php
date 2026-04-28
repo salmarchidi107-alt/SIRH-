@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-// Removed CentralTenant import
-
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\DTOs\CompteurMoisDTO;
 use App\Models\Employee;
@@ -12,12 +10,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class CompteurTemps extends Model
 {
-    use HasFactory, \App\Traits\HasTenantScope;
+    use HasFactory;
 
     protected $table = 'compteurs_temps';
 
     protected $fillable = [
-        'tenant_id',
         'employee_id',
         'annee',
         'mois',
@@ -72,33 +69,21 @@ class CompteurTemps extends Model
         return 0;
     }
 
-
-    public static function getOuCreeParMois($employeeId, $annee, $mois)
+   
+    public static function getOuCreeParMois($employeeId, $annee, $mois): CompteurMoisDTO
     {
         if (!$employeeId) {
-
-            $result = new \stdClass();
-            $result->heures_planifiees = 140;
-            $result->heures_realisees = 0;
-            $result->heures_supplementaires = 0;
-            $result->solde_compteur = -140;
-            $result->ecart = -140;
-            $result->taux_realisation = 0;
-            return $result;
+            return new CompteurMoisDTO(140, 0, 0);
         }
-
-
-        $employee = Employee::find($employeeId);
-        $heuresPlanifiees = 35 * 4;
-        $compteur = self::where('tenant_id', $employee->tenant_id)
-            ->where('employee_id', $employeeId)
+        
+        $heuresPlanifiees = 35 * 4; 
+        $compteur = self::where('employee_id', $employeeId)
             ->where('annee', $annee)
             ->where('mois', $mois)
             ->first();
 
         if (!$compteur) {
             $compteur = self::create([
-                'tenant_id' => $employee->tenant_id,
                 'employee_id' => $employeeId,
                 'annee' => $annee,
                 'mois' => $mois,
@@ -122,7 +107,7 @@ class CompteurTemps extends Model
         return CompteurMoisDTO::fromModel($compteur);
     }
 
-
+   
     public static function getParAnnee($employeeId, $annee)
     {
         return self::parEmployee($employeeId)
@@ -130,7 +115,5 @@ class CompteurTemps extends Model
             ->orderBy('mois')
             ->get();
     }
-
-    }
-
+}
 

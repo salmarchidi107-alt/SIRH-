@@ -55,6 +55,7 @@
             <div class="card-header">
                 <div class="card-title">Statut</div>
             </div>
+          
             <div class="card-body">
                 @if($absence->status == 'pending')
                     <span class="badge badge-warning" style="font-size:1rem;padding:8px 16px">En attente</span>

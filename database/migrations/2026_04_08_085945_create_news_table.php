@@ -10,13 +10,10 @@ return new class extends Migration
     {
         Schema::create('news', function (Blueprint $table) {
             $table->id();
-            $table->uuid('tenant_id');
-            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
             $table->string('title');
             $table->text('description')->nullable();
-            $table->string('image')->nullable();
-            $table->string('type')->default('annual_event');
-            $table->date('event_date')->nullable();
+            $table->enum('type', ['annual_event', 'meeting', 'holiday', 'new_recruit', 'promotion']);
+            $table->date('event_date');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

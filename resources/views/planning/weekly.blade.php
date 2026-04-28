@@ -17,7 +17,9 @@
     @if(!(isset($isEmployee) && $isEmployee))
     <div class="page-header-right" style="display:flex;gap:8px">
         <a href="{{ route('planning.monthly') }}" class="btn btn-outline">Vue Mensuelle</a>
+        <a href="{{ route('planning.weekly.pdf', request()->query()) }}" class="btn btn-outline" target="_blank">Exporter PDF</a>
         <a href="{{ route('planning.templates.index') }}" class="btn btn-outline">Semaines Types</a>
+        <a href="{{ route('rooms.index') }}" class="btn btn-outline">Salles</a>
         <a href="{{ route('planning.templates.apply') }}" class="btn btn-outline">➕ Appliquer Semaine Type</a>
         <button type="button" class="btn btn-primary" onclick="openPlanningModal()">
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -81,6 +83,10 @@
                 <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Notes (optionnel)</label>
                 <textarea name="notes" rows="2" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;resize:vertical"></textarea>
             </div>
+            <div style="margin-bottom:20px">
+        <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Salle (optionnel)</label>
+                <input type="text" name="room" placeholder="Salle" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem">
+            </div>
             <div style="display:flex;gap:12px;justify-content:flex-end">
                 <button type="button" onclick="closePlanningModal()" class="btn btn-outline">Annuler</button>
                 <button type="submit" class="btn btn-primary">Enregistrer</button>
@@ -120,6 +126,10 @@
                     <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Heure de fin</label>
                     <input type="time" name="shift_end" id="editShiftEnd" required style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem">
                 </div>
+            </div>
+            <div style="margin-bottom:16px">
+                <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Salle</label>
+                <input type="text" name="room" id="editShiftRoom" placeholder="Salle (optionnel)" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem">
             </div>
             <div style="margin-bottom:20px">
                 <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Notes</label>
@@ -178,6 +188,10 @@
                 <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Notes (optionnel)</label>
                 <textarea name="notes" rows="2" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;resize:vertical"></textarea>
             </div>
+            <div style="margin-bottom:20px">
+                <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Salle (optionnel)</label>
+                <input type="text" name="room" placeholder="Salle" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem">
+            </div>
             <div style="display:flex;gap:12px;justify-content:flex-end">
                 <button type="button" onclick="closeQuickAddModal()" class="btn btn-outline">Annuler</button>
                 <button type="submit" class="btn btn-primary">Ajouter</button>
@@ -212,6 +226,17 @@
                     <option value="{{ $dept }}" {{ $department == $dept ? 'selected' : '' }}>{{ $dept }}</option>
                 @endforeach
             </select>
+          <select name="room_id" class="form-control">
+    <option value="">Toutes les salles</option>
+
+
+    @foreach($rooms ?? [] as $room)
+        <option value="{{ $room->id }}"
+            {{ request('room_id') == $room->id ? 'selected' : '' }}>
+            {{ $room->name }}
+        </option>
+    @endforeach
+</select>
             <button type="submit" class="btn btn-primary">Rechercher</button>
             @if($search || $department)
                 <a href="{{ route('planning.weekly', ['week' => $week, 'year' => $year]) }}" class="btn btn-outline">Réinitialiser</a>
@@ -236,6 +261,9 @@
                     <th style="padding:16px 12px;text-align:left;min-width:200px;position:sticky;left:0;background:var(--surface-2);z-index:10">
                         Employé
                     </th>
+                    <th style="padding:16px 12px;text-align:left;min-width:120px;">
+                        Salle
+                    </th>
                     @foreach($weekDays as $date => $day)
                     <th style="padding:12px 8px;text-align:center;min-width:140px;white-space:nowrap">
                         <div style="font-weight:600;color:var(--primary)">{{ ucfirst($day['day_name']) }}</div>
@@ -248,6 +276,18 @@
                 @forelse($employees as $emp)
                 @php
                     $empPlannings = $plannings->get($emp->id, collect());
+                    $employeeRoom = $empPlannings->first()?->room ?? null;
+                    
+                    // Trouver la salle la plus courante dans les plannings de l'employé
+                    $roomCounts = $empPlannings->whereNotNull('room')->groupBy('room')->map->count();
+                    $mostCommonRoom = $roomCounts->isNotEmpty() ? $roomCounts->sortDesc()->keys()->first() : null;
+                    
+                    // Trouver l'ID de la salle basée sur le nom
+                    $employeeRoomId = null;
+                    if ($mostCommonRoom) {
+                        $room = $rooms->firstWhere('name', $mostCommonRoom);
+                        $employeeRoomId = $room ? $room->id : null;
+                    }
                 @endphp
                 <tr style="border-bottom:1px solid var(--border)" data-employee-id="{{ $emp->id }}">
 
@@ -266,6 +306,25 @@
                             </div>
                         </div>
                     </td>
+
+           {{-- Colonne salle --}}
+<td style="padding:12px;">
+    <select 
+        onchange="updateRoom(this)"
+        data-employee="{{ $emp->id }}"
+        data-start="{{ $startOfWeek->format('Y-m-d') }}"
+        data-end="{{ $endOfWeek->format('Y-m-d') }}"
+        style="padding:6px;border-radius:8px;"
+    >
+        <option value="">Choisir salle</option>
+        @foreach($rooms as $room)
+            <option value="{{ $room->id }}"
+                {{ $room->name == $mostCommonRoom ? 'selected' : '' }}>
+                {{ $room->name }}
+            </option>
+        @endforeach
+    </select>
+</td>
 
                     {{-- Cellules jours --}}
                     @foreach($weekDays as $date => $day)
@@ -292,7 +351,8 @@
                                 '{{ $dayPlanning->shift_type }}',
                                 '{{ substr($dayPlanning->shift_start ?? '', 0, 5) }}',
                                 '{{ substr($dayPlanning->shift_end ?? '', 0, 5) }}',
-                                @js($dayPlanning->notes ?? '')
+                                @js($dayPlanning->notes ?? ''),
+                                @js($dayPlanning->room ?? '')
                             )"
                             style="display:flex;flex-direction:column;gap:4px;cursor:pointer;transition:transform 0.15s,opacity 0.15s"
                             onmouseover="this.style.transform='scale(1.03)';this.style.opacity='0.9'"
@@ -389,7 +449,7 @@
         <div style="width:16px;height:16px;background:linear-gradient(135deg,#ef4444,#f87171);border-radius:4px"></div>
         <span style="font-size:0.8rem">Garde</span>
     </div>
-
+    
 
 {{-- ══════════════════════════════════════
      SCRIPTS
@@ -425,11 +485,11 @@ function drop(event, newDate, newEmployeeId) {
             'X-CSRF-TOKEN': csrfToken,
             'Accept': 'application/json'
         },
-        body: JSON.stringify({
-            planning_id: draggedPlanningId,
-            new_date: newDate,
+        body: JSON.stringify({ 
+            planning_id: draggedPlanningId, 
+            new_date: newDate, 
             new_employee_id: newEmployeeId,
-            _token: csrfToken
+            _token: csrfToken 
         })
     })
 
@@ -437,13 +497,13 @@ function drop(event, newDate, newEmployeeId) {
         console.log('Response status', r.status);
         return r.json();
     })
-    .then(data => {
+    .then(data => { 
         console.log('Response data', data);
-        if (data.success) location.reload(); else alert('Erreur: ' + (data.error || 'Inconnue'));
+        if (data.success) location.reload(); else alert('Erreur: ' + (data.error || 'Inconnue')); 
     })
-    .catch(err => {
+    .catch(err => { 
         console.error('Fetch error', err);
-        alert('Erreur réseau');
+        alert('Erreur réseau'); 
     });
 
     draggedPlanningId = null;
@@ -468,13 +528,14 @@ function closePlanningModal() {
 // ── Modal Modifier shift ─────────────────────────
 let currentEditPlanningId = null;
 
-function openEditShiftModal(id, shiftType, shiftStart, shiftEnd, notes) {
+function openEditShiftModal(id, shiftType, shiftStart, shiftEnd, notes, room) {
     currentEditPlanningId = id;
     document.getElementById('editShiftForm').action = '/planning/' + id;
     document.getElementById('editShiftType').value  = shiftType;
     document.getElementById('editShiftStart').value = shiftStart;
     document.getElementById('editShiftEnd').value   = shiftEnd;
     document.getElementById('editShiftNotes').value = notes || '';
+    document.getElementById('editShiftRoom').value  = room || '';
     document.getElementById('editShiftModal').style.display = 'block';
     document.body.style.overflow = 'hidden';
 }
@@ -514,6 +575,77 @@ function closeQuickAddModal() {
     document.body.style.overflow = 'auto';
 }
 
+// ── Edit Room Inline ─────────────────────────────
+function editRoom(employeeId, currentRoom, startDate, endDate) {
+    const cell = document.getElementById('room-' + employeeId);
+    const originalText = cell.textContent.trim();
+    
+    // Create input
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentRoom || '';
+    input.placeholder = 'Salle';
+    input.style.width = '100%';
+    input.style.padding = '4px 6px';
+    input.style.border = '1px solid var(--border)';
+    input.style.borderRadius = '4px';
+    input.style.fontSize = '0.85rem';
+    
+    // Replace cell content
+    cell.innerHTML = '';
+    cell.appendChild(input);
+    input.focus();
+    input.select();
+    
+    // Handle save
+    const saveRoom = () => {
+        const newRoom = input.value.trim();
+        if (newRoom !== (currentRoom || '')) {
+            // AJAX save
+            fetch('{{ route("planning.update.room") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    employee_id: employeeId,
+                    start_date: startDate,
+                    end_date: endDate,
+                    room: newRoom || null
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    cell.textContent = newRoom || '—';
+                } else {
+                    alert('Erreur mise à jour salle');
+                    cell.textContent = originalText;
+                }
+            })
+            .catch(err => {
+                alert('Erreur réseau');
+                cell.textContent = originalText;
+            });
+        } else {
+            cell.textContent = originalText;
+        }
+    };
+    
+    // Save on enter or blur
+    input.addEventListener('blur', saveRoom);
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            saveRoom();
+        } else if (e.key === 'Escape') {
+            cell.textContent = originalText;
+        }
+    });
+}
+
 // ── Fermer en cliquant hors modal ────────────────
 window.onclick = function(e) {
     ['planningModal','editShiftModal','quickAddModal'].forEach(id => {
@@ -524,6 +656,37 @@ window.onclick = function(e) {
         }
     });
 };
+function updateRoom(select) {
+    let employeeId = select.dataset.employee;
+    let roomId = select.value;
+    let start = select.dataset.start;
+    let end = select.dataset.end;
+
+    fetch('/planning/update-room', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({
+            employee_id: employeeId,
+            room_id: roomId,
+            start: start,
+            end: end
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        console.log('Salle mise à jour');
+    })
+    .catch(err => console.error(err));
+}
+function editRoom(employeeId, roomName, start, end) {
+    console.log(employeeId, roomName, start, end);
+
+    // Exemple simple : ouvrir un select ou envoyer direct
+    alert("Modifier salle: " + roomName);
+}
 </script>
 
 @endsection

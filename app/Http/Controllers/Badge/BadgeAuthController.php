@@ -27,6 +27,7 @@ class BadgeAuthController extends Controller
     // ── Auth + action (entree/sortie) + signature ──────────────────────────
     public function authAction(Request $request)
 {
+    
     $action = $request->input('action', 'entree');
 
     $request->validate([
@@ -68,18 +69,21 @@ class BadgeAuthController extends Controller
     // Sauvegarder la signature
     $employee->update(['signature' => substr($request->signature, 0, 255)]);
 
-    // ✅ Seul mécanisme d'auth badge : la session
+    //  Seul mécanisme d'auth badge : la session
     $request->session()->put('badge_user_id', $user->id);
     $request->session()->save();
 
+    // TODO : separate entree pause fro, debut de shift 
     // Enregistrer le pointage
-    $subaction  = $request->input('action_sub', $action);
-    $recordType = match($subaction) {
-        'debut', 'retour_pause' => 'entree',
-        'fin_shift'             => 'sortie',
-        'sortie_pause'          => 'pause',
-        default                 => ($action === 'entree') ? 'entree' : 'sortie',
-    };
+   $subaction  = $request->input('action_sub', $action);
+
+$recordType = match ($subaction) {
+    'debut'         => 'entree',         // début shift
+    'sortie_pause'  => 'pause',          // début pause
+    'retour_pause'  => 'retour_pause',   // fin pause (séparé)
+    'fin_shift'     => 'sortie',         // fin shift
+    default         => $action === 'entree' ? 'entree' : 'sortie',
+};
 
     try {
         app(BadgePointageController::class)->recordAction($recordType, $employee);

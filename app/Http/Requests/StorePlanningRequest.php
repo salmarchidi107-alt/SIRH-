@@ -10,7 +10,7 @@ class StorePlanningRequest extends FormRequest
 {
     public function authorize(): bool
     {
-         return true; //return auth()->user()?->can('manage_plannings') ?? true;
+       return true; // return auth()->user()?->can('manage_plannings') ?? true;
     }
 
     public function rules(): array
@@ -22,6 +22,7 @@ class StorePlanningRequest extends FormRequest
             'shift_end' => 'required|string',
             'shift_type' => ['required', Rule::in(array_keys(Planning::SHIFT_TYPES))],
             'notes' => 'nullable|string',
+            'room' => 'nullable|string|max:255',
         ];
     }
 }

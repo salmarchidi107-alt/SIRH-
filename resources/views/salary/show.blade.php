@@ -29,7 +29,7 @@
         <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;font-size:0.85rem">
             <div><div style="color:var(--text-muted);font-size:0.75rem">CIN</div><strong>{{ $employee->cin ?? '—' }}</strong></div>
             <div><div style="color:var(--text-muted);font-size:0.75rem">N° CNSS</div><strong>{{ $employee->cnss_number ?? '—' }}</strong></div>
-            <div><div style="color:var(--text-muted);font-size:0.75rem">Date d'embauche</div><strong>{{ $employee->hire_date ? \Carbon\Carbon::parse($employee->hire_date)->format('d/m/Y') : '—' }}</strong></div>
+            <div><div style="color:var(--text-muted);font-size:0.75rem">Date d'embauche</div><strong>{{ $employee->hire_date?->format('d/m/Y') ?? '—' }}</strong></div>
             <div><div style="color:var(--text-muted);font-size:0.75rem">Mode paiement</div><strong>
 @if($employee->payment_method == 'virement')
     Virement {{ $employee->bank ?? '—' }}

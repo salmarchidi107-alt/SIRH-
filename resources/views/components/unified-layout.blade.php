@@ -33,7 +33,7 @@
             @endphp
             <a href="{{ route('dashboard.unified') }}" class="brand flex items-center gap-3">
                 @if($logoPath)
-                    <img src="{{ Storage::url($logoPath) }}" alt="Logo" class="w-10 h-10 object-contain rounded-lg">
+                    <img src="{{ Storage::disk('public')->url($logoPath) }}" alt="Logo" class="w-10 h-10 object-contain rounded-lg">
                 @else
                     <div class="brand-icon-custom" style="background: {{ $brandColor }};">{{ $initials }}</div>
                 @endif
@@ -139,4 +139,3 @@
 </div>
 
 @stack('scripts')
-

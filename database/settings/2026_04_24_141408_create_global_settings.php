@@ -1,6 +1,7 @@
 <?php
 
 use Spatie\LaravelSettings\Migrations\SettingsMigration;
+use Illuminate\Support\Str;
 
 class CreateGlobalSettings extends SettingsMigration
 {

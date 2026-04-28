@@ -46,7 +46,7 @@
             <div style="display:grid;gap:16px">
                 
                 <!-- Monday -->
-                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
+                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
                     <div style="font-weight:600">Lundi</div>
                     <select name="monday_shift_type" style="padding:8px;border:1px solid var(--border);border-radius:6px">
                         <option value="">— Pas de shift —</option>
@@ -58,10 +58,21 @@
                     </select>
                     <input type="time" name="monday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">
                     <input type="time" name="monday_end" placeholder="Fin" style="padding:8px;border:1px solid var(--border);border-radius:6px">
-                </div>
+<select name="monday_room" 
+        style="padding:8px;border:1px solid var(--border);border-radius:6px">
+
+    <option value="">— Choisir une salle —</option>
+
+    @foreach($rooms as $room)
+        <option value="{{ $room->id }}">
+            {{ $room->name }}
+        </option>
+    @endforeach
+
+</select>                </div>
 
                 <!-- Tuesday -->
-                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
+                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
                     <div style="font-weight:600">Mardi</div>
                     <select name="tuesday_shift_type" style="padding:8px;border:1px solid var(--border);border-radius:6px">
                         <option value="">— Pas de shift —</option>
@@ -73,10 +84,21 @@
                     </select>
                     <input type="time" name="tuesday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">
                     <input type="time" name="tuesday_end" placeholder="Fin" style="padding:8px;border:1px solid var(--border);border-radius:6px">
-                </div>
+<select name="tuesday_room" 
+        style="padding:8px;border:1px solid var(--border);border-radius:6px">
+
+    <option value="">— Choisir une salle —</option>
+
+    @foreach($rooms as $room)
+        <option value="{{ $room->id }}">
+            {{ $room->name }}
+        </option>
+    @endforeach
+
+</select>                </div>
 
                 <!-- Wednesday -->
-                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
+                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
                     <div style="font-weight:600">Mercredi</div>
                     <select name="wednesday_shift_type" style="padding:8px;border:1px solid var(--border);border-radius:6px">
                         <option value="">— Pas de shift —</option>
@@ -88,10 +110,21 @@
                     </select>
                     <input type="time" name="wednesday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">
                     <input type="time" name="wednesday_end" placeholder="Fin" style="padding:8px;border:1px solid var(--border);border-radius:6px">
-                </div>
+<select name="wednesday_room" 
+        style="padding:8px;border:1px solid var(--border);border-radius:6px">
+
+    <option value="">— Choisir une salle —</option>
+
+    @foreach($rooms as $room)
+        <option value="{{ $room->id }}">
+            {{ $room->name }}
+        </option>
+    @endforeach
+
+</select>                </div>
 
                 <!-- Thursday -->
-                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
+                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
                     <div style="font-weight:600">Jeudi</div>
                     <select name="thursday_shift_type" style="padding:8px;border:1px solid var(--border);border-radius:6px">
                         <option value="">— Pas de shift —</option>
@@ -103,10 +136,18 @@
                     </select>
                     <input type="time" name="thursday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">
                     <input type="time" name="thursday_end" placeholder="Fin" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                    <select name="thursday_room" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                        <option value="">— Choisir une salle —</option>
+                        @foreach($rooms as $room)
+                            <option value="{{ $room->id }}">
+                                {{ $room->name }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
 
                 <!-- Friday -->
-                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
+                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
                     <div style="font-weight:600">Vendredi</div>
                     <select name="friday_shift_type" style="padding:8px;border:1px solid var(--border);border-radius:6px">
                         <option value="">— Pas de shift —</option>
@@ -118,10 +159,18 @@
                     </select>
                     <input type="time" name="friday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">
                     <input type="time" name="friday_end" placeholder="Fin" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                    <select name="friday_room" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                        <option value="">— Choisir une salle —</option>
+                        @foreach($rooms as $room)
+                            <option value="{{ $room->id }}">
+                                {{ $room->name }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
 
                 <!-- Saturday -->
-                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
+                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
                     <div style="font-weight:600">Samedi</div>
                     <select name="saturday_shift_type" style="padding:8px;border:1px solid var(--border);border-radius:6px">
                         <option value="">— Pas de shift —</option>
@@ -133,10 +182,18 @@
                     </select>
                     <input type="time" name="saturday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">
                     <input type="time" name="saturday_end" placeholder="Fin" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                    <select name="saturday_room" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                        <option value="">— Choisir une salle —</option>
+                        @foreach($rooms as $room)
+                            <option value="{{ $room->id }}">
+                                {{ $room->name }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
 
                 <!-- Sunday -->
-                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
+                <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
                     <div style="font-weight:600">Dimanche</div>
                     <select name="sunday_shift_type" style="padding:8px;border:1px solid var(--border);border-radius:6px">
                         <option value="">— Pas de shift —</option>
@@ -148,6 +205,14 @@
                     </select>
                     <input type="time" name="sunday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">
                     <input type="time" name="sunday_end" placeholder="Fin" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                    <select name="sunday_room" style="padding:8px;border:1px solid var(--border);border-radius:6px">
+                        <option value="">— Choisir une salle —</option>
+                        @foreach($rooms as $room)
+                            <option value="{{ $room->id }}">
+                                {{ $room->name }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
 
             </div>

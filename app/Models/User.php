@@ -68,6 +68,15 @@ return $this->belongsTo(\App\Models\Tenant::class, 'tenant_id');
         return $this->role === self::ROLE_ADMIN;
     }
 
+    public function isRh(): bool
+    {
+        return $this->role === 'rh';
+    }
+
+    public function isAdminOrRh(): bool
+{
+    return in_array($this->role, ['admin', 'rh']);
+}
     public function isEmployee(): bool
     {
         return $this->role === self::ROLE_EMPLOYEE;
@@ -78,6 +87,7 @@ return $this->belongsTo(\App\Models\Tenant::class, 'tenant_id');
         return match($this->role) {
             self::ROLE_SUPERADMIN => 'Super Administrateur',
             self::ROLE_ADMIN => 'Administrateur',
+            'rh' => 'Responsable RH',
             self::ROLE_EMPLOYEE => 'Employé',
             default => 'Employé',
         };

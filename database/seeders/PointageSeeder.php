@@ -42,7 +42,7 @@ class PointageSeeder extends Seeder
                         'heures_travaillees' => $heuresBase,
                         'heures_supplementaires' => $heuresSupp,
                         'statut' => 'present',
-                        'commentaire' => 'Pointage automatique',
+                        'total_heures' => $heuresBase + $heuresSupp,
                     ]);
                 }
                 $jour->addDay();
@@ -68,7 +68,7 @@ class PointageSeeder extends Seeder
                             'heures_travaillees' => $heuresBase,
                             'heures_supplementaires' => $heuresSupp,
                             'statut' => 'present',
-                            'commentaire' => 'Pointage automatique',
+                            'total_heures' => $heuresBase + $heuresSupp,
                         ]);
                     }
                     $jour->addDay();

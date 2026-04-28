@@ -6,25 +6,22 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Collection;
+use App\Models\Employee;
 
 class Department extends Model
 {
-    use HasFactory, \App\Traits\HasTenantScope;
+    use HasFactory;
 
     protected $fillable = [
-        'tenant_id',
         'name',
-        'slug', // optional
     ];
-
-    protected $casts = [];
 
     public function employees()
     {
         return $this->hasMany(Employee::class);
     }
 
-    public static function names(): \Illuminate\Support\Collection
+    public static function names(): Collection
     {
         if (Schema::hasTable('departments')) {
             return self::orderBy('name')->pluck('name');
@@ -38,7 +35,7 @@ class Department extends Model
             ->values();
     }
 
-    public static function counts(): \Illuminate\Support\Collection
+    public static function counts(): Collection
     {
         if (Schema::hasTable('departments')) {
             return self::withCount('employees')

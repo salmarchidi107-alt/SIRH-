@@ -18,363 +18,339 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Exception;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Http\Resources\Planning\PlanningResource;
-use App\Http\Resources\Planning\DragDropResponseResource;
+use App\Models\Room;
 
 class PlanningController extends Controller
 {
     public function __construct(private PlanningService $planningService) {}
 
+    // =========================================================================
+    // INDEX
+    // =========================================================================
+
     public function index(Request $request)
     {
-        try {
-            $employee_id = $request->employee_id;
-            $month = $request->month ?? now()->month;
-            $year = $request->year ?? now()->year;
+        $employee_id = $request->employee_id;
+        $room_id     = $request->room_id;
+        $month       = $request->month ?? now()->month;
+        $year        = $request->year  ?? now()->year;
 
-            $user_employee_id = null;
-            if (auth()->check() && auth()->user()->role === 'employer' && auth()->user()->employee_id) {
-                $user_employee_id = auth()->user()->employee_id;
-            }
-
-            $employees = Employee::with(['user', 'manager'])->where('status', 'active')->when($user_employee_id, fn($q) => $q->where('id', $user_employee_id))->get();
-            $plannings = Planning::with('employee')
-                ->whereMonth('date', $month)
-                ->whereYear('date', $year)
-                ->when($employee_id, fn($q) => $q->where('employee_id', $employee_id))
-                ->when($user_employee_id, fn($q) => $q->where('employee_id', $user_employee_id))
-                ->get();
-
-            return view('planning.index', compact('plannings', 'employees', 'month', 'year', 'employee_id'));
-        } catch (ModelNotFoundException $e) {
-            Log::warning('Planning index employee not found: ' . $e->getMessage());
-            return back()->with('error', 'Employé non trouvé.');
-        } catch (Exception $e) {
-            Log::error('Planning index error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-            return view('planning.index', ['error' => 'Erreur chargement planning.']);
+        // Résoudre le nom de la salle depuis l'ID
+        $roomName = null;
+        if ($room_id) {
+            $room     = Room::find($room_id);
+            $roomName = $room?->name;
         }
+
+        $plannings = Planning::with(['employee', 'room'])
+            ->whereMonth('date', $month)
+            ->whereYear('date', $year)
+            ->when($employee_id, fn($q) => $q->where('employee_id', $employee_id))
+            ->when($roomName,    fn($q) => $q->where('room', $roomName))
+            ->get();
+
+        $employees = Employee::active()->get();
+        $rooms     = Room::all();
+
+        return view('planning.index', compact(
+            'plannings', 'employees', 'rooms',
+            'month', 'year', 'employee_id', 'room_id'
+        ));
     }
+
+    // =========================================================================
+    // WEEKLY
+    // =========================================================================
 
     public function weekly(Request $request)
     {
-        $week = $request->week ?? now()->weekOfYear;
-        $year = $request->year ?? now()->year;
+        try {
+            $rooms      = Room::all();
+            $week       = $request->week       ?? now()->weekOfYear;
+            $year       = $request->year       ?? now()->year;
+            $search     = $request->search;
+            $department = $request->department;
+            $roomId     = $request->room_id;
 
-        $search = $request->search;
-        $department = $request->department;
+            // ✅ showAllRooms = false si une salle est sélectionnée
+            // Cela active le filtre employés dans filterEmployees()
+            $showAllRooms = empty($roomId);
 
-        $user_employee_id = null;
-        if (auth()->check() && auth()->user()->role === 'employer' && auth()->user()->employee_id) {
-            $user_employee_id = auth()->user()->employee_id;
+            $startOfWeek = now()->setISODate($year, $week)->startOfWeek(Carbon::MONDAY);
+            $endOfWeek   = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
+
+            // ✅ Résoudre le NOM de la salle depuis l'ID
+            $roomName = null;
+            if ($roomId) {
+                $room     = Room::find($roomId);
+                $roomName = $room?->name;
+            }
+
+            // Filtre employés : si salle sélectionnée, seuls les employés
+            // ayant un planning dans cette salle sont retournés
+            $employees = $this->planningService->filterEmployees(
+                $search, $department, $roomId, $showAllRooms, $startOfWeek, $endOfWeek
+            );
+
+            // Filtre plannings : si salle sélectionnée, seuls les shifts
+            // de cette salle sont retournés
+            $plannings   = $this->planningService->getPlanningsBetween($startOfWeek, $endOfWeek, $roomName);
+            $departments = $this->planningService->getDepartments();
+            $weekDays    = $this->planningService->getWeekDays($startOfWeek);
+
+            return view('planning.weekly', compact(
+                'employees', 'plannings', 'weekDays', 'week', 'year',
+                'startOfWeek', 'endOfWeek', 'search', 'department',
+                'departments', 'rooms', 'showAllRooms'
+            ));
+        } catch (Exception $e) {
+            Log::error('Planning weekly error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return view('planning.weekly', ['error' => 'Erreur planning hebdo.']);
         }
-
-        $startOfWeek = Carbon::now()->setISODate($year, $week)->startOfWeek(Carbon::MONDAY);
-        $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
-
-        $employees = Employee::where('status', 'active')
-            ->when($user_employee_id, fn($q) => $q->where('id', $user_employee_id))
-            ->when($search, fn($q) => $q->where(function($query) use ($search) {
-                $query->where('first_name', 'like', '%' . $search . '%')
-                    ->orWhere('last_name', 'like', '%' . $search . '%')
-                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
-            }))
-            ->when($department, fn($q) => $q->where('department', $department))
-            ->orderBy('first_name')
-            ->orderBy('last_name')
-            ->get();
-
-        $plannings = Planning::with('employee')
-            ->whereDate('date', '>=', $startOfWeek)
-            ->whereDate('date', '<=', $endOfWeek)
-            ->when($user_employee_id, fn($q) => $q->where('employee_id', $user_employee_id))
-            ->get()
-            ->groupBy('employee_id');
-
-        $departments = Employee::whereNotNull('department')
-            ->distinct()
-            ->pluck('department');
-
-        $weekDays = [];
-        for ($i = 0; $i < 7; $i++) {
-            $day = $startOfWeek->copy()->addDays($i);
-            $weekDays[$day->format('Y-m-d')] = [
-                'date' => $day,
-                'day_name' => $day->locale('fr')->dayName,
-                'day_number' => $day->day,
-            ];
-        }
-
-        return view('planning.weekly', compact('employees', 'plannings', 'weekDays', 'week', 'year', 'startOfWeek', 'endOfWeek', 'search', 'department', 'departments'));
     }
+
+    // =========================================================================
+    // MONTHLY
+    // =========================================================================
 
     public function monthly(Request $request)
     {
-        $month = $request->month ?? now()->month;
-        $year = $request->year ?? now()->year;
+        try {
+            $month      = $request->month      ?? now()->month;
+            $year       = $request->year       ?? now()->year;
+            $search     = $request->search;
+            $department = $request->department;
 
-        $search = $request->search;
-        $department = $request->department;
+            $startOfMonth = Carbon::create($year, $month, 1)->startOfMonth();
+            $endOfMonth   = $startOfMonth->copy()->endOfMonth();
 
-        $user_employee_id = null;
-        if (auth()->check() && auth()->user()->role === 'employer' && auth()->user()->employee_id) {
-            $user_employee_id = auth()->user()->employee_id;
+            $employees   = $this->planningService->filterEmployees($search, $department);
+            $plannings   = $this->planningService->getPlanningsBetween($startOfMonth, $endOfMonth);
+            $departments = $this->planningService->getDepartments();
+
+            $daysOfMonth = collect();
+            $currentDay  = $startOfMonth->copy();
+            while ($currentDay <= $endOfMonth) {
+                $daysOfMonth->push($currentDay->copy());
+                $currentDay->addDay();
+            }
+
+            return view('planning.monthly', compact(
+                'employees', 'plannings', 'daysOfMonth',
+                'month', 'year', 'startOfMonth', 'endOfMonth',
+                'search', 'department', 'departments'
+            ));
+        } catch (Exception $e) {
+            Log::error('Planning monthly error: ' . $e->getMessage());
+            return view('planning.monthly', ['error' => 'Erreur planning mensuel.']);
         }
-
-        $startOfMonth = Carbon::create($year, $month, 1)->startOfMonth();
-        $endOfMonth = $startOfMonth->copy()->endOfMonth();
-
-        $employees = Employee::where('status', 'active')
-            ->when($user_employee_id, fn($q) => $q->where('id', $user_employee_id))
-            ->when($search, fn($q) => $q->where(function($query) use ($search) {
-                $query->where('first_name', 'like', '%' . $search . '%')
-                    ->orWhere('last_name', 'like', '%' . $search . '%')
-                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
-            }))
-            ->when($department, fn($q) => $q->where('department', $department))
-            ->orderBy('first_name')
-            ->orderBy('last_name')
-            ->get();
-
-        $plannings = Planning::with('employee')
-            ->whereDate('date', '>=', $startOfMonth)
-            ->whereDate('date', '<=', $endOfMonth)
-            ->get()
-            ->groupBy('employee_id');
-
-        $departments = Employee::whereNotNull('department')
-            ->distinct()
-            ->pluck('department');
-
-        $calendarDays = [];
-        $startDay = $startOfMonth->copy();
-        $endDay = $endOfMonth->copy();
-
-        for ($i = 0; $i <= $endDay->diffInDays($startDay); $i++) {
-            $day = $startDay->copy()->addDays($i);
-            $calendarDays[] = [
-                'date' => $day,
-                'date_string' => $day->format('Y-m-d'),
-                'day' => $day->day,
-                'day_name_short' => substr($day->locale('fr')->dayName, 0, 3),
-                'is_weekend' => in_array($day->dayOfWeek, [Carbon::SUNDAY, Carbon::SATURDAY]),
-            ];
-        }
-
-        return view('planning.monthly', compact('employees', 'plannings', 'calendarDays', 'month', 'year', 'startOfMonth', 'endOfMonth', 'search', 'department', 'departments'));
     }
+
+    // =========================================================================
+    // STORE
+    // =========================================================================
 
     public function store(StorePlanningRequest $request)
     {
         try {
             Planning::updateOrCreate(
-                ['tenant_id' => config('app.current_tenant_id'), 'employee_id' => $request->employee_id, 'date' => $request->date],
-                array_merge($request->validated(), ['tenant_id' => config('app.current_tenant_id')])
+                ['employee_id' => $request->employee_id, 'date' => $request->date],
+                $request->validated()
             );
 
             return back()->with('success', 'Planning mis à jour.');
         } catch (Exception $e) {
-            Log::error('Planning store error: ' . $e->getMessage(), ['data' => $request->validated(), 'trace' => $e->getTraceAsString()]);
+            Log::error('Planning store error: ' . $e->getMessage(), [
+                'data'  => $request->validated(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return back()->with('error', 'Erreur sauvegarde planning.');
         }
     }
 
-    public function global(Request $request)
+    // =========================================================================
+    // UPDATE
+    // =========================================================================
+
+    public function update(UpdatePlanningRequest $request, Planning $planning)
     {
-        $month = $request->month ?? now()->month;
-        $year = $request->year ?? now()->year;
-
-        $search = $request->search;
-        $department = $request->department;
-
-        $user_employee_id = null;
-        if (auth()->check() && auth()->user()->role === 'employer' && auth()->user()->employee_id) {
-            $user_employee_id = auth()->user()->employee_id;
+        try {
+            $planning->update($request->validated());
+            return back()->with('success', 'Shift mis à jour.');
+        } catch (Exception $e) {
+            Log::error('Planning update error: ' . $e->getMessage(), [
+                'planning_id' => $planning->id,
+                'trace'       => $e->getTraceAsString(),
+            ]);
+            return back()->with('error', 'Erreur mise à jour shift.');
         }
-
-        $startOfMonth = Carbon::create($year, $month, 1)->startOfMonth();
-        $endOfMonth = $startOfMonth->copy()->endOfMonth();
-
-        $employees = Employee::where('status', 'active')
-            ->when($user_employee_id, fn($q) => $q->where('id', $user_employee_id))
-            ->when($search, fn($q) => $q->where(function($query) use ($search) {
-                $query->where('first_name', 'like', '%' . $search . '%')
-                    ->orWhere('last_name', 'like', '%' . $search . '%')
-                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
-            }))
-            ->when($department, fn($q) => $q->where('department', $department))
-            ->orderBy('first_name')
-            ->orderBy('last_name')
-            ->get();
-
-        $plannings = Planning::with('employee')
-            ->whereDate('date', '>=', $startOfMonth)
-            ->whereDate('date', '<=', $endOfMonth)
-            ->when($user_employee_id, fn($q) => $q->where('employee_id', $user_employee_id))
-            ->get()
-            ->groupBy('employee_id');
-
-        $departments = Employee::whereNotNull('department')
-            ->distinct()
-            ->pluck('department');
-
-        $calendarDays = [];
-        $startDay = $startOfMonth->copy();
-        $endDay = $endOfMonth->copy();
-
-        for ($i = 0; $i <= $endDay->diffInDays($startDay); $i++) {
-            $day = $startDay->copy()->addDays($i);
-            $calendarDays[] = [
-                'date' => $day,
-                'date_string' => $day->format('Y-m-d'),
-                'day' => $day->day,
-                'day_name_short' => substr($day->locale('fr')->dayName, 0, 3),
-                'is_weekend' => in_array($day->dayOfWeek, [Carbon::SUNDAY, Carbon::SATURDAY]),
-            ];
-        }
-
-        return view('planning.global', compact('employees', 'plannings', 'calendarDays', 'month', 'year', 'startOfMonth', 'endOfMonth', 'search', 'department', 'departments'));
     }
 
-    public function show(Request $request, Employee $employee = null)
+    // =========================================================================
+    // DESTROY
+    // =========================================================================
+
+    public function destroy(Planning $planning)
     {
-        if (!$employee) {
-            $employee_id = $request->employee_id;
-            if ($employee_id) {
-                $employee = Employee::findOrFail($employee_id);
+        if (!$planning->exists) {
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['error' => 'Shift introuvable'], 404);
             }
+            return back()->with('error', 'Shift introuvable');
         }
 
-        if (!$employee) {
-            return redirect()->route('planning.weekly');
+        try {
+            $planning->delete();
+
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['success' => true]);
+            }
+            return back()->with('success', 'Shift supprimé.');
+        } catch (Exception $e) {
+            Log::error('Shift delete failed for planning ID ' . $planning->id . ': ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['error' => 'Erreur suppression: ' . $e->getMessage()], 500);
+            }
+            return back()->with('error', 'Erreur suppression shift: ' . $e->getMessage());
         }
-
-        $week = $request->week ?? now()->weekOfYear;
-        $year = $request->year ?? now()->year;
-
-        $startOfWeek = Carbon::now()->setISODate($year, $week)->startOfWeek(Carbon::MONDAY);
-        $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
-
-        $plannings = Planning::where('employee_id', $employee->id)
-            ->whereDate('date', '>=', $startOfWeek)
-            ->whereDate('date', '<=', $endOfWeek)
-            ->get()
-            ->keyBy('date');
-
-        $weekDays = [];
-        for ($i = 0; $i < 7; $i++) {
-            $day = $startOfWeek->copy()->addDays($i);
-            $weekDays[$day->format('Y-m-d')] = [
-                'date' => $day,
-                'day_name' => $day->locale('fr')->dayName,
-                'day_number' => $day->day,
-            ];
-        }
-
-        return view('planning.show', compact('employee', 'plannings', 'weekDays', 'week', 'year', 'startOfWeek', 'endOfWeek'));
     }
 
-    public function updateDragDrop(UpdatePlanningDragDropRequest $request)
+    // =========================================================================
+    // DRAG & DROP
+    // =========================================================================
+
+    public function updateDragDrop(Request $request)
     {
-        $validated = $request->validated();
+        $validated = $request->validate([
+            'planning_id'     => 'required|exists:plannings,id',
+            'new_date'        => 'required|date',
+            'new_employee_id' => 'sometimes|exists:employees,id',
+            'duplicate'       => 'sometimes|boolean',
+        ]);
 
-        $planning = Planning::findOrFail($validated['planning_id']);
-        $planning->date = $validated['new_date'];
-
-        if (isset($validated['new_employee_id'])) {
-            $planning->employee_id = $validated['new_employee_id'];
+        try {
+            $this->planningService->updateDragDrop($validated);
+            return response()->json(['success' => true]);
+        } catch (Exception $e) {
+            Log::error('Drag-drop failed: ' . $e->getMessage(), ['data' => $validated]);
+            return response()->json(['success' => false, 'error' => 'Erreur lors du déplacement'], 500);
         }
-
-        $planning->save();
-
-        return (new DragDropResponseResource(true, new PlanningResource($planning), 'Planning mis à jour avec succès'))->toResponse($request);
     }
+
+    // =========================================================================
+    // UPDATE ROOM — stocke le NOM de la salle, pas l'ID
+    // =========================================================================
+
+    public function updateRoom(Request $request)
+    {
+        $validated = $request->validate([
+            'employee_id' => 'required|exists:employees,id',
+            'room_id'     => 'nullable|exists:rooms,id',
+            'start'       => 'required|date',
+            'end'         => 'required|date',
+        ]);
+
+        try {
+            // Récupérer le NOM depuis l'ID
+            $roomName = null;
+            if (!empty($validated['room_id'])) {
+                $room     = Room::find($validated['room_id']);
+                $roomName = $room?->name;
+            }
+
+            // Stocker le NOM dans la colonne `room`
+            Planning::where('employee_id', $validated['employee_id'])
+                ->whereDate('date', '>=', $validated['start'])
+                ->whereDate('date', '<=', $validated['end'])
+                ->update(['room' => $roomName]);
+
+            return response()->json(['success' => true, 'room_name' => $roomName]);
+        } catch (Exception $e) {
+            Log::error('Update room error: ' . $e->getMessage(), [
+                'data'  => $validated,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['success' => false, 'error' => 'Erreur mise à jour salle'], 500);
+        }
+    }
+
+    // =========================================================================
+    // EXPORT PDF WEEKLY
+    // =========================================================================
 
     public function exportWeeklyPdf(Request $request)
     {
         try {
             $week = $request->week ?? now()->weekOfYear;
             $year = $request->year ?? now()->year;
-            $startOfWeek = Carbon::now()->setISODate($year, $week)->startOfWeek(Carbon::MONDAY);
-            $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
 
-            $employees = Employee::where('status', 'active')->get();
-            $plannings = Planning::with('employee')
-                ->whereDate('date', '>=', $startOfWeek)
-                ->whereDate('date', '<=', $endOfWeek)
-                ->get()
-                ->groupBy('employee_id');
+            $startOfWeek = now()->setISODate($year, $week)->startOfWeek(Carbon::MONDAY);
+            $endOfWeek   = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
 
-            $weekDays = [];
-            for ($i = 0; $i < 7; $i++) {
-                $day = $startOfWeek->copy()->addDays($i);
-                $weekDays[] = $day->format('l d/m');
-            }
+            $employees = $this->planningService->filterEmployees(null, null);
+            $plannings = $this->planningService->getPlanningsBetween($startOfWeek, $endOfWeek);
+            $weekDays  = $this->planningService->getWeekDays($startOfWeek);
 
-$pdf = Pdf::loadView('planning.weekly_pdf', compact('employees', 'plannings', 'weekDays', 'startOfWeek', 'endOfWeek'))->setPaper('a4', 'landscape');
-            $filename = 'planning-hebdo-' . $startOfWeek->format('Y-m-d') . '.pdf';
+            $filename = "planning_week_{$week}_{$year}.pdf";
+
+            $pdf = Pdf::loadView('planning.weekly_pdf', [
+                'employees'   => $employees,
+                'plannings'   => $plannings,
+                'weekDays'    => $weekDays,
+                'week'        => $week,
+                'year'        => $year,
+                'startOfWeek' => $startOfWeek,
+                'endOfWeek'   => $endOfWeek,
+            ])->setPaper('a4', 'landscape');
 
             return $pdf->download($filename);
         } catch (Exception $e) {
-            Log::error('Weekly PDF export error: ' . $e->getMessage());
+            Log::error('PDF export error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return back()->with('error', 'Erreur génération PDF.');
         }
     }
+
+    // =========================================================================
+    // EXPORT PDF MONTHLY
+    // =========================================================================
 
     public function exportMonthlyPdf(Request $request)
     {
         try {
-            $month = $request->month ?? now()->month;
-            $year = $request->year ?? now()->year;
-            $search = $request->search;
+            $month      = $request->month      ?? now()->month;
+            $year       = $request->year       ?? now()->year;
+            $search     = $request->search;
             $department = $request->department;
 
             $startOfMonth = Carbon::create($year, $month, 1)->startOfMonth();
-            $endOfMonth = $startOfMonth->copy()->endOfMonth();
+            $endOfMonth   = $startOfMonth->copy()->endOfMonth();
 
-            $employees = Employee::where('status', 'active')
-                ->when($search, fn($q) => $q->where(function($query) use ($search) {
-                    $query->where('first_name', 'like', '%' . $search . '%')
-                        ->orWhere('last_name', 'like', '%' . $search . '%')
-                        ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
-                }))
-                ->when($department, fn($q) => $q->where('department', $department))
-                ->orderBy('first_name')
-                ->orderBy('last_name')
-                ->get();
+            $employees   = $this->planningService->filterEmployees($search, $department);
+            $plannings   = $this->planningService->getPlanningsBetween($startOfMonth, $endOfMonth);
+            $departments = $this->planningService->getDepartments();
 
-            $plannings = Planning::with('employee')
-                ->whereDate('date', '>=', $startOfMonth)
-                ->whereDate('date', '<=', $endOfMonth)
-                ->get()
-                ->groupBy('employee_id');
+            $daysOfMonth = collect();
+            $currentDay  = $startOfMonth->copy();
+            while ($currentDay <= $endOfMonth) {
+                $daysOfMonth->push($currentDay->copy());
+                $currentDay->addDay();
+            }
 
-            $pdf = Pdf::loadView('planning.monthly_pdf', compact('employees', 'plannings', 'month', 'year', 'startOfMonth', 'endOfMonth', 'search', 'department'));
-            $filename = 'planning-mensuel-' . $startOfMonth->format('Y-m') . '.pdf';
+            $filename = "planning_mensuel_{$month}_{$year}.pdf";
+
+            $pdf = Pdf::loadView('planning.monthly_pdf', compact(
+                'employees', 'plannings', 'daysOfMonth',
+                'month', 'year', 'startOfMonth', 'endOfMonth',
+                'search', 'department', 'departments'
+            ))->setPaper('a4', 'landscape');
 
             return $pdf->download($filename);
         } catch (Exception $e) {
-            Log::error('Monthly PDF export error: ' . $e->getMessage());
-            return back()->with('error', 'Erreur génération PDF.');
+            Log::error('Monthly PDF export error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return back()->with('error', 'Erreur génération PDF mensuel.');
         }
     }
-
-    private function getFilteredEmployees(Request $request, $user_employee_id)
-    {
-        $search = $request->search;
-        $department = $request->department;
-
-        return Employee::where('status', 'active')
-            ->when($user_employee_id, fn($q) => $q->where('id', $user_employee_id))
-            ->when($search, fn($q) => $q->where(function($query) use ($search) {
-                $query->where('first_name', 'like', '%' . $search . '%')
-                    ->orWhere('last_name', 'like', '%' . $search . '%')
-                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
-            }))
-            ->when($department, fn($q) => $q->where('department', $department))
-            ->orderBy('first_name')
-            ->orderBy('last_name')
-            ->get();
-    }
 }
-?>
-

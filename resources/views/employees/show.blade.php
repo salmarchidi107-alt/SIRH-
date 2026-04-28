@@ -32,7 +32,7 @@
     </div>
     <div class="profile-meta">
             <div class="profile-meta-item">
-            <div class="profile-meta-value">{{ $employee->hire_date ? round(\Carbon\Carbon::parse($employee->hire_date)->floatDiffInYears(now()), 1) : 'N/A' }}</div>
+            <div class="profile-meta-value">{{ $employee->hire_date ? round($employee->hire_date->floatDiffInYears(now()), 1) : 'N/A' }}</div>
             <div class="profile-meta-label">Années d'ancienneté</div>
         </div>
         <div class="profile-meta-item">
@@ -64,7 +64,7 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-label"> Date de naissance</div>
-                        <div class="detail-value">{{ $employee->birth_date ? \Carbon\Carbon::parse($employee->birth_date)->format('d/m/Y') : '—' }}</div>
+                        <div class="detail-value">{{ $employee->birth_date ? $employee->birth_date->format('d/m/Y') : '—' }}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label"> CIN</div>
@@ -80,7 +80,7 @@
                         <div class="detail-value">
                             @if($employee->plain_pin)
                                 <span id="pin-{{ $employee->id }}" class="text-muted font-mono font-bold text-lg" style="letter-spacing: 2px;">{{ $employee->plain_pin }}</span>
-
+                                
                                 <button onclick="regeneratePin({{ $employee->id }})" class="btn btn-sm btn-warning ml-1">🔄 Regénérer</button>
                             @else
                                 <button onclick="generatePin({{ $employee->id }})" class="btn btn-sm btn-primary">Générer PIN</button>
@@ -130,7 +130,7 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-label"> Date d'embauche</div>
-                        <div class="detail-value">{{ $employee->hire_date ? \Carbon\Carbon::parse($employee->hire_date)->format('d/m/Y') : '—' }}</div>
+                        <div class="detail-value">{{ $employee->hire_date->format('d/m/Y') }}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label"> Diplôme</div>
@@ -193,8 +193,9 @@
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><line x1="10" y1="14" x2="14" y2="14"></line></svg>
                         </div>
                         <div style="font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Date de fin</div>
-                        <div style="font-size: 0.9rem; font-weight: 600; color: #1e293b; margin-top: 4px;">{{ $employee->contract_end_date ? $employee->contract_end_date->format('d/m/Y') : 'CDI' }}</div>
-                    </div>
+<div style="font-size: 0.9rem; font-weight: 600; color: #1e293b; margin-top: 4px;">
+    {{ optional($employee->contract_end_date)->format('d/m/Y') }}
+</div>                    </div>
                 </div>
 
                 <!-- Jours de travail -->

@@ -27,6 +27,7 @@ class PlanningWeeklyExport implements FromCollection, WithHeadings, WithMapping
             $planning->shift_type,
             $planning->shift_start,
             $planning->shift_end,
+            $planning->room ?? '',
             $planning->notes ?? '',
         ];
     }
@@ -41,6 +42,7 @@ class PlanningWeeklyExport implements FromCollection, WithHeadings, WithMapping
             'Type Shift',
             'Début',
             'Fin',
+            'Salle',
             'Notes',
         ];
     }

@@ -6,25 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-       Schema::create('variable_elements', function (Blueprint $table) {
-    $table->id();
-    $table->string('name')->nullable();
-    $table->string('category');
-    $table->string('rubrique')->nullable();
-    $table->string('unit')->nullable();
-
-    $table->timestamps();
-});
+        Schema::create('variable_elements', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('employee_id')->constrained()->cascadeOnDelete();
+            $table->tinyInteger('month');
+            $table->smallInteger('year');
+            $table->string('type'); // gain | retenue
+            $table->string('label'); // Prime transport, Avance, Absence...
+            $table->decimal('amount', 10, 2);
+            $table->timestamps();
+        });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('variable_elements');

@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'domain-tenant'   => \App\Http\Middleware\DomainTenant::class,
             'tenant-user'     => \App\Http\Middleware\Authenticated::class,
             'badge.auth'      => \App\Http\Middleware\BadgeGuard::class,
+            'role'            => \App\Http\Middleware\CheckRole::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

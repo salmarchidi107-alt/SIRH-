@@ -10,8 +10,6 @@ return new class extends Migration
     {
         Schema::create('compteurs_temps', function (Blueprint $table) {
             $table->id();
-            $table->uuid('tenant_id');
-            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
             $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
             $table->integer('annee');
             $table->integer('mois');
@@ -21,7 +19,7 @@ return new class extends Migration
             $table->decimal('solde_compteur', 6, 2)->default(0);
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'employee_id', 'annee', 'mois']);
+            $table->unique(['employee_id', 'annee', 'mois']);
         });
     }
 

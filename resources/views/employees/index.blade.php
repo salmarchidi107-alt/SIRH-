@@ -19,8 +19,8 @@
         </a>
 
         {{-- PDF global ou filtré --}}
-        <a href="{{ route('employees.export-pdf', request()->query()) }}"
-           class="btn btn-success"
+        <a href="{{ route('employees.export-pdf', request()->query()) }}" 
+           class="btn btn-success " 
            title="Exporter en PDF">
             📄 PDF
         </a>
@@ -35,14 +35,14 @@
         @endif
     </div>
 @endif
-
     </div>
+    
 <!-- Filter Buttons: Tous / Actifs -->
 <div class="filters-bar">
 
     <div style="display:flex;gap:8px;flex-direction:row-reverse">
         @if(in_array(auth()->user()->role ?? '', ['admin', 'rh']))
-
+       
         @endif
         <a href="{{ route('employees.index', ['filter' => 'all']) }}"
            class="btn {{ $filter == 'all' ? 'btn-primary' : 'btn-outline' }}">
@@ -111,7 +111,7 @@
                         </div>
                     </td>
                     <td>
-                        <span class="badge badge-neutral">{{ $employee->department->name ?? 'N/A' }}</span>
+                        <span class="badge badge-neutral">{{ $employee->department ?? 'N/A' }}</span>
                     </td>
                     <td class="text-sm">{{ $employee->position }}</td>
                     <td>
@@ -122,7 +122,7 @@
                     <td>
 {{ $employee->status_label ?? $employee->status }}
                     </td>
-                    <td class="text-sm text-muted">{{ $employee->hire_date ? \Carbon\Carbon::parse($employee->hire_date)->format('d/m/Y') : '' }}</td>
+                    <td class="text-sm text-muted">{{ $employee->hire_date->format('d/m/Y') }}</td>
 <td>
                         <div style="display:flex;gap:6px">
                             <a href="{{ route('employees.show', $employee) }}" class="btn btn-ghost btn-sm btn-icon" title="Voir">
@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
         dragClass: 'sortable-drag',
         onEnd: function (evt) {
             const order = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.employeeId || tr.querySelector('a')?.href.split('/').pop());
-            fetch('/employees/reorder', {
+            fetch('{{ route("employees.reorder") }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
               }).catch(err => console.error('Reorder error', err));
         }
     });
-
+    
     // Set employee ID data attr (for loaded rows)
     tbody.querySelectorAll('tr').forEach(tr => {
         const link = tr.querySelector('a[href*="/employees/"]');
@@ -281,19 +281,26 @@ async function ajaxEmployees(page = 1, append = false) {
         loadMoreBtn.textContent = `Charger plus (Page ${data.pagination.current_page + 1})`;
 
         // Update URL without reload
-        const newUrl = `{{ route('employees.index') }}?${searchParams.toString()}`;
+        fetch(newUrl, {
+    headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+    }
+})
+       const newUrl = `{{ route('employees.ajax') }}?${searchParams.toString()}`;
         if (page === 1) history.replaceState({}, '', newUrl);
     } catch (error) {
         console.error('Erreur AJAX:', error);
-        alert('Erreur de chargement. Rechargez la page.');
+        document.getElementById('loading-spinner').textContent = 'Erreur de chargement';
     } finally {
         isLoading = false;
         spinner.style.display = 'none';
         loadMoreBtn.disabled = false;
     }
+}
 
 function buildEmployeeRow(employee) {
     const tr = document.createElement('tr');
+    const isAdmin = {{ auth()->user()->isAdminOrRh() ?? false }};
     tr.innerHTML = `
         <td>
             <span style="font-family:monospace;font-size:0.8rem;background:var(--surface-2);padding:2px 8px;border-radius:4px;border:1px solid var(--border)">
@@ -303,8 +310,8 @@ function buildEmployeeRow(employee) {
         <td>
             <div class="table-employee">
                 <div class="table-avatar">
-                    ${employee.photo ? `<img src="${employee.photo_url}" alt="">` :
-                      `<span>${(employee.first_name?.[0] || '') + (employee.last_name?.[0] || '')}</span>`}
+                    ${employee.photo ? `<img src="${employee.photo_url}" alt="">` : 
+                      `<span style="background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:white;font-weight:700;font-size:0.75rem;padding:0.5rem;border-radius:50%;width:2rem;height:2rem;display:flex;align-items:center;justify-content:center">${(employee.full_name?.[0] || 'E') + (employee.full_name?.[1] || '')?.toUpperCase()}</span>`}
                 </div>
                 <div>
                     <div class="table-name">${employee.full_name}</div>
@@ -315,40 +322,37 @@ function buildEmployeeRow(employee) {
         <td class="text-sm">${employee.position || ''}</td>
         <td>
             <span class="badge ${employee.contract_type == 'CDI' ? 'badge-success' : (employee.contract_type == 'CDD' ? 'badge-warning' : 'badge-neutral')}">
-                ${employee.contract_type || ''}
+                ${employee.contract_type || 'N/A'}
             </span>
         </td>
         <td>
-<span class="badge badge-${employee.status == 'active' ? 'success' : (employee.status == 'leave' ? 'warning' : 'neutral')}">${employee.status_label || employee.status}</span>
+            <span class="badge badge-${employee.status_color}">${employee.status_label}</span>
         </td>
-        <td class="text-sm text-muted">${employee.hire_date ? new Date(employee.hire_date).toLocaleDateString('fr-FR') : ''}</td>
+        <td class="text-sm text-muted">${employee.hire_date || ''}</td>
         <td>
             <div style="display:flex;gap:6px">
                 <a href="/employees/${employee.id}" class="btn btn-ghost btn-sm btn-icon" title="Voir">
                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
                     </svg>
                 </a>
-                @if(in_array(auth()->user()->role ?? '', ['admin', 'rh']))
+                ${isAdmin ? `
                 <a href="/employees/${employee.id}/edit" class="btn btn-outline btn-sm btn-icon" title="Modifier">
                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                     </svg>
                 </a>
-                <form action="/employees/${employee.id}" method="POST" style="display:inline"
-                    onsubmit="return confirm('Supprimer cet employé ?')">
+                <form action="/employees/${employee.id}" method="POST" style="display:inline" onsubmit="return confirm('Supprimer cet employé ?')">
                     <input type="hidden" name="_token" value="${employee.csrf_token}">
-                    <input type="hidden" name="_method" value="${employee.delete_method}">
+                    <input type="hidden" name="_method" value="${employee._method}">
                     <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Supprimer">
                         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <polyline points="3 6 5 6 21 6"/>
                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
                         </svg>
                     </button>
-                </form>
-                @endif
+                </form>` : ''}
             </div>
         </td>
     `;

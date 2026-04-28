@@ -427,12 +427,13 @@
                 @endforeach
             </select>
             
-            <select class="filter-select" style="padding:8px 12px" onchange="applyFilter('employee_id', this.value)">
-                <option value="">Tous les employés</option>
-                @foreach($employees as $emp)
-                    <option value="{{ $emp->id }}" {{ request('employee_id') == $emp->id ? 'selected' : '' }}>{{ $emp->full_name }}</option>
-                @endforeach
-            </select>
+            {{-- Search --}}
+            <div class="search-bar" style="position:relative">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--text-muted)">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" name="search" placeholder="Rechercher employé..." value="{{ $search ?? '' }}" style="padding:10px 12px 10px 40px;border:1px solid var(--border);border-radius:8px;min-width:220px">
+            </div>
             
             <select class="filter-select" style="padding:8px 12px" onchange="applyFilter('status', this.value)">
                 <option value="">Tous les statuts</option>
@@ -444,6 +445,7 @@
                 <a href="{{ $resetUrl }}" class="btn btn-ghost btn-sm">✕ Réinitialiser</a>
             @endif
         </div>
+        
     </div>
 </div>
 

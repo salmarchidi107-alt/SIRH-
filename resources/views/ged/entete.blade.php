@@ -1,79 +1,54 @@
 @extends('layouts.app')
 
 @section('title','Entête Documents')
-@section('page-title','Entête')
+@section('page-title','Mise en page')
 
 @section('content')
 <div class="container-fluid py-4 px-4">
-
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show mb-4">
-            <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-            <button class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
     <form method="POST" action="{{ route('ged.entete.store') }}" id="enteteForm">
         @csrf
 
-        <div style="display:grid;grid-template-columns:340px 1fr;gap:24px;align-items:start;">
+        <div style="display:grid;grid-template-columns:280px 1fr;gap:24px;align-items:start;">
 
-            {{-- ══ COLONNE GAUCHE — Variables ══ --}}
-            <div style="display:flex;flex-direction:column;gap:20px;">
+            {{-- ══ COLONNE GAUCHE ══ --}}
+            <div style="display:flex;flex-direction:column;gap:16px;">
 
+                {{-- Choix entête / pied de page --}}
                 <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
                     <div class="card-header border-0 py-3 px-4" style="background:#f0fdfa;">
                         <h6 class="mb-0 fw-semibold" style="color:#0d2238;">
-                            <i class="fas fa-code me-2" style="color:#14b8a6;"></i>
-                            Variables — cliquez pour insérer
+                            Mode d'édition
                         </h6>
                     </div>
-                    <div class="card-body p-3" style="display:flex;flex-direction:column;gap:14px;">
-                        <div>
-                            <div class="var-group-label">Société</div>
-                            <div class="var-chips-row">
-                                <span class="var-chip" onclick="insererVariable(this,'@{{logo_societe}}')">
-                                    <i class="fas fa-image me-1" style="color:#14b8a6;font-size:10px;"></i>
-                                    <span class="var-name">@{{logo_societe}}</span>
-                                </span>
-                                <span class="var-chip" onclick="insererVariable(this,'@{{societe}}')"><span class="var-name">@{{societe}}</span></span>
-                                <span class="var-chip" onclick="insererVariable(this,'@{{adresse}}')"><span class="var-name">@{{adresse}}</span></span>
-                                <span class="var-chip" onclick="insererVariable(this,'@{{telephone}}')"><span class="var-name">@{{telephone}}</span></span>
-                                <span class="var-chip" onclick="insererVariable(this,'@{{email_societe}}')"><span class="var-name">@{{email_societe}}</span></span>
-                            </div>
-                        </div>
+                    <div class="card-body p-4" style="display:flex;flex-direction:column;gap:12px;">
 
-                        <div>
-                            <div class="var-group-label">Employé</div>
-                            <div class="var-chips-row">
-                                <span class="var-chip" onclick="insererVariable(this,'@{{nom}}')"><span class="var-name">@{{nom}}</span></span>
-                                <span class="var-chip" onclick="insererVariable(this,'@{{prenom}}')"><span class="var-name">@{{prenom}}</span></span>
-                                <span class="var-chip" onclick="insererVariable(this,'@{{matricule}}')"><span class="var-name">@{{matricule}}</span></span>
-                                <span class="var-chip" onclick="insererVariable(this,'@{{poste}}')"><span class="var-name">@{{poste}}</span></span>
-                                <span class="var-chip" onclick="insererVariable(this,'@{{departement}}')"><span class="var-name">@{{departement}}</span></span>
-                                <span class="var-chip" onclick="insererVariable(this,'@{{contrat}}')"><span class="var-name">@{{contrat}}</span></span>
-                                <span class="var-chip" onclick="insererVariable(this,'@{{salaire}}')"><span class="var-name">@{{salaire}}</span></span>
+                        <label class="mode-option" id="labelEntete">
+                            <input type="radio" name="mode_edition" value="entete"
+                                   id="modeEntete" checked onchange="switchMode('entete')">
+                            <div>
+                                <div class="mode-title">Entête</div>
+                                <div class="mode-sub">Apparaît en haut du document</div>
                             </div>
-                        </div>
+                        </label>
 
-                        <div>
-                            <div class="var-group-label">Date</div>
-                            <div class="var-chips-row">
-                                <span class="var-chip" onclick="insererVariable(this,'@{{date}}')"><span class="var-name">@{{date}}</span></span>
-                                <span class="var-chip" onclick="insererVariable(this,'@{{aujourd_hui}}')"><span class="var-name">@{{aujourd_hui}}</span></span>
-                                <span class="var-chip" onclick="insererVariable(this,'@{{mois_annee}}')"><span class="var-name">@{{mois_annee}}</span></span>
-                                <span class="var-chip" onclick="insererVariable(this,'@{{annee}}')"><span class="var-name">@{{annee}}</span></span>
+                        <label class="mode-option" id="labelPied">
+                            <input type="radio" name="mode_edition" value="pied_de_page"
+                                   id="modePied" onchange="switchMode('pied_de_page')">
+                            <div>
+                                <div class="mode-title">Pied de page</div>
+                                <div class="mode-sub">Apparaît en bas du document</div>
                             </div>
-                        </div>
+                        </label>
 
                     </div>
                 </div>
 
+                {{-- Boutons --}}
                 <div style="display:flex;flex-direction:column;gap:8px;">
                     <button type="submit" onclick="syncTinyMCE()"
                             class="btn py-2 fw-semibold w-100"
                             style="background:#14b8a6;color:#fff;border-radius:10px;">
-                        <i class="fas fa-save me-2"></i>Sauvegarder le modèle
+                        <i class="fas fa-save me-2"></i>Enregistrer
                     </button>
                     <a href="{{ url()->previous() }}"
                        class="btn py-2 fw-semibold w-100"
@@ -86,23 +61,36 @@
 
             {{-- ══ COLONNE DROITE — Éditeur ══ --}}
             <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
-                <div class="card-header border-0 py-3 px-4 d-flex align-items-center gap-3"
+                <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between"
                      style="background:#f0fdfa;">
-
-                    {{-- Aperçu logo + société --}}
-                    @if($entete?->logo_path)
-                        <img src="{{ asset('storage/'.$entete->logo_path) }}"
-                             style="height:40px;object-fit:contain;border-radius:6px;">
-                    @endif
-                    <div>
-                        <span style="font-size:11px;color:#14b8a6;">
-                            <i class="fas fa-pen-nib me-1"></i>Contenu de l'entête
-                        </span>
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        @if($entete?->logo_path)
+                            <img src="{{ asset('storage/'.$entete->logo_path) }}"
+                                 style="height:36px;object-fit:contain;border-radius:6px;">
+                        @endif
+                        <div>
+                            <div id="modeLabel"
+                                 style="font-size:13px;font-weight:600;color:#0d2238;">
+                                Contenu de l'entête
+                            </div>
+                            <div id="modeSub" style="font-size:11px;color:#94a3b8;">
+                                Apparaît en haut de chaque document exporté
+                            </div>
+                        </div>
                     </div>
+                    {{-- Indicateur de mode --}}
+                    <span id="modeBadge"
+                          style="background:#e0f2f1;color:#0f766e;font-size:11px;
+                                 font-weight:700;padding:4px 12px;border-radius:20px;">
+                        ENTÊTE
+                    </span>
                 </div>
-
                 <div class="card-body p-4">
-                    <textarea name="contenu_libre" id="tinymceEntete"></textarea>
+                    {{-- Champs cachés pour les deux contenus --}}
+                    <input type="hidden" name="contenu_libre"        id="hiddenEntete">
+                    <input type="hidden" name="contenu_pied_de_page" id="hiddenPied">
+
+                    <textarea id="tinymceEntete"></textarea>
                 </div>
             </div>
 
@@ -118,7 +106,6 @@
 
 @push('styles')
 <style>
-/* Partagé avec modeles/edit */
 .var-group-label { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#94a3b8;margin-bottom:6px; }
 .var-chips-row   { display:flex;flex-wrap:wrap;gap:6px; }
 .var-chip {
@@ -131,13 +118,40 @@
 .var-chip.flash  { background:#14b8a6;border-color:#14b8a6; }
 .var-chip.flash .var-name { color:#fff; }
 .var-name { font-family:monospace;font-size:11px;font-weight:600;color:#0d2238; }
+
+/* Mode option radio */
+.mode-option {
+    display:flex;align-items:center;gap:12px;
+    padding:12px 14px;border-radius:12px;
+    border:2px solid #e2e8f0;background:#fff;
+    cursor:pointer;transition:all .15s;
+}
+.mode-option:has(input:checked) {
+    border-color:#14b8a6;background:#f0fdfa;
+}
+.mode-option input[type="radio"] { display:none; }
+.mode-title { font-size:13px;font-weight:600;color:#0d2238; }
+.mode-sub   { font-size:11px;color:#94a3b8;margin-top:2px; }
+
 .tox-tinymce { border-radius:10px !important;border:2px solid #e2e8f0 !important; }
+.tox .tox-statusbar,.tox-promotion { display:none !important; }
+
+@media(max-width:1024px){
+    form > div[style*="grid-template-columns"] { grid-template-columns:1fr !important; }
+}
 </style>
 @endpush
 
 @push('scripts')
 <script>
-const contenuLibreInitial = atob(@json($contenuLibre));
+// Contenus initiaux en base64
+const contenuEnteteInitial = atob(@json($contenuLibre));
+const contenuPiedInitial   = atob(@json($contenuPiedDePage));
+
+// État courant
+let modeActuel   = 'entete';
+let dataEntete   = contenuEnteteInitial;
+let dataPied     = contenuPiedInitial;
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tinymce@6/tinymce.min.js"></script>
 <script>
@@ -154,14 +168,71 @@ tinymce.init({
     toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline | table | align | numlist bullist | charmap | removeformat',
     content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; color: #0d2238; padding: 20px; }',
     setup: function(editor) {
-        editor.on('init',   function() { editor.setContent(contenuLibreInitial); });
-        editor.on('change', function() { editor.save(); });
+        editor.on('init', function() {
+            editor.setContent(dataEntete);
+        });
+        editor.on('change input', function() {
+            // Sauvegarder dans la variable du mode actuel
+            if (modeActuel === 'entete') {
+                dataEntete = editor.getContent();
+            } else {
+                dataPied = editor.getContent();
+            }
+        });
     }
 });
 
+/* Changer de mode : sauvegarder l'actuel, charger l'autre */
+function switchMode(mode) {
+    const editor = tinymce.get('tinymceEntete');
+    if (!editor) return;
+
+    // Sauvegarder le contenu du mode actuel
+    if (modeActuel === 'entete') {
+        dataEntete = editor.getContent();
+    } else {
+        dataPied = editor.getContent();
+    }
+
+    modeActuel = mode;
+
+    // Charger le contenu du nouveau mode
+    editor.setContent(mode === 'entete' ? dataEntete : dataPied);
+
+    // Mettre à jour les labels visuels
+    const label  = document.getElementById('modeLabel');
+    const sub    = document.getElementById('modeSub');
+    const badge  = document.getElementById('modeBadge');
+
+    if (mode === 'entete') {
+        label.innerHTML = 'Contenu de l\'entête';
+        sub.textContent = 'Apparaît en haut de chaque document exporté';
+        badge.textContent = 'ENTÊTE';
+        badge.style.background = '#e0f2f1';
+        badge.style.color = '#0f766e';
+    } else {
+        label.innerHTML = 'Contenu du pied de page';
+        sub.textContent = 'Apparaît en bas de chaque document exporté';
+        badge.textContent = 'PIED DE PAGE';
+        badge.style.background = '#fef3c7';
+        badge.style.color = '#d97706';
+    }
+}
+
+/* Avant soumission : écrire les deux contenus dans les champs cachés */
 function syncTinyMCE() {
     const editor = tinymce.get('tinymceEntete');
-    if (editor) editor.save();
+    if (!editor) return;
+
+    // Sauvegarder le mode actuel
+    if (modeActuel === 'entete') {
+        dataEntete = editor.getContent();
+    } else {
+        dataPied = editor.getContent();
+    }
+
+    document.getElementById('hiddenEntete').value = dataEntete;
+    document.getElementById('hiddenPied').value   = dataPied;
 }
 
 function insererVariable(el, variable) {
@@ -178,5 +249,10 @@ function showToast(msg) {
     clearTimeout(t._timer);
     t._timer = setTimeout(() => { t.style.opacity = '0'; }, 1800);
 }
+
+// Sync avant submit via le bouton normal aussi
+document.getElementById('enteteForm').addEventListener('submit', function() {
+    syncTinyMCE();
+});
 </script>
 @endpush

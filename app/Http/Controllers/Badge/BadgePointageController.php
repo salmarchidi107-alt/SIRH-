@@ -113,7 +113,9 @@ class BadgePointageController extends Controller
 
     public function entree(Request $request)
     {
+        
         $employee = $this->getAuthEmployee();
+
         $this->recordAction('entree', $employee);
         $request->session()->flash('last_type', 'entree');
         return redirect()->route('badge.result');
@@ -149,6 +151,7 @@ class BadgePointageController extends Controller
 
     public function recordAction(string $type, Employee $employee): void
     {
+      
         $now     = $this->nowCasa();
        
         $today   = $now->format('Y-m-d');
@@ -159,12 +162,14 @@ class BadgePointageController extends Controller
             'employee_id' => $employee->id,
             'type'        => $type,
         ]);
-
+   
+        
         // 2. Synchronisation Pointage RH
         $pointage = Pointage::firstOrCreate(
             ['employee_id' => $employee->id, 'date' => $today],
-            ['statut' => 'present', 'valide' => false, 'source' => 'badge']
+            ['statut' => 'present', 'valide' => false, 'source' => 'badge', 'tenant_id' => $employee->user->tenant_id ]
         );
+   
 //  TODO: add pause start and pause end logi
       if ($type === 'entree' && !$pointage->heure_entree) {
     $pointage->heure_entree = $nowTime;

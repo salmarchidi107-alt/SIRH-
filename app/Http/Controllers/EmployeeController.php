@@ -47,7 +47,7 @@ class EmployeeController extends Controller
         try {
             $perPage = 15;
             $page = $request->get('page', 1);
-            
+
             $employees = $this->buildQuery($request)
                 ->with(['user:id,name']) // minimal user data
                 ->defaultOrder()
@@ -85,12 +85,12 @@ class EmployeeController extends Controller
     {
         return match($status) {
             'active' => 'success',
-            'leave' => 'warning', 
+            'leave' => 'warning',
             'inactive' => 'neutral',
             default => 'error'
         };
     }
-    
+
 
     public function reorder(Request $request)
     {
@@ -245,7 +245,7 @@ $employee->pin = \Illuminate\Support\Facades\Hash::make($plainPin);
         abort_unless(auth()->user()->can('manage_employees'), 403);
 
         $plainPin = sprintf('%04d%s', rand(1000, 9999), chr(rand(65, 90)).chr(rand(65, 90)));
-        
+
         $employee->plain_pin = $plainPin;
         $employee->pin = \Illuminate\Support\Facades\Hash::make($plainPin);
         $employee->save();
@@ -306,18 +306,19 @@ public function exportPdf(Request $request)
      * Reusable query builder (DRY)
      */
     private function buildQuery(Request $request)
-    {
-        return Employee::query()
-            ->when($request->get('filter') === 'active', fn($q) => $q->active())
-            ->when($request->search, function ($q, $search) {
-                $q->where(function ($q) use ($search) {
-                    $q->where('first_name', 'like', "%$search%")
-                      ->orWhere('last_name', 'like', "%$search%")
-                      ->orWhere('matricule', 'like', "%$search%")
-                      ->orWhere('email', 'like', "%$search%");
-                });
-            })
-            ->when($request->department, fn($q, $dep) => $q->where('department', $dep))
-            ->when($request->status, fn($q, $status) => $q->status($status));
-    }
+{
+    return Employee::query()
+        // Le Global Scope 'tenant' s'applique automatiquement ici
+        ->when($request->get('filter') === 'active', fn($q) => $q->active())
+        ->when($request->search, function ($q, $search) {
+            $q->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%$search%")
+                  ->orWhere('last_name', 'like', "%$search%")
+                  ->orWhere('matricule', 'like', "%$search%")
+                  ->orWhere('email', 'like', "%$search%");
+            });
+        })
+        ->when($request->department, fn($q, $dep) => $q->where('department', $dep))
+        ->when($request->status, fn($q, $status) => $q->status($status));
+}
 }

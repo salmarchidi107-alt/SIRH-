@@ -16,10 +16,11 @@ class SalaryController extends Controller
 
     public function index(Request $request)
     {
-        $month  = (int) $request->get('month', now()->month);
-        $year   = (int) $request->get('year',  now()->year);
-        $status = $request->get('status');
-        $search = $request->get('search');
+        $month      = (int) $request->get('month', now()->month);
+        $year       = (int) $request->get('year',  now()->year);
+        $status     = $request->get('status');
+        $search     = $request->get('search');
+        $department = $request->get('department');
 
         $query = Employee::with([
             'salaries' => fn($q) => $q->where('month', $month)->where('year', $year),
@@ -36,16 +37,29 @@ class SalaryController extends Controller
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('first_name', 'like', "%$search%")
-                  ->orWhere('last_name', 'like', "%$search%")
-                  ->orWhere('matricule', 'like', "%$search%")
-                  ->orWhere('email', 'like', "%$search%");
+                  ->orWhere('last_name',  'like', "%$search%")
+                  ->orWhere('matricule',  'like', "%$search%");
             });
+        }
+
+        if ($department) {
+            $query->where('department', $department);
         }
 
         $employees = $query->orderByRaw("CONCAT(first_name, ' ', last_name) ASC")->paginate(50);
         $summary   = $this->payrollService->getMonthlySummary($month, $year);
 
-        return view('salary.index', compact('employees', 'month', 'year', 'summary', 'status', 'search'));
+        $departments = Employee::select('department')
+            ->whereNotNull('department')
+            ->distinct()
+            ->orderBy('department')
+            ->pluck('department');
+
+        return view('salary.index', compact(
+            'employees', 'month', 'year', 'summary',
+            'status', 'search', 'department', 'departments'
+        ));
+        
     }
 
     public function show(Employee $employee)
@@ -87,11 +101,6 @@ class SalaryController extends Controller
         ));
     }
 
-    /**
-     * store() et update() partagent la même logique via _upsert().
-     * Le JS côté client calcule tous les montants et les envoie
-     * via des champs hidden — le serveur persiste sans recalculer.
-     */
     public function store(Request $request, Employee $employee)
     {
         return $this->_upsert($request, $employee);
@@ -102,7 +111,6 @@ class SalaryController extends Controller
         return $this->_upsert($request, $employee);
     }
 
-    // ─────────────────────────────────────────────────────────────
     private function _upsert(Request $request, Employee $employee)
     {
         $data = $request->validate([
@@ -112,7 +120,6 @@ class SalaryController extends Controller
             'hourly_rate'              => 'nullable|numeric|min:0',
             'working_hours'            => 'nullable|numeric|min:0',
             'mode_cotisation'          => 'nullable|in:auto,manual',
-            // Gains saisis
             'base_salary'              => 'required|numeric|min:0',
             'performance_bonus'        => 'nullable|numeric|min:0',
             'transport_allowance'      => 'nullable|numeric|min:0',
@@ -120,16 +127,13 @@ class SalaryController extends Controller
             'housing_allowance'        => 'nullable|numeric|min:0',
             'responsibility_allowance' => 'nullable|numeric|min:0',
             'other_gains'              => 'nullable|numeric|min:0',
-            // Retenues saisies
             'advance_deduction'        => 'nullable|numeric|min:0',
             'loan_deduction'           => 'nullable|numeric|min:0',
             'garnishment_deduction'    => 'nullable|numeric|min:0',
             'other_deductions'         => 'nullable|numeric|min:0',
-            // Cotisations manuelles
             'cnss_deduction_manual'    => 'nullable|numeric|min:0',
             'amo_deduction_manual'     => 'nullable|numeric|min:0',
             'fp_deduction_manual'      => 'nullable|numeric|min:0',
-            // Calculés côté JS (champs hidden)
             'gross_salary'             => 'nullable|numeric|min:0',
             'seniority_bonus'          => 'nullable|numeric|min:0',
             'overtime_day_amount'      => 'nullable|numeric|min:0',
@@ -161,14 +165,12 @@ class SalaryController extends Controller
         $month = (int) $data['month'];
         $year  = (int) $data['year'];
 
-        // Récupère ou crée le bulletin
         $salary = Salary::firstOrNew([
             'employee_id' => $employee->id,
             'month'       => $month,
             'year'        => $year,
         ]);
 
-        // Ne touche pas aux bulletins déjà validés ou payés
         if ($salary->exists && in_array($salary->status, ['validated', 'paid'])) {
             return redirect()
                 ->route('salary.show', $employee)
@@ -176,16 +178,13 @@ class SalaryController extends Controller
         }
 
         $salary->fill([
-            // Identification période
             'employee_id'              => $employee->id,
             'month'                    => $month,
             'year'                     => $year,
-            // Type et taux
             'salary_type'              => $data['salary_type'] ?? 'monthly',
             'hourly_rate'              => $data['hourly_rate'] ?? 0,
             'working_hours'            => $data['working_hours'] ?? 0,
             'mode_cotisation'          => $data['mode_cotisation'] ?? 'auto',
-            // Gains saisis
             'base_salary'              => $data['base_salary'],
             'performance_bonus'        => $data['performance_bonus'] ?? 0,
             'transport_allowance'      => $data['transport_allowance'] ?? 0,
@@ -193,16 +192,13 @@ class SalaryController extends Controller
             'housing_allowance'        => $data['housing_allowance'] ?? 0,
             'responsibility_allowance' => $data['responsibility_allowance'] ?? 0,
             'other_gains'              => $data['other_gains'] ?? 0,
-            // Retenues saisies
             'advance_deduction'        => $data['advance_deduction'] ?? 0,
             'loan_deduction'           => $data['loan_deduction'] ?? 0,
             'garnishment_deduction'    => $data['garnishment_deduction'] ?? 0,
             'other_deductions'         => $data['other_deductions'] ?? 0,
-            // Cotisations manuelles
             'cnss_deduction_manual'    => $data['cnss_deduction_manual'] ?? null,
             'amo_deduction_manual'     => $data['amo_deduction_manual'] ?? null,
             'fp_deduction_manual'      => $data['fp_deduction_manual'] ?? null,
-            // Calculés (JS → hidden fields)
             'gross_salary'             => $data['gross_salary'] ?? 0,
             'seniority_bonus'          => $data['seniority_bonus'] ?? 0,
             'overtime_day_amount'      => $data['overtime_day_amount'] ?? 0,

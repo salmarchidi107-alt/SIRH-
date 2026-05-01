@@ -31,40 +31,49 @@ class VueEnsembleController extends Controller
 
     public function index(Request $request)
     {
-        $user        = Auth::user();
-        $annee       = $this->validerAnnee($request->get('annee'));
-        $mois        = $this->validerMois($request->get('mois'));
-        $employeeId  = $request->get('employee_id');
-        $department  = $request->get('department');
+        $user       = Auth::user();
+        $annee      = $this->validerAnnee($request->get('annee'));
+        $mois       = $this->validerMois($request->get('mois'));
+        $employeeId = $request->get('employee_id');
+        $department = $request->get('department');
 
-        $departments          = Department::names();
-        $listeEmployesSelect  = Employee::orderBy('first_name')->get(['id', 'first_name', 'last_name', 'matricule', 'department']);
+        $departments         = Department::names();
+        $listeEmployesSelect = Employee::orderBy('first_name')->get(['id', 'first_name', 'last_name', 'matricule', 'department']);
 
         $moisPrecedent = Carbon::create($annee, $mois, 1)->subMonth();
         $moisSuivant   = Carbon::create($annee, $mois, 1)->addMonth();
 
+        // ---------------------------------------------------------------
         // MODE DEPARTEMENT
+        // ---------------------------------------------------------------
         if ($department && !$employeeId) {
             $donnees = $this->getDonneesDepartement($department, $annee, $mois);
+
+            // Jours planifies pour le popup calendrier (departement = union des plannings)
+            $joursPlanningSemaine = $this->getJoursPlanningPopup(null, null, $department, $annee);
+
             return view('vue-ensemble.index', array_merge($donnees, [
-                'modeDepartement'     => true,
-                'employee'            => null,
-                'departments'         => $departments,
-                'listeEmployesSelect' => $listeEmployesSelect,
-                'annee'               => $annee,
-                'mois'                => $mois,
-                'employeeId'          => null,
-                'department'          => $department,
-                'moisPrecedent'       => $moisPrecedent,
-                'moisSuivant'         => $moisSuivant,
-                'compteurMois'        => null,
-                'joursDetails'        => [],
-                'semaines'            => [],
-                'graphiqueMois'       => [],
+                'modeDepartement'      => true,
+                'employee'             => null,
+                'departments'          => $departments,
+                'listeEmployesSelect'  => $listeEmployesSelect,
+                'annee'                => $annee,
+                'mois'                 => $mois,
+                'employeeId'           => null,
+                'department'           => $department,
+                'moisPrecedent'        => $moisPrecedent,
+                'moisSuivant'          => $moisSuivant,
+                'compteurMois'         => null,
+                'joursDetails'         => [],
+                'semaines'             => [],
+                'graphiqueMois'        => [],
+                'joursPlanningSemaine' => $joursPlanningSemaine,
             ]));
         }
 
+        // ---------------------------------------------------------------
         // MODE EMPLOYE
+        // ---------------------------------------------------------------
         $employee      = $this->resoudreEmployee($employeeId, $user);
         $compteurMois  = null;
         $joursDetails  = [];
@@ -78,32 +87,90 @@ class VueEnsembleController extends Controller
             $graphiqueMois = $this->graphService->getGraphiqueMois($employee->id, $annee);
         }
 
+        // Jours planifies pour le popup calendrier (employe individuel)
+        $joursPlanningSemaine = $this->getJoursPlanningPopup($employee, $employeeId, null, $annee);
+
         return view('vue-ensemble.index', [
-            'modeDepartement'     => false,
-            'employee'            => $employee,
-            'departments'         => $departments,
-            'listeEmployesSelect' => $listeEmployesSelect,
-            'compteurMois'        => $compteurMois,
-            'joursDetails'        => $joursDetails,
-            'semaines'            => $semaines,
-            'graphiqueMois'       => $graphiqueMois,
-            'annee'               => $annee,
-            'mois'                => $mois,
-            'employeeId'          => $employeeId,
-            'department'          => $department,
-            'moisPrecedent'       => $moisPrecedent,
-            'moisSuivant'         => $moisSuivant,
-            'nomDepartement'      => null,
-            'statsGlobalesDept'   => null,
-            'employesDept'        => [],
-            'graphiqueMoisDept'   => [],
-            'semainerDept'        => [],
+            'modeDepartement'      => false,
+            'employee'             => $employee,
+            'departments'          => $departments,
+            'listeEmployesSelect'  => $listeEmployesSelect,
+            'compteurMois'         => $compteurMois,
+            'joursDetails'         => $joursDetails,
+            'semaines'             => $semaines,
+            'graphiqueMois'        => $graphiqueMois,
+            'annee'                => $annee,
+            'mois'                 => $mois,
+            'employeeId'           => $employeeId,
+            'department'           => $department,
+            'moisPrecedent'        => $moisPrecedent,
+            'moisSuivant'          => $moisSuivant,
+            'nomDepartement'       => null,
+            'statsGlobalesDept'    => null,
+            'employesDept'         => [],
+            'graphiqueMoisDept'    => [],
+            'semainerDept'         => [],
+            'joursPlanningSemaine' => $joursPlanningSemaine,
         ]);
     }
 
     // =========================================================================
-    // CALCUL HEURES PLANIFIEES (avec pause)
-    // Les heures realisees viennent directement du pointage, elles sont deja nettes
+    // POPUP CALENDRIER — JOURS PLANIFIES
+    // =========================================================================
+
+    /**
+     * Retourne tous les jours planifies de l'annee pour le popup calendrier.
+     *
+     * Format retourne :
+     * [
+     *   '2026-04-07' => ['shift_start' => '08:00:00', 'shift_end' => '17:00:00'],
+     *   '2026-04-08' => ['shift_start' => '08:00:00', 'shift_end' => '17:00:00'],
+     *   ...
+     * ]
+     *
+     * En mode departement : union des plannings de tous les employes du dept.
+     * En mode employe     : planning de l'employe uniquement.
+     */
+    private function getJoursPlanningPopup(?Employee $employee, $employeeId, ?string $department, int $annee): array
+    {
+        $debut = Carbon::create($annee, 1, 1)->startOfYear()->format('Y-m-d');
+        $fin   = Carbon::create($annee, 12, 31)->endOfYear()->format('Y-m-d');
+
+        $query = Planning::whereBetween('date', [$debut, $fin])
+            ->whereNotNull('shift_start')
+            ->whereNotNull('shift_end');
+
+        if ($employeeId && $employee && $employee->id > 0) {
+            // Mode employe individuel
+            $query->where('employee_id', $employee->id);
+        } elseif ($department) {
+            // Mode departement : tous les employes du dept
+            $empIds = Employee::where('department', $department)->pluck('id')->toArray();
+            if (empty($empIds)) return [];
+            $query->whereIn('employee_id', $empIds);
+        } else {
+            return [];
+        }
+
+        $plannings = $query->get(['date', 'shift_start', 'shift_end']);
+
+        $result = [];
+        foreach ($plannings as $p) {
+            $dateStr = Carbon::parse($p->date)->format('Y-m-d');
+            // En mode departement, on conserve le premier shift rencontre pour ce jour
+            if (!isset($result[$dateStr])) {
+                $result[$dateStr] = [
+                    'shift_start' => $p->shift_start,
+                    'shift_end'   => $p->shift_end,
+                ];
+            }
+        }
+
+        return $result;
+    }
+
+    // =========================================================================
+    // CALCUL HEURES PLANIFIEES (avec pause dejeuner)
     // =========================================================================
 
     /**
@@ -111,43 +178,27 @@ class VueEnsembleController extends Controller
      * Regle : duree shift - 1h pause pour chaque jour planifie.
      */
     private function calculerHeuresPlanifiees(int $employeeId, string $debut, string $fin): float
-{
-    $plannings = Planning::where('employee_id', $employeeId)
-        ->whereBetween('date', [$debut, $fin])
-        ->whereNotNull('shift_start')
-        ->whereNotNull('shift_end')
-        ->get();
+    {
+        $plannings = Planning::where('employee_id', $employeeId)
+            ->whereBetween('date', [$debut, $fin])
+            ->whereNotNull('shift_start')
+            ->whereNotNull('shift_end')
+            ->get();
 
-    // ← AJOUTEZ CES 3 LIGNES TEMPORAIREMENT
-    \Log::info('DEBUG plannings trouvés', [
-        'employee_id' => $employeeId,
-        'debut'       => $debut,
-        'fin'         => $fin,
-        'count'       => $plannings->count(),
-        'sample'      => $plannings->take(2)->toArray(),
-    ]);
-
-    $total = 0.0;
-    foreach ($plannings as $p) {
-        $duree = $this->dureeShiftHeures(
-            Carbon::parse($p->date)->format('Y-m-d'),
-            $p->shift_start,
-            $p->shift_end
-        );
-        \Log::info('DEBUG shift', [
-            'date'        => Carbon::parse($p->date)->format('Y-m-d'),
-            'shift_start' => $p->shift_start,
-            'shift_end'   => $p->shift_end,
-            'duree'       => $duree,
-            'apres_pause' => max(0.0, $duree - self::PAUSE_DEJEUNER),
-        ]);
-        if ($duree > 0) {
-            $total += max(0.0, $duree - self::PAUSE_DEJEUNER);
+        $total = 0.0;
+        foreach ($plannings as $p) {
+            $duree = $this->dureeShiftHeures(
+                Carbon::parse($p->date)->format('Y-m-d'),
+                $p->shift_start,
+                $p->shift_end
+            );
+            if ($duree > 0) {
+                $total += max(0.0, $duree - self::PAUSE_DEJEUNER);
+            }
         }
-    }
 
-    return round($total, 2);
-}
+        return round($total, 2);
+    }
 
     /**
      * Calcule la duree d'un shift en heures (gestion passage minuit, cap 24h).
@@ -245,7 +296,6 @@ class VueEnsembleController extends Controller
         $debut = Carbon::create($annee, $mois, 1)->startOfMonth();
         $fin   = Carbon::create($annee, $mois, 1)->endOfMonth();
 
-        // keyBy avec normalisation du format de date ISO -> Y-m-d
         $pointages = Pointage::where('employee_id', $employee->id)
             ->whereBetween('date', [$debut->format('Y-m-d'), $fin->format('Y-m-d')])
             ->get()
@@ -263,18 +313,15 @@ class VueEnsembleController extends Controller
             $pointage = $pointages->get($dateStr);
             $planning = $plannings->get($dateStr);
 
-            // Heures planifiees du jour (shift - pause)
             $planJour = 0.0;
             if ($planning && $planning->shift_start && $planning->shift_end) {
                 $duree    = $this->dureeShiftHeures($dateStr, $planning->shift_start, $planning->shift_end);
                 $planJour = max(0.0, $duree - self::PAUSE_DEJEUNER);
             }
 
-            // Heures realisees du jour (deja nettes depuis le pointage)
             $realJour = $pointage ? round((float) $pointage->heures_travaillees, 2) : 0.0;
             $suppJour = $pointage ? round((float) $pointage->heures_supplementaires, 2) : 0.0;
 
-            // Statut
             if ($current->isWeekend()) {
                 $statut = 'weekend';
             } elseif ($pointage && $realJour > 0) {
@@ -336,17 +383,9 @@ class VueEnsembleController extends Controller
             $debutSem = $current->copy();
             $finSem   = $current->copy()->endOfWeek(Carbon::SUNDAY);
 
-            // Pointages de la semaine
-            $ptsSem = $pointagesMois->filter(
-                fn($p) => Carbon::parse($p->date)->between($debutSem, $finSem)
-            );
+            $ptsSem  = $pointagesMois->filter(fn($p) => Carbon::parse($p->date)->between($debutSem, $finSem));
+            $planSem = $planningsMois->filter(fn($p) => Carbon::parse($p->date)->between($debutSem, $finSem));
 
-            // Plannings de la semaine
-            $planSem = $planningsMois->filter(
-                fn($p) => Carbon::parse($p->date)->between($debutSem, $finSem)
-            );
-
-            // Heures planifiees de la semaine (shift - pause)
             $planifieesSem = 0.0;
             foreach ($planSem as $p) {
                 $duree = $this->dureeShiftHeures(
@@ -394,7 +433,7 @@ class VueEnsembleController extends Controller
         $fin   = Carbon::create($annee, $mois, 1)->endOfMonth()->format('Y-m-d');
 
         $employes = Employee::where('department', $department)->get();
-        $empIds   = $employes->pluck('id')->toArray(); // inner joint
+        $empIds   = $employes->pluck('id')->toArray();
 
         $tousPointages = Pointage::whereIn('employee_id', $empIds)
             ->whereBetween('date', [$debut, $fin])
@@ -413,11 +452,10 @@ class VueEnsembleController extends Controller
         $totalSupplementaires = 0.0;
         $employesDept         = [];
 
-        foreach ($employes as $emp) {  // n+ 1
+        foreach ($employes as $emp) {
             $empPointages = $tousPointages->get($emp->id, collect());
             $empPlannings = $tousPlannings->get($emp->id, collect());
 
-            // Planifiees (shift - pause)
             $planifiees = 0.0;
             foreach ($empPlannings as $p) {
                 $duree = $this->dureeShiftHeures(
@@ -429,7 +467,6 @@ class VueEnsembleController extends Controller
             }
             $planifiees = round($planifiees, 2);
 
-            // Realisees (directement du pointage)
             $realisees = round((float) $empPointages->sum('heures_travaillees'), 2);
             $supp      = round((float) $empPointages->sum('heures_supplementaires'), 2);
             $ecart     = ($realisees + $supp) - $planifiees;
@@ -467,7 +504,6 @@ class VueEnsembleController extends Controller
         ];
 
         $graphiqueMoisDept = $this->graphService->getGraphiqueMoisDepartement($department, $annee);
-        // dd($graphiqueMoisDept );
         $semainerDept      = $this->getSemainesDepartement($empIds, $annee, $mois);
 
         return [

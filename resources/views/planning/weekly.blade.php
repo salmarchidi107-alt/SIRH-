@@ -8,10 +8,18 @@
     <div class="page-header-left">
         @if(isset($isEmployee) && $isEmployee)
             <h1>Votre Planning Personnel</h1>
-            <p>Semaine du {{ $startOfWeek->format('d') }} au {{ $endOfWeek->format('d M Y') }}</p>
+            @isset($startOfWeek, $endOfWeek)
+                <p>Semaine du {{ $startOfWeek->format('d') }} au {{ $endOfWeek->format('d M Y') }}</p>
+            @else
+                <p>Semaine du ? au ? (Chargement...)</p>
+            @endisset
         @else
             <h1>Planning</h1>
-            <p>Semaine du {{ $startOfWeek->format('d') }} au {{ $endOfWeek->format('d M Y') }}</p>
+            @isset($startOfWeek, $endOfWeek)
+                <p>Semaine du {{ $startOfWeek->format('d') }} au {{ $endOfWeek->format('d M Y') }}</p>
+            @else
+                <p>Semaine du ? au ? (Chargement...)</p>
+            @endisset
         @endif
     </div>
     @if(!(isset($isEmployee) && $isEmployee))
@@ -47,12 +55,14 @@
                 <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Employé</label>
                 <select name="employee_id" required style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;background:white">
                     <option value="">Sélectionner un employé</option>
-                    @foreach($employees as $emp)
-                        <option value="{{ $emp->id }}">{{ $emp->full_name }} - {{ $emp->department }}</option>
-                    @endforeach
+                    @isset($employees)
+                        @foreach($employees as $emp)
+                            <option value="{{ $emp->id }}">{{ $emp->full_name }} - {{ $emp->department }}</option>
+                        @endforeach
+                    @endisset
                 </select>
                 @else
-                <input type="hidden" name="employee_id" value="{{ $employees->first()->id }}">
+                <input type="hidden" name="employee_id" value="{{ $employees->first()?->id ?? '' }}">
                 @endif
             </div>
             <div style="margin-bottom:16px">
@@ -202,34 +212,33 @@
 
 @if(!(isset($isEmployee) && $isEmployee))
 <!-- Filters Bar -->
+@isset($week, $year)
 <div class="filters-bar" style="margin-bottom:20px">
     <form method="GET" action="{{ route('planning.weekly') }}" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
         <div style="display:flex;align-items:center;gap:8px">
-            <a href="{{ route('planning.weekly', ['week' => $week - 1, 'year' => $year, 'search' => $search, 'department' => $department]) }}" class="btn btn-sm btn-outline">← Semaine précédente</a>
+            <a href="{{ route('planning.weekly', ['week' => $week - 1, 'year' => $year, 'search' => $search ?? '', 'department' => $department ?? '']) }}" class="btn btn-sm btn-outline">← Semaine précédente</a>
             <select name="week" onchange="this.form.submit()" style="min-width:120px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem">
                 @for($w = 1; $w <= 52; $w++)
-                    <option value="{{ $w }}" {{ $week == $w ? 'selected' : '' }}>Semaine {{ $w }}</option>
+                    <option value="{{ $w }}" {{ ($week ?? 0) == $w ? 'selected' : '' }}>Semaine {{ $w }}</option>
                 @endfor
             </select>
             <select name="year" onchange="this.form.submit()" style="min-width:100px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem">
                 @for($y = now()->year - 1; $y <= now()->year + 1; $y++)
-                    <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>{{ $y }}</option>
+                    <option value="{{ $y }}" {{ ($year ?? 0) == $y ? 'selected' : '' }}>{{ $y }}</option>
                 @endfor
             </select>
-            <a href="{{ route('planning.weekly', ['week' => $week + 1, 'year' => $year, 'search' => $search, 'department' => $department]) }}" class="btn btn-sm btn-outline">Semaine suivante →</a>
+            <a href="{{ route('planning.weekly', ['week' => $week + 1, 'year' => $year, 'search' => $search ?? '', 'department' => $department ?? '']) }}" class="btn btn-sm btn-outline">Semaine suivante →</a>
         </div>
         <div style="display:flex;gap:8px;margin-left:auto">
-            <input type="text" name="search" value="{{ $search }}" placeholder="Rechercher par nom..." style="min-width:180px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem">
+            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Rechercher par nom..." style="min-width:180px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem">
             <select name="department" style="min-width:150px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem">
                 <option value="">Tous les services</option>
-                @foreach($departments as $dept)
+                @foreach($departments ?? [] as $dept)
                     <option value="{{ $dept }}" {{ $department == $dept ? 'selected' : '' }}>{{ $dept }}</option>
                 @endforeach
             </select>
           <select name="room_id" class="form-control">
     <option value="">Toutes les salles</option>
-
-
     @foreach($rooms ?? [] as $room)
         <option value="{{ $room->id }}"
             {{ request('room_id') == $room->id ? 'selected' : '' }}>
@@ -238,17 +247,24 @@
     @endforeach
 </select>
             <button type="submit" class="btn btn-primary">Rechercher</button>
-            @if($search || $department)
+            @if(($search ?? '') || ($department ?? ''))
                 <a href="{{ route('planning.weekly', ['week' => $week, 'year' => $year]) }}" class="btn btn-outline">Réinitialiser</a>
             @endif
         </div>
     </form>
 </div>
+@endisset
+@else
+<div style="padding: 20px; background: #fee; border: 1px solid #fcc; border-radius: 8px; margin-bottom: 20px;">
+    <strong>Erreur Planning:</strong> {{ $error ?? 'Erreur inconnue' }}
+</div>
+@endif
+
 
 <div style="background:var(--surface-2);padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:0.85rem;color:var(--text-muted)">
     💡 <strong>Glisser-Déposer :</strong> Déplacez un shift d'un employé vers un autre. &nbsp;|&nbsp; 🖊 <strong>Cliquez</strong> sur un shift pour le modifier ou le supprimer.
 </div>
-@endif
+
 
 {{-- ══════════════════════════════════════
      TABLEAU PLANNING HEBDOMADAIRE
@@ -328,17 +344,34 @@
 
                     {{-- Cellules jours --}}
                     @foreach($weekDays as $date => $day)
-                    @php
+@php
                         $dayPlanning = $empPlannings->firstWhere('date', $day['date']);
+                        $isAbsent = $emp->hasApprovedAbsenceOn($day['date']);
                     @endphp
                     <td style="padding:6px 8px;text-align:center;vertical-align:top;min-height:60px"
                         data-date="{{ $day['date']->format('Y-m-d') }}"
+                        data-employee="{{ $emp->id }}"
+                        @if($isAbsent)
+                        title="Employé absent - {{ $emp->absences->where('status', 'approved')->filter(fn($a) => $a->start_date <= $day['date'] && $a->end_date >= $day['date'])->first()?->type ?? 'Absence' }}"
+                        style="opacity:0.6; position:relative;"
+                        @if(!(isset($isEmployee) && $isEmployee))
+                        ondragover="event.preventDefault(); return false;"
+                        ondrop="event.preventDefault(); return false;"
+                        @endif
+                        @else
                         @if(!(isset($isEmployee) && $isEmployee))
                         ondragover="allowDrop(event)"
                         ondrop="drop(event, '{{ $day['date']->format('Y-m-d') }}', {{ $emp->id }})"
+                        @endif
                         @endif>
 
-                        @if($dayPlanning)
+                        @if($isAbsent)
+                        {{-- ABSENT BADGE --}}
+                        <div style="background:linear-gradient(135deg,#ef4444,#f87171);color:white;padding:8px 12px;border-radius:8px;font-size:0.75rem;font-weight:700;min-height:48px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(239,68,68,0.3);position:relative">
+                            ABS
+                            <div style="position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid #ef4444;"></div>
+                        </div>
+                        @elseif($dayPlanning)
                         {{-- SHIFT EXISTANT — cliquable + draggable --}}
                         <div
                             @if(!(isset($isEmployee) && $isEmployee))

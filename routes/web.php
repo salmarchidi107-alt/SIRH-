@@ -32,6 +32,7 @@ use App\Http\Controllers\SuperAdmin\RoleController;
 use App\Models\Employee;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DocumentEnteteController;
 
 // ═════════════════════════════════════════════════════════════════════════════
 // DEBUG TEMPORAIRE — À SUPPRIMER APRÈS TEST
@@ -232,18 +233,18 @@ Route::get('/weekly/pdf', [PlanningController::class, 'exportWeeklyPdf'])
         Route::post('/rooms', [RoomController::class, 'store'])->name('rooms.store');
 
         // ── Pointage ──────────────────────────────────────────────────────
-        Route::middleware(['role:admin,rh'])->group(function () {
-            Route::get('/pointage',                            [PointageController::class, 'index'])          ->name('pointage.index');
-            Route::get('/pointage/pdf',                        [PointageController::class, 'exportPdf'])      ->name('pointage.pdf');
-            Route::get('/pointage/badges-pin',                 [PointageController::class, 'badgesPin'])      ->name('pointage.badges-pin');
-            Route::post('/pointage/regenerer-pin',             [PointageController::class, 'regenererPin'])   ->name('pointage.regenerer-pin');
-            Route::post('/pointage/regenerer-tous-pins',       [PointageController::class, 'regenererTousPins'])->name('pointage.regenerer-tous-pins');
-            Route::post('/pointage/valider-journee',           [PointageController::class, 'validerJournee']) ->name('pointage.valider-journee');
-            Route::post('/pointage/toggle-absence',            [PointageController::class, 'toggleAbsence'])  ->name('pointage.toggle-absence');
-            Route::post('/pointage/{pointage}/toggle-valider', [PointageController::class, 'toggleValider'])  ->name('pointage.toggle-valider');
-            Route::post('/pointage/{pointage}/toggle-ignore',  [PointageController::class, 'toggleIgnore'])   ->name('pointage.toggle-ignore');
-            Route::put('/pointage/{pointage}',                 [PointageController::class, 'update'])          ->name('pointage.update');
-        });
+          Route::middleware(['role:admin,rh'])->group(function () {
+        Route::get('/pointage',                            [PointageController::class, 'index'])         ->name('pointage.index');
+        Route::get('/pointage/pdf',                        [PointageController::class, 'exportPdf'])     ->name('pointage.pdf');
+        Route::get('/pointage/badges-pin',                 [PointageController::class, 'badgesPin'])     ->name('pointage.badges-pin');
+        Route::post('/pointage/regenerer-pin',             [PointageController::class, 'regenererPin'])  ->name('pointage.regenerer-pin');
+        Route::post('/pointage/regenerer-tous-pins',       [PointageController::class, 'regenererTousPins'])->name('pointage.regenerer-tous-pins');
+        Route::post('/pointage/valider-journee',           [PointageController::class, 'validerJournee'])->name('pointage.valider-journee');
+        Route::post('/pointage/{pointage}/toggle-valider', [PointageController::class, 'toggleValider']) ->name('pointage.toggle-valider');
+        Route::post('/pointage/{pointage}/toggle-ignore',  [PointageController::class, 'toggleIgnore'])  ->name('pointage.toggle-ignore');
+        Route::put('/pointage/{pointage}',                 [PointageController::class, 'update'])         ->name('pointage.update');
+        Route::post('/pointage/toggle-absence',            [PointageController::class, 'toggleAbsence']) ->name('pointage.toggle-absence');
+    });
 
         // ── Absences (validation admin) ───────────────────────────────────
         Route::prefix('absences')->name('absences.')->group(function () {
@@ -307,17 +308,19 @@ Route::post('/ged/entete',       [DocumentEnteteController::class, 'store'])->na
 // ═════════════════════════════════════════════════════════════════════════════
 Route::prefix('badge')->name('badge.')->group(function () {
 
-    Route::get('/', fn () => view('badge.pointage'))->name('pointage');
+    Route::get('/', function () {
+        return view('badge.pointage');
+    })->name('pointage');
 
-    Route::get('/auth/{action?}',  [BadgeAuthController::class, 'showAuth'])  ->name('auth.show');
-    Route::post('/auth/validate',  [BadgeAuthController::class, 'authAction']) ->name('auth.validate');
+    Route::get('/auth/{action?}', [BadgeAuthController::class, 'showAuth'])->name('auth.show');
+    Route::post('/auth/Badge/validate', [BadgeAuthController::class, 'authAction'])->name('auth.validate');
 
     Route::middleware(['badge.auth'])->group(function () {
-        Route::post('/logout',   [BadgeAuthController::class,     'logout'])       ->name('logout');
-        Route::get('/dashboard', [BadgeDashboardController::class, 'index'])       ->name('dashboard');
-        Route::post('/entree',   [BadgePointageController::class,  'entree'])      ->name('entree');
-        Route::post('/sortie',   [BadgePointageController::class,  'sortie'])      ->name('sortie');
-        Route::post('/action',   [BadgePointageController::class,  'handleAction'])->name('action');
-        Route::get('/result',    [BadgePointageController::class,  'result'])      ->name('result');
+        Route::post('/logout',   [BadgeAuthController::class,    'logout'])      ->name('logout');
+        Route::get('/dashboard', [BadgeDashboardController::class,'index'])      ->name('dashboard');
+        Route::post('/entree',   [BadgePointageController::class, 'entree'])     ->name('entree');
+        Route::post('/sortie',   [BadgePointageController::class, 'sortie'])     ->name('sortie');
+        Route::post('/action',   [BadgePointageController::class, 'handleAction'])->name('action');
+        Route::get('/result',    [BadgePointageController::class, 'result'])     ->name('result');
     });
 });

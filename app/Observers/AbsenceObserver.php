@@ -18,6 +18,8 @@ class AbsenceObserver
             $startDate = $absence->start_date->copy();
             $endDate = $absence->end_date->copy();
 
+            $tenantId = $absence->tenant_id ?? config('app.current_tenant_id');
+
             for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
                 // Skip weekends
                 if ($date->isWeekend()) {
@@ -30,6 +32,7 @@ class AbsenceObserver
                         'date' => $date->toDateString(),
                     ],
                     [
+                        'tenant_id' => $tenantId,
                         'statut' => 'absent',
                         'heure_entree' => null,
                         'heure_sortie' => null,
@@ -39,7 +42,13 @@ class AbsenceObserver
                         'ignore_badge' => true, // Prevent badge override
                     ]
                 );
+
+                // Delete overlapping plannings
+                \App\Models\Planning::where('employee_id', $absence->employee_id)
+                    ->whereDate('date', $date->toDateString())
+                    ->delete();
             }
         }
     }
 }
+

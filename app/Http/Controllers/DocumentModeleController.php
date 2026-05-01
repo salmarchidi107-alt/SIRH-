@@ -10,6 +10,7 @@ class DocumentModeleController extends Controller
 {
     public function index(Request $request)
     {
+        // GlobalScope filtre automatiquement par tenant
         $query = DocumentModele::latest();
 
         if ($request->filled('search')) {
@@ -29,6 +30,7 @@ class DocumentModeleController extends Controller
             'contenu'   => 'nullable|string',
         ]);
 
+        // tenant_id injecté automatiquement
         DocumentModele::create([
             'nom'        => $request->nom,
             'categorie'  => $request->categorie,
@@ -41,11 +43,11 @@ class DocumentModeleController extends Controller
     }
 
     public function edit(DocumentModele $modele)
-{
-    $contenuModele = base64_encode($modele->contenu ?? '');
+    {
+        $contenuModele = base64_encode($modele->contenu ?? '');
 
-    return view('ged.modeles-edit', compact('modele', 'contenuModele'));
-}
+        return view('ged.modeles-edit', compact('modele', 'contenuModele'));
+    }
 
     public function update(Request $request, DocumentModele $modele)
     {

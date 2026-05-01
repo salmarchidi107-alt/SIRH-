@@ -4,13 +4,7 @@
 <?php $__env->startSection('content'); ?>
 <div class="container-fluid py-4 px-4">
 
-    <?php if(session('success')): ?>
-        <div class="alert alert-success alert-dismissible fade show mb-4">
-            <i class="fas fa-check-circle me-2"></i><?php echo e(session('success')); ?>
-
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    <?php endif; ?>
+    
     <?php if($errors->any()): ?>
         <div class="alert alert-danger alert-dismissible fade show mb-4">
             <ul class="mb-0"><?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $e): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><li><?php echo e($e); ?></li><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></ul>
@@ -57,7 +51,8 @@
                                     <option value="">— Sélectionner un employé —</option>
                                     <?php $__currentLoopData = $employes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $emp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                         <option value="<?php echo e($emp->id); ?>">
-                                            <?php echo e($emp->prenom); ?> <?php echo e($emp->nom); ?>
+                                            
+                                            <?php echo e($emp->last_name); ?> <?php echo e($emp->first_name); ?>
 
                                             <?php if($emp->matricule): ?> (<?php echo e($emp->matricule); ?>) <?php endif; ?>
                                         </option>
@@ -145,7 +140,7 @@
                             <?php if($doc->employe): ?>
                                 <span style="background:#e0f2f1;color:#0d2238;font-weight:600;
                                              padding:5px 10px;border-radius:8px;font-size:13px;">
-                                    <?php echo e($doc->employe->prenom); ?> <?php echo e($doc->employe->nom); ?>
+                                    <?php echo e($doc->employe->last_name); ?> <?php echo e($doc->employe->first_name); ?>
 
                                 </span>
                             <?php else: ?>

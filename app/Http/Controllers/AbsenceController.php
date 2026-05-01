@@ -95,6 +95,7 @@ class AbsenceController extends Controller
         $end = Carbon::parse($validated['end_date']);
         $validated['days'] = $start->diffInWeekdays($end) + 1;
         $validated['status'] = 'pending';
+        $validated['tenant_id'] = config('app.current_tenant_id');
 
         // Détection de conflit avec un AUTRE employé sur la même période
         $conflictingAbsence = Absence::with('employee')
@@ -131,6 +132,7 @@ class AbsenceController extends Controller
         }
 
         Absence::create($validated);
+
 
         $message = $selfConflict
             ? 'Demande créée mais un conflit a été détecté avec une absence déjà approuvée.'
@@ -180,9 +182,11 @@ class AbsenceController extends Controller
         }
 
         $absence->update([
+            'tenant_id' => config('app.current_tenant_id'),
             'status' => 'approved',
             'approved_at' => now(),
         ]);
+
 
         if (in_array($absence->type, ['conge_annuel', 'conge_sans_solde', 'conge_maladie', 'absence_justifiee'])) {
             $year = $absence->start_date->year;

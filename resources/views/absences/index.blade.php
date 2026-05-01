@@ -104,7 +104,8 @@
                                     <circle cx="12" cy="12" r="3"/>
                                 </svg>
                             </a>
-                            <a href="{{ route('absences.absences.pdf', $absence) }}" class="btn btn-ghost btn-sm btn-icon" target="_blank" title="PDF">
+                            <a href="{{ route('absences.pdf', $absence) }}" class="btn btn-ghost btn-sm btn-icon" target="_blank" title="PDF">
+
                                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25 2.25h.75m-10.5-10.5h.75a2.25 2.25 0 012.25 2.25v.75m-6.75-6.75h.75a2.25 2.25 0 012.25 2.25v.75m+3-3H21a2.25 2.25 0 012.25 2.25v.75"/>
                                 </svg>

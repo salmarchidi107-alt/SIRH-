@@ -87,10 +87,12 @@ $recordType = match ($subaction) {
 
     try {
         app(BadgePointageController::class)->recordAction($recordType, $employee);
+        // dd("selma zeee");
         $request->session()->put('last_type', $recordType);
         $request->session()->save();
     } catch (\Exception $e) {
         Log::error('Badge pointage error', ['error' => $e->getMessage(), 'employee' => $employee->id]);
+        dd($e );
     }
 
     return redirect()->route('badge.result');

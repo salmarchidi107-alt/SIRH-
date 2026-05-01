@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\HasTenantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
 class Document extends Model
 {
-    use HasFactory;
+    use HasFactory, HasTenantScope;
 
     protected $fillable = [
         'nom',
@@ -19,15 +20,15 @@ class Document extends Model
         'description',
         'employe_id',
         'modele_id',
+        'contenu',
         'created_by',
         'date_document',
+        'tenant_id',
     ];
 
     protected $casts = [
         'date_document' => 'date',
     ];
-
-    // ─── Relations ───────────────────────────────────────────────────────────
 
     public function employe()
     {
@@ -43,8 +44,6 @@ class Document extends Model
     {
         return $this->belongsTo(DocumentModele::class, 'modele_id');
     }
-
-    // ─── Accesseurs ──────────────────────────────────────────────────────────
 
     public function getTailleFormatteeAttribute(): string
     {
@@ -64,11 +63,11 @@ class Document extends Model
         if (!$this->fichier_nom_original) return 'fa-file';
         $ext = strtolower(pathinfo($this->fichier_nom_original, PATHINFO_EXTENSION));
         return match($ext) {
-            'pdf'             => 'fa-file-pdf',
-            'doc', 'docx'     => 'fa-file-word',
-            'xls', 'xlsx'     => 'fa-file-excel',
-            'jpg','jpeg','png','gif' => 'fa-file-image',
-            default           => 'fa-file',
+            'pdf'                       => 'fa-file-pdf',
+            'doc', 'docx'               => 'fa-file-word',
+            'xls', 'xlsx'               => 'fa-file-excel',
+            'jpg', 'jpeg', 'png', 'gif' => 'fa-file-image',
+            default                     => 'fa-file',
         };
     }
 
@@ -77,11 +76,11 @@ class Document extends Model
         if (!$this->fichier_nom_original) return '#7f8c8d';
         $ext = strtolower(pathinfo($this->fichier_nom_original, PATHINFO_EXTENSION));
         return match($ext) {
-            'pdf'             => '#e74c3c',
-            'doc', 'docx'     => '#2980b9',
-            'xls', 'xlsx'     => '#27ae60',
-            'jpg','jpeg','png','gif' => '#8e44ad',
-            default           => '#7f8c8d',
+            'pdf'                       => '#e74c3c',
+            'doc', 'docx'               => '#2980b9',
+            'xls', 'xlsx'               => '#27ae60',
+            'jpg', 'jpeg', 'png', 'gif' => '#8e44ad',
+            default                     => '#7f8c8d',
         };
     }
 }

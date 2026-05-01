@@ -2,16 +2,20 @@
 
 namespace App\Models;
 
+use App\Traits\HasTenantScope;
 use Illuminate\Database\Eloquent\Model;
 
 class DocumentModele extends Model
 {
+    use HasTenantScope;
+
     protected $fillable = [
         'nom',
         'categorie',
         'contenu',
         'description',
         'created_by',
+        'tenant_id',
     ];
 
     public function documents()
@@ -23,14 +27,4 @@ class DocumentModele extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
-    public function edit(Document $document)
-{
-    $employes = \App\Models\Employee::orderBy('last_name')->orderBy('first_name')->get();
-    $modeles  = \App\Models\DocumentModele::orderBy('nom')->get();
-
-    // Charger l'employé lié au document
-    $document->load(['employe', 'modele']);
-
-    return view('ged.edit', compact('document', 'employes', 'modeles'));
-}
 }

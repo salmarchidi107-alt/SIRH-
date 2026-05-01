@@ -20,6 +20,10 @@ return new class extends Migration
             $table->string('saturday_room')->nullable()->after('saturday_end');
             $table->string('sunday_room')->nullable()->after('sunday_end');
         });
+
+        Schema::table('plannings', function (Blueprint $table) {
+            $table->string('room')->nullable()->after('notes');
+        });
     }
 
     /**
@@ -37,6 +41,10 @@ return new class extends Migration
                 'saturday_room',
                 'sunday_room',
             ]);
+        });
+
+        Schema::table('plannings', function (Blueprint $table) {
+            $table->dropColumn('room');
         });
     }
 };

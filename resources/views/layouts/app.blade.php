@@ -10,18 +10,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     @stack('styles')
     <style>
-        /* ══════════════════════════════════════════
-           LAYOUT DE BASE — flex row sans gap
-        ══════════════════════════════════════════ */
         .app-wrapper {
             display: flex;
             min-height: 100vh;
             align-items: stretch;
         }
 
-        /* ══════════════════════════════════════════
-           SIDEBAR
-        ══════════════════════════════════════════ */
         .sidebar {
             width: 260px;
             flex-shrink: 0;
@@ -36,7 +30,6 @@
             z-index: 100;
         }
 
-        /* La nav prend tout l'espace restant et scroll */
         .sidebar-nav {
             flex: 1 1 0;
             min-height: 0;
@@ -49,37 +42,32 @@
         .sidebar-nav::-webkit-scrollbar { width: 4px; }
         .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); border-radius: 4px; }
 
-        /* Footer toujours en bas */
-        .sidebar-footer {
-            flex-shrink: 0;
-        }
+        .sidebar-footer { flex-shrink: 0; }
 
-        /* ── Bouton collapse ── */
-       .sidebar-collapse-btn {
-    position: absolute;
-    top: 50%;
-    right: -14px;
-    transform: translateY(-50%);
-    width: 28px;
-    height: 28px;
-    background: #14b8a6;
-    border: none;
-    border-radius: 50%;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 200;
-    box-shadow: 0 2px 8px rgba(0,0,0,.25);
-    transition: background .2s;
-    font-size: 10px;
-    line-height: 1;
-    overflow: visible;
-}
+        .sidebar-collapse-btn {
+            position: absolute;
+            top: 50%;
+            right: -14px;
+            transform: translateY(-50%);
+            width: 28px;
+            height: 28px;
+            background: #14b8a6;
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 200;
+            box-shadow: 0 2px 8px rgba(0,0,0,.25);
+            transition: background .2s;
+            font-size: 10px;
+            line-height: 1;
+            overflow: visible;
+        }
         .sidebar-collapse-btn:hover { background: #0d9488; }
 
-        /* ── État collapsed ── */
         .sidebar.collapsed { width: 64px; }
 
         .sidebar.collapsed .nav-section-label,
@@ -103,9 +91,6 @@
         .sidebar.collapsed .user-card { justify-content: center; }
         .sidebar.collapsed .user-avatar { margin: 0 auto; }
 
-        /* ══════════════════════════════════════════
-           MAIN CONTENT — prend le reste de la largeur
-        ══════════════════════════════════════════ */
         .main-content {
             flex: 1;
             min-width: 0;
@@ -114,7 +99,6 @@
             min-height: 100vh;
         }
 
-        /* ── Styles nav ── */
         .nav-submenu  { padding-left: 20px; margin: 4px 0; }
         .nav-sublink  { display: block; padding: 6px 12px; font-size: 0.85rem; color: #888; border-radius: 6px; text-decoration: none; margin: 2px 0; transition: all 0.2s; }
         .nav-sublink:hover { background: rgba(255,255,255,0.1); color: #fff; }
@@ -136,10 +120,8 @@
 <body>
 <div class="app-wrapper">
 
-    {{-- ═══════════════════════════════════════════════════════════ SIDEBAR ═══ --}}
     <aside class="sidebar" id="sidebar">
 
-        {{-- ── Bouton collapse ── --}}
         <button class="sidebar-collapse-btn" id="collapseBtn" onclick="toggleSidebar()" title="Réduire">
             <i class="fas fa-chevron-left" id="collapseIcon"></i>
         </button>
@@ -412,19 +394,23 @@
                 </svg>
                 <span>Modèles</span>
             </a>
-            @endif
 
-        </nav>
-        <a href="{{ route('ged.entete.index') }}"
+            {{-- ← ENTÊTE ICI, dans le bloc GED, avant le @endif --}}
+            <a href="{{ route('ged.entete.index') }}"
                class="nav-item {{ request()->routeIs('ged.entete.*') ? 'active' : '' }}">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <rect x="4" y="4" width="16" height="16" rx="2"/>
-                <line x1="4" y1="9" x2="20" y2="9"/>
-                <line x1="8" y1="13" x2="16" y2="13"/>
-                <line x1="8" y1="17" x2="14" y2="17"/>
+                    <rect x="4" y="4" width="16" height="16" rx="2"/>
+                    <line x1="4" y1="9" x2="20" y2="9"/>
+                    <line x1="8" y1="13" x2="16" y2="13"/>
+                    <line x1="8" y1="17" x2="14" y2="17"/>
                 </svg>
                 <span>Entête</span>
             </a>
+
+            @endif
+            {{-- ← FIN bloc GED --}}
+
+        </nav>
 
         {{-- ── Footer sidebar ── --}}
         <div class="sidebar-footer">
@@ -489,26 +475,45 @@
                     </div>
                 </div>
 
-                {{-- Export --}}
-                <div class="export-wrapper" style="position:relative;">
-                    <button class="topbar-btn" id="exportBtn" title="Exports" onclick="toggleExportDropdown()">
+                         <!-- Global Excel Export Dropdown -->
+                <div class="export-wrapper" style="position: relative;">
+                    <button class="topbar-btn" id="exportBtn" title="Fichier Excel Imprimable" onclick="toggleExportDropdown()">
                         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path d="M12 10l-5.5 5.5h11L12 10z"/>
                         </svg>
                     </button>
-                    <div class="export-dropdown" id="exportDropdown" style="display:none;position:absolute;top:100%;right:0;width:280px;background:white;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.15);z-index:1000;margin-top:8px;max-height:400px;overflow-y:auto;">
-                        <div style="padding:12px 16px;border-bottom:1px solid #eee;font-weight:600;color:var(--primary);">
-                            <i class="fa-solid fa-chart-column" aria-hidden="true"></i> Exports
-                        </div>
-                        <a href="{{ route('employees.export-pdf') }}" style="display:block;padding:12px 16px;text-decoration:none;color:inherit;border-bottom:1px solid #f0f0f0;transition:background .2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Liste Personnel (PDF)</a>
-                        <a href="{{ route('trombinoscope') }}" style="display:block;padding:12px 16px;text-decoration:none;color:inherit;border-bottom:1px solid #f0f0f0;transition:background .2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Trombinoscope</a>
-                        <a href="/salary/export" style="display:block;padding:12px 16px;text-decoration:none;color:inherit;border-bottom:1px solid #f0f0f0;transition:background .2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Bulletins Paie</a>
-                        <a href="{{ route('absences.counters') }}" style="display:block;padding:12px 16px;text-decoration:none;color:inherit;border-bottom:1px solid #f0f0f0;transition:background .2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Compteurs Absences</a>
-                        <a href="{{ route('planning.monthly') }}" style="display:block;padding:12px 16px;text-decoration:none;color:inherit;border-bottom:1px solid #f0f0f0;transition:background .2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Planning Mensuel</a>
-                        <a href="{{ route('planning.weekly') }}" style="display:block;padding:12px 16px;text-decoration:none;color:inherit;transition:background .2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Planning Hebdo</a>
+                    <div class="export-dropdown" id="exportDropdown" style="display: none; position: absolute; top: 100%; right: 0; width: 280px; background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 1000; margin-top: 8px; max-height: 400px; overflow-y: auto;">
+                        <div style="padding: 12px 16px; border-bottom: 1px solid #eee; font-weight: 600; color: var(--primary);"><i class="fa-solid fa-chart-column" aria-hidden="true"></i> Fichier Excel Imprimable</div>
+                        <a href="{{ route('employees.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                              Liste du Personnel
+                        </a>
+                        <a href="{{ route('trombinoscope.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                              Trombinoscope
+                        </a>
+                        <a href="/salary/export" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                              Bulletins de Paie
+                        </a>
+                        <a href="{{ route('absences.droits.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                              Droits d'Absences
+                        </a>
+                        <a href="{{ route('absences.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                              Demandes d'Absences
+                        </a>
+                        <a href="{{ route('absences.counters.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                              Compteurs Absences
+                        </a>
+                        <a href="{{ route('absences.droits.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                              Droits d'Absences
+                        </a>
+<a href="{{ route('planning.monthly.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                              Planning Mensuel
+                        </a>
+                        <a href="{{ route('planning.weekly.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                              Planning Hebdomadaire
+                        </a>
+                        
                     </div>
                 </div>
-
             </div>
         </header>
 
@@ -533,7 +538,6 @@
             @yield('content')
             @include('components.chatbot')
 
-            {{-- WhatsApp Chat Popup --}}
             <div id="chatPopup" class="whatsapp-chat" style="display:none;">
                 <div class="whatsapp-header">
                     <div class="whatsapp-avatar"><i class="fa-solid fa-robot" aria-hidden="true"></i></div>
@@ -584,7 +588,6 @@
 .chat-badge { background: rgba(255,255,255,0.9); color: #1a1a2e; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 10px; transform: scale(0.8); }
 @keyframes pulse-chat { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
 
-/* Responsive */
 @media (max-width: 768px) {
     .sidebar { position: fixed; top: 0; left: 0; bottom: 0; transform: translateX(-100%); transition: transform .3s ease, width .25s ease; }
     .sidebar.open { transform: translateX(0); }
@@ -595,7 +598,6 @@
 </style>
 
 <script>
-// ── Sidebar collapse ─────────────────────────────────────────────
 function toggleSidebar() {
     const sidebar     = document.getElementById('sidebar');
     const icon        = document.getElementById('collapseIcon');
@@ -605,7 +607,6 @@ function toggleSidebar() {
     localStorage.setItem('sidebarCollapsed', isCollapsed);
 }
 
-// Restaurer l'état au chargement
 document.addEventListener('DOMContentLoaded', () => {
     if (localStorage.getItem('sidebarCollapsed') === 'true') {
         document.getElementById('sidebar').classList.add('collapsed');
@@ -613,7 +614,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ── Chat popup ───────────────────────────────────────────────────
 function toggleChatPopup() {
     const popup = document.getElementById('chatPopup');
     const btn   = document.querySelector('.floating-chat-btn');
@@ -691,14 +691,12 @@ async function sendWhatsAppMessage() {
     }
 }
 
-// ── Menu mobile ──────────────────────────────────────────────────
 document.getElementById('menuToggle')?.addEventListener('click', () => {
     document.getElementById('sidebar').classList.toggle('open');
 });
 
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleChatPopup(); });
 
-// ── Export Dropdown ──────────────────────────────────────────────
 function toggleExportDropdown() {
     const d = document.getElementById('exportDropdown');
     d.style.display = d.style.display === 'none' ? 'block' : 'none';
@@ -709,7 +707,6 @@ document.addEventListener('click', function(e) {
         document.getElementById('exportDropdown').style.display = 'none';
 });
 
-// ── Notifications ────────────────────────────────────────────────
 function toggleNotifications() {
     const d = document.getElementById('notifDropdown');
     d.style.display = d.style.display === 'none' ? 'block' : 'none';
@@ -755,7 +752,6 @@ function loadNotifications() {
         });
 }
 
-// ── Compteurs animés ─────────────────────────────────────────────
 document.querySelectorAll('[data-count]').forEach(el => {
     const target = parseInt(el.getAttribute('data-count'));
     let current  = 0;

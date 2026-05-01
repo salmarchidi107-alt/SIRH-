@@ -6,12 +6,7 @@
 @section('content')
 <div class="container-fluid py-4 px-4">
 
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show mb-4">
-            <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
+    
     @if($errors->any())
         <div class="alert alert-danger alert-dismissible fade show mb-4">
             <ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
@@ -58,7 +53,8 @@
                                     <option value="">— Sélectionner un employé —</option>
                                     @foreach($employes as $emp)
                                         <option value="{{ $emp->id }}">
-                                            {{ $emp->prenom }} {{ $emp->nom }}
+                                            {{-- APRÈS --}}
+                                            {{ $emp->last_name }} {{ $emp->first_name }}
                                             @if($emp->matricule) ({{ $emp->matricule }}) @endif
                                         </option>
                                     @endforeach
@@ -145,7 +141,7 @@
                             @if($doc->employe)
                                 <span style="background:#e0f2f1;color:#0d2238;font-weight:600;
                                              padding:5px 10px;border-radius:8px;font-size:13px;">
-                                    {{ $doc->employe->prenom }} {{ $doc->employe->nom }}
+                                    {{ $doc->employe->last_name }} {{ $doc->employe->first_name }}
                                 </span>
                             @else
                                 <span class="text-muted">—</span>

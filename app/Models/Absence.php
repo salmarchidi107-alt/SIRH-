@@ -5,12 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use \App\Traits\HasTenantScope;
 
 class Absence extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'tenant_id',
         'employee_id',
         'type',
         'start_date',
@@ -59,6 +61,16 @@ class Absence extends Model
         return $this->belongsTo(Employee::class, 'replacement_id');
     }
 
+    public function approver()
+    {
+        return $this->belongsTo(Employee::class, 'approved_by');
+    }
+
+    public function tenant()
+    {
+        return $this->belongsTo(\App\Models\Tenant::class);
+    }
+
     public function scopeStatus(Builder $query, ?string $status): Builder
     {
         return $status ? $query->where('status', $status) : $query;
@@ -98,9 +110,5 @@ class Absence extends Model
             $q->where('department', $department);
         });
     }
-
-    public function approver()
-    {
-        return $this->belongsTo(Employee::class, 'approved_by');
-    }
 }
+

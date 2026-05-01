@@ -7,6 +7,7 @@ use App\Models\Employee;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Models\Room;
+use Illuminate\Support\Facades\DB;
 
 class WeekTemplateController extends Controller
 {
@@ -87,7 +88,8 @@ class WeekTemplateController extends Controller
     {
         $templates = WeekTemplate::all();
         $employees = Employee::active()->get();
-        return view('planning.templates.apply', compact('templates', 'employees'));
+        $selectedTemplate = request('template_id') ? WeekTemplate::find(request('template_id')) : null;
+        return view('planning.templates.apply', compact('templates', 'employees', 'selectedTemplate'));
     }
 
     public function apply(Request $request)
@@ -99,22 +101,31 @@ class WeekTemplateController extends Controller
             'start_date' => 'required|date',
         ]);
 
-        $template = WeekTemplate::findOrFail($validated['template_id']);
-        $startDate = Carbon::parse($validated['start_date']);
+        DB::transaction(function () use ($validated) {
+            $template = WeekTemplate::findOrFail($validated['template_id']);
+            $startDate = Carbon::parse($validated['start_date']);
+
+            if ($validated['department_target']) {
+                $employees = Employee::where('department', $validated['department_target'])
+                    ->active()
+                    ->get();
+                
+                foreach ($employees as $employee) {
+                    $template->applyToEmployee($employee->id, $startDate);
+                }
+            } else {
+                $employee = Employee::findOrFail($validated['employee_id']);
+                $template->applyToEmployee($validated['employee_id'], $startDate);
+            }
+        });
 
         if ($validated['department_target']) {
             $employees = Employee::where('department', $validated['department_target'])
                 ->active()
                 ->get();
-            
-            foreach ($employees as $employee) {
-                $template->applyToEmployee($employee->id, $startDate);
-            }
-
             return back()->with('success', "Semaine type appliquée à **{$employees->count()} employés** du département {$validated['department_target']}");
         } else {
             $employee = Employee::findOrFail($validated['employee_id']);
-            $template->applyToEmployee($validated['employee_id'], $startDate);
             return back()->with('success', 'Semaine type appliquée à ' . $employee->full_name);
         }
     }

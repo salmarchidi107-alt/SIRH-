@@ -28,16 +28,18 @@ class EmployeeController extends Controller
                 ->defaultOrder()
                 ->paginate(100);
 
-            $departments = Department::names();
-            $filter = $request->get('filter', 'all');
+            $departments = $this->getDepartmentsList();
+            $filter      = $request->get('filter', 'all');
 
             return view('employees.index', compact('employees', 'departments', 'filter'));
 
         } catch (Exception $e) {
             Log::error('Employee index error', ['error' => $e->getMessage()]);
             return view('employees.index', [
-                'employees' => collect(),
-                'error' => 'Erreur chargement employés.'
+                'employees'   => collect(),
+                'departments' => collect(),
+                'filter'      => 'all',
+                'error'       => 'Erreur chargement employés.',
             ]);
         }
     }
@@ -46,33 +48,33 @@ class EmployeeController extends Controller
     {
         try {
             $perPage = 15;
-            $page = $request->get('page', 1);
+            $page    = $request->get('page', 1);
 
             $employees = $this->buildQuery($request)
-                ->with(['user:id,name']) // minimal user data
+                ->with(['user:id,name'])
                 ->defaultOrder()
                 ->paginate($perPage, ['*'], 'page', $page);
 
             return response()->json([
                 'employees' => $employees->map(fn($e) => [
-                    'id' => $e->id,
-                    'matricule' => $e->matricule ?? 'N/A',
-                    'full_name' => $e->full_name ?? 'N/A',
-                    'department' => $e->department ?? 'N/A',
-                    'position' => $e->position ?? '',
-                    'status_label' => $e->status_label ?? ($e->status ?? 'N/A'),
-                    'status_color' => $this->getStatusColor($e->status), // inline method
-'hire_date' => $e->hire_date?->format('d/m/Y') ?? '',
-'contract_type' => $e->contract_type ?? '',
-                    'csrf_token' => csrf_token(),
-                    '_method' => 'DELETE',
-                    'base_salary' => $e->base_salary ? number_format($e->base_salary, 0) : '0',
+                    'id'            => $e->id,
+                    'matricule'     => $e->matricule     ?? 'N/A',
+                    'full_name'     => $e->full_name     ?? 'N/A',
+                    'department'    => $e->department    ?? 'N/A',
+                    'position'      => $e->position      ?? '',
+                    'status_label'  => $e->status_label  ?? ($e->status ?? 'N/A'),
+                    'status_color'  => $this->getStatusColor($e->status),
+                    'hire_date'     => $e->hire_date?->format('d/m/Y') ?? '',
+                    'contract_type' => $e->contract_type ?? '',
+                    'csrf_token'    => csrf_token(),
+                    '_method'       => 'DELETE',
+                    'base_salary'   => $e->base_salary ? number_format($e->base_salary, 0) : '0',
                 ]),
                 'pagination' => [
                     'current_page' => $employees->currentPage(),
-                    'total' => $employees->total(),
-                    'has_more' => $employees->hasMorePages(),
-                ]
+                    'total'        => $employees->total(),
+                    'has_more'     => $employees->hasMorePages(),
+                ],
             ]);
 
         } catch (Exception $e) {
@@ -83,27 +85,25 @@ class EmployeeController extends Controller
 
     private function getStatusColor($status): string
     {
-        return match($status) {
-            'active' => 'success',
-            'leave' => 'warning',
+        return match ($status) {
+            'active'   => 'success',
+            'leave'    => 'warning',
             'inactive' => 'neutral',
-            default => 'error'
+            default    => 'error',
         };
     }
-
 
     public function reorder(Request $request)
     {
         try {
             $request->validate([
-                'order' => 'required|array',
-                'order.*' => 'exists:employees,id'
+                'order'   => 'required|array',
+                'order.*' => 'exists:employees,id',
             ]);
 
             DB::transaction(function () use ($request) {
                 foreach ($request->order as $index => $id) {
-                    Employee::where('id', $id)
-                        ->update(['sort_order' => $index + 1]);
+                    Employee::where('id', $id)->update(['sort_order' => $index + 1]);
                 }
             });
 
@@ -121,8 +121,9 @@ class EmployeeController extends Controller
             abort_unless(auth()->user()->can('manage_employees'), 403);
 
             return view('employees.create', [
-                'managers' => Employee::active()->get(),
-                'users' => User::whereDoesntHave('employee')->get()
+                'managers'    => Employee::active()->get(),
+                'users'       => User::whereDoesntHave('employee')->get(),
+                'departments' => $this->getDepartmentsList(),
             ]);
 
         } catch (Exception $e) {
@@ -133,7 +134,6 @@ class EmployeeController extends Controller
 
     public function store(StoreEmployeeRequest $request)
     {
-
         try {
             $this->employeeService->create($request->validated());
 
@@ -151,7 +151,6 @@ class EmployeeController extends Controller
 
     public function show(Employee $employee)
     {
-        // Server-side authorization
         if (auth()->user()->role === 'employee' && auth()->user()->employee_id != $employee->id) {
             abort(403, 'Accès restreint. Vous ne pouvez voir que votre propre profil.');
         }
@@ -159,14 +158,13 @@ class EmployeeController extends Controller
         try {
             $employee->load([
                 'absences' => fn($q) => $q->latest()->take(10),
-                'salaries' => fn($q) => $q->latest()->take(6)
+                'salaries' => fn($q) => $q->latest()->take(6),
             ]);
 
-            // Generate PIN only if NULL (preserve existing)
             if (is_null($employee->plain_pin)) {
-                $plainPin = sprintf('%04d%s', rand(1000, 9999), chr(rand(65, 90)).chr(rand(65, 90)));
+                $plainPin            = sprintf('%04d%s', rand(1000, 9999), chr(rand(65, 90)) . chr(rand(65, 90)));
                 $employee->plain_pin = $plainPin;
-$employee->pin = \Illuminate\Support\Facades\Hash::make($plainPin);
+                $employee->pin       = \Illuminate\Support\Facades\Hash::make($plainPin);
                 $employee->saveQuietly();
                 Log::info("Generated PIN for employee {$employee->id}: {$plainPin}");
             }
@@ -183,13 +181,12 @@ $employee->pin = \Illuminate\Support\Facades\Hash::make($plainPin);
     {
         try {
             return view('employees.edit', [
-                'employee' => $employee,
-                'managers' => Employee::active()
-                    ->where('id', '!=', $employee->id)
-                    ->get(),
-                'users' => User::whereDoesntHave('employee')
+                'employee'    => $employee,
+                'managers'    => Employee::active()->where('id', '!=', $employee->id)->get(),
+                'users'       => User::whereDoesntHave('employee')
                     ->when($employee->user_id, fn($q) => $q->orWhere('id', $employee->user_id))
-                    ->get()
+                    ->get(),
+                'departments' => $this->getDepartmentsList(),
             ]);
 
         } catch (Exception $e) {
@@ -237,88 +234,112 @@ $employee->pin = \Illuminate\Support\Facades\Hash::make($plainPin);
         }
     }
 
-    /**
-     * Regenerate PIN for badge access (admin/rh only)
-     */
     public function regeneratePin(Request $request, Employee $employee)
     {
         abort_unless(auth()->user()->can('manage_employees'), 403);
 
-        $plainPin = sprintf('%04d%s', rand(1000, 9999), chr(rand(65, 90)).chr(rand(65, 90)));
-
+        $plainPin            = sprintf('%04d%s', rand(1000, 9999), chr(rand(65, 90)) . chr(rand(65, 90)));
         $employee->plain_pin = $plainPin;
-        $employee->pin = \Illuminate\Support\Facades\Hash::make($plainPin);
+        $employee->pin       = \Illuminate\Support\Facades\Hash::make($plainPin);
         $employee->save();
 
-        \Illuminate\Support\Facades\Log::info("Regenerated PIN for employee {$employee->id} ({$employee->full_name}): {$plainPin}");
+        Log::info("Regenerated PIN for employee {$employee->id} ({$employee->full_name}): {$plainPin}");
 
         return response()->json([
             'success' => true,
-            'pin' => $plainPin,
-            'message' => 'PIN regénéré avec succès !'
+            'pin'     => $plainPin,
+            'message' => 'PIN regénéré avec succès !',
         ]);
     }
-public function exportPdf(Request $request)
-{
-    try {
-        $employees = $this->buildQuery($request)
-            ->orderBy('department')
-            ->get();
 
-        $total       = $employees->count();
-        $generatedAt = now()->format('d/m/Y à H:i');
-        $filename    = 'employes_' . now()->format('Y-m-d_H-i') . '.pdf';
+    public function exportPdf(Request $request)
+    {
+        try {
+            $employees = $this->buildQuery($request)
+                ->orderBy('department')
+                ->get();
 
-        if ($total === 0) {
-            return back()->with('error', 'Aucun employé à exporter.');
+            $total       = $employees->count();
+            $generatedAt = now()->format('d/m/Y à H:i');
+            $filename    = 'employes_' . now()->format('Y-m-d_H-i') . '.pdf';
+
+            if ($total === 0) {
+                return back()->with('error', 'Aucun employé à exporter.');
+            }
+
+            $pdf = Pdf::loadView('pdf.employees', compact('employees', 'total', 'generatedAt'));
+            return $pdf->download($filename);
+
+        } catch (Exception $e) {
+            Log::error('PDF export error', ['error' => $e->getMessage()]);
+            return back()->with('error', 'Erreur génération PDF : ' . $e->getMessage());
         }
-
-        $pdf = Pdf::loadView('pdf.employees', compact('employees', 'total', 'generatedAt'));
-        return $pdf->download($filename);
-
-    } catch (Exception $e) {
-        Log::error('PDF export error', ['error' => $e->getMessage()]);
-        return back()->with('error', 'Erreur génération PDF : ' . $e->getMessage());
     }
-}
-   public function exportPdfByDept(Request $request, string $department)
-{
-    try {
-        $employees = Employee::where('department', $department)->get();
-        $total = $employees->count();
 
-        if ($total === 0) {
-            return back()->with('error', 'Aucun employé dans ce département.');
+    public function exportPdfByDept(Request $request, string $department)
+    {
+        try {
+            $employees = Employee::where('department', $department)->get();
+            $total     = $employees->count();
+
+            if ($total === 0) {
+                return back()->with('error', 'Aucun employé dans ce département.');
+            }
+
+            $generatedAt = now()->format('d/m/Y à H:i');
+            $filename    = 'employes-' . \Str::slug($department) . '_' . now()->format('Y-m-d') . '.pdf';
+
+            $pdf = Pdf::loadView('pdf.employees', compact('employees', 'total', 'generatedAt'));
+            return $pdf->download($filename);
+
+        } catch (Exception $e) {
+            Log::error('PDF dept export error', ['error' => $e->getMessage()]);
+            return back()->with('error', 'Erreur génération PDF.');
         }
-
-        $generatedAt = now()->format('d/m/Y à H:i');
-        $filename = 'employes-' . \Str::slug($department) . '_' . now()->format('Y-m-d') . '.pdf';
-
-        $pdf = Pdf::loadView('pdf.employees', compact('employees', 'total', 'generatedAt'));
-        return $pdf->download($filename);
-
-    } catch (Exception $e) {
-        Log::error('PDF dept export error', ['error' => $e->getMessage()]);
-        return back()->with('error', 'Erreur génération PDF.');
     }
-}
+
+    // =========================================================================
+    // HELPERS PRIVÉS
+    // =========================================================================
+
     /**
-     * Reusable query builder (DRY)
+     * Construit la requête de base employés avec filtres optionnels.
      */
     private function buildQuery(Request $request)
-{
-    return Employee::query()
-        // Le Global Scope 'tenant' s'applique automatiquement ici
-        ->when($request->get('filter') === 'active', fn($q) => $q->active())
-        ->when($request->search, function ($q, $search) {
-            $q->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%$search%")
-                  ->orWhere('last_name', 'like', "%$search%")
-                  ->orWhere('matricule', 'like', "%$search%")
-                  ->orWhere('email', 'like', "%$search%");
-            });
-        })
-        ->when($request->department, fn($q, $dep) => $q->where('department', $dep))
-        ->when($request->status, fn($q, $status) => $q->status($status));
-}
+    {
+        return Employee::query()
+            ->when($request->get('filter') === 'active', fn($q) => $q->active())
+            ->when($request->search, function ($q, $search) {
+                $q->where(function ($q) use ($search) {
+                    $q->where('first_name', 'like', "%$search%")
+                      ->orWhere('last_name',  'like', "%$search%")
+                      ->orWhere('matricule',  'like', "%$search%")
+                      ->orWhere('email',      'like', "%$search%");
+                });
+            })
+            ->when($request->department, fn($q, $dep)    => $q->where('department', $dep))
+            ->when($request->status,     fn($q, $status) => $q->status($status));
+    }
+
+    /**
+     * Récupère la liste des départements.
+     * Priorité : table departments → fallback champ employees.department.
+     */
+    private function getDepartmentsList()
+    {
+        try {
+            $departments = Department::orderBy('name')->pluck('name');
+            if ($departments->isNotEmpty()) {
+                return $departments;
+            }
+        } catch (Exception $e) {
+            // Table inexistante ou vide → fallback
+        }
+
+        return Employee::whereNotNull('department')
+            ->where('department', '!=', '')
+            ->distinct()
+            ->orderBy('department')
+            ->pluck('department');
+    }
 }

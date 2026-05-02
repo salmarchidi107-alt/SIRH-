@@ -7,24 +7,25 @@ use Illuminate\Http\Request;
 
 class PayrollSettingController extends Controller
 {
-
     public function index()
     {
+        $settings = PayrollSetting::orderBy('category')
+            ->orderBy('key')
+            ->get()
+            ->groupBy('category');
 
-        $settings = PayrollSetting::orderBy('category')->orderBy('key')->get()->groupBy('category') ?: [];
         return view('salary.setting', compact('settings'));
-
     }
-
 
     public function update(Request $request)
     {
         $validated = $request->validate([
-            'settings.*.key' => 'required|string',
-            'settings.*.value' => 'required|numeric|min:0',
+            'settings'          => 'required|array',
+            'settings.*.key'    => 'required|string',
+            'settings.*.value'  => 'required|numeric|min:0',
         ]);
 
-        foreach ($validated['settings'] ?? [] as $data) {
+        foreach ($validated['settings'] as $data) {
             PayrollSetting::set($data['key'], $data['value']);
         }
 

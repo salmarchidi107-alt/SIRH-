@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Salary;
 use App\Services\PayrollService;
@@ -49,17 +50,13 @@ class SalaryController extends Controller
         $employees = $query->orderByRaw("CONCAT(first_name, ' ', last_name) ASC")->paginate(50);
         $summary   = $this->payrollService->getMonthlySummary($month, $year);
 
-        $departments = Employee::select('department')
-            ->whereNotNull('department')
-            ->distinct()
-            ->orderBy('department')
-            ->pluck('department');
+        // ── Départements depuis la table departments (avec fallback employees) ──
+        $departments = Department::names();
 
         return view('salary.index', compact(
             'employees', 'month', 'year', 'summary',
             'status', 'search', 'department', 'departments'
         ));
-        
     }
 
     public function show(Employee $employee)

@@ -33,6 +33,8 @@ use App\Models\Employee;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DocumentEnteteController;
+use App\Http\Controllers\ParametrageController;
+use App\Http\Controllers\DepartmentController;
 
 // ═════════════════════════════════════════════════════════════════════════════
 // DEBUG TEMPORAIRE — À SUPPRIMER APRÈS TEST
@@ -324,3 +326,16 @@ Route::prefix('badge')->name('badge.')->group(function () {
         Route::get('/result',    [BadgePointageController::class, 'result'])     ->name('result');
     });
 });
+Route::get('/parametrage', [ParametrageController::class, 'index'])
+    ->name('parametrage.index');
+ 
+// Salles (CRUD)
+Route::post('/rooms',          [RoomController::class, 'store'])  ->name('rooms.store');
+Route::put('/rooms/{room}',    [RoomController::class, 'update']) ->name('rooms.update');
+Route::delete('/rooms/{room}', [RoomController::class, 'destroy'])->name('rooms.destroy');
+ 
+// Départements (CRUD — pas de GET index car intégré dans paramétrage)
+Route::post('/departments',               [DepartmentController::class, 'store'])  ->name('departments.store');
+Route::put('/departments/{department}',   [DepartmentController::class, 'update']) ->name('departments.update');
+Route::delete('/departments/{department}',[DepartmentController::class, 'destroy'])->name('departments.destroy');
+ 

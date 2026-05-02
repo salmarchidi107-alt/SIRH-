@@ -20,11 +20,8 @@
                             <th>Nom</th>
                             <th>Slug</th>
                             <th>Sector</th>
-                            <th>Plan</th>
-                            <th>Status</th>
                             <th>Users</th>
                             <th>Créé le</th>
-                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -44,27 +41,12 @@
                                 <div class="sa-table__meta">{{ $client->domain }}</div>
                             </td>
                             <td>{{ $client->sector ?? 'N/A' }}</td>
-                            <td>
-                                <span class="sa-badge sa-badge--{{ $client->plan->badgeClass() }}">
-                                    {{ $client->plan->label() }}
-                                </span>
-                            </td>
-                            <td>
-                                <span class="sa-badge sa-badge--{{ $client->status->badgeClass() }}">
-                                    {{ $client->status->label() }}
-                                </span>
-                            </td>
                             <td>{{ $client->users_count }}</td>
                             <td>{{ $client->created_at->format('d/m/Y') }}</td>
-                            <td>
-                                <a href="{{ route('superadmin.tenants.show', $client) }}" class="sa-btn sa-btn--xs sa-btn--outline-primary">
-                                    <i class="sa-btn__icon mdi mdi-eye"></i>
-                                </a>
-                            </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="text-center py-8 text-muted">
+                            <td colspan="5" class="text-center py-8 text-muted">
                                 Aucun client trouvé.
                             </td>
                         </tr>
@@ -80,4 +62,3 @@
     </div>
 </div>
 @endsection
-

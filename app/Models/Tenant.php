@@ -22,13 +22,18 @@ class Tenant extends BaseTenant
         'name',
         'slug',
         'sector',
+        'region',
+        'address',
+        'phone',
+        'ice',
+        'email_societe',
+        'website',
         'logo_path',
         'brand_color',
-        'sidebar_color',   // ← AJOUTÉ
+        'sidebar_color',
+        'database_name',
         'plan',
         'status',
-        'region',
-        'database_name',
     ];
 
     protected $casts = [
@@ -43,12 +48,15 @@ class Tenant extends BaseTenant
             'name',
             'slug',
             'sector',
+            'region',
+            'address',
+            'phone',
+            'ice',
+            'email_societe',
+            'website',
             'logo_path',
             'brand_color',
-            'sidebar_color',   // ← AJOUTÉ
-            'plan',
-            'status',
-            'region',
+            'sidebar_color',
             'database_name',
         ];
     }
@@ -65,14 +73,19 @@ class Tenant extends BaseTenant
         return $this->hasOne(User::class, 'tenant_id')->where('role', 'admin');
     }
 
-    // ─── Scopes ───────────────────────────────────────────────────────────────
+// ─── Query Scopes ─────────────────────────────────────────────────────────
 
-    public function scopeByStatus($query, $status)
+    public function scopeActive($query)
+    {
+        return $query->where('status', TenantStatus::Active->value);
+    }
+
+    public function scopeByStatus($query, string $status)
     {
         return $query->where('status', $status);
     }
 
-    // ─── Accessors ────────────────────────────────────────────────────────────
+// ─── Accessors ────────────────────────────────────────────────────────────
 
     public function getDomainAttribute(): string
     {
@@ -91,4 +104,9 @@ class Tenant extends BaseTenant
 
     public function getStorageUsageAttribute(): int { return 0; }
     public function getApiUsageAttribute(): int     { return 0; }
+
+    public function getUsersCountAttribute(): int
+    {
+        return $this->users()->count();
+    }
 }

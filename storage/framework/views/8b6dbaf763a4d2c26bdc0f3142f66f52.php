@@ -1,16 +1,15 @@
-@extends('layouts.superadmin')
-@section('title', 'Dashboard')
-@section('page-title', 'Tableau de bord')
+<?php $__env->startSection('title', 'Dashboard'); ?>
+<?php $__env->startSection('page-title', 'Tableau de bord'); ?>
 
-@section('page-header')
+<?php $__env->startSection('page-header'); ?>
     <div class="sa-page-title">Tableau de bord</div>
     <div class="sa-page-sub">Vue globale de la plateforme multi-tenant</div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 
 <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:22px;">
-@php
+<?php
     $cards = [
         [
             'label' => 'Tenants actifs',
@@ -41,18 +40,18 @@
             'icon'  => 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
         ],
     ];
-@endphp
-@foreach($cards as $c)
+?>
+<?php $__currentLoopData = $cards; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
     <div class="sa-stat">
-        <div class="sa-stat-icon" style="background:{{ $c['bg'] }};">
-            <svg viewBox="0 0 24 24" fill="none" stroke="{{ $c['color'] }}" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="{{ $c['icon'] }}"/>
+        <div class="sa-stat-icon" style="background:<?php echo e($c['bg']); ?>;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="<?php echo e($c['color']); ?>" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="<?php echo e($c['icon']); ?>"/>
             </svg>
         </div>
-        <div class="sa-stat-val" data-count="{{ $c['value'] }}">{{ $c['value'] }}</div>
-        <div class="sa-stat-lbl">{{ $c['label'] }}</div>
+        <div class="sa-stat-val" data-count="<?php echo e($c['value']); ?>"><?php echo e($c['value']); ?></div>
+        <div class="sa-stat-lbl"><?php echo e($c['label']); ?></div>
     </div>
-@endforeach
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 </div>
 
 <div class="sa-card">
@@ -61,7 +60,7 @@
             <div class="sa-card-title">Tenants récents</div>
             <div class="sa-card-sub">Derniers tenants créés sur la plateforme</div>
         </div>
-        <a href="{{ route('superadmin.tenants.index') }}" class="sa-btn sa-btn-ghost sa-btn-sm">
+        <a href="<?php echo e(route('superadmin.tenants.index')); ?>" class="sa-btn sa-btn-ghost sa-btn-sm">
             Voir tout
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
@@ -80,61 +79,63 @@
             </tr>
         </thead>
         <tbody>
-        @forelse($recent as $t)
+        <?php $__empty_1 = true; $__currentLoopData = $recent; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $t): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
             <tr>
                 <td>
                     <div style="display:flex;align-items:center;gap:11px;">
-                        <div style="width:36px;height:36px;border-radius:10px;background:{{ $t->brand_color }};
+                        <div style="width:36px;height:36px;border-radius:10px;background:<?php echo e($t->brand_color); ?>;
                                     display:flex;align-items:center;justify-content:center;
                                     font-size:13px;font-weight:800;color:#fff;flex-shrink:0;
-                                    box-shadow:0 3px 8px {{ $t->brand_color }}44;">
-                            {{ $t->initials }}
+                                    box-shadow:0 3px 8px <?php echo e($t->brand_color); ?>44;">
+                            <?php echo e($t->initials); ?>
+
                         </div>
                         <div>
-                            <div style="font-weight:700;font-size:13px;color:var(--text);">{{ $t->name }}</div>
-                            <div style="font-size:11px;color:var(--text-muted);font-family:monospace;">{{ $t->domain }}</div>
+                            <div style="font-weight:700;font-size:13px;color:var(--text);"><?php echo e($t->name); ?></div>
+                            <div style="font-size:11px;color:var(--text-muted);font-family:monospace;"><?php echo e($t->domain); ?></div>
                         </div>
                     </div>
                 </td>
                 <td>
-                    @if($t->sector)
+                    <?php if($t->sector): ?>
                         <span style="background:#f0f9ff;color:#0369a1;font-size:11px;
                                      font-weight:600;padding:3px 10px;border-radius:20px;">
-                            {{ $t->sector }}
+                            <?php echo e($t->sector); ?>
+
                         </span>
-                    @else
+                    <?php else: ?>
                         <span style="color:var(--text-muted);">—</span>
-                    @endif
+                    <?php endif; ?>
                 </td>
                 <td>
-                    <span style="font-weight:700;color:var(--text);">{{ $t->users_count }}</span>
+                    <span style="font-weight:700;color:var(--text);"><?php echo e($t->users_count); ?></span>
                     <span style="font-size:11px;color:var(--text-muted);margin-left:3px;">utilisateur(s)</span>
                 </td>
-                <td style="color:var(--text-muted);font-size:13px;">{{ $t->admin?->name ?? '—' }}</td>
-                <td style="color:var(--text-light);font-size:12px;">{{ $t->created_at->format('d/m/Y') }}</td>
+                <td style="color:var(--text-muted);font-size:13px;"><?php echo e($t->admin?->name ?? '—'); ?></td>
+                <td style="color:var(--text-light);font-size:12px;"><?php echo e($t->created_at->format('d/m/Y')); ?></td>
                 <td style="text-align:right;">
-                    <a href="{{ route('superadmin.tenants.edit', $t) }}" class="sa-btn sa-btn-ghost sa-btn-sm">
+                    <a href="<?php echo e(route('superadmin.tenants.edit', $t)); ?>" class="sa-btn sa-btn-ghost sa-btn-sm">
                         Modifier
                     </a>
                 </td>
             </tr>
-        @empty
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
             <tr>
                 <td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">
                     Aucun tenant.
-                    <a href="{{ route('superadmin.tenants.create') }}" style="color:var(--primary);margin-left:6px;">
+                    <a href="<?php echo e(route('superadmin.tenants.create')); ?>" style="color:var(--primary);margin-left:6px;">
                         Créer →
                     </a>
                 </td>
             </tr>
-        @endforelse
+        <?php endif; ?>
         </tbody>
     </table>
 </div>
 
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
 document.querySelectorAll('[data-count]').forEach(el => {
     const target = parseInt(el.getAttribute('data-count'));
@@ -147,4 +148,5 @@ document.querySelectorAll('[data-count]').forEach(el => {
     }, 30);
 });
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
+<?php echo $__env->make('layouts.superadmin', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\HP\SIRH-\resources\views/superadmin/dashboard.blade.php ENDPATH**/ ?>

@@ -2,49 +2,65 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Collection;
-use App\Models\Employee;
 
 class Department extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'name',
+        'code',
+        'color',
+        'chef',
+        'description',
     ];
+
+    // =========================================================================
+    // RELATIONS
+    // =========================================================================
+
+    public function rooms()
+    {
+        return $this->hasMany(Room::class);
+    }
 
     public function employees()
     {
-        return $this->hasMany(Employee::class);
+        return $this->hasMany(Employee::class, 'department', 'name');
     }
 
-    public static function names(): Collection
+    // =========================================================================
+    // ACCESSORS
+    // =========================================================================
+
+    public function getRoomsCountAttribute(): int
     {
-        if (Schema::hasTable('departments')) {
-            return self::orderBy('name')->pluck('name');
+        return $this->rooms()->count();
+    }
+
+    // =========================================================================
+    // MÉTHODES STATIQUES
+    // =========================================================================
+
+    /**
+     * Retourne la liste des noms de départements triés alphabétiquement.
+     * Utilisé dans tous les contrôleurs via Department::names().
+     * Fallback sur le champ department de la table employees si vide.
+     */
+    public static function names(): \Illuminate\Support\Collection
+    {
+        try {
+            $names = static::orderBy('name')->pluck('name');
+            if ($names->isNotEmpty()) {
+                return $names;
+            }
+        } catch (\Exception $e) {
+            // Table vide ou inexistante → fallback
         }
 
         return Employee::whereNotNull('department')
+            ->where('department', '!=', '')
             ->distinct()
-            ->pluck('department')
-            ->filter()
-            ->sort()
-            ->values();
-    }
-
-    public static function counts(): Collection
-    {
-        if (Schema::hasTable('departments')) {
-            return self::withCount('employees')
-                ->orderBy('name')
-                ->pluck('employees_count', 'name');
-        }
-
-        return Employee::groupBy('department')
-            ->selectRaw('department, count(*) as total')
-            ->pluck('total', 'department');
+            ->orderBy('department')
+            ->pluck('department');
     }
 }

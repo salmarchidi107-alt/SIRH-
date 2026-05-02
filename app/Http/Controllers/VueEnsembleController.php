@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Exception;
 
 class VueEnsembleController extends Controller
 {
@@ -37,7 +38,7 @@ class VueEnsembleController extends Controller
         $employeeId = $request->get('employee_id');
         $department = $request->get('department');
 
-        $departments         = Department::names();
+        $departments         = $this->getDepartmentsList();
         $listeEmployesSelect = Employee::orderBy('first_name')->get(['id', 'first_name', 'last_name', 'matricule', 'department']);
 
         $moisPrecedent = Carbon::create($annee, $mois, 1)->subMonth();
@@ -49,7 +50,6 @@ class VueEnsembleController extends Controller
         if ($department && !$employeeId) {
             $donnees = $this->getDonneesDepartement($department, $annee, $mois);
 
-            // Jours planifies pour le popup calendrier (departement = union des plannings)
             $joursPlanningSemaine = $this->getJoursPlanningPopup(null, null, $department, $annee);
 
             return view('vue-ensemble.index', array_merge($donnees, [
@@ -87,7 +87,6 @@ class VueEnsembleController extends Controller
             $graphiqueMois = $this->graphService->getGraphiqueMois($employee->id, $annee);
         }
 
-        // Jours planifies pour le popup calendrier (employe individuel)
         $joursPlanningSemaine = $this->getJoursPlanningPopup($employee, $employeeId, null, $annee);
 
         return view('vue-ensemble.index', [
@@ -118,19 +117,6 @@ class VueEnsembleController extends Controller
     // POPUP CALENDRIER — JOURS PLANIFIES
     // =========================================================================
 
-    /**
-     * Retourne tous les jours planifies de l'annee pour le popup calendrier.
-     *
-     * Format retourne :
-     * [
-     *   '2026-04-07' => ['shift_start' => '08:00:00', 'shift_end' => '17:00:00'],
-     *   '2026-04-08' => ['shift_start' => '08:00:00', 'shift_end' => '17:00:00'],
-     *   ...
-     * ]
-     *
-     * En mode departement : union des plannings de tous les employes du dept.
-     * En mode employe     : planning de l'employe uniquement.
-     */
     private function getJoursPlanningPopup(?Employee $employee, $employeeId, ?string $department, int $annee): array
     {
         $debut = Carbon::create($annee, 1, 1)->startOfYear()->format('Y-m-d');
@@ -141,10 +127,8 @@ class VueEnsembleController extends Controller
             ->whereNotNull('shift_end');
 
         if ($employeeId && $employee && $employee->id > 0) {
-            // Mode employe individuel
             $query->where('employee_id', $employee->id);
         } elseif ($department) {
-            // Mode departement : tous les employes du dept
             $empIds = Employee::where('department', $department)->pluck('id')->toArray();
             if (empty($empIds)) return [];
             $query->whereIn('employee_id', $empIds);
@@ -157,7 +141,6 @@ class VueEnsembleController extends Controller
         $result = [];
         foreach ($plannings as $p) {
             $dateStr = Carbon::parse($p->date)->format('Y-m-d');
-            // En mode departement, on conserve le premier shift rencontre pour ce jour
             if (!isset($result[$dateStr])) {
                 $result[$dateStr] = [
                     'shift_start' => $p->shift_start,
@@ -170,13 +153,9 @@ class VueEnsembleController extends Controller
     }
 
     // =========================================================================
-    // CALCUL HEURES PLANIFIEES (avec pause dejeuner)
+    // CALCUL HEURES PLANIFIEES
     // =========================================================================
 
-    /**
-     * Calcule les heures planifiees depuis le planning pour une periode donnee.
-     * Regle : duree shift - 1h pause pour chaque jour planifie.
-     */
     private function calculerHeuresPlanifiees(int $employeeId, string $debut, string $fin): float
     {
         $plannings = Planning::where('employee_id', $employeeId)
@@ -200,9 +179,6 @@ class VueEnsembleController extends Controller
         return round($total, 2);
     }
 
-    /**
-     * Calcule la duree d'un shift en heures (gestion passage minuit, cap 24h).
-     */
     private function dureeShiftHeures(string $date, string $start, string $end): float
     {
         $d     = Carbon::parse($date);
@@ -210,7 +186,7 @@ class VueEnsembleController extends Controller
         $fin   = $d->copy()->setTimeFromTimeString($end);
 
         if ($fin->lte($debut)) {
-            $fin->addDay(); // passage minuit
+            $fin->addDay();
         }
 
         return min($debut->diffInMinutes($fin) / 60, 24.0);
@@ -245,11 +221,6 @@ class VueEnsembleController extends Controller
         return $ghost;
     }
 
-    /**
-     * Calcule et persiste le compteur mensuel d'un employe.
-     * Heures realisees = somme pointage (deja nettes)
-     * Heures planifiees = planning - pause dejeuner
-     */
     private function calculerCompteurMois(Employee $employee, int $annee, int $mois): object
     {
         $debut = Carbon::create($annee, $mois, 1)->startOfMonth()->format('Y-m-d');
@@ -288,9 +259,6 @@ class VueEnsembleController extends Controller
         ];
     }
 
-    /**
-     * Retourne le detail jour par jour pour l'employe sur le mois.
-     */
     private function getJoursDetails(Employee $employee, int $annee, int $mois): array
     {
         $debut = Carbon::create($annee, $mois, 1)->startOfMonth();
@@ -357,9 +325,6 @@ class VueEnsembleController extends Controller
         return $jours;
     }
 
-    /**
-     * Retourne les semaines du mois avec les totaux planifies/realises.
-     */
     private function getSemainesDuMois(Employee $employee, int $annee, int $mois): array
     {
         $debutMois = Carbon::create($annee, $mois, 1)->startOfMonth();
@@ -480,7 +445,7 @@ class VueEnsembleController extends Controller
                 'id'         => $emp->id,
                 'nom'        => $emp->first_name . ' ' . $emp->last_name,
                 'initiales'  => strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1)),
-                'poste'      => $emp->position ?? 'Employe',
+                'poste'      => $emp->position      ?? 'Employe',
                 'contrat'    => $emp->contract_type ?? 'CDI',
                 'planifiees' => $planifiees,
                 'realisees'  => $realisees,
@@ -588,5 +553,27 @@ class VueEnsembleController extends Controller
     {
         $v = (int) $val;
         return ($v >= 1 && $v <= 12) ? $v : now()->month;
+    }
+
+    /**
+     * Récupère les départements depuis la table departments,
+     * avec fallback sur le champ department des employés.
+     */
+    private function getDepartmentsList()
+    {
+        try {
+            $departments = Department::orderBy('name')->pluck('name');
+            if ($departments->isNotEmpty()) {
+                return $departments;
+            }
+        } catch (Exception $e) {
+            // Table inexistante ou vide → fallback
+        }
+
+        return Employee::whereNotNull('department')
+            ->where('department', '!=', '')
+            ->distinct()
+            ->orderBy('department')
+            ->pluck('department');
     }
 }

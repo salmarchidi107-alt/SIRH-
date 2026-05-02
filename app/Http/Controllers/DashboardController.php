@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use App\Scopes\TenantScope;
 
 class DashboardController extends Controller
 {
@@ -38,9 +39,11 @@ $isAdminOrRH = $user && ($user->isAdmin() || $user->isRh());
         $recent_absences = collect();
         $contract_types = collect();
 
-        if ($isAdminOrRH) {
+if ($isAdminOrRH) {
             $stats['pending_absences'] = Absence::where('status', 'pending')->count();
-            $recent_absences = Absence::with('employee')
+            $recent_absences = Absence::with(['employee' => function ($query) {
+                    $query->withoutGlobalScopes();
+                }])
                 ->where('status', 'pending')
                 ->latest()
                 ->take(5)
@@ -56,7 +59,9 @@ $isAdminOrRH = $user && ($user->isAdmin() || $user->isRh());
             ->pluck('total', 'department');
 
 
-        $today_planning = Planning::with('employee')
+$today_planning = Planning::with(['employee' => function ($query) {
+                $query->withoutGlobalScopes();
+            }])
             ->whereDate('date', today())
             ->get();
 
@@ -108,7 +113,9 @@ $birthdays = Employee::with('user')->whereNotNull('birth_date')
             ->get();
 
 
-$approvedAbsences = Absence::with('employee')
+$approvedAbsences = Absence::with(['employee' => function ($query) {
+                $query->withoutGlobalScopes();
+            }])
             ->where('status', 'approved')
             ->orderBy('employee_id')
             ->orderBy('start_date')
@@ -118,7 +125,10 @@ $approvedAbsences = Absence::with('employee')
         $currentEmployeeId = null;
         $employeeAbsences = collect();
 
-        foreach ($approvedAbsences as $absence) {
+foreach ($approvedAbsences as $absence) {
+            if (!$absence->employee) {
+                continue; // Skip if employee not found
+            }
             if ($absence->employee_id !== $currentEmployeeId) {
                 // Process previous employee
                 $sorted = $employeeAbsences->sortBy('start_date');

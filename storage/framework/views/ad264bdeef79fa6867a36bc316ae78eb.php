@@ -23,10 +23,10 @@
 <form action="<?php echo e(route('employees.store')); ?>" method="POST" enctype="multipart/form-data">
     <?php echo csrf_field(); ?>
 
-    <!-- Informations personnelles -->
+    
     <div class="card mb-4">
         <div class="card-header">
-            <div class="card-title"> Informations Personnelles</div>
+            <div class="card-title">Informations Personnelles</div>
         </div>
         <div class="card-body">
             <div class="form-grid">
@@ -90,11 +90,11 @@ unset($__errorArgs, $__bag); ?>
                     <label>Situation familiale</label>
                     <select name="family_situation" class="form-control">
                         <option value="">Sélectionner...</option>
-                        <option value="célibataire" <?php echo e(old('family_situation') == 'célibataire' ? 'selected' : ''); ?>>Célibataire</option>
-                        <option value="marié(e)" <?php echo e(old('family_situation') == 'marié(e)' ? 'selected' : ''); ?>>Marié(e)</option>
-                        <option value="divorcé(e)" <?php echo e(old('family_situation') == 'divorcé(e)' ? 'selected' : ''); ?>>Divorcé(e)</option>
-                        <option value="veuf(ve)" <?php echo e(old('family_situation') == 'veuf(ve)' ? 'selected' : ''); ?>>Veuf(ve)</option>
-                        <option value="en instance de divorce" <?php echo e(old('family_situation') == 'en instance de divorce' ? 'selected' : ''); ?>>En instance de divorce</option>
+                        <option value="célibataire"           <?php echo e(old('family_situation') == 'célibataire'           ? 'selected' : ''); ?>>Célibataire</option>
+                        <option value="marié(e)"              <?php echo e(old('family_situation') == 'marié(e)'              ? 'selected' : ''); ?>>Marié(e)</option>
+                        <option value="divorcé(e)"            <?php echo e(old('family_situation') == 'divorcé(e)'            ? 'selected' : ''); ?>>Divorcé(e)</option>
+                        <option value="veuf(ve)"              <?php echo e(old('family_situation') == 'veuf(ve)'              ? 'selected' : ''); ?>>Veuf(ve)</option>
+                        <option value="en instance de divorce"<?php echo e(old('family_situation') == 'en instance de divorce'? 'selected' : ''); ?>>En instance de divorce</option>
                     </select>
                 </div>
                 <div class="form-group full">
@@ -113,15 +113,13 @@ unset($__errorArgs, $__bag); ?>
                     <label>Photo de profil</label>
                     <input type="file" name="photo" class="form-control" accept="image/*">
                 </div>
-
-                <!-- NOUVEAU : PIN Badge -->
                 <div class="form-group">
-                    <label>Code PIN Badge </label>
+                    <label>Code PIN Badge</label>
                     <div class="input-group">
-                        <input type="text" 
-                               name="pin" 
-                               id="pin_field" 
-                               class="form-control" 
+                        <input type="text"
+                               name="pin"
+                               id="pin_field"
+                               class="form-control"
                                placeholder="1234AB"
                                pattern="[0-9]{4}[A-Z]{2}"
                                maxlength="6"
@@ -131,86 +129,77 @@ unset($__errorArgs, $__bag); ?>
                             Générer
                         </button>
                     </div>
-                
                 </div>
             </div>
         </div>
     </div>
 
-    <style>
-    .input-group {
-        display: flex; gap: 8px;
-    }
-    .input-group .form-control {
-        flex: 1;
-    }
-    .input-group .btn {
-        white-space: nowrap; padding: 8px 16px;
-    }
-    #pin_field {
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        font-family: monospace;
-        font-weight: 600;
-    }
-    </style>
-
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Générateur PIN Badge
-        document.getElementById('generate_pin').addEventListener('click', function() {
-            const digits = Math.floor(1000 + Math.random() * 9000); // 1000-9999
-            const letters = Array.from({length: 2}, () => 
-                String.fromCharCode(65 + Math.floor(Math.random() * 26))
-            ).join('');
-            
-            const pin = digits + letters;
-            document.getElementById('pin_field').value = pin;
-            
-            // Feedback visuel
-            this.textContent = ' ' + pin;
-            this.style.background = '#10b981';
-            this.style.color = 'white';
-            
-            setTimeout(() => {
-                this.textContent = ' Générer';
-                this.style.background = '';
-                this.style.color = '';
-            }, 2000);
-        });
-    });
-    </script>
-
-    <!-- Informations professionnelles -->
+    
     <div class="card mb-4">
         <div class="card-header">
-            <div class="card-title"> Informations Professionnelles</div>
+            <div class="card-title">Informations Professionnelles</div>
         </div>
         <div class="card-body">
             <div class="form-grid">
+
+                
                 <div class="form-group">
                     <label>Service / Département *</label>
-                    <input type="text" name="department" class="form-control" value="<?php echo e(old('department')); ?>" required
-                        list="depts" placeholder="ex: Urgences">
-                    <datalist id="depts">
-                        <option value="Médecine Générale">
-                        <option value="Chirurgie">
-                        <option value="Urgences">
-                        <option value="Pédiatrie">
-                        <option value="Radiologie">
-                        <option value="Laboratoire">
-                        <option value="Pharmacie">
-                        <option value="Administration">
-                        <option value="Ressources Humaines">
-                    </datalist>
+                    <select name="department" class="form-control" required>
+                        <option value="">— Sélectionner un département —</option>
+                        <?php $__empty_1 = true; $__currentLoopData = $departments ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dept): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                            <?php $deptName = is_object($dept) ? $dept->name : $dept; ?>
+                            <option value="<?php echo e($deptName); ?>"
+                                <?php echo e(old('department') == $deptName ? 'selected' : ''); ?>>
+                                <?php echo e($deptName); ?>
+
+                            </option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                            
+                            <option value="Médecine Générale">Médecine Générale</option>
+                            <option value="Chirurgie">Chirurgie</option>
+                            <option value="Urgences">Urgences</option>
+                            <option value="Pédiatrie">Pédiatrie</option>
+                            <option value="Radiologie">Radiologie</option>
+                            <option value="Laboratoire">Laboratoire</option>
+                            <option value="Pharmacie">Pharmacie</option>
+                            <option value="Administration">Administration</option>
+                            <option value="Ressources Humaines">Ressources Humaines</option>
+                        <?php endif; ?>
+                    </select>
+                    <?php $__errorArgs = ['department'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <span style="color:var(--danger);font-size:0.75rem"><?php echo e($message); ?></span> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                    <?php if(($departments ?? collect())->isEmpty()): ?>
+                    <small style="color:#f59e0b;font-size:0.75rem">
+                        ⚠️ Aucun département configuré —
+                        <a href="<?php echo e(route('parametrage.index', ['tab' => 'departments'])); ?>" style="color:#f59e0b">
+                            créez-en un dans Paramétrage
+                        </a>
+                    </small>
+                    <?php endif; ?>
                 </div>
+
                 <div class="form-group">
                     <label>Poste / Fonction *</label>
                     <input type="text" name="position" class="form-control" value="<?php echo e(old('position')); ?>" required placeholder="">
+                    <?php $__errorArgs = ['position'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <span style="color:var(--danger);font-size:0.75rem"><?php echo e($message); ?></span> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                 </div>
-              <div class="form-group">
-                    <label>Type de diplome*</label>
-                    <input type="text" name="position" class="form-control" value="<?php echo e(old('position')); ?>" required placeholder="">
+                <div class="form-group">
+                    <label>Type de diplôme</label>
+                    <input type="text" name="diploma_type" class="form-control" value="<?php echo e(old('diploma_type')); ?>" placeholder="">
                 </div>
                 <div class="form-group">
                     <label>Site de travail</label>
@@ -224,9 +213,9 @@ if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>
                 </div>
-               <div class="form-group">
-                    <label>Competance et experience *</label>
-                    <input type="text" name="position" class="form-control" value="<?php echo e(old('position')); ?>" required placeholder="">
+                <div class="form-group">
+                    <label>Compétences et expérience</label>
+                    <input type="text" name="skills" class="form-control" value="<?php echo e(old('skills')); ?>" placeholder="">
                 </div>
                 <div class="form-group">
                     <label>Type de contrat *</label>
@@ -247,9 +236,9 @@ unset($__errorArgs, $__bag); ?>
                 <div class="form-group">
                     <label>Statut</label>
                     <select name="status" class="form-control">
-                        <option value="active" <?php echo e(old('status','active') == 'active' ? 'selected' : ''); ?>>Actif</option>
-                        <option value="inactive" <?php echo e(old('status') == 'inactive' ? 'selected' : ''); ?>>Inactif</option>
-                        <option value="leave" <?php echo e(old('status') == 'leave' ? 'selected' : ''); ?>>En congé</option>
+                        <option value="active"   <?php echo e(old('status', 'active') == 'active'   ? 'selected' : ''); ?>>Actif</option>
+                        <option value="inactive" <?php echo e(old('status') == 'inactive'            ? 'selected' : ''); ?>>Inactif</option>
+                        <option value="leave"    <?php echo e(old('status') == 'leave'               ? 'selected' : ''); ?>>En congé</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -268,10 +257,10 @@ unset($__errorArgs, $__bag); ?>
         </div>
     </div>
 
-    <!-- Rémunération & Informations Sociales -->
+    
     <div class="card mb-4">
         <div class="card-header">
-            <div class="card-title"> Rémunération & Informations Sociales</div>
+            <div class="card-title">Rémunération &amp; Informations Sociales</div>
         </div>
         <div class="card-body">
             <div class="form-grid">
@@ -292,8 +281,8 @@ unset($__errorArgs, $__bag); ?>
                     <select name="payment_method" class="form-control">
                         <option value="">Sélectionner...</option>
                         <option value="virement" <?php echo e(old('payment_method') == 'virement' ? 'selected' : ''); ?>>Virement</option>
-                        <option value="cash" <?php echo e(old('payment_method') == 'cash' ? 'selected' : ''); ?>>Espèces</option>
-                        <option value="chèque" <?php echo e(old('payment_method') == 'chèque' ? 'selected' : ''); ?>>Chèque</option>
+                        <option value="cash"     <?php echo e(old('payment_method') == 'cash'     ? 'selected' : ''); ?>>Espèces</option>
+                        <option value="chèque"   <?php echo e(old('payment_method') == 'chèque'   ? 'selected' : ''); ?>>Chèque</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -301,15 +290,15 @@ unset($__errorArgs, $__bag); ?>
                     <select name="bank" class="form-control">
                         <option value="">Sélectionner une banque...</option>
                         <optgroup label="Banques principales">
-                            <option value="Attijariwafa Bank" <?php echo e(old('bank') == 'Attijariwafa Bank' ? 'selected' : ''); ?>>Attijariwafa Bank</option>
-                            <option value="Banque Populaire" <?php echo e(old('bank') == 'Banque Populaire' ? 'selected' : ''); ?>>Banque Populaire (BCP)</option>
-                            <option value="Bank of Africa" <?php echo e(old('bank') == 'Bank of Africa' ? 'selected' : ''); ?>>Bank of Africa (BOA)</option>
-                            <option value="CIH Bank" <?php echo e(old('bank') == 'CIH Bank' ? 'selected' : ''); ?>>CIH Bank</option>
+                            <option value="Attijariwafa Bank"        <?php echo e(old('bank') == 'Attijariwafa Bank'        ? 'selected' : ''); ?>>Attijariwafa Bank</option>
+                            <option value="Banque Populaire"         <?php echo e(old('bank') == 'Banque Populaire'         ? 'selected' : ''); ?>>Banque Populaire (BCP)</option>
+                            <option value="Bank of Africa"           <?php echo e(old('bank') == 'Bank of Africa'           ? 'selected' : ''); ?>>Bank of Africa (BOA)</option>
+                            <option value="CIH Bank"                 <?php echo e(old('bank') == 'CIH Bank'                 ? 'selected' : ''); ?>>CIH Bank</option>
                             <option value="Crédit Agricole du Maroc" <?php echo e(old('bank') == 'Crédit Agricole du Maroc' ? 'selected' : ''); ?>>Crédit Agricole du Maroc</option>
-                            <option value="BMCE Bank" <?php echo e(old('bank') == 'BMCE Bank' ? 'selected' : ''); ?>>BMCE Bank</option>
-                            <option value="CFG Bank" <?php echo e(old('bank') == 'CFG Bank' ? 'selected' : ''); ?>>CFG Bank</option>
-                            <option value="Société Générale Maroc" <?php echo e(old('bank') == 'Société Générale Maroc' ? 'selected' : ''); ?>>Société Générale Maroc</option>
-                            <option value="Al Barid Bank" <?php echo e(old('bank') == 'Al Barid Bank' ? 'selected' : ''); ?>>Al Barid Bank</option>
+                            <option value="BMCE Bank"                <?php echo e(old('bank') == 'BMCE Bank'                ? 'selected' : ''); ?>>BMCE Bank</option>
+                            <option value="CFG Bank"                 <?php echo e(old('bank') == 'CFG Bank'                 ? 'selected' : ''); ?>>CFG Bank</option>
+                            <option value="Société Générale Maroc"   <?php echo e(old('bank') == 'Société Générale Maroc'   ? 'selected' : ''); ?>>Société Générale Maroc</option>
+                            <option value="Al Barid Bank"            <?php echo e(old('bank') == 'Al Barid Bank'            ? 'selected' : ''); ?>>Al Barid Bank</option>
                         </optgroup>
                         <option value="Autre">Autre...</option>
                     </select>
@@ -334,10 +323,10 @@ unset($__errorArgs, $__bag); ?>
         </div>
     </div>
 
-    <!-- Créer compte utilisateur (Admin only) -->
+    
     <div class="card mb-4">
         <div class="card-header">
-            <div class="card-title"> Créer un compte utilisateur</div>
+            <div class="card-title">Créer un compte utilisateur</div>
         </div>
         <div class="card-body">
             <div class="form-group">
@@ -366,7 +355,7 @@ endif;
 unset($__errorArgs, $__bag); ?>
                     </div>
                     <div class="form-group">
-                    <label>Mot de passe *</label>
+                        <label>Mot de passe *</label>
                         <div class="password-group">
                             <input type="password" name="user_password" id="user_password" class="form-control" min="8">
                             <button type="button" class="toggle-password" data-target="user_password" title="Afficher/Masquer">
@@ -410,10 +399,10 @@ unset($__errorArgs, $__bag); ?>
         </div>
     </div>
 
-    <!-- Contrat de Travail -->
+    
     <div class="card mb-4">
         <div class="card-header">
-            <div class="card-title"> Détails du Contrat de Travail</div>
+            <div class="card-title">Détails du Contrat de Travail</div>
         </div>
         <div class="card-body">
             <div class="form-grid">
@@ -446,35 +435,27 @@ unset($__errorArgs, $__bag); ?>
                     <input type="number" name="work_hours_counter" class="form-control" value="<?php echo e(old('work_hours_counter', 0)); ?>" min="0" step="0.5" placeholder="0">
                 </div>
             </div>
-            <div class="form-group full" style="margin-top: 16px;">
-                <label style="font-weight: 600; margin-bottom: 12px; display: block;"> Jours de travail habituels</label>
-                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #f1f5f9; border-radius: 8px;">
-                        <input type="checkbox" name="work_days[]" value="lundi" <?php echo e(is_array(old('work_days')) && in_array('lundi', old('work_days')) ? 'checked' : ''); ?>>
-                        Lun
+            <div class="form-group full" style="margin-top:16px;">
+                <label style="font-weight:600;margin-bottom:12px;display:block;">Jours de travail habituels</label>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <?php $__currentLoopData = [
+                        'lundi'    => 'Lun',
+                        'mardi'    => 'Mar',
+                        'mercredi' => 'Mer',
+                        'jeudi'    => 'Jeu',
+                        'vendredi' => 'Ven',
+                        'samedi'   => 'Sam',
+                    ]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $val => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 16px;background:#f1f5f9;border-radius:8px;">
+                        <input type="checkbox" name="work_days[]" value="<?php echo e($val); ?>"
+                            <?php echo e(is_array(old('work_days')) && in_array($val, old('work_days')) ? 'checked' : ''); ?>>
+                        <?php echo e($label); ?>
+
                     </label>
-                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #f1f5f9; border-radius: 8px;">
-                        <input type="checkbox" name="work_days[]" value="mardi" <?php echo e(is_array(old('work_days')) && in_array('mardi', old('work_days')) ? 'checked' : ''); ?>>
-                        Mar
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #f1f5f9; border-radius: 8px;">
-                        <input type="checkbox" name="work_days[]" value="mercredi" <?php echo e(is_array(old('work_days')) && in_array('mercredi', old('work_days')) ? 'checked' : ''); ?>>
-                        Mer
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #f1f5f9; border-radius: 8px;">
-                        <input type="checkbox" name="work_days[]" value="jeudi" <?php echo e(is_array(old('work_days')) && in_array('jeudi', old('work_days')) ? 'selected' : ''); ?>>
-                        Jeu
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #f1f5f9; border-radius: 8px;">
-                        <input type="checkbox" name="work_days[]" value="vendredi" <?php echo e(is_array(old('work_days')) && in_array('vendredi', old('work_days')) ? 'checked' : ''); ?>>
-                        Ven
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #f1f5f9; border-radius: 8px;">
-                        <input type="checkbox" name="work_days[]" value="samedi" <?php echo e(is_array(old('work_days')) && in_array('samedi', old('work_days')) ? 'checked' : ''); ?>>
-                        Sam
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #fee2e2; border-radius: 8px;">
-                        <input type="checkbox" name="work_days[]" value="dimanche" <?php echo e(is_array(old('work_days')) && in_array('dimanche', old('work_days')) ? 'checked' : ''); ?>>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 16px;background:#fee2e2;border-radius:8px;">
+                        <input type="checkbox" name="work_days[]" value="dimanche"
+                            <?php echo e(is_array(old('work_days')) && in_array('dimanche', old('work_days')) ? 'checked' : ''); ?>>
                         Dim (Day Off)
                     </label>
                 </div>
@@ -486,7 +467,8 @@ unset($__errorArgs, $__bag); ?>
         <a href="<?php echo e(route('employees.index')); ?>" class="btn btn-ghost">Annuler</a>
         <button type="submit" class="btn btn-primary">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/>
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
                 <polyline points="7 3 7 8 15 8"/>
             </svg>
             Enregistrer l'employé
@@ -495,55 +477,58 @@ unset($__errorArgs, $__bag); ?>
 </form>
 
 <style>
-.password-group {
-    position: relative;
-}
-.password-group .form-control {
-    padding-right: 40px;
-}
+.input-group { display:flex; gap:8px; }
+.input-group .form-control { flex:1; }
+.input-group .btn { white-space:nowrap; padding:8px 16px; }
+#pin_field { text-transform:uppercase; letter-spacing:2px; font-family:monospace; font-weight:600; }
+.password-group { position:relative; }
+.password-group .form-control { padding-right:40px; }
 .toggle-password {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 4px;
-    opacity: 0.6;
-    transition: opacity 0.2s;
+    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    background:none; border:none; cursor:pointer; padding:4px;
+    opacity:0.6; transition:opacity 0.2s;
 }
-.toggle-password:hover {
-    opacity: 1;
-}
-.toggle-password svg {
-    width: 16px;
-    height: 16px;
-}
+.toggle-password:hover { opacity:1; }
 </style>
 
 <script>
-document.getElementById('create_account').addEventListener('change', function() {
-    document.getElementById('account_fields').style.display = this.checked ? 'block' : 'none';
-});
+document.addEventListener('DOMContentLoaded', function () {
 
-document.querySelectorAll('.toggle-password').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const targetId = this.dataset.target;
-        const input = document.getElementById(targetId);
-        const icon = this.querySelector('svg');
-        
-        if (input.type === 'password') {
-            input.type = 'text';
-            icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';
-        } else {
-            input.type = 'password';
-            icon.innerHTML = '<circle cx="12" cy="12" r="3.5" opacity="0.5"/><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>';
-        }
+    // ── Générateur PIN Badge ─────────────────────────────────
+    document.getElementById('generate_pin').addEventListener('click', function () {
+        const digits  = Math.floor(1000 + Math.random() * 9000);
+        const letters = Array.from({ length: 2 }, () =>
+            String.fromCharCode(65 + Math.floor(Math.random() * 26))
+        ).join('');
+        const pin = digits + letters;
+        document.getElementById('pin_field').value = pin;
+        this.textContent = '✓ ' + pin;
+        this.style.background = '#10b981';
+        this.style.color = 'white';
+        setTimeout(() => {
+            this.textContent = 'Générer';
+            this.style.background = '';
+            this.style.color = '';
+        }, 2000);
+    });
+
+    // ── Afficher les champs compte utilisateur ───────────────
+    document.getElementById('create_account').addEventListener('change', function () {
+        document.getElementById('account_fields').style.display = this.checked ? 'block' : 'none';
+    });
+
+    // ── Toggle visibilité mot de passe ───────────────────────
+    document.querySelectorAll('.toggle-password').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const input = document.getElementById(this.dataset.target);
+            const isText = input.type === 'text';
+            input.type = isText ? 'password' : 'text';
+            this.querySelector('svg').innerHTML = isText
+                ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" opacity="0.5"/><circle cx="12" cy="12" r="3.5"/>'
+                : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';
+        });
     });
 });
 </script>
 <?php $__env->stopSection(); ?>
-
-
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\HP\SIRH-\resources\views/employees/create.blade.php ENDPATH**/ ?>

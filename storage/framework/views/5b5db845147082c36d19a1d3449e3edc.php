@@ -186,6 +186,7 @@
             <?php else: ?>
                 <ul class="activity-list" style="padding:0 24px">
                     <?php $__currentLoopData = $recent_absences; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $absence): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <?php if($absence->employee): ?>
                     <li class="activity-item">
                         <div class="activity-dot" style="background:var(--warning)"></div>
                         <div>
@@ -211,6 +212,7 @@
                             </div>
                         </div>
                     </li>
+                    <?php endif; ?>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </ul>
             <?php endif; ?>
@@ -232,13 +234,14 @@
                     <div>Aucun planning aujourd'hui</div>
                 </div>
             <?php else: ?>
-                <ul class="activity-list" style="padding:0 24px">
+<ul class="activity-list" style="padding:0 24px">
                     <?php $__currentLoopData = $today_planning->take(6); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $plan): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <?php if($plan->employee): ?>
                     <li class="activity-item">
                         <div class="activity-dot" style="background:#3b82f6"></div>
                         <div>
                             <div class="activity-text">
-                                <strong><?php echo e($plan->employee->full_name); ?></strong> 
+                                <strong><?php echo e(optional($plan->employee)->full_name); ?></strong> 
                                 <span class="shift-pill shift-<?php echo e($plan->shift_type); ?>" style="margin-left:8px;font-size:0.8rem">
                                     <?php echo e(\App\Models\Planning::SHIFT_TYPES[$plan->shift_type]); ?>
 
@@ -247,12 +250,13 @@
                             <div class="activity-time">
                                 <?php echo e($plan->shift_start); ?> – <?php echo e($plan->shift_end); ?>
 
-                                <?php if($plan->employee->department): ?>
+                                <?php if(optional($plan->employee)->department): ?>
                                 <span style="opacity:0.7;margin-left:12px">• <?php echo e($plan->employee->department); ?></span>
                                 <?php endif; ?>
                             </div>
                         </div>
                     </li>
+                    <?php endif; ?>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </ul>
             <?php endif; ?>

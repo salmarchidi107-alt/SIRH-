@@ -27,8 +27,6 @@
         <a href="{{ route('planning.monthly') }}" class="btn btn-outline">Vue Mensuelle</a>
         <a href="{{ route('planning.weekly.pdf', request()->query()) }}" class="btn btn-outline" target="_blank">Exporter PDF</a>
         <a href="{{ route('planning.templates.index') }}" class="btn btn-outline">Semaines Types</a>
-        <a href="{{ route('rooms.index') }}" class="btn btn-outline">Salles</a>
-        <a href="{{ route('planning.templates.apply') }}" class="btn btn-outline">➕ Appliquer Semaine Type</a>
         <button type="button" class="btn btn-primary" onclick="openPlanningModal()">
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>

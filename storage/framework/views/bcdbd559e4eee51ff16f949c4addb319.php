@@ -1,137 +1,192 @@
-@extends('layouts.superadmin')
-@section('title', 'Créer un tenant')
-@section('page-title', 'Créer un tenant')
+<?php $__env->startSection('title', 'Créer un tenant'); ?>
+<?php $__env->startSection('page-title', 'Créer un tenant'); ?>
 
-@section('page-header')
+<?php $__env->startSection('page-header'); ?>
     <div class="sa-breadcrumb">
-        <a href="{{ route('superadmin.tenants.index') }}">Tenants</a>
+        <a href="<?php echo e(route('superadmin.tenants.index')); ?>">Tenants</a>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
         <span style="color:var(--text);font-weight:600;">Nouveau</span>
     </div>
     <div class="sa-page-title" style="font-size:clamp(15px,2.5vw,22px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">
         Créer un nouvel tenant
     </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 
-{{-- Erreurs de validation globales --}}
-@if ($errors->any())
+
+<?php if($errors->any()): ?>
     <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:14px 18px;margin-bottom:18px;">
         <div style="font-weight:600;color:#dc2626;margin-bottom:6px;">Veuillez corriger les erreurs suivantes :</div>
         <ul style="margin:0;padding-left:18px;color:#b91c1c;font-size:13px;">
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
+            <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <li><?php echo e($error); ?></li>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         </ul>
     </div>
-@endif
+<?php endif; ?>
 
-<form method="POST" action="{{ route('superadmin.tenants.store') }}" enctype="multipart/form-data">
-@csrf
+<form method="POST" action="<?php echo e(route('superadmin.tenants.store')); ?>" enctype="multipart/form-data">
+<?php echo csrf_field(); ?>
 
-    {{-- Identité --}}
+    
     <div class="sa-card" style="margin-bottom:16px;">
         <div class="sa-card-header"><div class="sa-card-title">Identité de la société</div></div>
         <div class="sa-card-body" style="display:flex;flex-direction:column;gap:0;">
 
-            {{-- Nom --}}
+            
             <div class="sa-field">
                 <label class="sa-label">Nom de la société *</label>
                 <input type="text" name="company_name" id="company-name" class="sa-input"
-                       value="{{ old('company_name') }}" oninput="updatePreview()" required>
-                @error('company_name')<div class="sa-error">{{ $message }}</div>@enderror
+                       value="<?php echo e(old('company_name')); ?>" oninput="updatePreview()" required>
+                <?php $__errorArgs = ['company_name'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><div class="sa-error"><?php echo e($message); ?></div><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
             </div>
 
-            {{-- Slug + Secteur --}}
+            
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" class="sa-field">
                 <div>
                     <label class="sa-label">Slug URL *</label>
                     <input type="text" name="slug" id="slug" class="sa-input"
-                           value="{{ old('slug') }}" oninput="updatePreview()" required pattern="[a-z0-9\-]+">
-                    @error('slug')<div class="sa-error">{{ $message }}</div>@enderror
+                           value="<?php echo e(old('slug')); ?>" oninput="updatePreview()" required pattern="[a-z0-9\-]+">
+                    <?php $__errorArgs = ['slug'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><div class="sa-error"><?php echo e($message); ?></div><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                 </div>
                 <div>
                     <label class="sa-label">Secteur</label>
                     <select name="sector" id="sector-select" class="sa-input"
                             onchange="toggleSectorOther(this.value)">
-                        @foreach(['SaaS / Tech','Finance','Santé','Éducation','Retail','Autre'] as $s)
-                        <option {{ old('sector') === $s ? 'selected' : '' }}>{{ $s }}</option>
-                        @endforeach
+                        <?php $__currentLoopData = ['SaaS / Tech','Finance','Santé','Éducation','Retail','Autre']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $s): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <option <?php echo e(old('sector') === $s ? 'selected' : ''); ?>><?php echo e($s); ?></option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
-                    <div id="sector-other-wrap" style="margin-top:8px;display:{{ old('sector') === 'Autre' ? 'block' : 'none' }};">
+                    <div id="sector-other-wrap" style="margin-top:8px;display:<?php echo e(old('sector') === 'Autre' ? 'block' : 'none'); ?>;">
                         <input type="text" name="sector_other" class="sa-input"
-                               value="{{ old('sector_other') }}"
+                               value="<?php echo e(old('sector_other')); ?>"
                                placeholder="Précisez le secteur...">
                     </div>
                 </div>
             </div>
 
-            {{-- Région --}}
+            
             <div class="sa-field">
                 <label class="sa-label">Région *</label>
                 <select name="region" class="sa-input" required>
                     <option value="">Choisir une région...</option>
-                    @foreach([
+                    <?php $__currentLoopData = [
                         'Casablanca-Settat','Rabat-Salé-Kénitra','Fès-Meknès','Marrakech-Safi',
                         'Béni Mellal-Khénifra','Tanger-Tétouan-Al Hoceïma','Oriental',
                         'Drâa-Tafilalet','Souss-Massa','Guelmim-Oued Noun',
                         'Laâyoune-Sakia El Hamra','Dakhla-Oued Ed-Dahab'
-                    ] as $r)
-                    <option {{ old('region') == $r ? 'selected' : '' }}>{{ $r }}</option>
-                    @endforeach
+                    ]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $r): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <option <?php echo e(old('region') == $r ? 'selected' : ''); ?>><?php echo e($r); ?></option>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </select>
-                @error('region')<div class="sa-error">{{ $message }}</div>@enderror
+                <?php $__errorArgs = ['region'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><div class="sa-error"><?php echo e($message); ?></div><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
             </div>
 
-            {{-- Adresse --}}
+            
             <div class="sa-field">
                 <label class="sa-label">Adresse *</label>
                 <textarea name="address" class="sa-input" rows="2"
                           placeholder="Ex: 23 Rue Mohammed V, Casablanca" required
-                          style="resize:vertical;line-height:1.5;">{{ old('address') }}</textarea>
-                @error('address')<div class="sa-error">{{ $message }}</div>@enderror
+                          style="resize:vertical;line-height:1.5;"><?php echo e(old('address')); ?></textarea>
+                <?php $__errorArgs = ['address'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><div class="sa-error"><?php echo e($message); ?></div><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
             </div>
 
-            {{-- Téléphone + ICE --}}
+            
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" class="sa-field">
                 <div>
                     <label class="sa-label">Téléphone *</label>
                     <input type="tel" name="phone" class="sa-input"
-                           value="{{ old('phone') }}" placeholder="+212 6XX XXX XXX" required>
-                    @error('phone')<div class="sa-error">{{ $message }}</div>@enderror
+                           value="<?php echo e(old('phone')); ?>" placeholder="+212 6XX XXX XXX" required>
+                    <?php $__errorArgs = ['phone'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><div class="sa-error"><?php echo e($message); ?></div><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                 </div>
                 <div>
                     <label class="sa-label">ICE *
                         <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--text-muted);">(15 chiffres)</span>
                     </label>
                     <input type="text" name="ice" class="sa-input"
-                           value="{{ old('ice') }}" placeholder="000000000000000"
+                           value="<?php echo e(old('ice')); ?>" placeholder="000000000000000"
                            required maxlength="15" pattern="\d{15}"
                            oninput="this.value=this.value.replace(/\D/g,'')">
-                    @error('ice')<div class="sa-error">{{ $message }}</div>@enderror
+                    <?php $__errorArgs = ['ice'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><div class="sa-error"><?php echo e($message); ?></div><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                 </div>
             </div>
 
-            {{-- Email société + Site web --}}
+            
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" class="sa-field">
                 <div>
                     <label class="sa-label">Email société *</label>
                     <input type="email" name="email_societe" class="sa-input"
-                           value="{{ old('email_societe') }}" placeholder="contact@societe.ma" required>
-                    @error('email_societe')<div class="sa-error">{{ $message }}</div>@enderror
+                           value="<?php echo e(old('email_societe')); ?>" placeholder="contact@societe.ma" required>
+                    <?php $__errorArgs = ['email_societe'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><div class="sa-error"><?php echo e($message); ?></div><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                 </div>
                 <div>
                     <label class="sa-label">Site web
                         <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--text-muted);">(optionnel)</span>
                     </label>
                     <input type="url" name="website" class="sa-input"
-                           value="{{ old('website') }}" placeholder="https://www.societe.ma">
-                    @error('website')<div class="sa-error">{{ $message }}</div>@enderror
+                           value="<?php echo e(old('website')); ?>" placeholder="https://www.societe.ma">
+                    <?php $__errorArgs = ['website'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><div class="sa-error"><?php echo e($message); ?></div><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                 </div>
             </div>
 
-            {{-- Logo --}}
+            
             <div class="sa-field">
                 <label class="sa-label">Logo de la société</label>
                 <div class="sa-upload" onclick="document.getElementById('file-input').click()">
@@ -140,41 +195,76 @@
                     <div style="font-size:11px;color:var(--text-light);margin-top:3px;">PNG, SVG, JPG · Max 2 Mo</div>
                 </div>
                 <input type="file" id="file-input" name="logo" accept="image/*" style="display:none" onchange="handleFile(this)">
-                @error('logo')<div class="sa-error">{{ $message }}</div>@enderror
+                <?php $__errorArgs = ['logo'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><div class="sa-error"><?php echo e($message); ?></div><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
             </div>
 
 
-    {{-- Admin --}}
+    
     <div class="sa-card" style="margin-bottom:16px;">
         <div class="sa-card-header"><div class="sa-card-title">Compte admin principal</div></div>
         <div class="sa-card-body" style="display:flex;flex-direction:column;gap:0;">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" class="sa-field">
                 <div>
                     <label class="sa-label">Prénom *</label>
-                    <input type="text" name="first_name" class="sa-input" value="{{ old('first_name') }}" required>
-                    @error('first_name')<div class="sa-error">{{ $message }}</div>@enderror
+                    <input type="text" name="first_name" class="sa-input" value="<?php echo e(old('first_name')); ?>" required>
+                    <?php $__errorArgs = ['first_name'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><div class="sa-error"><?php echo e($message); ?></div><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                 </div>
                 <div>
                     <label class="sa-label">Nom *</label>
-                    <input type="text" name="last_name" class="sa-input" value="{{ old('last_name') }}" required>
-                    @error('last_name')<div class="sa-error">{{ $message }}</div>@enderror
+                    <input type="text" name="last_name" class="sa-input" value="<?php echo e(old('last_name')); ?>" required>
+                    <?php $__errorArgs = ['last_name'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><div class="sa-error"><?php echo e($message); ?></div><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                 </div>
             </div>
             <div class="sa-field">
                 <label class="sa-label">Email admin *</label>
-                <input type="email" name="admin_email" class="sa-input" value="{{ old('admin_email') }}" required>
-                @error('admin_email')<div class="sa-error">{{ $message }}</div>@enderror
+                <input type="email" name="admin_email" class="sa-input" value="<?php echo e(old('admin_email')); ?>" required>
+                <?php $__errorArgs = ['admin_email'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><div class="sa-error"><?php echo e($message); ?></div><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
             </div>
             <div class="sa-field">
                 <label class="sa-label">Mot de passe temporaire *</label>
                 <input type="password" name="temp_password" class="sa-input" required minlength="8">
-                @error('temp_password')<div class="sa-error">{{ $message }}</div>@enderror
+                <?php $__errorArgs = ['temp_password'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><div class="sa-error"><?php echo e($message); ?></div><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
             </div>
         </div>
     </div>
 
     <div style="display:flex;gap:10px;">
-        <a href="{{ route('superadmin.tenants.index') }}" class="sa-btn sa-btn-ghost">Annuler</a>
+        <a href="<?php echo e(route('superadmin.tenants.index')); ?>" class="sa-btn sa-btn-ghost">Annuler</a>
         <button type="submit" class="sa-btn sa-btn-primary" style="flex:1;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
@@ -184,9 +274,9 @@
     </div>
 
 </form>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
 function getInitials(name) {
     return name.trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '?';
@@ -258,9 +348,9 @@ function toggleSectorOther(val) {
 
 document.addEventListener('DOMContentLoaded', updatePreview);
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
 
-@push('styles')
+<?php $__env->startPush('styles'); ?>
 <style>
 /* Cards pleine largeur */
 .sa-card {
@@ -281,4 +371,5 @@ document.addEventListener('DOMContentLoaded', updatePreview);
     }
 }
 </style>
-@endpush
+<?php $__env->stopPush(); ?>
+<?php echo $__env->make('layouts.superadmin', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\HP\SIRH-\resources\views/superadmin/tenants/create.blade.php ENDPATH**/ ?>

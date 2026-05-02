@@ -59,54 +59,42 @@ class PlanningController extends Controller
     }
 
     // =========================================================================
-    // WEEKLY
+    // WEEKLY — try/catch supprimé pour exposer les vraies erreurs
     // =========================================================================
 
     public function weekly(Request $request)
     {
-        try {
-            $rooms      = Room::all();
-            $week       = $request->week       ?? now()->weekOfYear;
-            $year       = $request->year       ?? now()->year;
-            $search     = $request->search;
-            $department = $request->department;
-            $roomId     = $request->room_id;
+        $rooms      = Room::all();
+        $week       = (int) ($request->week ?? now()->weekOfYear);
+        $year       = (int) ($request->year ?? now()->year);
+        $search     = $request->search;
+        $department = $request->department;
+        $roomId     = $request->room_id;
 
-            // ✅ showAllRooms = false si une salle est sélectionnée
-            // Cela active le filtre employés dans filterEmployees()
-            $showAllRooms = empty($roomId);
+        $showAllRooms = empty($roomId);
 
-            $startOfWeek = now()->setISODate($year, $week)->startOfWeek(Carbon::MONDAY);
-            $endOfWeek   = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
+        $startOfWeek = now()->setISODate($year, $week)->startOfWeek(Carbon::MONDAY);
+        $endOfWeek   = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
 
-            // ✅ Résoudre le NOM de la salle depuis l'ID
-            $roomName = null;
-            if ($roomId) {
-                $room     = Room::find($roomId);
-                $roomName = $room?->name;
-            }
-
-            // Filtre employés : si salle sélectionnée, seuls les employés
-            // ayant un planning dans cette salle sont retournés
-            $employees = $this->planningService->filterEmployees(
-                $search, $department, $roomId, $showAllRooms, $startOfWeek, $endOfWeek
-            );
-
-            // Filtre plannings : si salle sélectionnée, seuls les shifts
-            // de cette salle sont retournés
-            $plannings   = $this->planningService->getPlanningsBetween($startOfWeek, $endOfWeek, $roomName);
-            $departments = $this->planningService->getDepartments();
-            $weekDays    = $this->planningService->getWeekDays($startOfWeek);
-
-            return view('planning.weekly', compact(
-                'employees', 'plannings', 'weekDays', 'week', 'year',
-                'startOfWeek', 'endOfWeek', 'search', 'department',
-                'departments', 'rooms', 'showAllRooms'
-            ));
-        } catch (Exception $e) {
-            Log::error('Planning weekly error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-            return view('planning.weekly', ['error' => 'Erreur planning hebdo.']);
+        // Résoudre le nom de la salle depuis l'ID
+        $roomName = null;
+        if ($roomId) {
+            $room     = Room::find($roomId);
+            $roomName = $room?->name;
         }
+
+        $employees   = $this->planningService->filterEmployees(
+            $search, $department, $roomId, $showAllRooms, $startOfWeek, $endOfWeek
+        );
+        $plannings   = $this->planningService->getPlanningsBetween($startOfWeek, $endOfWeek, $roomName);
+        $departments = $this->planningService->getDepartments();
+        $weekDays    = $this->planningService->getWeekDays($startOfWeek);
+
+        return view('planning.weekly', compact(
+            'employees', 'plannings', 'weekDays', 'week', 'year',
+            'startOfWeek', 'endOfWeek', 'search', 'department',
+            'departments', 'rooms', 'showAllRooms'
+        ));
     }
 
     // =========================================================================

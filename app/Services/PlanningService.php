@@ -39,17 +39,13 @@ class PlanningService
                   ->orWhereRaw("first_name || ' ' || last_name LIKE ?", ["%{$search}%"]);
             }))
             ->when($department, fn($query) => $query->where('department', $department))
-            // ✅ S'active uniquement quand roomId est fourni ET showAllRooms = false
+            // S'active uniquement quand roomId est fourni ET showAllRooms = false
             ->when($roomId && !$showAllRooms, function ($query) use ($roomId, $start, $end) {
-                // ✅ Résoudre le NOM depuis l'ID
                 $room = Room::find($roomId);
                 if (!$room) {
-                    // Salle introuvable → aucun résultat
                     $query->whereRaw('1 = 0');
                     return;
                 }
-
-                // ✅ Filtrer par NOM de salle (pas par ID)
                 $query->whereHas('plannings', function ($planningQuery) use ($room, $start, $end) {
                     $planningQuery->where('room', $room->name)
                         ->when($start, fn($q) => $q->whereDate('date', '>=', $start))
@@ -65,9 +61,31 @@ class PlanningService
     // GET DEPARTMENTS
     // =========================================================================
 
+    /**
+     * Retourne la liste des départements.
+     *
+     * Utilise la table departments si elle existe et contient des données,
+     * sinon retombe sur les départements distincts dans la table employees.
+     */
     public function getDepartments(): Collection
     {
-        return Department::names();
+        // Essayer d'abord la table departments
+        try {
+            $departments = Department::orderBy('name')->pluck('name');
+            if ($departments->isNotEmpty()) {
+                return $departments;
+            }
+        } catch (\Exception $e) {
+            // Table departments inexistante ou vide → fallback
+        }
+
+        // Fallback : départements distincts depuis les employés
+        return Employee::active()
+            ->whereNotNull('department')
+            ->where('department', '!=', '')
+            ->distinct()
+            ->orderBy('department')
+            ->pluck('department');
     }
 
     // =========================================================================
@@ -90,7 +108,6 @@ class PlanningService
         return Planning::with(['employee', 'room'])
             ->whereDate('date', '>=', $start)
             ->whereDate('date', '<=', $end)
-            // ✅ Filtre par NOM de salle si fourni
             ->when($roomName, fn($q) => $q->where('room', $roomName))
             ->get()
             ->groupBy('employee_id');

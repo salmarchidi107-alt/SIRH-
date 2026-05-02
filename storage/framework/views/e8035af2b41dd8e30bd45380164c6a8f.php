@@ -318,8 +318,7 @@
 <div class="page-header">
     <div class="page-header-left">
         <h1>État Visuel des Absences</h1>
-        <p>Vue mensuelle — <?php echo e($firstDay->translatedFormat('F Y')); ?></p>
-    </div>
+<p>Vue mensuelle — <?php echo e($firstDay->locale('fr')->translatedFormat('F Y')); ?></p>    </div>
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
         <div class="view-toggle">
             <button class="<?php echo e((!isset($viewMode) || $viewMode == 'calendar') ? 'active' : ''); ?>" onclick="switchView('calendar')">Calendrier</button>
@@ -617,25 +616,7 @@
 <?php endif; ?>
 
 
-<div class="card" style="margin-top:24px;background:var(--bg-secondary)">
-    <div style="padding:16px">
-        <div style="font-weight:600;margin-bottom:12px">Légende</div>
-        <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:0.85rem">
-            <div style="display:flex;align-items:center;gap:6px">
-                <div style="width:16px;height:16px;background:linear-gradient(135deg,#10b981,#059669);border-radius:4px"></div>
-                <span style="color:#065f46;font-weight:500">Approuvée</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px">
-                <div style="width:16px;height:16px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:4px"></div>
-                <span style="color:#92400e;font-weight:500">En attente</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px">
-                <div style="width:16px;height:16px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:4px"></div>
-                <span style="color:#991b1b;font-weight:500">Rejetée</span>
-            </div>
-        </div>
-    </div>
-</div>
+    
 
 
 <div class="modal-overlay" id="absenceModal" onclick="closeModal(event)">

@@ -188,6 +188,7 @@
             @else
                 <ul class="activity-list" style="padding:0 24px">
                     @foreach($recent_absences as $absence)
+                    @if($absence->employee)
                     <li class="activity-item">
                         <div class="activity-dot" style="background:var(--warning)"></div>
                         <div>
@@ -211,6 +212,7 @@
                             </div>
                         </div>
                     </li>
+                    @endif
                     @endforeach
                 </ul>
             @endif
@@ -232,25 +234,27 @@
                     <div>Aucun planning aujourd'hui</div>
                 </div>
             @else
-                <ul class="activity-list" style="padding:0 24px">
+<ul class="activity-list" style="padding:0 24px">
                     @foreach($today_planning->take(6) as $plan)
+                    @if($plan->employee)
                     <li class="activity-item">
                         <div class="activity-dot" style="background:#3b82f6"></div>
                         <div>
                             <div class="activity-text">
-                                <strong>{{ $plan->employee->full_name }}</strong> 
+                                <strong>{{ optional($plan->employee)->full_name }}</strong> 
                                 <span class="shift-pill shift-{{ $plan->shift_type }}" style="margin-left:8px;font-size:0.8rem">
                                     {{ \App\Models\Planning::SHIFT_TYPES[$plan->shift_type] }}
                                 </span>
                             </div>
                             <div class="activity-time">
                                 {{ $plan->shift_start }} – {{ $plan->shift_end }}
-                                @if($plan->employee->department)
+                                @if(optional($plan->employee)->department)
                                 <span style="opacity:0.7;margin-left:12px">• {{ $plan->employee->department }}</span>
                                 @endif
                             </div>
                         </div>
                     </li>
+                    @endif
                     @endforeach
                 </ul>
             @endif

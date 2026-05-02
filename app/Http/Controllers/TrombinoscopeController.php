@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Exports\TrombinoscopeExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
+use Exception;
 
 class TrombinoscopeController extends Controller
 {
@@ -20,12 +21,12 @@ class TrombinoscopeController extends Controller
         $query->when($request->department, fn($q) => $q->where('department', $request->department))
             ->when($request->search, fn($q) => $q->where(function ($q) use ($request) {
                 $q->where('first_name', 'like', "%{$request->search}%")
-                  ->orWhere('last_name', 'like', "%{$request->search}%")
-                  ->orWhere('position', 'like', "%{$request->search}%");
+                  ->orWhere('last_name',  'like', "%{$request->search}%")
+                  ->orWhere('position',   'like', "%{$request->search}%");
             }));
 
-        $employees = $query->active()->get();
-        $departments = Department::names();
+        $employees   = $query->active()->get();
+        $departments = $this->getDepartmentsList();
 
         $today = Carbon::today()->toDateString();
 
@@ -39,5 +40,27 @@ class TrombinoscopeController extends Controller
     public function export()
     {
         return Excel::download(new TrombinoscopeExport, 'trombinoscope.xlsx');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Récupère les départements depuis la table departments,
+    // avec fallback sur le champ department des employés.
+    // ─────────────────────────────────────────────────────────────────────────
+    private function getDepartmentsList()
+    {
+        try {
+            $departments = Department::orderBy('name')->pluck('name');
+            if ($departments->isNotEmpty()) {
+                return $departments;
+            }
+        } catch (Exception $e) {
+            // Table inexistante ou vide → fallback
+        }
+
+        return Employee::whereNotNull('department')
+            ->where('department', '!=', '')
+            ->distinct()
+            ->orderBy('department')
+            ->pluck('department');
     }
 }

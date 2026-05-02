@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
-use App\Enums\TenantPlan;
-use App\Enums\TenantStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Enums\TenantPlan;
+use App\Enums\TenantStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -17,166 +17,163 @@ use Illuminate\Support\Str;
 
 class TenantController extends Controller
 {
-    // ─── Index ────────────────────────────────────────────────────────────────
-
     public function index(Request $request)
     {
         $query = Tenant::with('admin')->withCount('users');
 
         if ($s = $request->search) {
             $query->where(fn($q) => $q
-                ->where('name',   'like', "%{$s}%")
-                ->orWhere('slug', 'like', "%{$s}%")
+                ->where('name',    'like', "%{$s}%")
+                ->orWhere('slug',   'like', "%{$s}%")
                 ->orWhere('sector', 'like', "%{$s}%")
             );
         }
 
-        if ($status = $request->status) {
-            $query->byStatus($status);
-        }
+        $tenants = $query->orderByDesc('created_at')->paginate(20)->withQueryString();
 
-        $sort = $request->sort ?? 'created_at';
-        $query->orderByDesc(
-            $sort === 'users'
-                ? DB::raw('(SELECT COUNT(*) FROM users WHERE tenant_id = tenants.id)')
-                : $sort
-        );
-
-        $tenants = $query->paginate(20)->withQueryString();
+        $recentTenants = Tenant::latest()->take(5)->pluck('name');
 
         $counts = [
-            'all'       => Tenant::count(),
-            'active'    => Tenant::byStatus('active')->count(),
-            'suspended' => Tenant::byStatus('suspended')->count(),
-            'trial'     => Tenant::byStatus('trial')->count(),
-            'inactive'  => Tenant::byStatus('inactive')->count(),
+            'all'            => Tenant::count(),
+            'active'         => Tenant::active()->count(),
+            'trial'          => Tenant::byStatus('trial')->count(),
+            'suspended'      => Tenant::byStatus('suspended')->count(),
+            'inactive'       => Tenant::byStatus('inactive')->count(),
+            'total_users'    => User::whereNotNull('tenant_id')->count(),
+            'new_this_month' => Tenant::where('created_at', '>=', now()->startOfMonth())->count(),
         ];
 
-        return view('superadmin.tenants.stats', compact('tenants', 'counts'));
+        return view('superadmin.tenants.index', compact('tenants', 'counts', 'recentTenants'));
     }
-
-    // ─── Create ───────────────────────────────────────────────────────────────
 
     public function create()
     {
-        return view('superadmin.tenants.create', [
-            'plans'    => TenantPlan::cases(),
-            'statuses' => TenantStatus::cases(),
-        ]);
+        return view('superadmin.tenants.create');
     }
 
-    // ─── Store ────────────────────────────────────────────────────────────────
-
     public function store(Request $request)
-{
-    $data = $request->validate([
-        'company_name'  => 'required|string|max:100',
-        'slug'          => 'required|string|max:50|unique:tenants,slug|regex:/^[a-z0-9\-]+$/',
-        'sector'        => 'nullable|string|max:50',
-        'logo'          => 'nullable|image|max:2048',
-        'brand_color'   => 'required|regex:/^#[0-9a-fA-F]{6}$/',
-        'sidebar_color' => 'required|regex:/^#[0-9a-fA-F]{6}$/', // ← AJOUTÉ
-        'plan'          => ['required', Rule::enum(TenantPlan::class)],
-        'status'        => ['required', Rule::enum(TenantStatus::class)],
-        'region'        => 'required|string',
-        'first_name'    => 'required|string|max:50',
-        'last_name'     => 'required|string|max:50',
-        'admin_email'   => 'required|email|unique:users,email',
-        'temp_password' => 'required|string|min:8',
-    ]);
-
-    DB::transaction(function () use ($data, $request) {
-
-        $logoPath = $request->hasFile('logo')
-            ? $request->file('logo')->store('tenants/logos', 'public')
-            : null;
-
-        $tenant = Tenant::create([
-            'id'            => Str::uuid()->toString(),
-            'name'          => $data['company_name'],
-            'slug'          => $data['slug'],
-            'sector'        => $data['sector'] ?? null,
-            'logo_path'     => $logoPath,
-            'brand_color'   => $data['brand_color'],
-            'sidebar_color' => $data['sidebar_color'], // ← AJOUTÉ
-            'plan'          => $data['plan'],
-            'status'        => $data['status'],
-            'region'        => $data['region'],
-            'database_name' => 'tenant_' . str_replace('-', '_', $data['slug']),
+    {
+        $data = $request->validate([
+            'company_name'  => 'required|string|max:100',
+            'slug'          => 'required|string|max:50|unique:tenants,slug|regex:/^[a-z0-9\-]+$/',
+            'sector'        => 'nullable|string|max:50',
+            'region'        => 'required|string',
+            'address'       => 'required|string|max:255',
+            'phone'         => 'required|string|max:20',
+            'ice'           => 'required|string|size:15',
+            'email_societe' => 'required|email|max:100',
+            'website'       => 'nullable|url|max:100',
+            'logo'          => 'nullable|image|mimes:png,svg,jpg,jpeg|max:2048',
+            'brand_color'   => 'required|regex:/^#[0-9a-fA-F]{6}$/',
+            'sidebar_color' => 'required|regex:/^#[0-9a-fA-F]{6}$/',
+            'first_name'    => 'required|string|max:50',
+            'last_name'     => 'required|string|max:50',
+            'admin_email'   => 'required|email|unique:users,email',
+            'temp_password' => 'required|string|min:8',
         ]);
 
-        $domainName   = $data['slug'] . '.hospitalrh.test';
-        $domainRecord = DB::table('domains')->where('domain', $domainName)->first();
+        DB::transaction(function () use ($data, $request) {
+            $logoPath = $request->hasFile('logo')
+                ? $request->file('logo')->store('tenants/logos', 'public')
+                : null;
 
-        if ($domainRecord) {
-            throw ValidationException::withMessages([
-                'slug' => "Le domaine {$domainName} existe déjà.",
+            $tenant = Tenant::create([
+                'id'            => Str::uuid()->toString(),
+                'name'          => $data['company_name'],
+                'slug'          => $data['slug'],
+                'sector'        => $data['sector'] ?? null,
+                'region'        => $data['region'],
+                'address'       => $data['address'],
+                'phone'         => $data['phone'],
+                'ice'           => $data['ice'],
+                'email_societe' => $data['email_societe'],
+                'website'       => $data['website'] ?? null,
+                'logo_path'     => $logoPath,
+                'brand_color'   => $data['brand_color'],
+                'sidebar_color' => $data['sidebar_color'],
+                'database_name' => 'tenant_' . str_replace('-', '_', $data['slug']),
             ]);
-        }
 
-        $tenant->domains()->create([
-            'id'     => Str::uuid()->toString(),
-            'domain' => $domainName,
-        ]);
+            $domainName = $data['slug'] . '.hospitalrh.test';
 
-        User::create([
-            'name'      => $data['first_name'] . ' ' . $data['last_name'],
-            'email'     => $data['admin_email'],
-            'password'  => Hash::make($data['temp_password']),
-            'role'      => 'admin',
-            'tenant_id' => $tenant->id,
-        ]);
-    });
+            if (DB::table('domains')->where('domain', $domainName)->exists()) {
+                throw ValidationException::withMessages([
+                    'slug' => "Le domaine {$domainName} existe déjà.",
+                ]);
+            }
 
-    return redirect()->route('superadmin.tenants.index')
-        ->with('success', 'Tenant créé avec succès.');
-}
+            $tenant->domains()->create([
+                'id'     => Str::uuid()->toString(),
+                'domain' => $domainName,
+            ]);
 
-    // ─── Update ───────────────────────────────────────────────────────────────
+            User::create([
+                'name'      => $data['first_name'] . ' ' . $data['last_name'],
+                'email'     => $data['admin_email'],
+                'password'  => Hash::make($data['temp_password']),
+                'role'      => 'admin',
+                'tenant_id' => $tenant->id,
+            ]);
+        });
+
+        return redirect()->route('superadmin.tenants.index')
+            ->with('success', 'Tenant créé avec succès.');
+    }
+
+    public function edit(Tenant $tenant)
+    {
+        $plans    = TenantPlan::cases();
+        $statuses = TenantStatus::cases();
+
+        return view('superadmin.tenants.edit', compact('tenant', 'plans', 'statuses'));
+    }
 
     public function update(Request $request, Tenant $tenant)
     {
         $data = $request->validate([
-            'company_name' => 'required|string|max:100',
-            'slug'         => ['required', 'regex:/^[a-z0-9\-]+$/',
-                               Rule::unique('tenants', 'slug')->ignore($tenant->id)],
-            'sector'       => 'nullable|string|max:50',
-            'logo'         => 'nullable|image|max:2048',
-            'brand_color'  => 'required|regex:/^#[0-9a-fA-F]{6}$/',
-            'plan'         => ['required', Rule::enum(TenantPlan::class)],
-            'status'       => ['required', Rule::enum(TenantStatus::class)],
+            'company_name'  => 'required|string|max:100',
+            'slug'          => ['required', 'regex:/^[a-z0-9\-]+$/',
+                                Rule::unique('tenants', 'slug')->ignore($tenant->id)],
+            'sector'        => 'nullable|string|max:50',
+            'region'        => 'required|string',
+            'address'       => 'required|string|max:255',
+            'phone'         => 'required|string|max:20',
+            'ice'           => 'required|string|size:15',
+            'email_societe' => 'required|email|max:100',
+            'website'       => 'nullable|url|max:100',
+            'logo'          => 'nullable|image|mimes:png,svg,jpg,jpeg|max:2048',
+            'brand_color'   => 'required|regex:/^#[0-9a-fA-F]{6}$/',
+            'sidebar_color' => 'required|regex:/^#[0-9a-fA-F]{6}$/',
         ]);
 
         if ($request->hasFile('logo')) {
-            if ($tenant->logo_path) {
-                Storage::disk('public')->delete($tenant->logo_path);
-            }
+            if ($tenant->logo_path) Storage::disk('public')->delete($tenant->logo_path);
             $logoPath = $request->file('logo')->store('tenants/logos', 'public');
         } else {
             $logoPath = $tenant->logo_path;
         }
 
         $tenant->update([
-            'name'        => $data['company_name'],
-            'slug'        => $data['slug'],
-            'sector'      => $data['sector'] ?? null,
-            'logo_path'   => $logoPath,
-            'brand_color' => $data['brand_color'],
-            'plan'        => $data['plan'],
-            'status'      => $data['status'],
+            'name'          => $data['company_name'],
+            'slug'          => $data['slug'],
+            'sector'        => $data['sector'] ?? null,
+            'region'        => $data['region'],
+            'address'       => $data['address'],
+            'phone'         => $data['phone'],
+            'ice'           => $data['ice'],
+            'email_societe' => $data['email_societe'],
+            'website'       => $data['website'] ?? null,
+            'logo_path'     => $logoPath,
+            'brand_color'   => $data['brand_color'],
+            'sidebar_color' => $data['sidebar_color'],
         ]);
 
         return back()->with('success', 'Tenant mis à jour.');
     }
 
-    // ─── Destroy ──────────────────────────────────────────────────────────────
-
     public function destroy(Tenant $tenant)
     {
-        if ($tenant->logo_path) {
-            Storage::disk('public')->delete($tenant->logo_path);
-        }
-
+        if ($tenant->logo_path) Storage::disk('public')->delete($tenant->logo_path);
         User::where('tenant_id', $tenant->id)->delete();
         $tenant->delete();
 
@@ -184,36 +181,9 @@ class TenantController extends Controller
             ->with('success', 'Tenant supprimé.');
     }
 
-    // ─── Suspend / Reactivate ─────────────────────────────────────────────────
-
-    public function suspend(Tenant $tenant)
-    {
-        $tenant->update(['status' => TenantStatus::Suspended->value]);
-        return back()->with('success', "Tenant \"{$tenant->name}\" suspendu.");
-    }
-
-    public function reactivate(Tenant $tenant)
-    {
-        $tenant->update(['status' => TenantStatus::Active->value]);
-        return back()->with('success', "Tenant \"{$tenant->name}\" réactivé.");
-    }
-
-    public function edit(Tenant $tenant)
-    {
-        $plans = TenantPlan::cases();
-        $statuses = TenantStatus::cases();
-
-        return view('superadmin.tenants.edit', compact('tenant', 'plans', 'statuses'));
-    }
-
-    // ─── Show ─────────────────────────────────────────────────────────────────
-
     public function show(Tenant $tenant)
     {
-        $tenant->load('admin')->withCount('users');
-        $plans = TenantPlan::cases();
-        $statuses = TenantStatus::cases();
-
-        return view('superadmin.tenants.show', compact('tenant', 'plans', 'statuses'));
+        $tenant->load('admin')->loadCount('users');
+        return view('superadmin.tenants.show', compact('tenant'));
     }
 }

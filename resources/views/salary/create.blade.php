@@ -17,7 +17,6 @@
     <div class="alert alert-success mb-4">{{ session('success') }}</div>
 @endif
 
-{{-- Constantes employé pour JS --}}
 <script>
 const EMPLOYEE_DATA = {
     base_salary:      {{ (float) $employee->base_salary }},
@@ -33,23 +32,24 @@ const EMPLOYEE_DATA = {
     delay_hours:      {{ (float) ($workingData['delay_hours'] ?? 0) }},
 };
 const EXISTING = {
-    salary_type:           '{{ $existing?->salary_type ?? 'monthly' }}',
-    hourly_rate:           {{ (float) ($existing?->hourly_rate ?? 0) }},
-    base_salary:           {{ (float) ($existing?->base_salary ?? $employee->base_salary) }},
-    performance_bonus:     {{ (float) ($existing?->performance_bonus ?? 0) }},
-    transport_allowance:   {{ (float) ($existing?->transport_allowance ?? 0) }},
-    meal_allowance:        {{ (float) ($existing?->meal_allowance ?? 0) }},
-    housing_allowance:     {{ (float) ($existing?->housing_allowance ?? 0) }},
+    salary_type:              '{{ $existing?->salary_type ?? 'monthly' }}',
+    hourly_rate:              {{ (float) ($existing?->hourly_rate ?? 0) }},
+    base_salary:              {{ (float) ($existing?->base_salary ?? $employee->base_salary) }},
+    performance_bonus:        {{ (float) ($existing?->performance_bonus ?? 0) }},
+    transport_allowance:      {{ (float) ($existing?->transport_allowance ?? 0) }},
+    meal_allowance:           {{ (float) ($existing?->meal_allowance ?? 0) }},
+    housing_allowance:        {{ (float) ($existing?->housing_allowance ?? 0) }},
     responsibility_allowance: {{ (float) ($existing?->responsibility_allowance ?? 0) }},
-    other_gains:           {{ (float) ($existing?->other_gains ?? 0) }},
-    advance_deduction:     {{ (float) ($existing?->advance_deduction ?? 0) }},
-    loan_deduction:        {{ (float) ($existing?->loan_deduction ?? 0) }},
-    garnishment_deduction: {{ (float) ($existing?->garnishment_deduction ?? 0) }},
-    other_deductions:      {{ (float) ($existing?->other_deductions ?? 0) }},
-    mode_cotisation:       '{{ $existing?->mode_cotisation ?? 'auto' }}',
-    cnss_deduction_manual: {{ (float) ($existing?->cnss_deduction_manual ?? 0) }},
-    amo_deduction_manual:  {{ (float) ($existing?->amo_deduction_manual ?? 0) }},
-    fp_deduction_manual:   {{ (float) ($existing?->fp_deduction_manual ?? 0) }},
+    other_gains:              {{ (float) ($existing?->other_gains ?? 0) }},
+    advance_deduction:        {{ (float) ($existing?->advance_deduction ?? 0) }},
+    loan_deduction:           {{ (float) ($existing?->loan_deduction ?? 0) }},
+    garnishment_deduction:    {{ (float) ($existing?->garnishment_deduction ?? 0) }},
+    other_deductions:         {{ (float) ($existing?->other_deductions ?? 0) }},
+    mode_cotisation:          '{{ $existing?->mode_cotisation ?? 'auto' }}',
+    cnss_deduction_manual:    {{ (float) ($existing?->cnss_deduction_manual ?? 0) }},
+    amo_deduction_manual:     {{ (float) ($existing?->amo_deduction_manual ?? 0) }},
+    fp_deduction_manual:      {{ (float) ($existing?->fp_deduction_manual ?? 0) }},
+    currency:                 '{{ $existing?->currency ?? 'MAD' }}',
 };
 </script>
 
@@ -60,38 +60,37 @@ const EXISTING = {
 @if($existing)
 <input type="hidden" name="salary_id" value="{{ $existing->id }}">
 @endif
-
-{{-- Champs cachés calculés côté JS, soumis au serveur --}}
-<input type="hidden" name="gross_salary"       id="h_gross_salary">
-<input type="hidden" name="seniority_bonus"    id="h_seniority_bonus">
-<input type="hidden" name="overtime_day_amount"    id="h_ot_day_amount">
-<input type="hidden" name="overtime_night_amount"  id="h_ot_night_amount">
+<input type="hidden" name="gross_salary"            id="h_gross_salary">
+<input type="hidden" name="seniority_bonus"         id="h_seniority_bonus">
+<input type="hidden" name="overtime_day_amount"     id="h_ot_day_amount">
+<input type="hidden" name="overtime_night_amount"   id="h_ot_night_amount">
 <input type="hidden" name="overtime_weekend_amount" id="h_ot_wknd_amount">
-<input type="hidden" name="overtime_hours"     id="h_overtime_hours">
-<input type="hidden" name="absence_deduction"  id="h_absence_deduction">
-<input type="hidden" name="absence_days"       id="h_absence_days">
-<input type="hidden" name="cnss_base"          id="h_cnss_base">
-<input type="hidden" name="cnss_deduction"     id="h_cnss_deduction">
-<input type="hidden" name="amo_deduction"      id="h_amo_deduction">
-<input type="hidden" name="fp_deduction"       id="h_fp_deduction">
-<input type="hidden" name="taxable_income"     id="h_taxable_income">
-<input type="hidden" name="ir_annual"          id="h_ir_annual">
-<input type="hidden" name="ir_family_deduction" id="h_ir_family_deduction">
-<input type="hidden" name="ir_deduction"       id="h_ir_deduction">
-<input type="hidden" name="net_salary"         id="h_net_salary">
-<input type="hidden" name="employer_cnss"      id="h_employer_cnss">
-<input type="hidden" name="employer_amo"       id="h_employer_amo">
-<input type="hidden" name="employer_tfp"       id="h_employer_tfp">
-<input type="hidden" name="employer_total_cost" id="h_employer_total_cost">
-<input type="hidden" name="overtime_hours_day"    id="h_ot_day_h">
-<input type="hidden" name="overtime_hours_night"  id="h_ot_night_h">
-<input type="hidden" name="overtime_hours_weekend" id="h_ot_wknd_h">
-<input type="hidden" name="working_hours"      id="h_working_hours">
-<input type="hidden" name="absence_hours"      id="h_abs_hours">
-<input type="hidden" name="delay_hours"        id="h_delay_hours">
-<input type="hidden" name="hourly_rate"        id="h_hourly_rate">
+<input type="hidden" name="overtime_hours"          id="h_overtime_hours">
+<input type="hidden" name="absence_deduction"       id="h_absence_deduction">
+<input type="hidden" name="absence_days"            id="h_absence_days">
+<input type="hidden" name="cnss_base"               id="h_cnss_base">
+<input type="hidden" name="cnss_deduction"          id="h_cnss_deduction">
+<input type="hidden" name="amo_deduction"           id="h_amo_deduction">
+<input type="hidden" name="fp_deduction"            id="h_fp_deduction">
+<input type="hidden" name="taxable_income"          id="h_taxable_income">
+<input type="hidden" name="ir_annual"               id="h_ir_annual">
+<input type="hidden" name="ir_family_deduction"     id="h_ir_family_deduction">
+<input type="hidden" name="ir_deduction"            id="h_ir_deduction">
+<input type="hidden" name="net_salary"              id="h_net_salary">
+<input type="hidden" name="employer_cnss"           id="h_employer_cnss">
+<input type="hidden" name="employer_amo"            id="h_employer_amo">
+<input type="hidden" name="employer_tfp"            id="h_employer_tfp">
+<input type="hidden" name="employer_total_cost"     id="h_employer_total_cost">
+<input type="hidden" name="overtime_hours_day"      id="h_ot_day_h">
+<input type="hidden" name="overtime_hours_night"    id="h_ot_night_h">
+<input type="hidden" name="overtime_hours_weekend"  id="h_ot_wknd_h">
+<input type="hidden" name="working_hours"           id="h_working_hours">
+<input type="hidden" name="absence_hours"           id="h_abs_hours">
+<input type="hidden" name="delay_hours"             id="h_delay_hours">
+<input type="hidden" name="hourly_rate"             id="h_hourly_rate">
+<input type="hidden" name="currency"                id="h_currency" value="MAD">
 
-{{-- ═════════ SECTION 1 — TEMPS DE TRAVAIL ═════════ --}}
+{{-- SECTION 1 - TEMPS DE TRAVAIL --}}
 <div class="card mb-4" style="border-left:4px solid var(--primary)">
     <div class="card-header" style="border:none;padding:16px 20px">
         <div class="card-title" style="font-size:1.05rem;color:#0066cc">
@@ -121,14 +120,12 @@ const EXISTING = {
     </div>
 </div>
 
-{{-- ═════════ SECTION 2 — TYPE DE SALAIRE ═════════ --}}
+{{-- SECTION 2 - SYSTEME DE PAIE --}}
 <div class="card mb-4" style="border-left:4px solid #7c3aed">
     <div class="card-header" style="border:none;padding:14px 20px">
-        <div class="card-title" style="font-size:1.0rem;color:#7c3aed">TYPE DE SALAIRE</div>
+        <div class="card-title" style="font-size:1.0rem;color:#7c3aed">SYSTÈME DE PAIE &amp; TYPE DE SALAIRE</div>
     </div>
     <div class="card-body" style="padding:12px 20px">
-
-        {{-- Ligne principale : type + taux horaire + devise --}}
         <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
                 <input type="radio" name="salary_type" value="monthly" id="type_monthly"
@@ -141,104 +138,59 @@ const EXISTING = {
                 <strong>Salaire horaire</strong>
             </label>
             <div style="display:flex;align-items:center;gap:8px">
-                <label style="font-size:0.85rem;color:var(--text-muted);white-space:nowrap">Taux horaire (MAD)</label>
+                <label style="font-size:0.85rem;color:var(--text-muted);white-space:nowrap">Taux horaire</label>
                 <input type="number" name="hourly_rate_display" id="hourly_rate" class="form-control"
                        value="{{ $existing?->hourly_rate ?? $employee->hourly_rate ?? 0 }}"
                        step="0.01" min="0" style="width:130px;text-align:right" disabled oninput="calculate()">
             </div>
-
-            {{-- ── Séparateur vertical ── --}}
             <div style="width:1px;height:32px;background:var(--border-color);margin:0 4px"></div>
-
-            {{-- ── Sélecteur de devise ── --}}
-            <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:240px">
-                <label style="font-size:0.85rem;color:var(--text-muted);white-space:nowrap">
-                    💱 Devise d'affichage
-                </label>
-                <select id="currency_select" class="form-control"
-                        style="flex:1;font-size:0.85rem;min-width:210px;max-width:280px"
-                        onchange="onCurrencyChange()">
-                    <optgroup label="🌍 Maghreb & Mauritanie">
-                        <option value="MAD" data-symbol="MAD" data-rate="1"       selected>🇲🇦 MAD — Dirham marocain</option>
-                        <option value="MRU" data-symbol="MRU" data-rate="2.77"           >🇲🇷 MRU — Ouguiya mauritanien</option>
-                        <option value="DZD" data-symbol="DZD" data-rate="0.076"          >🇩🇿 DZD — Dinar algérien</option>
-                        <option value="TND" data-symbol="TND" data-rate="0.29"           >🇹🇳 TND — Dinar tunisien</option>
-                        <option value="LYD" data-symbol="LYD" data-rate="0.20"           >🇱🇾 LYD — Dinar libyen</option>
-                        <option value="EGP" data-symbol="EGP" data-rate="0.056"          >🇪🇬 EGP — Livre égyptienne</option>
-                    </optgroup>
-                    <optgroup label="🌍 Afrique de l'Ouest">
-                        <option value="XOF" data-symbol="XOF" data-rate="0.152"          >🌐 XOF — Franc CFA BCEAO</option>
-                        <option value="NGN" data-symbol="NGN" data-rate="0.0066"         >🇳🇬 NGN — Naira nigérian</option>
-                        <option value="GHS" data-symbol="GHS" data-rate="0.60"           >🇬🇭 GHS — Cedi ghanéen</option>
-                        <option value="GMD" data-symbol="GMD" data-rate="1.33"           >🇬🇲 GMD — Dalasi gambien</option>
-                        <option value="SLL" data-symbol="SLL" data-rate="0.0044"         >🇸🇱 SLL — Leone sierra-léonais</option>
-                        <option value="GNF" data-symbol="GNF" data-rate="0.86"           >🇬🇳 GNF — Franc guinéen</option>
-                        <option value="MWK" data-symbol="MWK" data-rate="0.058"          >🇲🇼 MWK — Kwacha malawien</option>
-                    </optgroup>
-                    <optgroup label="🌍 Afrique de l'Est & Centrale">
-                        <option value="KES" data-symbol="KES" data-rate="0.070"          >🇰🇪 KES — Shilling kenyan</option>
-                        <option value="ETB" data-symbol="ETB" data-rate="0.074"          >🇪🇹 ETB — Birr éthiopien</option>
-                        <option value="TZS" data-symbol="TZS" data-rate="0.035"          >🇹🇿 TZS — Shilling tanzanien</option>
-                        <option value="XAF" data-symbol="XAF" data-rate="0.152"          >🌐 XAF — Franc CFA BEAC</option>
-                        <option value="RWF" data-symbol="RWF" data-rate="0.073"          >🇷🇼 RWF — Franc rwandais</option>
-                        <option value="UGX" data-symbol="UGX" data-rate="0.27"           >🇺🇬 UGX — Shilling ougandais</option>
-                        <option value="SDG" data-symbol="SDG" data-rate="0.17"           >🇸🇩 SDG — Livre soudanaise</option>
-                    </optgroup>
-                    <optgroup label="🌍 Afrique du Sud & Australe">
-                        <option value="ZAR" data-symbol="ZAR" data-rate="0.053"          >🇿🇦 ZAR — Rand sud-africain</option>
-                        <option value="ZMW" data-symbol="ZMW" data-rate="0.047"          >🇿🇲 ZMW — Kwacha zambien</option>
-                        <option value="MZN" data-symbol="MZN" data-rate="0.016"          >🇲🇿 MZN — Metical mozambicain</option>
-                        <option value="BWP" data-symbol="BWP" data-rate="0.073"          >🇧🇼 BWP — Pula botswanais</option>
-                        <option value="MGA" data-symbol="MGA" data-rate="0.22"           >🇲🇬 MGA — Ariary malgache</option>
-                    </optgroup>
-                    <optgroup label="💶 Devises internationales">
-                        <option value="EUR" data-symbol="€"   data-rate="0.092"          >🇪🇺 EUR — Euro</option>
-                        <option value="USD" data-symbol="$"   data-rate="0.100"          >🇺🇸 USD — Dollar américain</option>
-                        <option value="GBP" data-symbol="£"   data-rate="0.079"          >🇬🇧 GBP — Livre sterling</option>
-                        <option value="SAR" data-symbol="SAR" data-rate="0.375"          >🇸🇦 SAR — Riyal saoudien</option>
-                        <option value="AED" data-symbol="AED" data-rate="0.367"          >🇦🇪 AED — Dirham émirati</option>
-                        <option value="CAD" data-symbol="CAD" data-rate="0.138"          >🇨🇦 CAD — Dollar canadien</option>
-                        <option value="CNY" data-symbol="CNY" data-rate="0.72"           >🇨🇳 CNY — Yuan chinois</option>
-                    </optgroup>
-                </select>
-
-                <span id="currency_rate_badge"
-                      style="font-size:0.72rem;color:#7c3aed;background:#f5f3ff;
-                             padding:3px 8px;border-radius:20px;white-space:nowrap;
-                             border:1px solid #ddd6fe;font-weight:600">
-                    = 1 MAD
+            <div style="display:flex;align-items:center;gap:10px">
+                <label style="font-size:0.85rem;color:var(--text-muted);white-space:nowrap;font-weight:600">🌍 Système</label>
+                <div style="display:flex;border:2px solid #e5e7eb;border-radius:8px;overflow:hidden">
+                    <button type="button" id="btn-mad" onclick="setSystem('MAD')"
+                            style="padding:9px 22px;font-weight:700;font-size:0.9rem;border:none;cursor:pointer;
+                                   background:#1d4ed8;color:white;transition:all 0.2s;border-right:1px solid #e5e7eb">
+                        🇲🇦 MAD — Maroc
+                    </button>
+                    <button type="button" id="btn-mru" onclick="setSystem('MRU')"
+                            style="padding:9px 22px;font-weight:700;font-size:0.9rem;border:none;cursor:pointer;
+                                   background:#f9fafb;color:#6b7280;transition:all 0.2s">
+                        🇲🇷 MRU — Mauritanie
+                    </button>
+                </div>
+                <span id="system-badge" style="font-size:0.78rem;padding:4px 12px;border-radius:20px;
+                      background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe;font-weight:700;white-space:nowrap">
+                    Système marocain actif
                 </span>
             </div>
         </div>
-
-        {{-- Bandeau avertissement devise ≠ MAD --}}
-        <div id="currency_banner" style="display:none;margin-top:10px;padding:9px 14px;
-             background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;
-             font-size:0.82rem;color:#78350f;display:none;align-items:center;gap:8px">
-            <span style="font-size:1rem">⚠️</span>
-            <span>
-                Affichage converti en <strong id="currency_banner_code">USD</strong> à titre indicatif
-                (taux : <strong id="currency_banner_rate">1 MAD = 0,1000 USD</strong>).
-                La paie est <u>toujours enregistrée en MAD</u>.
-                Les taux sont approximatifs — mettez-les à jour selon le cours du jour.
-            </span>
+        <div id="mad-info-banner" style="margin-top:10px;padding:10px 14px;background:#eff6ff;
+             border:1px solid #bfdbfe;border-radius:6px;font-size:0.82rem;color:#1e3a5f">
+            <strong>🇲🇦 Système marocain</strong> —
+            CNSS sal. <strong>4,48%</strong> (plafond 6 000 MAD) + AMO <strong>2,26%</strong> + FP <strong>20%</strong> max 2 500 MAD |
+            IR DGI barème annuel ÷ 12 |
+            Patronal : CNSS <strong>10,29%</strong> + AMO <strong>2,26%</strong> + TFP <strong>1,60%</strong>
         </div>
-
+        <div id="mru-info-banner" style="display:none;margin-top:10px;padding:10px 14px;background:#f0fdf4;
+             border:1px solid #86efac;border-radius:6px;font-size:0.82rem;color:#14532d">
+            <strong>🇲🇷 Système mauritanien</strong> —
+            CNSS sal. <strong>1%</strong> (plafond 15 000 MRU) + CNAM <strong>4%</strong> |
+            ITS mensuel progressif : 0% ≤6 000 · 15% 6 001–9 000 · 25% 9 001–21 000 · 40% >21 000 MRU |
+            Patronal : CNSS <strong>13%</strong> + CNAM <strong>2%</strong>
+        </div>
     </div>
 </div>
 
-{{-- ═════════ DEUX COLONNES ═════════ --}}
+{{-- DEUX COLONNES --}}
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
 
-{{-- ════ COLONNE GAUCHE — GAINS ════ --}}
+{{-- COLONNE GAUCHE - GAINS --}}
 <div>
-
-    {{-- Infos employé --}}
     <div class="card mb-4" style="border-left:3px solid var(--primary)">
         <div class="card-body" style="padding:10px 16px">
             <div style="display:flex;gap:20px;font-size:0.83rem;flex-wrap:wrap">
                 <div><span style="color:var(--text-muted)">Base contrat</span>
-                    <strong style="margin-left:6px">{{ number_format($employee->base_salary,0,',',' ') }} MAD</strong></div>
+                    <strong style="margin-left:6px">{{ number_format($employee->base_salary,0,',',' ') }} <span class="cur-label">MAD</span></strong></div>
                 <div><span style="color:var(--text-muted)">Ancienneté</span>
                     <strong style="margin-left:6px">{{ $employee->seniority_label }}</strong></div>
                 <div><span style="color:var(--text-muted)">Situation</span>
@@ -247,14 +199,10 @@ const EXISTING = {
         </div>
     </div>
 
-    {{-- TABLEAU GAINS --}}
     <div class="card mb-4">
         <div class="card-header" style="background:#f0fff4;border-bottom:2px solid #d1fae5">
             <div class="card-title" style="color:#065f46">GAINS</div>
-            <div style="font-size:0.78rem;color:#059669">
-                Éléments constitutifs du salaire brut
-                <span id="gains_currency_note" style="display:none;margin-left:8px;color:#7c3aed;font-weight:600"></span>
-            </div>
+            <div style="font-size:0.78rem;color:#059669">Éléments constitutifs du salaire brut</div>
         </div>
         <div class="card-body" style="padding:0">
             <table style="width:100%;border-collapse:collapse">
@@ -267,8 +215,6 @@ const EXISTING = {
                     </tr>
                 </thead>
                 <tbody>
-
-                    {{-- Salaire de base --}}
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td style="padding:9px 14px">
                             <div style="font-weight:600">Salaire de base</div>
@@ -280,35 +226,26 @@ const EXISTING = {
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
                         </td>
                     </tr>
-
-                    {{-- Prime ancienneté --}}
                     <tr style="border-bottom:1px solid var(--border-color);background:#f9fafb">
                         <td style="padding:9px 14px">
-                            <div style="font-weight:600">Prime d'ancienneté
-                                <span class="badge badge-info" style="font-size:0.65rem">Auto</span>
-                            </div>
-                            <div style="font-size:0.75rem;color:var(--text-muted)" id="seniority-sub">
-                                {{ $employee->seniority_years }} an(s) → {{ ($employee->seniority_rate * 100) }}%
-                            </div>
+                            <div style="font-weight:600">Prime d'ancienneté <span class="badge badge-info" style="font-size:0.65rem">Auto</span></div>
+                            <div style="font-size:0.75rem;color:var(--text-muted)">{{ $employee->seniority_years }} an(s) → {{ ($employee->seniority_rate * 100) }}%</div>
                         </td>
                         <td style="padding:9px 14px;text-align:right">
-                            <div class="font-semibold bonus" id="seniority-val">0,00 MAD</div>
+                            <div class="font-semibold" id="seniority-val">0,00 <span class="cur-label">MAD</span></div>
                             <div style="font-size:0.72rem;color:var(--text-muted)">Calculé auto.</div>
                         </td>
                     </tr>
-
-                    {{-- Heures supplémentaires --}}
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td colspan="2" style="padding:0">
                             <div style="padding:8px 14px;font-weight:600;font-size:0.82rem;color:#92400e;background:#fffbeb;border-bottom:1px solid #fde68a">
-                                Heures supplémentaires
-                                <span style="font-weight:400;font-size:0.75rem;color:var(--text-muted)"> — taux horaire × majoration légale</span>
+                                Heures supplémentaires <span style="font-weight:400;font-size:0.75rem;color:var(--text-muted)">— taux horaire × majoration</span>
                             </div>
-                            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;background:#fffbeb">
+                            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;background:#fffbeb">
                                 <div style="padding:10px 14px;border-right:1px solid #fde68a">
                                     <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Jour +25%</div>
                                     <div style="font-size:1.1rem;font-weight:700;color:#d97706" id="ot-day-h-disp">{{ $workingData['overtime_day'] ?? 0 }} h</div>
-                                    <div style="font-size:0.72rem;color:var(--text-muted)" id="ot-day-amt-disp">= 0,00 MAD</div>
+                                    <div style="font-size:0.72rem;color:var(--text-muted)" id="ot-day-amt-disp">= 0,00 <span class="cur-label">MAD</span></div>
                                 </div>
                                 <div style="padding:10px 14px;border-right:1px solid #fde68a">
                                     <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Nuit +50%</div>
@@ -316,7 +253,7 @@ const EXISTING = {
                                     <input type="number" id="ot_night_h" class="form-control"
                                            value="{{ $workingData['overtime_night'] ?? 0 }}"
                                            step="0.5" min="0" style="margin-top:4px;font-size:0.8rem" oninput="calculate()">
-                                    <div style="font-size:0.72rem;color:var(--text-muted)" id="ot-night-amt-disp">= 0,00 MAD</div>
+                                    <div style="font-size:0.72rem;color:var(--text-muted)" id="ot-night-amt-disp">= 0,00 <span class="cur-label">MAD</span></div>
                                 </div>
                                 <div style="padding:10px 14px">
                                     <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Weekend +100%</div>
@@ -324,17 +261,15 @@ const EXISTING = {
                                     <input type="number" id="ot_wknd_h" class="form-control"
                                            value="{{ $workingData['overtime_weekend'] ?? 0 }}"
                                            step="0.5" min="0" style="margin-top:4px;font-size:0.8rem" oninput="calculate()">
-                                    <div style="font-size:0.72rem;color:var(--text-muted)" id="ot-wknd-amt-disp">= 0,00 MAD</div>
+                                    <div style="font-size:0.72rem;color:var(--text-muted)" id="ot-wknd-amt-disp">= 0,00 <span class="cur-label">MAD</span></div>
                                 </div>
                             </div>
                             <div style="padding:6px 14px;background:#fffbeb;border-top:1px solid #fde68a;display:flex;justify-content:space-between;font-size:0.82rem">
                                 <span style="color:var(--text-muted)">Total HS</span>
-                                <span style="font-weight:700;color:#d97706" id="ot-total-disp">0,00 MAD</span>
+                                <span style="font-weight:700;color:#d97706" id="ot-total-disp">0,00 <span class="cur-label">MAD</span></span>
                             </div>
                         </td>
                     </tr>
-
-                    {{-- Prime de rendement --}}
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td style="padding:9px 14px"><div style="font-weight:600">Prime de rendement</div></td>
                         <td style="padding:9px 14px">
@@ -343,8 +278,6 @@ const EXISTING = {
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
                         </td>
                     </tr>
-
-                    {{-- Indemnité transport --}}
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td style="padding:9px 14px"><div style="font-weight:600">Indemnité de transport</div></td>
                         <td style="padding:9px 14px">
@@ -353,8 +286,6 @@ const EXISTING = {
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
                         </td>
                     </tr>
-
-                    {{-- Prime panier --}}
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td style="padding:9px 14px"><div style="font-weight:600">Prime de panier</div></td>
                         <td style="padding:9px 14px">
@@ -363,8 +294,6 @@ const EXISTING = {
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
                         </td>
                     </tr>
-
-                    {{-- Indemnité logement --}}
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td style="padding:9px 14px"><div style="font-weight:600">Indemnité logement</div></td>
                         <td style="padding:9px 14px">
@@ -373,8 +302,6 @@ const EXISTING = {
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
                         </td>
                     </tr>
-
-                    {{-- Indemnité responsabilité --}}
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td style="padding:9px 14px"><div style="font-weight:600">Indemnité de responsabilité</div></td>
                         <td style="padding:9px 14px">
@@ -383,8 +310,6 @@ const EXISTING = {
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
                         </td>
                     </tr>
-
-                    {{-- Autres gains --}}
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td style="padding:9px 14px"><div style="font-weight:600">Autres gains</div></td>
                         <td style="padding:9px 14px">
@@ -393,8 +318,6 @@ const EXISTING = {
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
                         </td>
                     </tr>
-
-                    {{-- Éléments variables gains --}}
                     @if($variableElements->where('category','gain')->count())
                     <tr style="background:#f0fff4">
                         <td colspan="2" style="padding:9px 14px">
@@ -402,14 +325,12 @@ const EXISTING = {
                             @foreach($variableElements->where('category','gain') as $ve)
                             <div style="display:flex;justify-content:space-between;font-size:0.8rem;padding:2px 0">
                                 <span>{{ $ve->label }}</span>
-                                <span class="bonus font-semibold">+{{ number_format($ve->amount,2,',',' ') }} MAD</span>
+                                <span class="bonus font-semibold">+{{ number_format($ve->amount,2,',',' ') }} <span class="cur-label">MAD</span></span>
                             </div>
                             @endforeach
                         </td>
                     </tr>
                     @endif
-
-                    {{-- Total brut --}}
                     <tr style="background:#d1fae5">
                         <td style="padding:11px 14px;font-weight:700;color:#065f46">SALAIRE BRUT</td>
                         <td style="padding:11px 14px;text-align:right;font-weight:700;color:#065f46;font-size:1.05rem">
@@ -420,10 +341,9 @@ const EXISTING = {
             </table>
         </div>
     </div>
+</div>
 
-</div>{{-- fin colonne gauche --}}
-
-{{-- ════ COLONNE DROITE ════ --}}
+{{-- COLONNE DROITE --}}
 <div>
 
     {{-- COTISATIONS SOCIALES --}}
@@ -432,17 +352,15 @@ const EXISTING = {
             <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
                 <div>
                     <div class="card-title" style="color:#1e3a5f">COTISATIONS SOCIALES</div>
-                    <div style="font-size:0.75rem;color:#2563eb">Mode automatique = taux légaux marocains</div>
+                    <div style="font-size:0.75rem;color:#2563eb" id="cot-subtitle">Mode automatique = taux légaux marocains</div>
                 </div>
                 <div style="display:flex;gap:4px;background:white;padding:3px;border-radius:4px;border:1px solid #dbeafe">
                     <label style="padding:5px 11px;cursor:pointer;font-weight:600;border-radius:3px;font-size:0.82rem" id="autoLabel">
-                        <input type="radio" name="mode_cotisation" value="auto"
-                               style="cursor:pointer;margin-right:4px" onchange="toggleCotisationMode()">
+                        <input type="radio" name="mode_cotisation" value="auto" style="cursor:pointer;margin-right:4px" onchange="toggleCotisationMode()">
                         Automatique
                     </label>
                     <label style="padding:5px 11px;cursor:pointer;font-weight:600;border-radius:3px;font-size:0.82rem" id="manuelLabel">
-                        <input type="radio" name="mode_cotisation" value="manual"
-                               style="cursor:pointer;margin-right:4px" onchange="toggleCotisationMode()">
+                        <input type="radio" name="mode_cotisation" value="manual" style="cursor:pointer;margin-right:4px" onchange="toggleCotisationMode()">
                         Manuel
                     </label>
                 </div>
@@ -450,80 +368,73 @@ const EXISTING = {
         </div>
         <div class="card-body" style="padding:0">
             <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
-                {{-- CNSS --}}
                 <tr style="border-bottom:1px solid var(--border-color)">
                     <td style="padding:9px 14px">
-                        <div style="font-weight:600">CNSS salariale</div>
+                        <div style="font-weight:600" id="cnss-label">CNSS salariale</div>
                         <div style="font-size:0.75rem;color:var(--text-muted)" id="cnss-sub">4,48% × brut plafonné à 6 000 MAD/mois</div>
                     </td>
                     <td style="padding:9px 14px;width:155px;text-align:right">
-                        <div id="cnss-auto" style="font-weight:600;padding:6px 0">0,00 MAD</div>
+                        <div id="cnss-auto" style="font-weight:600;padding:6px 0">0,00 <span class="cur-label">MAD</span></div>
                         <input type="number" name="cnss_deduction_manual" id="cnss-manual" class="form-control"
                                value="{{ $existing?->cnss_deduction_manual ?? 0 }}"
                                step="0.01" min="0" style="display:none;text-align:right" oninput="calculate()">
                     </td>
                 </tr>
-                {{-- AMO --}}
                 <tr style="border-bottom:1px solid var(--border-color)">
                     <td style="padding:9px 14px">
-                        <div style="font-weight:600">AMO salariale</div>
-                        <div style="font-size:0.75rem;color:var(--text-muted)">2,26% du salaire brut</div>
+                        <div style="font-weight:600" id="amo-label">AMO salariale</div>
+                        <div style="font-size:0.75rem;color:var(--text-muted)" id="amo-sub">2,26% du salaire brut</div>
                     </td>
                     <td style="padding:9px 14px;text-align:right">
-                        <div id="amo-auto" style="font-weight:600;padding:6px 0">0,00 MAD</div>
+                        <div id="amo-auto" style="font-weight:600;padding:6px 0">0,00 <span class="cur-label">MAD</span></div>
                         <input type="number" name="amo_deduction_manual" id="amo-manual" class="form-control"
                                value="{{ $existing?->amo_deduction_manual ?? 0 }}"
                                step="0.01" min="0" style="display:none;text-align:right" oninput="calculate()">
                     </td>
                 </tr>
-                {{-- Frais professionnels --}}
-                <tr style="border-bottom:1px solid var(--border-color);background:#f0f9ff">
+                <tr style="border-bottom:1px solid var(--border-color);background:#f0f9ff" id="row-fp">
                     <td style="padding:9px 14px">
-                        <div style="font-weight:600">Frais professionnels
-                            <span class="badge badge-success" style="font-size:0.62rem">Déduction fiscale</span>
-                        </div>
+                        <div style="font-weight:600">Frais professionnels <span class="badge badge-success" style="font-size:0.62rem">Déduction fiscale</span></div>
                         <div style="font-size:0.75rem;color:var(--text-muted)">20% du brut, plafonné à 2 500 MAD/mois</div>
                     </td>
                     <td style="padding:9px 14px;text-align:right">
-                        <div id="fp-auto" style="font-weight:600;color:#059669;padding:6px 0">0,00 MAD</div>
+                        <div id="fp-auto" style="font-weight:600;color:#059669;padding:6px 0">0,00 <span class="cur-label">MAD</span></div>
                         <input type="number" name="fp_deduction_manual" id="fp-manual" class="form-control"
                                value="{{ $existing?->fp_deduction_manual ?? 0 }}"
                                step="0.01" min="0" style="display:none;text-align:right" oninput="calculate()">
                     </td>
                 </tr>
-                {{-- Net imposable --}}
                 <tr style="border-bottom:1px solid var(--border-color);background:#f0f9ff">
-                    <td style="padding:9px 14px;font-weight:600;color:#1e3a5f">Net imposable (NI)</td>
-                    <td style="padding:9px 14px;text-align:right;font-weight:700;color:#1e3a5f" id="taxable-display">0,00 MAD</td>
+                    <td style="padding:9px 14px;font-weight:600;color:#1e3a5f" id="taxable-label">Net imposable (NI)</td>
+                    <td style="padding:9px 14px;text-align:right;font-weight:700;color:#1e3a5f" id="taxable-display">0,00 <span class="cur-label">MAD</span></td>
                 </tr>
-                {{-- Total cotisations --}}
                 <tr style="background:#dbeafe;border-top:2px solid #0284c7">
-                    <td style="padding:11px 14px;font-weight:700;color:#1e3a5f">TOTAL COTISATIONS (CNSS+AMO)</td>
-                    <td style="padding:11px 14px;text-align:right;font-weight:700;color:#1e3a5f;font-size:1rem" id="cot-total-display">0,00 MAD</td>
+                    <td style="padding:11px 14px;font-weight:700;color:#1e3a5f" id="cot-total-label">TOTAL COTISATIONS (CNSS+AMO)</td>
+                    <td style="padding:11px 14px;text-align:right;font-weight:700;color:#1e3a5f;font-size:1rem" id="cot-total-display">0,00 <span class="cur-label">MAD</span></td>
                 </tr>
             </table>
         </div>
     </div>
 
-    {{-- IR --}}
+    {{-- IR / ITS --}}
     <div class="card mb-4">
         <div class="card-header" style="background:#fef3c7;border-bottom:2px solid #fcd34d">
-            <div class="card-title" style="color:#78350f">IR — Impôt sur le Revenu</div>
-            <div style="font-size:0.75rem;color:#92400e">Barème progressif annuel DGI ÷ 12</div>
+            <div class="card-title" style="color:#78350f" id="ir-title">IR — Impôt sur le Revenu</div>
+            <div style="font-size:0.75rem;color:#92400e" id="ir-subtitle">Barème progressif annuel DGI ÷ 12</div>
         </div>
         <div class="card-body" style="padding:0">
             <table style="width:100%;border-collapse:collapse;font-size:0.83rem">
                 <tr style="border-bottom:1px solid var(--border-color)">
-                    <td style="padding:8px 14px;color:var(--text-muted)">IR annuel brut (barème)</td>
-                    <td style="padding:8px 14px;text-align:right;font-weight:600" id="ir-annual">0,00 MAD</td>
+                    <td style="padding:8px 14px;color:var(--text-muted)" id="ir-annual-label">IR annuel brut (barème)</td>
+                    <td style="padding:8px 14px;text-align:right;font-weight:600" id="ir-annual">0,00 <span class="cur-label">MAD</span></td>
                 </tr>
-                <tr style="border-bottom:1px solid var(--border-color)">
-                    <td style="padding:8px 14px;color:var(--text-muted)">Déductions familiales (360 MAD/pers.)</td>
-                    <td style="padding:8px 14px;text-align:right;font-weight:600;color:#059669" id="ir-family">−0,00 MAD</td>
+                <tr style="border-bottom:1px solid var(--border-color)" id="row-ir-family">
+                    <td style="padding:8px 14px;color:var(--text-muted)" id="ir-family-label">Déductions familiales (360 MAD/pers.)</td>
+                    <td style="padding:8px 14px;text-align:right;font-weight:600;color:#059669" id="ir-family">−0,00 <span class="cur-label">MAD</span></td>
                 </tr>
                 <tr style="background:#fef3c7">
-                    <td style="padding:9px 14px;font-weight:700;color:#78350f">IR mensuel retenu</td>
-                    <td style="padding:9px 14px;text-align:right;font-weight:700;color:#991b1b" id="ir-monthly">0,00 MAD</td>
+                    <td style="padding:9px 14px;font-weight:700;color:#78350f" id="ir-monthly-label">IR mensuel retenu</td>
+                    <td style="padding:9px 14px;text-align:right;font-weight:700;color:#991b1b" id="ir-monthly">0,00 <span class="cur-label">MAD</span></td>
                 </tr>
             </table>
         </div>
@@ -544,19 +455,17 @@ const EXISTING = {
                     </tr>
                 </thead>
                 <tbody>
-                    {{-- Absences --}}
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td style="padding:9px 14px">
                             <div style="font-weight:600">Absences non payées</div>
                             <div style="font-size:0.75rem;color:var(--text-muted)" id="absence-sub">
-                                (Brut / 191,25 h) × {{ $workingData['absence_hours'] ?? 0 }} h = calculé auto
+                                (Brut / <span id="heures-ref-label">191,25</span> h) × {{ $workingData['absence_hours'] ?? 0 }} h = calculé auto
                             </div>
                         </td>
                         <td style="padding:9px 14px;text-align:right">
-                            <div style="font-weight:600;color:#991b1b" id="absence-auto">0,00 MAD</div>
+                            <div style="font-weight:600;color:#991b1b" id="absence-auto">0,00 <span class="cur-label">MAD</span></div>
                         </td>
                     </tr>
-                    {{-- Avance --}}
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td style="padding:9px 14px"><div style="font-weight:600">Avance sur salaire</div></td>
                         <td style="padding:9px 14px">
@@ -565,7 +474,6 @@ const EXISTING = {
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
                         </td>
                     </tr>
-                    {{-- Prêt --}}
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td style="padding:9px 14px"><div style="font-weight:600">Remboursement de prêt</div></td>
                         <td style="padding:9px 14px">
@@ -574,7 +482,6 @@ const EXISTING = {
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
                         </td>
                     </tr>
-                    {{-- Saisie --}}
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td style="padding:9px 14px"><div style="font-weight:600">Saisie sur salaire</div></td>
                         <td style="padding:9px 14px">
@@ -583,7 +490,6 @@ const EXISTING = {
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
                         </td>
                     </tr>
-                    {{-- Autres --}}
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td style="padding:9px 14px"><div style="font-weight:600">Autres retenues</div></td>
                         <td style="padding:9px 14px">
@@ -592,7 +498,6 @@ const EXISTING = {
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
                         </td>
                     </tr>
-                    {{-- Éléments variables retenues --}}
                     @if($variableElements->where('category','retenue')->count())
                     <tr style="background:#fff0f0">
                         <td colspan="2" style="padding:9px 14px">
@@ -600,35 +505,27 @@ const EXISTING = {
                             @foreach($variableElements->where('category','retenue') as $ve)
                             <div style="display:flex;justify-content:space-between;font-size:0.8rem;padding:2px 0">
                                 <span>{{ $ve->label }}</span>
-                                <span class="deduction font-semibold">−{{ number_format($ve->amount,2,',',' ') }} MAD</span>
+                                <span class="deduction font-semibold">−{{ number_format($ve->amount,2,',',' ') }} <span class="cur-label">MAD</span></span>
                             </div>
                             @endforeach
                         </td>
                     </tr>
                     @endif
-                    {{-- Total retenues --}}
                     <tr style="background:#fecaca;border-top:2px solid #f87171">
                         <td style="padding:11px 14px;font-weight:700;color:#991b1b">TOTAL RETENUES</td>
-                        <td style="padding:11px 14px;text-align:right;font-weight:700;color:#991b1b;font-size:1rem" id="ret-total-display">0,00 MAD</td>
+                        <td style="padding:11px 14px;text-align:right;font-weight:700;color:#991b1b;font-size:1rem" id="ret-total-display">0,00 <span class="cur-label">MAD</span></td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    {{-- NET À PAYER --}}
+    {{-- NET A PAYER --}}
     <div class="card mb-4" style="border:2px solid var(--success);background:linear-gradient(135deg,#f0fdf4,#ffffff)">
         <div class="card-body" style="padding:20px;text-align:center">
-            <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600">
-                Net à payer
-            </div>
+            <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600">Net à payer</div>
             <div style="font-size:2.8rem;font-weight:900;color:var(--success);letter-spacing:-1px">
                 <span id="net-display">0,00</span> <span style="font-size:1.4rem" class="cur-label">MAD</span>
-            </div>
-            {{-- Ligne de conversion --}}
-            <div id="net-converted-line" style="display:none;margin-top:6px;font-size:0.9rem;color:#7c3aed;font-weight:600">
-                ≈ <span id="net-converted-display">0,00</span> <span id="net-converted-code">USD</span>
-                <span style="font-size:0.72rem;font-weight:400;color:var(--text-muted)">(indicatif)</span>
             </div>
             <div style="font-size:0.78rem;color:var(--text-muted);margin-top:8px" id="net-detail">
                 Brut 0,00 − Cotis. 0,00 − FP 0,00 − IR 0,00 − Retenues 0,00
@@ -639,135 +536,121 @@ const EXISTING = {
     {{-- CHARGES PATRONALES --}}
     <div class="card mb-4">
         <div class="card-header" style="background:#fef3c7;border-bottom:2px solid #fcd34d">
-            <div class="card-title" style="color:#78350f">Charges patronales <span style="font-size:0.72rem;font-weight:400">(informatives)</span></div>
+            <div class="card-title" style="color:#78350f" id="emp-title">Charges patronales <span style="font-size:0.72rem;font-weight:400">(informatives)</span></div>
         </div>
         <div class="card-body" style="padding:0">
             <table style="width:100%;border-collapse:collapse;font-size:0.83rem">
                 <tr style="border-bottom:1px solid var(--border-color)">
-                    <td style="padding:7px 14px;color:var(--text-muted)">CNSS patronale (10,29%)</td>
+                    <td style="padding:7px 14px;color:var(--text-muted)" id="emp-cnss-label">CNSS patronale (10,29%)</td>
                     <td style="padding:7px 14px;text-align:right;color:#d97706;font-weight:600" id="emp-cnss">0,00</td>
                 </tr>
                 <tr style="border-bottom:1px solid var(--border-color)">
-                    <td style="padding:7px 14px;color:var(--text-muted)">AMO patronale (2,26%)</td>
+                    <td style="padding:7px 14px;color:var(--text-muted)" id="emp-amo-label">AMO patronale (2,26%)</td>
                     <td style="padding:7px 14px;text-align:right;color:#d97706;font-weight:600" id="emp-amo">0,00</td>
                 </tr>
-                <tr style="border-bottom:2px solid var(--border-color)">
-                    <td style="padding:7px 14px;color:var(--text-muted)">TFP (1,60%)</td>
+                <tr style="border-bottom:2px solid var(--border-color)" id="row-tfp">
+                    <td style="padding:7px 14px;color:var(--text-muted)" id="emp-tfp-label">TFP (1,60%)</td>
                     <td style="padding:7px 14px;text-align:right;color:#d97706;font-weight:600" id="emp-tfp">0,00</td>
                 </tr>
                 <tr style="background:#fef3c7">
                     <td style="padding:10px 14px;font-weight:700;color:#78350f">Coût total employeur</td>
-                    <td style="padding:10px 14px;text-align:right;font-weight:700;color:#78350f" id="emp-total">0,00 MAD</td>
+                    <td style="padding:10px 14px;text-align:right;font-weight:700;color:#78350f" id="emp-total">0,00 <span class="cur-label">MAD</span></td>
                 </tr>
             </table>
         </div>
     </div>
 
-    {{-- Boutons --}}
     <div style="display:flex;gap:12px">
-        <button type="submit" class="btn btn-primary" style="flex:1;font-size:1rem;padding:12px">
-            ✓ Calculer &amp; Enregistrer
-        </button>
-        <a href="{{ route('variables.index', ['month'=>$month,'year'=>$year]) }}" class="btn btn-ghost">
-            Éléments variables
-        </a>
+        <button type="submit" class="btn btn-primary" style="flex:1;font-size:1rem;padding:12px">✓ Calculer &amp; Enregistrer</button>
+        <a href="{{ route('variables.index', ['month'=>$month,'year'=>$year]) }}" class="btn btn-ghost">Éléments variables</a>
     </div>
 
-</div>{{-- fin colonne droite --}}
-</div>{{-- fin two-col --}}
-
+</div>
+</div>
 </form>
 
 <script>
-// ══════════════════════════════════════════════════════════════
-//  CONSTANTES LÉGALES MAROCAINES
-// ══════════════════════════════════════════════════════════════
-const CNSS_RATE_SAL   = 0.0448;
-const CNSS_PLAFOND    = 6000;
-const AMO_RATE_SAL    = 0.0226;
-const FP_RATE         = 0.20;
-const FP_MAX          = 2500;
-const HEURES_REF      = 191.25;
+// ============================================================
+//  ÉTAT GLOBAL
+// ============================================================
+let currentSystem = 'MAD';
 
-const CNSS_RATE_PAT   = 0.1029;
-const AMO_RATE_PAT    = 0.0226;
-const TFP_RATE        = 0.016;
-
-// ══════════════════════════════════════════════════════════════
-//  GESTION DE LA DEVISE
-// ══════════════════════════════════════════════════════════════
-let currentRate   = 1;
-let currentSymbol = 'MAD';
-let currentCode   = 'MAD';
-
-function onCurrencyChange() {
-    const sel = document.getElementById('currency_select');
-    const opt = sel.options[sel.selectedIndex];
-    currentRate   = parseFloat(opt.dataset.rate)   || 1;
-    currentSymbol = opt.dataset.symbol             || 'MAD';
-    currentCode   = opt.value;
-
-    // Badge taux
-    const badge = document.getElementById('currency_rate_badge');
-    badge.textContent = currentCode === 'MAD'
-        ? '= 1 MAD'
-        : '1 MAD = ' + currentRate.toFixed(4) + ' ' + currentCode;
-
-    // Bandeau avertissement
-    const banner = document.getElementById('currency_banner');
-    if (currentCode !== 'MAD') {
-        banner.style.display = 'flex';
-        document.getElementById('currency_banner_code').textContent = currentCode;
-        document.getElementById('currency_banner_rate').textContent =
-            '1 MAD = ' + currentRate.toFixed(4) + ' ' + currentCode;
-    } else {
-        banner.style.display = 'none';
+// ============================================================
+//  CONSTANTES PAR SYSTÈME
+// ============================================================
+const SYS = {
+    MAD: {
+        CNSS_SAL:    0.0448,  CNSS_PLAFOND: 6000,
+        AMO_SAL:     0.0226,  FP_RATE: 0.20,   FP_MAX: 2500,  HAS_FP: true,
+        CNSS_PAT:    0.1029,  AMO_PAT: 0.0226, TFP: 0.016,    HAS_TFP: true,
+        HEURES_REF:  191.25,
+        cur:         'MAD',
+        cot_sub:     'Mode automatique = taux légaux marocains',
+        cnss_lbl:    'CNSS salariale',
+        amo_lbl:     'AMO salariale',
+        amo_sub:     '2,26% du salaire brut',
+        taxable_lbl: 'Net imposable (NI)',
+        cot_tot_lbl: 'TOTAL COTISATIONS (CNSS+AMO)',
+        ir_title:    'IR — Impôt sur le Revenu',
+        ir_sub:      'Barème progressif annuel DGI ÷ 12',
+        ir_ann_lbl:  'IR annuel brut (barème)',
+        ir_fam_lbl:  'Déductions familiales (360 MAD/pers.)',
+        ir_mon_lbl:  'IR mensuel retenu',
+        emp_cnss_lbl:'CNSS patronale (10,29%)',
+        emp_amo_lbl: 'AMO patronale (2,26%)',
+        emp_tfp_lbl: 'TFP (1,60%)',
+        hr_lbl:      '191,25',
+    },
+    MRU: {
+        CNSS_SAL:    0.01,    CNSS_PLAFOND: 15000,
+        AMO_SAL:     0.04,    FP_RATE: 0,      FP_MAX: 0,     HAS_FP: false,
+        CNSS_PAT:    0.13,    AMO_PAT: 0.02,   TFP: 0,        HAS_TFP: false,
+        HEURES_REF:  173.33,
+        cur:         'MRU',
+        cot_sub:     'Mode automatique = taux légaux mauritaniens',
+        cnss_lbl:    'CNSS salariale (Mauritanie)',
+        amo_lbl:     'CNAM salariale (Mauritanie)',
+        amo_sub:     '4% du salaire brut — assurance maladie',
+        taxable_lbl: 'Revenu imposable ITS',
+        cot_tot_lbl: 'TOTAL COTISATIONS (CNSS+CNAM)',
+        ir_title:    'ITS — Impôt sur Traitements & Salaires',
+        ir_sub:      'Barème progressif mensuel — Mauritanie',
+        ir_ann_lbl:  'ITS calculé (barème mensuel)',
+        ir_fam_lbl:  'Abattement',
+        ir_mon_lbl:  'ITS mensuel retenu',
+        emp_cnss_lbl:'CNSS patronale (13%)',
+        emp_amo_lbl: 'CNAM patronale (2%)',
+        emp_tfp_lbl: '',
+        hr_lbl:      '173,33',
     }
+};
 
-    // Note dans l'en-tête gains
-    const note = document.getElementById('gains_currency_note');
-    if (currentCode !== 'MAD') {
-        note.style.display = 'inline';
-        note.textContent   = '— Affichage en ' + currentCode;
-    } else {
-        note.style.display = 'none';
-    }
-
-    // Mettre à jour tous les libellés de devise
-    document.querySelectorAll('.cur-label').forEach(el => el.textContent = currentCode);
-
-    calculate();
+// ============================================================
+//  BARÈMES FISCAUX
+// ============================================================
+function calcIR_MAD(annuel) {
+    if (annuel <= 30000)  return 0;
+    if (annuel <= 50000)  return (annuel - 30000) * 0.10;
+    if (annuel <= 60000)  return 2000  + (annuel - 50000) * 0.20;
+    if (annuel <= 80000)  return 4000  + (annuel - 60000) * 0.30;
+    if (annuel <= 180000) return 10000 + (annuel - 80000)  * 0.34;
+    return 44000 + (annuel - 180000) * 0.38;
 }
 
-// Formate un montant MAD en devise affichée (pour l'affichage uniquement)
-function fmtMAD(n) {
-    return parseFloat(n.toFixed(2))
-        .toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2})
-        + ' MAD';
+function calcITS_MRU(mensuel) {
+    if (mensuel <= 6000)  return 0;
+    if (mensuel <= 9000)  return (mensuel - 6000) * 0.15;
+    if (mensuel <= 21000) return 450  + (mensuel - 9000)  * 0.25;
+    return 3450 + (mensuel - 21000) * 0.40;
 }
 
-// Formate pour affichage dans la devise courante
-function fmtC(madAmount) {
-    const converted = madAmount * currentRate;
-    return parseFloat(converted.toFixed(2))
-        .toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2})
-        + ' ' + currentCode;
+function calcDeductFam_MAD(status, children) {
+    let d = 0;
+    if (['marie','veuf','divorce'].includes(status)) d += 360;
+    d += Math.min(children, 6) * 360;
+    return d;
 }
 
-// Formate sans suffixe (pour les spans où le suffixe est séparé)
-function fmtCVal(madAmount) {
-    const converted = madAmount * currentRate;
-    return parseFloat(converted.toFixed(2))
-        .toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-}
-
-// Formate toujours en MAD (pour les éléments qui restent en MAD)
-function fmt(n) {
-    return parseFloat(n.toFixed(2))
-        .toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-}
-
-// ── Prime d'ancienneté (Art. 350 Code du travail) ─────────────
 function seniorityRate(years) {
     if (years < 2)  return 0;
     if (years < 5)  return 0.05;
@@ -777,64 +660,119 @@ function seniorityRate(years) {
     return 0.25;
 }
 
-// ── Barème IR annuel DGI (Art. 73 CGI — tranches 2024) ────────
-function calcIRAnnuel(revenu) {
-    if (revenu <= 30000)  return 0;
-    if (revenu <= 50000)  return (revenu - 30000) * 0.10;
-    if (revenu <= 60000)  return 2000  + (revenu - 50000) * 0.20;
-    if (revenu <= 80000)  return 4000  + (revenu - 60000) * 0.30;
-    if (revenu <= 180000) return 10000 + (revenu - 80000)  * 0.34;
-    return 44000 + (revenu - 180000) * 0.38;
+// ============================================================
+//  FORMATAGE
+// ============================================================
+function fmt(n) {
+    return parseFloat(n.toFixed(2))
+        .toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 
-// ── Déductions familiales IR (Art. 74 CGI) ────────────────────
-function calcDeductFam(status, children) {
-    let d = 0;
-    if (['marie','veuf','divorce'].includes(status)) d += 360;
-    d += Math.min(children, 6) * 360;
-    return d;
+function setHTML(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = val + ' <span class="cur-label">' + currentSystem + '</span>';
+}
+function setText(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
 }
 
-// ══════════════════════════════════════════════════════════════
+// ============================================================
+//  CHANGEMENT DE SYSTÈME — met à jour h_currency
+// ============================================================
+function setSystem(sys) {
+    currentSystem = sys;
+
+    // ✅ Mise à jour du champ hidden currency envoyé au serveur
+    document.getElementById('h_currency').value = sys;
+
+    const S = SYS[sys];
+
+    // Boutons
+    document.getElementById('btn-mad').style.background = sys==='MAD' ? '#1d4ed8' : '#f9fafb';
+    document.getElementById('btn-mad').style.color      = sys==='MAD' ? 'white'   : '#6b7280';
+    document.getElementById('btn-mru').style.background = sys==='MRU' ? '#065f46' : '#f9fafb';
+    document.getElementById('btn-mru').style.color      = sys==='MRU' ? 'white'   : '#6b7280';
+
+    // Badge
+    const badge = document.getElementById('system-badge');
+    badge.textContent       = sys==='MAD' ? 'Système marocain actif' : 'Système mauritanien actif';
+    badge.style.background  = sys==='MAD' ? '#dbeafe' : '#dcfce7';
+    badge.style.color       = sys==='MAD' ? '#1e40af' : '#14532d';
+    badge.style.borderColor = sys==='MAD' ? '#bfdbfe' : '#86efac';
+
+    // Bandeaux info
+    document.getElementById('mad-info-banner').style.display = sys==='MAD' ? 'block' : 'none';
+    document.getElementById('mru-info-banner').style.display = sys==='MRU' ? 'block' : 'none';
+
+    // Tous les .cur-label
+    document.querySelectorAll('.cur-label').forEach(el => el.textContent = sys);
+
+    // Labels dynamiques
+    setText('cot-subtitle',    S.cot_sub);
+    setText('cnss-label',      S.cnss_lbl);
+    setText('amo-label',       S.amo_lbl);
+    setText('amo-sub',         S.amo_sub);
+    setText('taxable-label',   S.taxable_lbl);
+    setText('cot-total-label', S.cot_tot_lbl);
+    setText('ir-title',        S.ir_title);
+    setText('ir-subtitle',     S.ir_sub);
+    setText('ir-annual-label', S.ir_ann_lbl);
+    setText('ir-family-label', S.ir_fam_lbl);
+    setText('ir-monthly-label',S.ir_mon_lbl);
+    setText('emp-cnss-label',  S.emp_cnss_lbl);
+    setText('emp-amo-label',   S.emp_amo_lbl);
+    if (S.HAS_TFP) setText('emp-tfp-label', S.emp_tfp_lbl);
+
+    // Visibilités
+    document.getElementById('row-fp').style.display         = S.HAS_FP  ? '' : 'none';
+    document.getElementById('row-tfp').style.display        = S.HAS_TFP ? '' : 'none';
+    document.getElementById('row-ir-family').style.display  = sys==='MAD' ? '' : 'none';
+
+    // Heures de référence
+    setText('heures-ref-label', S.hr_lbl);
+
+    calculate();
+}
+
+// ============================================================
 //  MODE COTISATION
-// ══════════════════════════════════════════════════════════════
+// ============================================================
 function toggleCotisationMode() {
     const isManual = document.querySelector('input[name="mode_cotisation"]:checked').value === 'manual';
-
     ['cnss','amo','fp'].forEach(k => {
-        document.getElementById(k+'-auto').style.display   = isManual ? 'none'  : 'block';
-        document.getElementById(k+'-manual').style.display = isManual ? 'block' : 'none';
+        const a = document.getElementById(k+'-auto');
+        const m = document.getElementById(k+'-manual');
+        if (a) a.style.display = isManual ? 'none'  : 'block';
+        if (m) m.style.display = isManual ? 'block' : 'none';
     });
-
     const aL = document.getElementById('autoLabel');
     const mL = document.getElementById('manuelLabel');
     aL.style.background = isManual ? 'white'   : '#e0f2fe';
     aL.style.color      = isManual ? 'var(--text-muted)' : '#0369a1';
     mL.style.background = isManual ? '#fef08a' : 'white';
     mL.style.color      = isManual ? '#78350f' : 'var(--text-muted)';
-
     calculate();
 }
 
-// ══════════════════════════════════════════════════════════════
-//  TYPE DE SALAIRE
-// ══════════════════════════════════════════════════════════════
+// ============================================================
+//  TYPE SALAIRE
+// ============================================================
 function onTypeChange() {
     const isHourly = document.getElementById('type_hourly').checked;
     document.getElementById('hourly_rate').disabled = !isHourly;
     document.getElementById('base_salary').readOnly  = isHourly;
-    document.getElementById('base-sub').textContent  = isHourly
-        ? 'Calculé : taux horaire × heures travaillées'
-        : 'Rémunération mensuelle contractuelle';
+    setText('base-sub', isHourly ? 'Calculé : taux horaire × heures travaillées' : 'Rémunération mensuelle contractuelle');
     calculate();
 }
 
-// ══════════════════════════════════════════════════════════════
+// ============================================================
 //  CALCUL PRINCIPAL
-// ══════════════════════════════════════════════════════════════
+// ============================================================
 function calculate() {
+    const S = SYS[currentSystem];
 
-    // ─── 1. Données pointage ──────────────────────────────────
+    // 1. Pointage
     const workH    = EMPLOYEE_DATA.working_hours;
     const otDayH   = EMPLOYEE_DATA.ot_day;
     const absH     = EMPLOYEE_DATA.absence_hours;
@@ -842,150 +780,145 @@ function calculate() {
     const otNightH = parseFloat(document.getElementById('ot_night_h').value) || 0;
     const otWkndH  = parseFloat(document.getElementById('ot_wknd_h').value)  || 0;
 
-    document.getElementById('disp-working').textContent  = workH  + ' h';
-    document.getElementById('disp-ot-day').textContent   = otDayH + ' h';
-    document.getElementById('disp-abs').textContent      = absH   + ' h';
-    document.getElementById('disp-delay').textContent    = delayH + ' h';
-    document.getElementById('ot-day-h-disp').textContent   = otDayH   + ' h';
-    document.getElementById('ot-night-h-disp').textContent = otNightH + ' h';
-    document.getElementById('ot-wknd-h-disp').textContent  = otWkndH  + ' h';
+    setText('disp-working',    workH    + ' h');
+    setText('disp-ot-day',     otDayH   + ' h');
+    setText('disp-abs',        absH     + ' h');
+    setText('disp-delay',      delayH   + ' h');
+    setText('ot-day-h-disp',   otDayH   + ' h');
+    setText('ot-night-h-disp', otNightH + ' h');
+    setText('ot-wknd-h-disp',  otWkndH  + ' h');
 
-    // ─── 2. Salaire de base ───────────────────────────────────
-    const isHourly  = document.getElementById('type_hourly').checked;
+    // 2. Salaire de base
+    const isHourly   = document.getElementById('type_hourly').checked;
     const hourlyRate = parseFloat(document.getElementById('hourly_rate').value) || 0;
     let baseSalary;
-
     if (isHourly) {
         baseSalary = hourlyRate * workH;
         document.getElementById('base_salary').value = baseSalary.toFixed(2);
     } else {
         baseSalary = parseFloat(document.getElementById('base_salary').value) || 0;
     }
+    const tauxH = isHourly ? hourlyRate : (baseSalary / S.HEURES_REF);
 
-    const tauxH = isHourly ? hourlyRate : (baseSalary / HEURES_REF);
+    // 3. Ancienneté
+    const seniority = baseSalary * seniorityRate(EMPLOYEE_DATA.seniority_years);
+    setHTML('seniority-val', fmt(seniority));
 
-    // ─── 3. Prime ancienneté ──────────────────────────────────
-    const sRate     = seniorityRate(EMPLOYEE_DATA.seniority_years);
-    const seniority = baseSalary * sRate;
-    document.getElementById('seniority-val').textContent = fmtC(seniority);
-
-    // ─── 4. Heures supplémentaires ────────────────────────────
-    const otDayAmt   = tauxH * otDayH  * 1.25;
+    // 4. Heures supp
+    const otDayAmt   = tauxH * otDayH   * 1.25;
     const otNightAmt = tauxH * otNightH * 1.50;
     const otWkndAmt  = tauxH * otWkndH  * 2.00;
     const totalOT    = otDayAmt + otNightAmt + otWkndAmt;
 
-    document.getElementById('ot-day-amt-disp').textContent   = '= ' + fmtC(otDayAmt);
-    document.getElementById('ot-night-amt-disp').textContent = '= ' + fmtC(otNightAmt);
-    document.getElementById('ot-wknd-amt-disp').textContent  = '= ' + fmtC(otWkndAmt);
-    document.getElementById('ot-total-disp').textContent     = fmtC(totalOT);
+    setHTML('ot-day-amt-disp',   '= ' + fmt(otDayAmt));
+    setHTML('ot-night-amt-disp', '= ' + fmt(otNightAmt));
+    setHTML('ot-wknd-amt-disp',  '= ' + fmt(otWkndAmt));
+    setHTML('ot-total-disp',     fmt(totalOT));
 
-    // ─── 5. Autres gains ──────────────────────────────────────
-    const perfBonus      = parseFloat(document.getElementById('performance_bonus').value)      || 0;
-    const transport      = parseFloat(document.getElementById('transport_allowance').value)    || 0;
-    const meal           = parseFloat(document.getElementById('meal_allowance').value)         || 0;
-    const housing        = parseFloat(document.getElementById('housing_allowance').value)      || 0;
-    const responsibility = parseFloat(document.getElementById('responsibility_allowance').value)|| 0;
-    const otherGains     = parseFloat(document.getElementById('other_gains').value)            || 0;
+    // 5. Autres gains
+    const perfBonus      = parseFloat(document.getElementById('performance_bonus').value)       || 0;
+    const transport      = parseFloat(document.getElementById('transport_allowance').value)     || 0;
+    const meal           = parseFloat(document.getElementById('meal_allowance').value)          || 0;
+    const housing        = parseFloat(document.getElementById('housing_allowance').value)       || 0;
+    const responsibility = parseFloat(document.getElementById('responsibility_allowance').value) || 0;
+    const otherGains     = parseFloat(document.getElementById('other_gains').value)             || 0;
 
-    // ─── 6. Déduction absences ────────────────────────────────
+    // 6. Absences
     const absDeduction = tauxH * absH;
-    document.getElementById('absence-auto').textContent = fmtC(absDeduction);
-    document.getElementById('absence-sub').textContent  =
-        '(' + fmt(baseSalary) + ' / ' + HEURES_REF + ' h) × ' + absH + ' h = ' + fmt(absDeduction) + ' MAD';
+    setHTML('absence-auto', fmt(absDeduction));
+    document.getElementById('absence-sub').innerHTML =
+        '(' + fmt(baseSalary) + ' / <span id="heures-ref-label">' + S.hr_lbl + '</span> h) × '
+        + absH + ' h = ' + fmt(absDeduction) + ' ' + currentSystem;
 
-    // ─── 7. SALAIRE BRUT ──────────────────────────────────────
+    // 7. Brut
     const grossSalary = Math.max(0,
         baseSalary + seniority + totalOT
         + perfBonus + transport + meal + housing + responsibility + otherGains
         - absDeduction
     );
-    document.getElementById('gross-display').textContent = fmtCVal(grossSalary);
+    setText('gross-display', fmt(grossSalary));
 
-    // ─── 8. Cotisations salariales ────────────────────────────
+    // Sous-titre CNSS dynamique
+    if (currentSystem === 'MAD') {
+        setText('cnss-sub', '4,48% × min(' + fmt(grossSalary) + ', 6 000) = ' + fmt(Math.min(grossSalary,6000)*0.0448) + ' MAD');
+    } else {
+        setText('cnss-sub', '1% × min(' + fmt(grossSalary) + ', 15 000) = ' + fmt(Math.min(grossSalary,15000)*0.01) + ' MRU');
+    }
+
+    // 8. Cotisations
     const isManual = document.querySelector('input[name="mode_cotisation"]:checked')?.value === 'manual';
     let cnss, amo, fp;
-
     if (isManual) {
         cnss = parseFloat(document.getElementById('cnss-manual').value) || 0;
         amo  = parseFloat(document.getElementById('amo-manual').value)  || 0;
-        fp   = parseFloat(document.getElementById('fp-manual').value)   || 0;
+        fp   = S.HAS_FP ? (parseFloat(document.getElementById('fp-manual').value) || 0) : 0;
     } else {
-        const cnssBase = Math.min(grossSalary, CNSS_PLAFOND);
-        cnss = cnssBase * CNSS_RATE_SAL;
-        amo  = grossSalary * AMO_RATE_SAL;
-        fp   = Math.min(grossSalary * FP_RATE, FP_MAX);
-        // Cotisations toujours affichées en MAD (réglementaire)
-        document.getElementById('cnss-auto').textContent = fmtMAD(cnss);
-        document.getElementById('amo-auto').textContent  = fmtMAD(amo);
-        document.getElementById('fp-auto').textContent   = fmtMAD(fp);
-        document.getElementById('cnss-sub').textContent  =
-            '4,48% × min(' + fmt(grossSalary) + ', 6 000) = ' + fmt(cnss) + ' MAD';
+        const base = Math.min(grossSalary, S.CNSS_PLAFOND);
+        cnss = base        * S.CNSS_SAL;
+        amo  = grossSalary * S.AMO_SAL;
+        fp   = S.HAS_FP ? Math.min(grossSalary * S.FP_RATE, S.FP_MAX) : 0;
+        setHTML('cnss-auto', fmt(cnss));
+        setHTML('amo-auto',  fmt(amo));
+        setHTML('fp-auto',   fmt(fp));
     }
-
     const totalCot = cnss + amo;
 
-    // ─── 9. Net imposable ─────────────────────────────────────
+    // 9. Imposable
     const taxableIncome = Math.max(0, grossSalary - cnss - amo - fp);
-    document.getElementById('taxable-display').textContent   = fmtMAD(taxableIncome);
-    document.getElementById('cot-total-display').textContent = fmtMAD(totalCot);
+    setHTML('taxable-display',   fmt(taxableIncome));
+    setHTML('cot-total-display', fmt(totalCot));
 
-    // ─── 10. IR ───────────────────────────────────────────────
-    const revAnnuel    = taxableIncome * 12;
-    const irAnnuelBrut = calcIRAnnuel(revAnnuel);
-    const deductFam    = calcDeductFam(EMPLOYEE_DATA.family_status, EMPLOYEE_DATA.children_count);
-    const irAnnuelNet  = Math.max(0, irAnnuelBrut - deductFam);
-    const irMensuel    = irAnnuelNet / 12;
+    // 10. Impôt
+    let irAnnuelBrut, deductFam, irMensuel;
+    if (currentSystem === 'MAD') {
+        irAnnuelBrut = calcIR_MAD(taxableIncome * 12);
+        deductFam    = calcDeductFam_MAD(EMPLOYEE_DATA.family_status, EMPLOYEE_DATA.children_count);
+        irMensuel    = Math.max(0, irAnnuelBrut - deductFam) / 12;
+        setHTML('ir-annual', fmt(irAnnuelBrut));
+        document.getElementById('ir-family').innerHTML = '−' + fmt(deductFam) + ' <span class="cur-label">MAD</span>';
+    } else {
+        irAnnuelBrut = calcITS_MRU(taxableIncome);
+        deductFam    = 0;
+        irMensuel    = irAnnuelBrut;
+        setHTML('ir-annual', fmt(irAnnuelBrut));
+        document.getElementById('ir-family').innerHTML = '−0,00 <span class="cur-label">MRU</span>';
+    }
+    setHTML('ir-monthly', fmt(irMensuel));
 
-    document.getElementById('ir-annual').textContent  = fmtMAD(irAnnuelBrut);
-    document.getElementById('ir-family').textContent  = '−' + fmt(deductFam) + ' MAD';
-    document.getElementById('ir-monthly').textContent = fmtMAD(irMensuel);
-
-    // ─── 11. Retenues diverses ────────────────────────────────
+    // 11. Retenues
     const advance     = parseFloat(document.getElementById('advance_deduction').value)     || 0;
     const loan        = parseFloat(document.getElementById('loan_deduction').value)        || 0;
     const garnishment = parseFloat(document.getElementById('garnishment_deduction').value) || 0;
     const otherDed    = parseFloat(document.getElementById('other_deductions').value)      || 0;
     const totalRet    = advance + loan + garnishment + otherDed;
-    document.getElementById('ret-total-display').textContent = fmtMAD(totalRet);
+    setHTML('ret-total-display', fmt(totalRet));
 
-    // ─── 12. NET À PAYER ──────────────────────────────────────
-    const netSalary = Math.max(0,
-        grossSalary - totalCot - fp - irMensuel - totalRet
-    );
-
-    // Valeur nette dans la devise choisie
-    document.getElementById('net-display').textContent = fmtCVal(netSalary);
-
-    // Ligne de conversion (si devise ≠ MAD, afficher équivalent MAD en dessous)
-    const netConvLine = document.getElementById('net-converted-line');
-    if (currentCode !== 'MAD') {
-        netConvLine.style.display = 'block';
-        document.getElementById('net-converted-display').textContent = fmt(netSalary);
-        document.getElementById('net-converted-code').textContent    = 'MAD';
-    } else {
-        netConvLine.style.display = 'none';
-    }
-
-    document.getElementById('net-detail').textContent =
+    // 12. Net
+    const netSalary = Math.max(0, grossSalary - totalCot - fp - irMensuel - totalRet);
+    setText('net-display', fmt(netSalary));
+    const tax_label = currentSystem === 'MAD' ? 'IR' : 'ITS';
+    setText('net-detail',
         'Brut ' + fmt(grossSalary) +
         ' − Cotis. ' + fmt(totalCot) +
-        ' − FP ' + fmt(fp) +
-        ' − IR ' + fmt(irMensuel) +
-        ' − Retenues ' + fmt(totalRet) + ' (MAD)';
+        (fp > 0 ? ' − FP ' + fmt(fp) : '') +
+        ' − ' + tax_label + ' ' + fmt(irMensuel) +
+        ' − Retenues ' + fmt(totalRet) +
+        ' (' + currentSystem + ')'
+    );
 
-    // ─── 13. Charges patronales ───────────────────────────────
-    const cnssPatBase = Math.min(grossSalary, CNSS_PLAFOND);
-    const empCnss  = cnssPatBase * CNSS_RATE_PAT;
-    const empAmo   = grossSalary * AMO_RATE_PAT;
-    const empTfp   = grossSalary * TFP_RATE;
+    // 13. Patronal
+    const empBase  = Math.min(grossSalary, S.CNSS_PLAFOND);
+    const empCnss  = empBase       * S.CNSS_PAT;
+    const empAmo   = grossSalary   * S.AMO_PAT;
+    const empTfp   = S.HAS_TFP ? grossSalary * S.TFP : 0;
     const empTotal = netSalary + totalCot + fp + irMensuel + empCnss + empAmo + empTfp;
-    document.getElementById('emp-cnss').textContent  = fmt(empCnss);
-    document.getElementById('emp-amo').textContent   = fmt(empAmo);
-    document.getElementById('emp-tfp').textContent   = fmt(empTfp);
-    document.getElementById('emp-total').textContent = fmt(empTotal) + ' MAD';
 
-    // ─── 14. Champs cachés (toujours en MAD) ─────────────────
+    setText('emp-cnss', fmt(empCnss));
+    setText('emp-amo',  fmt(empAmo));
+    setText('emp-tfp',  fmt(empTfp));
+    setHTML('emp-total', fmt(empTotal));
+
+    // 14. Champs hidden soumis au serveur
     document.getElementById('h_gross_salary').value        = grossSalary.toFixed(2);
     document.getElementById('h_seniority_bonus').value     = seniority.toFixed(2);
     document.getElementById('h_ot_day_amount').value       = otDayAmt.toFixed(2);
@@ -994,7 +927,7 @@ function calculate() {
     document.getElementById('h_overtime_hours').value      = (otDayH + otNightH + otWkndH).toFixed(2);
     document.getElementById('h_absence_deduction').value   = absDeduction.toFixed(2);
     document.getElementById('h_absence_days').value        = (absH / 8).toFixed(2);
-    document.getElementById('h_cnss_base').value           = Math.min(grossSalary, CNSS_PLAFOND).toFixed(2);
+    document.getElementById('h_cnss_base').value           = Math.min(grossSalary, S.CNSS_PLAFOND).toFixed(2);
     document.getElementById('h_cnss_deduction').value      = cnss.toFixed(2);
     document.getElementById('h_amo_deduction').value       = amo.toFixed(2);
     document.getElementById('h_fp_deduction').value        = fp.toFixed(2);
@@ -1014,16 +947,14 @@ function calculate() {
     document.getElementById('h_abs_hours').value           = absH.toFixed(2);
     document.getElementById('h_delay_hours').value         = delayH.toFixed(2);
     document.getElementById('h_hourly_rate').value         = (isHourly ? hourlyRate : 0).toFixed(2);
+    // ✅ h_currency déjà mis à jour dans setSystem()
 }
 
-// ══════════════════════════════════════════════════════════════
+// ============================================================
 //  INITIALISATION
-// ══════════════════════════════════════════════════════════════
+// ============================================================
 document.addEventListener('DOMContentLoaded', function () {
-
-    // Type de salaire
-    const savedType = EXISTING.salary_type;
-    if (savedType === 'hourly') {
+    if (EXISTING.salary_type === 'hourly') {
         document.getElementById('type_hourly').checked  = true;
         document.getElementById('hourly_rate').disabled = false;
         document.getElementById('hourly_rate').value    = EXISTING.hourly_rate;
@@ -1031,14 +962,12 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
         document.getElementById('type_monthly').checked = true;
     }
+    document.querySelector('input[name="mode_cotisation"][value="' + EXISTING.mode_cotisation + '"]').checked = true;
 
-    // Mode cotisation
-    const savedMode = EXISTING.mode_cotisation;
-    document.querySelector(`input[name="mode_cotisation"][value="${savedMode}"]`).checked = true;
-
-    // Lancer le calcul initial
+    // ✅ Restaurer la devise du bulletin existant
+    const savedCurrency = EXISTING.currency || 'MAD';
+    setSystem(savedCurrency);
     toggleCotisationMode();
-    calculate();
 });
 </script>
 

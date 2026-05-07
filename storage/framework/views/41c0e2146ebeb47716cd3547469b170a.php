@@ -378,7 +378,7 @@ function showTyping() {
   el.className = 'message bot';
   el.id = 'typingIndicator';
   el.innerHTML = `
-    <div class="avatar-small">⭐</div>
+    <div class="avatar-small"></div>
     <div class="bubble">
       <div class="typing">
         <div class="typing-dot"></div>

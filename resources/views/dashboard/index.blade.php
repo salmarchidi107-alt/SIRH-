@@ -162,7 +162,7 @@
     <!-- Departments Chart -->
     <div class="card">
         <div class="card-header">
-            <div class="card-title">🏥 Personnel/Service</div>
+            <div class="card-title">🏥 Personnel/Departement</div>
         </div>
         <div class="card-body">
             <div class="chart-wrapper">

@@ -147,7 +147,7 @@
                 {{-- Supprimer à gauche --}}
                 <button type="button" id="deleteShiftBtn" onclick="deleteShift()"
                     style="padding:8px 16px;border:1px solid #ef4444;border-radius:8px;background:white;color:#ef4444;font-size:0.875rem;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:6px">
-                    🗑 Supprimer
+                    Supprimer
                 </button>
                 {{-- Annuler + Enregistrer à droite --}}
                 <div style="display:flex;gap:10px">
@@ -230,13 +230,13 @@
         <div style="display:flex;gap:8px;margin-left:auto">
             <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Rechercher par nom..." style="min-width:180px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem">
             <select name="department" style="min-width:150px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem">
-                <option value="">Tous les services</option>
+                <option value="">Departements</option>
                 @foreach($departments ?? [] as $dept)
                     <option value="{{ $dept }}" {{ $department == $dept ? 'selected' : '' }}>{{ $dept }}</option>
                 @endforeach
             </select>
           <select name="room_id" class="form-control">
-    <option value="">Toutes les salles</option>
+    <option value="">salles</option>
     @foreach($rooms ?? [] as $room)
         <option value="{{ $room->id }}"
             {{ request('room_id') == $room->id ? 'selected' : '' }}>
@@ -253,15 +253,11 @@
 </div>
 @endisset
 @else
-<div style="padding: 20px; background: #fee; border: 1px solid #fcc; border-radius: 8px; margin-bottom: 20px;">
-    <strong>Erreur Planning:</strong> {{ $error ?? 'Erreur inconnue' }}
-</div>
+
 @endif
 
 
-<div style="background:var(--surface-2);padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:0.85rem;color:var(--text-muted)">
-    💡 <strong>Glisser-Déposer :</strong> Déplacez un shift d'un employé vers un autre. &nbsp;|&nbsp; 🖊 <strong>Cliquez</strong> sur un shift pour le modifier ou le supprimer.
-</div>
+
 
 
 {{-- ══════════════════════════════════════
@@ -452,7 +448,7 @@
                 @empty
                 <tr>
                     <td colspan="8" style="padding:40px;text-align:center;color:var(--text-muted)">
-                        <div style="font-size:2rem;margin-bottom:8px">📅</div>
+                        <div style="font-size:2rem;margin-bottom:8px"></div>
                         <div>Aucun employé trouvé</div>
                     </td>
                 </tr>
@@ -462,25 +458,7 @@
     </div>
 </div>
 
-{{-- Légende --}}
-<div style="display:flex;gap:20px;margin-top:16px;flex-wrap:wrap">
-    <div style="display:flex;align-items:center;gap:8px">
-        <div style="width:16px;height:16px;background:linear-gradient(135deg,#0ea5e9,#38bdf8);border-radius:4px"></div>
-        <span style="font-size:0.8rem">Matin</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px">
-        <div style="width:16px;height:16px;background:linear-gradient(135deg,#f59e0b,#fbbf24);border-radius:4px"></div>
-        <span style="font-size:0.8rem">Après-midi</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px">
-        <div style="width:16px;height:16px;background:linear-gradient(135deg,#6366f1,#818cf8);border-radius:4px"></div>
-        <span style="font-size:0.8rem">Nuit</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px">
-        <div style="width:16px;height:16px;background:linear-gradient(135deg,#ef4444,#f87171);border-radius:4px"></div>
-        <span style="font-size:0.8rem">Garde</span>
-    </div>
-    
+
 
 {{-- ══════════════════════════════════════
      SCRIPTS

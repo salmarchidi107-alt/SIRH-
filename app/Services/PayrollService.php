@@ -48,7 +48,7 @@ class PayrollService
 
         // ─── Type de salaire (mensuel / horaire) ──────────────────
         $salaryType = $data['salary_type'] ?? $employee->default_salary_type ?? 'monthly';
-        
+
         // ─── Déterminer le salaire de base ─────────────────────────
         if ($salaryType === 'hourly') {
             $workingHours = (float) ($data['working_hours'] ?? $salary->working_hours ?? 0);
@@ -79,19 +79,19 @@ class PayrollService
         $seniorityBonus = round($base * $employee->seniority_rate, 2);
 
         // 3. Heures supplémentaires
-        $hourlyRate   = $base / self::LEGAL_HOURS;
-        $otDayAmount     = round($hourlyRate * $overtimeHoursDay * (self::OT_DAY_RATE - 1), 2);
+        $hourlyRate      = $base / self::LEGAL_HOURS;
+        $otDayAmount     = round($hourlyRate * $overtimeHoursDay   * (self::OT_DAY_RATE   - 1), 2);
         $otNightAmount   = round($hourlyRate * $overtimeHoursNight * (self::OT_NIGHT_RATE - 1), 2);
-        $otWeekendAmount = round($hourlyRate * $overtimeHoursWe * (self::OT_DAY_RATE - 1), 2);
+        $otWeekendAmount = round($hourlyRate * $overtimeHoursWe    * (self::OT_DAY_RATE   - 1), 2);
         $totalOtAmount   = $otDayAmount + $otNightAmount + $otWeekendAmount;
 
         // 4. Primes et indemnités
-        $performanceBonus      = (float) ($data['performance_bonus'] ?? 0);
-        $transportAllowance    = (float) ($data['transport_allowance'] ?? 0);
-        $mealAllowance         = (float) ($data['meal_allowance'] ?? 0);
-        $housingAllowance      = (float) ($data['housing_allowance'] ?? 0);
-        $responsibilityAllow   = (float) ($data['responsibility_allowance'] ?? 0);
-        $otherGains            = (float) ($data['other_gains'] ?? 0);
+        $performanceBonus    = (float) ($data['performance_bonus']        ?? 0);
+        $transportAllowance  = (float) ($data['transport_allowance']      ?? 0);
+        $mealAllowance       = (float) ($data['meal_allowance']           ?? 0);
+        $housingAllowance    = (float) ($data['housing_allowance']        ?? 0);
+        $responsibilityAllow = (float) ($data['responsibility_allowance'] ?? 0);
+        $otherGains          = (float) ($data['other_gains']              ?? 0);
 
         // 5. Salaire brut total
         $grossSalary = $base
@@ -112,24 +112,22 @@ class PayrollService
         $modeCotisation = $data['mode_cotisation'] ?? 'auto';
 
         if ($modeCotisation === 'manual') {
-            // Mode manuel
             $cnss = (float) ($data['cnss_deduction_manual'] ?? 0);
-            $amo  = (float) ($data['amo_deduction_manual'] ?? 0);
-            $fp   = (float) ($data['fp_deduction_manual'] ?? 0);
+            $amo  = (float) ($data['amo_deduction_manual']  ?? 0);
+            $fp   = (float) ($data['fp_deduction_manual']   ?? 0);
         } else {
-            // Mode automatique
             $cnssBase = min($grossSalary, self::CNSS_CEILING);
-            $cnss     = round($cnssBase * self::CNSS_RATE_SAL, 2);
-            $amo      = round($grossSalary * self::AMO_RATE, 2);
+            $cnss     = round($cnssBase    * self::CNSS_RATE_SAL, 2);
+            $amo      = round($grossSalary * self::AMO_RATE,      2);
             $fp       = min(round($grossSalary * self::FP_RATE, 2), self::FP_MAX_MONTHLY);
         }
 
         // 7. Retenues salariales
-        $absenceDeduction     = (float) ($data['absence_deduction'] ?? 0);
-        $advanceDeduction     = (float) ($data['advance_deduction'] ?? 0);
-        $loanDeduction        = (float) ($data['loan_deduction'] ?? 0);
+        $absenceDeduction     = (float) ($data['absence_deduction']     ?? 0);
+        $advanceDeduction     = (float) ($data['advance_deduction']     ?? 0);
+        $loanDeduction        = (float) ($data['loan_deduction']        ?? 0);
         $garnishmentDeduction = (float) ($data['garnishment_deduction'] ?? 0);
-        $otherDeductions      = (float) ($data['other_deductions'] ?? 0);
+        $otherDeductions      = (float) ($data['other_deductions']      ?? 0);
 
         // 8. Net imposable mensuel
         $taxableIncome = max(0, round($grossSalary - $cnss - $amo - $fp, 2));
@@ -137,20 +135,20 @@ class PayrollService
         // 9. IR (calcul annuel ÷ 12)
         $ir = round($this->calculateIR(
             $taxableIncome * 12,
-            $employee->family_status ?? 'celibataire',
+            $employee->family_status   ?? 'celibataire',
             (int) ($employee->children_count ?? 0)
         ) / 12, 2);
 
         // 10. Net à payer
         $netSalary = round(
-            $grossSalary 
-            - $cnss 
-            - $amo 
-            - $ir 
-            - $absenceDeduction 
-            - $advanceDeduction 
-            - $loanDeduction 
-            - $garnishmentDeduction 
+            $grossSalary
+            - $cnss
+            - $amo
+            - $ir
+            - $absenceDeduction
+            - $advanceDeduction
+            - $loanDeduction
+            - $garnishmentDeduction
             - $otherDeductions, 2
         );
 
@@ -166,7 +164,7 @@ class PayrollService
             'absence_hours'            => $absenceHours,
             'delay_hours'              => $delayHours,
             'base_salary'              => $base,
-            'overtime_hours'           => (float)($overtimeHoursDay + $overtimeHoursNight + $overtimeHoursWe),
+            'overtime_hours'           => (float) ($overtimeHoursDay + $overtimeHoursNight + $overtimeHoursWe),
             'overtime_day_amount'      => $otDayAmount,
             'overtime_night_amount'    => $otNightAmount,
             'overtime_weekend_amount'  => $otWeekendAmount,
@@ -179,12 +177,12 @@ class PayrollService
             'other_gains'              => $otherGains,
             'gross_salary'             => $grossSalary,
             'mode_cotisation'          => $modeCotisation,
-            'cnss_deduction'           => $modeCotisation === 'auto' ? $cnss : (float)($data['cnss_deduction_manual'] ?? 0),
+            'cnss_deduction'           => $modeCotisation === 'auto'   ? $cnss : (float) ($data['cnss_deduction_manual'] ?? 0),
             'cnss_deduction_manual'    => $modeCotisation === 'manual' ? $cnss : null,
-            'amo_deduction'            => $modeCotisation === 'auto' ? $amo : (float)($data['amo_deduction_manual'] ?? 0),
-            'amo_deduction_manual'     => $modeCotisation === 'manual' ? $amo : null,
-            'fp_deduction'             => $modeCotisation === 'auto' ? $fp : (float)($data['fp_deduction_manual'] ?? 0),
-            'fp_deduction_manual'      => $modeCotisation === 'manual' ? $fp : null,
+            'amo_deduction'            => $modeCotisation === 'auto'   ? $amo  : (float) ($data['amo_deduction_manual']  ?? 0),
+            'amo_deduction_manual'     => $modeCotisation === 'manual' ? $amo  : null,
+            'fp_deduction'             => $modeCotisation === 'auto'   ? $fp   : (float) ($data['fp_deduction_manual']   ?? 0),
+            'fp_deduction_manual'      => $modeCotisation === 'manual' ? $fp   : null,
             'taxable_income'           => $taxableIncome,
             'ir_deduction'             => $ir,
             'absence_deduction'        => $absenceDeduction,
@@ -218,7 +216,7 @@ class PayrollService
         if ($familyStatus === 'marie') {
             $familyDeduction += 360;
         }
-        $familyDeduction += min($children, 6) * 360; // Plafonné à 6 enfants
+        $familyDeduction += min($children, 6) * 360;
 
         return max(0, $ir - $familyDeduction);
     }
@@ -227,38 +225,47 @@ class PayrollService
 
     /**
      * Récupère les heures travaillées d'un employé pour un mois donné
-     * depuis la table pointages
+     * depuis la table pointages.
+     *
+     * Corrections appliquées (colonnes réelles du modèle Pointage) :
+     *   - heures_realisees    → heures_travaillees
+     *   - heures_supp_jour    → heures_supplementaires  (total HS, non ventilé)
+     *   - heures_supp_nuit    → 0  (colonne inexistante)
+     *   - heures_supp_weekend → 0  (colonne inexistante)
+     *   - heures_absence      → déduit depuis statut 'absent' / 'absence_injustifiee' × 8 h
+     *   - heures_retard       → 0  (colonne inexistante)
      */
     public function getMonthlyWorkingHours(int $employeeId, int $month, int $year): array
     {
         $pointages = \App\Models\Pointage::where('employee_id', $employeeId)
-            ->whereYear('date', $year)
+            ->whereYear('date',  $year)
             ->whereMonth('date', $month)
             ->get();
 
-        $workingHours = 0;
-        $overtimeHoursDay = 0;
-        $overtimeHoursNight = 0;
-        $overtimeHoursWeekend = 0;
-        $absenceHours = 0;
-        $delayHours = 0;
+        $workingHours  = 0;
+        $overtimeHours = 0;
+        $absenceHours  = 0;
 
         foreach ($pointages as $p) {
-            $workingHours += (float) ($p->heures_realisees ?? 0);
-            $overtimeHoursDay += (float) ($p->heures_supp_jour ?? 0);
-            $overtimeHoursNight += (float) ($p->heures_supp_nuit ?? 0);
-            $overtimeHoursWeekend += (float) ($p->heures_supp_weekend ?? 0);
-            $absenceHours += (float) ($p->heures_absence ?? 0);
-            $delayHours += (float) ($p->heures_retard ?? 0);
+            // Heures réellement travaillées (colonne réelle du modèle)
+            $workingHours  += (float) ($p->heures_travaillees    ?? 0);
+
+            // Total heures supplémentaires (toutes majorations confondues)
+            $overtimeHours += (float) ($p->heures_supplementaires ?? 0);
+
+            // Absences : statut absent → on compte 8 h par journée manquée
+            if (in_array($p->statut, ['absent', 'absence_injustifiee'])) {
+                $absenceHours += 8.0;
+            }
         }
 
         return [
-            'working_hours'     => round($workingHours, 2),
-            'overtime_day'      => round($overtimeHoursDay, 2),
-            'overtime_night'    => round($overtimeHoursNight, 2),
-            'overtime_weekend'  => round($overtimeHoursWeekend, 2),
-            'absence_hours'     => round($absenceHours, 2),
-            'delay_hours'       => round($delayHours, 2),
+            'working_hours'    => round($workingHours,  2),
+            'overtime_day'     => round($overtimeHours, 2), // toutes HS traitées comme "jour" par défaut
+            'overtime_night'   => 0,                        // non stocké dans pointages
+            'overtime_weekend' => 0,                        // non stocké dans pointages
+            'absence_hours'    => round($absenceHours,  2),
+            'delay_hours'      => 0,                        // non stocké dans pointages
         ];
     }
 
@@ -267,9 +274,6 @@ class PayrollService
     public function simulate(Employee $employee, array $data): array
     {
         $salary = $this->calculate($employee, $data);
-
-        // Retour d'une simulation sans sauvegarder
-        // On récupère le record puis on le supprime si c'était draft
         $result = $salary->toArray();
         return $result;
     }
@@ -279,7 +283,7 @@ class PayrollService
     public function getMonthlySummary(int $month, int $year): array
     {
         $cacheKey = "payroll.summary.{$month}.{$year}";
-        
+
         return cache()->remember($cacheKey, now()->addHour(), function () use ($month, $year) {
             $stats = Salary::where('month', $month)
                 ->where('year', $year)
@@ -291,36 +295,35 @@ class PayrollService
                     SUM(ir_deduction) as total_ir,
                     SUM(net_salary) as total_net,
                     SUM(CASE WHEN status = "validated" THEN 1 ELSE 0 END) as count_validated,
-                    SUM(CASE WHEN status = "paid" THEN 1 ELSE 0 END) as count_paid,
-                    SUM(CASE WHEN status = "draft" THEN 1 ELSE 0 END) as count_draft,
+                    SUM(CASE WHEN status = "paid"      THEN 1 ELSE 0 END) as count_paid,
+                    SUM(CASE WHEN status = "draft"     THEN 1 ELSE 0 END) as count_draft,
                     SUM(LEAST(gross_salary, ' . self::CNSS_CEILING . ')) as cnss_bases,
                     SUM(gross_salary) as total_gross_for_rates
                 ')
                 ->first();
 
-            $cnssCeilSum = $stats->cnss_bases ?? 0;
-            $grossSum = $stats->total_gross_for_rates ?? 0;
+            $cnssCeilSum = $stats->cnss_bases          ?? 0;
+            $grossSum    = $stats->total_gross_for_rates ?? 0;
 
             return [
-                'total_gross'           => (float) ($stats->total_gross ?? 0),
-                'total_cnss_sal'        => (float) ($stats->total_cnss_sal ?? 0),
-                'total_amo_sal'         => (float) ($stats->total_amo_sal ?? 0),
-                'total_ir'              => (float) ($stats->total_ir ?? 0),
-                'total_net'             => (float) ($stats->total_net ?? 0),
-                'count'                 => (int) $stats->count,
-                'count_validated'       => (int) $stats->count_validated,
-                'count_paid'            => (int) $stats->count_paid,
-                'count_draft'           => (int) $stats->count_draft,
-                'total_employer_cnss'   => round($cnssCeilSum * self::CNSS_RATE_PAT, 2),
-                'total_employer_amo'    => round($grossSum * self::AMO_RATE, 2),
-                'total_employer_tfp'    => round($grossSum * self::TFP_RATE, 2),
-                'total_employer_cost'   => round(
-                    $cnssCeilSum * self::CNSS_RATE_PAT + 
-                    $grossSum * self::AMO_RATE + 
-                    $grossSum * self::TFP_RATE, 2
+                'total_gross'         => (float) ($stats->total_gross   ?? 0),
+                'total_cnss_sal'      => (float) ($stats->total_cnss_sal ?? 0),
+                'total_amo_sal'       => (float) ($stats->total_amo_sal  ?? 0),
+                'total_ir'            => (float) ($stats->total_ir       ?? 0),
+                'total_net'           => (float) ($stats->total_net      ?? 0),
+                'count'               => (int)   $stats->count,
+                'count_validated'     => (int)   $stats->count_validated,
+                'count_paid'          => (int)   $stats->count_paid,
+                'count_draft'         => (int)   $stats->count_draft,
+                'total_employer_cnss' => round($cnssCeilSum * self::CNSS_RATE_PAT, 2),
+                'total_employer_amo'  => round($grossSum    * self::AMO_RATE,      2),
+                'total_employer_tfp'  => round($grossSum    * self::TFP_RATE,      2),
+                'total_employer_cost' => round(
+                    $cnssCeilSum * self::CNSS_RATE_PAT +
+                    $grossSum    * self::AMO_RATE       +
+                    $grossSum    * self::TFP_RATE, 2
                 ),
             ];
         });
     }
-
 }

@@ -26,7 +26,7 @@
         <a href="<?php echo e(route('employees.export-pdf', request()->query())); ?>"
            class="btn btn-success"
            title="Exporter en PDF">
-            📄 PDF
+             PDF
         </a>
 
         
@@ -65,7 +65,7 @@
             <input type="text" name="search" placeholder="Rechercher un employé..." value="<?php echo e(request('search')); ?>">
         </div>
         <select name="department" class="filter-select" onchange="this.form.submit()">
-            <option value="">Tous les services</option>
+            <option value="">Departements</option>
             <?php $__currentLoopData = $departments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dept): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <option value="<?php echo e($dept); ?>" <?php echo e(request('department') == $dept ? 'selected' : ''); ?>><?php echo e($dept); ?></option>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>

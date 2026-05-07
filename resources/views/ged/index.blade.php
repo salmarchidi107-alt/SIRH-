@@ -5,15 +5,6 @@
 
 @section('content')
 <div class="container-fluid py-4 px-4">
-
-    
-    @if($errors->any())
-        <div class="alert alert-danger alert-dismissible fade show mb-4">
-            <ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
     {{-- Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -41,27 +32,8 @@
                     <input type="hidden" name="_method" id="methodInput" value="POST">
 
                     <div class="row g-4">
-                        <div class="col-lg-6">
-                            <label class="ged-label">Nom de Document <span class="text-danger">*</span></label>
-                            <input type="text" name="nom" id="inputNom" class="ged-input"
-                                   placeholder="Ex: Attestation de travail" required>
-                        </div>
-                        <div class="col-lg-6">
-                            <label class="ged-label">Employé <span class="text-danger">*</span></label>
-                            <div class="ged-select-wrap">
-                                <select name="employe_id" id="inputEmploye" class="ged-select" required>
-                                    <option value="">— Sélectionner un employé —</option>
-                                    @foreach($employes as $emp)
-                                        <option value="{{ $emp->id }}">
-                                            {{-- APRÈS --}}
-                                            {{ $emp->last_name }} {{ $emp->first_name }}
-                                            @if($emp->matricule) ({{ $emp->matricule }}) @endif
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <i class="fas fa-chevron-down ged-select-icon"></i>
-                            </div>
-                        </div>
+
+                        {{--  Modèle EN PREMIER pour que le nom se remplisse automatiquement --}}
                         <div class="col-lg-6">
                             <label class="ged-label">Modèle <span class="text-danger">*</span></label>
                             <div class="ged-select-wrap">
@@ -74,11 +46,40 @@
                                 <i class="fas fa-chevron-down ged-select-icon"></i>
                             </div>
                         </div>
+
+                        {{--  Nom du document : readonly, auto-rempli par le modèle choisi --}}
+                        <div class="col-lg-6">
+                            <label class="ged-label">
+                                Nom de Document <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" name="nom" id="inputNom" class="ged-input"
+                                   placeholder="Sera rempli selon le modèle choisi"
+                                   readonly required
+                                   style="background:#f8fafc;cursor:not-allowed;color:#64748b;border-color:#e2e8f0;">
+                        </div>
+
+                        <div class="col-lg-6">
+                            <label class="ged-label">Employé <span class="text-danger">*</span></label>
+                            <div class="ged-select-wrap">
+                                <select name="employe_id" id="inputEmploye" class="ged-select" required>
+                                    <option value="">— Sélectionner un employé —</option>
+                                    @foreach($employes as $emp)
+                                        <option value="{{ $emp->id }}">
+                                            {{ $emp->last_name }} {{ $emp->first_name }}
+                                            @if($emp->matricule) ({{ $emp->matricule }}) @endif
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <i class="fas fa-chevron-down ged-select-icon"></i>
+                            </div>
+                        </div>
+
                         <div class="col-lg-6">
                             <label class="ged-label">Date du Document <span class="text-danger">*</span></label>
                             <input type="date" name="date_document" id="inputDate" class="ged-input"
                                    value="{{ now()->format('Y-m-d') }}" required>
                         </div>
+
                     </div>
 
                     <div class="d-flex gap-3 mt-4 pt-3" style="border-top:1px solid #e2e8f0;">
@@ -161,7 +162,7 @@
                             {{ $doc->date_document->format('d/m/Y') }}
                         </td>
 
-                        {{-- ── ACTIONS — tous sur une seule ligne ── --}}
+                        {{-- ── ACTIONS ── --}}
                         <td class="py-3 px-4" style="white-space:nowrap;">
                             <div style="display:flex;flex-direction:row;align-items:center;
                                         justify-content:center;gap:6px;flex-wrap:nowrap;">
@@ -176,13 +177,12 @@
                                 </a>
 
                                 {{-- Modifier --}}
-
                                 <a href="{{ route('ged.edit', $doc) }}"
-                                title="Modifier"
-                                style="display:inline-flex;align-items:center;justify-content:center;
-                                    width:32px;height:32px;border-radius:8px;flex-shrink:0;
-                                    border:1.5px solid #e2e8f0;background:#fff;
-                                    color:#374151;text-decoration:none;">
+                                   title="Modifier"
+                                   style="display:inline-flex;align-items:center;justify-content:center;
+                                          width:32px;height:32px;border-radius:8px;flex-shrink:0;
+                                          border:1.5px solid #e2e8f0;background:#fff;
+                                          color:#374151;text-decoration:none;">
                                     <i class="fas fa-pen" style="font-size:12px;"></i>
                                 </a>
 
@@ -205,7 +205,6 @@
                     @empty
                     <tr>
                         <td colspan="5" class="text-center py-5">
-                            <i class="fas fa-folder-open fa-3x mb-3 d-block" style="color:#cbd5e1;"></i>
                             <p class="mb-0 fw-semibold text-muted">Aucun document pour le moment</p>
                             <small class="text-muted">Cliquez sur "Nouveau Document" pour commencer</small>
                         </td>
@@ -216,32 +215,32 @@
         </div>
 
         @if($documents->hasPages())
-<div class="card-footer bg-white border-0 py-3 px-4">
-    <div class="d-flex justify-content-end">
-        <nav>
-            <ul class="pagination mb-0" style="list-style:none;padding-left:0;">
-                @if($documents->onFirstPage())
-                    <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
-                @else
-                    <li class="page-item"><a class="page-link" href="{{ $documents->previousPageUrl() }}">&laquo;</a></li>
-                @endif
+        <div class="card-footer bg-white border-0 py-3 px-4">
+            <div class="d-flex justify-content-end">
+                <nav>
+                    <ul class="pagination mb-0" style="list-style:none;padding-left:0;">
+                        @if($documents->onFirstPage())
+                            <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                        @else
+                            <li class="page-item"><a class="page-link" href="{{ $documents->previousPageUrl() }}">&laquo;</a></li>
+                        @endif
 
-                @foreach($documents->getUrlRange(1, $documents->lastPage()) as $page => $url)
-                    <li class="page-item {{ $page == $documents->currentPage() ? 'active' : '' }}">
-                        <a class="page-link" href="{{ $url }}">{{ $page }}</a>
-                    </li>
-                @endforeach
+                        @foreach($documents->getUrlRange(1, $documents->lastPage()) as $page => $url)
+                            <li class="page-item {{ $page == $documents->currentPage() ? 'active' : '' }}">
+                                <a class="page-link" href="{{ $url }}">{{ $page }}</a>
+                            </li>
+                        @endforeach
 
-                @if($documents->hasMorePages())
-                    <li class="page-item"><a class="page-link" href="{{ $documents->nextPageUrl() }}">&raquo;</a></li>
-                @else
-                    <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
-                @endif
-            </ul>
-        </nav>
-    </div>
-</div>
-@endif
+                        @if($documents->hasMorePages())
+                            <li class="page-item"><a class="page-link" href="{{ $documents->nextPageUrl() }}">&raquo;</a></li>
+                        @else
+                            <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                        @endif
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        @endif
     </div>
 
 </div>
@@ -310,20 +309,36 @@
 
 @push('scripts')
 <script>
+//  Map id → nom des modèles pour l'auto-remplissage
+const nomsModeles = {
+    @foreach($modeles as $m)
+    {{ $m->id }}: @json($m->nom),
+    @endforeach
+};
+
+//  Quand le modèle change, remplir automatiquement le champ Nom
+document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('inputModele').addEventListener('change', function () {
+        document.getElementById('inputNom').value = nomsModeles[this.value] ?? '';
+    });
+});
+
 function toggleForm() {
-    const c = document.getElementById('docFormContainer');
+    const c     = document.getElementById('docFormContainer');
     const table = document.getElementById('tableDocuments');
     const isOpen = c.style.display === 'block';
     if (isOpen) {
-        c.style.display = 'none';
+        c.style.display     = 'none';
         table.style.display = 'block';
         resetForm();
     } else {
-        c.style.display = 'block';
+        c.style.display     = 'block';
         table.style.display = 'none';
         document.getElementById('formTitle').textContent = 'Nouveau Document';
         document.getElementById('inputDate').value = new Date().toISOString().split('T')[0];
-        document.getElementById('inputNom').focus();
+        // Reset le select modèle et le nom
+        document.getElementById('inputModele').value = '';
+        document.getElementById('inputNom').value    = '';
         c.scrollIntoView({ behavior: 'smooth' });
     }
 }
@@ -332,15 +347,16 @@ function resetForm() {
     const form = document.getElementById('docForm');
     form.reset();
     form.action = "{{ route('ged.store') }}";
-    document.getElementById('methodInput').value = 'POST';
+    document.getElementById('methodInput').value    = 'POST';
     document.getElementById('formTitle').textContent = 'Nouveau Document';
+    document.getElementById('inputNom').value        = '';
 }
 
 function editDoc(id, nom, employeId, modeleId, date) {
     document.getElementById('docFormContainer').style.display = 'block';
     document.getElementById('formTitle').textContent = 'Modifier le Document';
-    document.getElementById('inputNom').value  = nom;
-    document.getElementById('inputDate').value = date;
+    document.getElementById('inputNom').value   = nom;
+    document.getElementById('inputDate').value  = date;
     if (employeId) document.getElementById('inputEmploye').value = employeId;
     if (modeleId)  document.getElementById('inputModele').value  = modeleId;
     const form = document.getElementById('docForm');

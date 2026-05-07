@@ -19,9 +19,10 @@
   0%   { transform: scale(.7); opacity: .6; }
   100% { transform: scale(2);  opacity: 0; }
 }
-.result-ripple.entree { background: rgba(13,148,136,.4); }
-.result-ripple.sortie { background: rgba(245,158,11,.4); }
-.result-ripple.pause  { background: rgba(99,102,241,.4); }
+.result-ripple.entree        { background: rgba(13,148,136,.4); }
+.result-ripple.sortie        { background: rgba(245,158,11,.4); }
+.result-ripple.pause_start   { background: rgba(99,102,241,.4); }
+.result-ripple.retour_pause  { background: rgba(34,197,94,.4); }
 
 .result-icon {
   width: 100px; height: 100px; border-radius: 28px;
@@ -33,18 +34,10 @@
   from { transform: scale(0) rotate(-10deg); opacity:0; }
   to   { transform: scale(1) rotate(0);      opacity:1; }
 }
-.result-icon.entree {
-  background: linear-gradient(135deg, var(--teal), var(--teal2));
-  box-shadow: 0 16px 48px rgba(13,148,136,.5);
-}
-.result-icon.sortie {
-  background: linear-gradient(135deg, #d97706, #b45309);
-  box-shadow: 0 16px 48px rgba(245,158,11,.4);
-}
-.result-icon.pause {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
-  box-shadow: 0 16px 48px rgba(99,102,241,.4);
-}
+.result-icon.entree       { background: linear-gradient(135deg, var(--teal), var(--teal2)); box-shadow: 0 16px 48px rgba(13,148,136,.5); }
+.result-icon.sortie       { background: linear-gradient(135deg, #d97706, #b45309); box-shadow: 0 16px 48px rgba(245,158,11,.4); }
+.result-icon.pause_start  { background: linear-gradient(135deg, #6366f1, #4f46e5); box-shadow: 0 16px 48px rgba(99,102,241,.4); }
+.result-icon.retour_pause { background: linear-gradient(135deg, #16a34a, #15803d); box-shadow: 0 16px 48px rgba(34,197,94,.4); }
 
 .result-card {
   background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
@@ -62,9 +55,10 @@
   font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em;
   margin-bottom: 8px;
 }
-.result-type.entree { color: var(--teal2); }
-.result-type.sortie { color: var(--amber); }
-.result-type.pause  { color: #818cf8; }
+.result-type.entree       { color: var(--teal2); }
+.result-type.sortie       { color: var(--amber); }
+.result-type.pause_start  { color: #818cf8; }
+.result-type.retour_pause { color: #4ade80; }
 
 .result-name {
   font-size: 28px; font-weight: 800; letter-spacing: -.5px; margin-bottom: 4px;
@@ -76,9 +70,10 @@
   font-size: 56px; font-weight: 500; letter-spacing: -3px;
   line-height: 1; margin: 8px 0;
 }
-.result-time-big.entree { color: var(--teal2); }
-.result-time-big.sortie { color: var(--amber); }
-.result-time-big.pause  { color: #818cf8; }
+.result-time-big.entree       { color: var(--teal2); }
+.result-time-big.sortie       { color: var(--amber); }
+.result-time-big.pause_start  { color: #818cf8; }
+.result-time-big.retour_pause { color: #4ade80; }
 .result-time-label {
   font-size: 12px; color: rgba(255,255,255,.35);
   text-transform: uppercase; letter-spacing: .08em;
@@ -101,11 +96,9 @@
   font-family: 'DM Mono', monospace;
   line-height: 1.1; margin-bottom: 4px;
 }
-.shift-cell-value.heure-sortie { color: var(--amber); }
-.shift-cell-value.total-heures {
-  color: var(--green); font-size: 28px;
-  text-shadow: 0 2px 8px rgba(34,197,94,.3);
-}
+.shift-cell-value.heure-sortie  { color: var(--amber); }
+.shift-cell-value.total-heures  { color: var(--green); font-size: 28px; text-shadow: 0 2px 8px rgba(34,197,94,.3); }
+.shift-cell-value.pause-retour  { color: #4ade80; }
 
 .result-actions { display: flex; flex-direction: column; gap: 12px; }
 .btn-logout-sm {
@@ -128,36 +121,47 @@
   $tz      = 'Africa/Casablanca';
   $nowCasa = \Carbon\Carbon::now($tz);
 
+  // ✅ CORRIGÉ : tous les types sont gérés
   $typeIcon = match($type) {
-    'entree' => '📥',
-    'sortie' => '📤',
-    'pause'  => '⏸',
-    default  => '✅',
+    'entree'       => '📥',
+    'sortie'       => '📤',
+    'pause_start'  => '⏸',
+    'retour_pause' => '↩️',
+    default        => '✅',
   };
 
   $typeLabel = match($type) {
-    'entree' => '✓ Entrée enregistrée',
-    'sortie' => '✓ Sortie enregistrée',
-    'pause'  => '⏸ Pause enregistrée',
-    default  => '✓ Pointage enregistré',
+    'entree'       => '✓ Entrée enregistrée',
+    'sortie'       => '✓ Sortie enregistrée',
+    'pause_start'  => '⏸ Début de pause enregistré',
+    'retour_pause' => '↩ Retour de pause enregistré',  // ✅ ajouté
+    default        => '✓ Pointage enregistré',
   };
 
   $timeLabel = match($type) {
-    'entree' => "Heure d'arrivée",
-    'sortie' => 'Heure de départ',
-    'pause'  => 'Heure de pause',
-    default  => 'Heure',
+    'entree'       => "Heure d'arrivée",
+    'sortie'       => 'Heure de départ',
+    'pause_start'  => 'Début de pause',
+    'retour_pause' => 'Retour de pause',               // ✅ ajouté
+    default        => 'Heure',
   };
 
+  // ✅ CORRIGÉ : displayTime affiche le bon horaire selon le type
   $displayTime = match($type) {
-    'entree' => $todayShift['first_entree'] ?? $nowCasa->format('H:i'),
-    'sortie' => $todayShift['last_sortie']  ?? $nowCasa->format('H:i'),
-    'pause'  => $todayShift['pause_start']  ?? $nowCasa->format('H:i'),
-    default  => $nowCasa->format('H:i'),
+    'entree'       => $todayShift['first_entree'] ?? $nowCasa->format('H:i'),
+    'sortie'       => $todayShift['last_sortie']  ?? $nowCasa->format('H:i'),
+    'pause_start'  => $todayShift['pause_start']  ?? $nowCasa->format('H:i'),
+    'retour_pause' => $todayShift['pause_end']    ?? $nowCasa->format('H:i'), // ✅ pause_end
+    default        => $nowCasa->format('H:i'),
   };
 
-  // Classe CSS : sortie et pause → couleur différente
-  $typeClass = in_array($type, ['entree','sortie','pause']) ? $type : 'entree';
+  // ✅ Classe CSS valide pour chaque type
+  $typeClass = in_array($type, ['entree', 'sortie', 'pause_start', 'retour_pause'])
+    ? $type
+    : 'entree';
+
+  // ✅ Afficher la section pause si pause_start OU retour_pause sont remplis
+  $showPauseSection = ! empty($todayShift['pause_start']) || ! empty($todayShift['pause_end']);
 ?>
 
 <div class="result-wrap">
@@ -203,24 +207,35 @@
       </div>
       <div class="shift-cell">
         <div class="shift-cell-label">⏱ Total</div>
-        <div class="shift-cell-value total-heures"><?php echo e($todayShift['total_human'] ?? '—'); ?></div>
+        <div class="shift-cell-value total-heures"><?php echo e($todayShift['total_human'] ?? '0h 0m'); ?></div>
       </div>
     </div>
 
-    <?php if(!empty($todayShift['pause_display'])): ?>
+    
+    <?php if($showPauseSection): ?>
     <div class="divider"></div>
     <div class="shift-grid">
       <div class="shift-cell">
         <div class="shift-cell-label">⏸ Début pause</div>
-        <div class="shift-cell-value"><?php echo e($todayShift['pause_start'] ?? '—'); ?></div>
+        <div class="shift-cell-value">
+          <?php echo e($todayShift['pause_start'] ?? '—'); ?>
+
+        </div>
       </div>
       <div class="shift-cell">
         <div class="shift-cell-label">↩ Retour</div>
-        <div class="shift-cell-value"><?php echo e($todayShift['pause_end'] ?? '—'); ?></div>
+        
+        <div class="shift-cell-value pause-retour">
+          <?php echo e($todayShift['pause_end'] ?? '—'); ?>
+
+        </div>
       </div>
       <div class="shift-cell">
         <div class="shift-cell-label">⏱ Durée pause</div>
-        <div class="shift-cell-value total-heures"><?php echo e($todayShift['total_pause_human'] ?? '—'); ?></div>
+        <div class="shift-cell-value total-heures">
+          <?php echo e($todayShift['total_pause_human'] ?? '0m'); ?>
+
+        </div>
       </div>
     </div>
     <?php endif; ?>

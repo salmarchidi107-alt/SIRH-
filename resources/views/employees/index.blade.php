@@ -28,7 +28,7 @@
         <a href="{{ route('employees.export-pdf', request()->query()) }}"
            class="btn btn-success"
            title="Exporter en PDF">
-            📄 PDF
+             PDF
         </a>
 
         {{-- PDF par département si un département est sélectionné --}}
@@ -66,7 +66,7 @@
             <input type="text" name="search" placeholder="Rechercher un employé..." value="{{ request('search') }}">
         </div>
         <select name="department" class="filter-select" onchange="this.form.submit()">
-            <option value="">Tous les services</option>
+            <option value="">Departements</option>
             @foreach($departments as $dept)
                 <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>{{ $dept }}</option>
             @endforeach

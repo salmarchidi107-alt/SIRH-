@@ -7,6 +7,8 @@ use App\Ai\Tools\EmployeeTool;
 use App\Ai\Tools\PlanningTool;
 use App\Ai\Tools\PdfTool;
 use App\Ai\Tools\SalaryTool;
+use App\Ai\Tools\PointageTool;
+
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -17,6 +19,7 @@ class AssistantRH
     private PlanningTool $planningTool;
     private PdfTool      $pdfTool;
     private SalaryTool   $salaryTool;
+    private PointageTool $pointageTool;
 
     public function __construct()
     {
@@ -25,6 +28,7 @@ class AssistantRH
         $this->planningTool = new PlanningTool();
         $this->pdfTool      = new PdfTool();
         $this->salaryTool   = new SalaryTool();
+        $this->pointageTool = new PointageTool();
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -33,51 +37,64 @@ class AssistantRH
 
     private function instructions(): string
     {
-        return <<<TXT
-Tu es AssistantRH, un assistant RH intelligent pour HospitalRH.
+        $today = now()->format('d/m/Y');
 
-RÈGLES STRICTES :
+        return <<<TXT
+Tu es AssistantRH, un assistant RH intelligent pour HospitalRH. Nous sommes le {$today}.
+
+════════════════════════════════════════
+RÈGLES ABSOLUES
+════════════════════════════════════════
 1. Réponds TOUJOURS en français.
 2. Sois clair, professionnel et concis.
-3. Pour TOUTE question sur employés, absences, planning ou salaires,
-   utilise OBLIGATOIREMENT les tools disponibles — ne jamais inventer de données.
-4. Si un tool retourne une liste vide, dis-le clairement.
-5. Formate les réponses de manière lisible.
-6. Si l'utilisateur demande un PDF, un rapport, un fichier ou un document à télécharger,
-   utilise OBLIGATOIREMENT le tool generate_pdf.
-7. Quand generate_pdf retourne PDF_DOWNLOAD::, **NE DIS RIEN d'autre**.
-   Réponds UNIQUEMENT:
-   - Info utile (ex: "PDF absences du {{today}} généré ({{count}} abs.).")
-   - PDF_DOWNLOAD:: tag EXACT **sur ligne séparée**
-   Exemple EXACT:
-   ```
-   PDF des employés actifs généré (8 employés).
+3. N'invente JAMAIS de données — utilise OBLIGATOIREMENT les tools pour toute
+   question sur employés, absences, planning, salaires ou pointages.
+4. Si un tool retourne une liste vide, annonce-le clairement.
+5. Formate les réponses de façon lisible (tableaux Markdown si disponibles).
+6. Pour tout PDF / rapport / document à télécharger → tool generate_pdf.
 
-   PDF_DOWNLOAD::http://...::fichier.pdf::Liste employés
-   ```
+════════════════════════════════════════
+RÈGLE PDF (CRITIQUE)
+════════════════════════════════════════
+Quand generate_pdf retourne un tag PDF_DOWNLOAD::, tu dois :
+  • Écrire UNE courte phrase de confirmation (ex: "PDF généré (8 employés).").
+  • Reproduire le tag EXACTEMENT tel quel sur une ligne séparée, sans modification.
+  • Ne rien ajouter d'autre (pas de "cliquez ici", pas de Markdown autour du tag).
 
-TOOLS DISPONIBLES :
-- employee_search : recherche d'employés par nom, matricule, département, poste, email, téléphone.
-- absence_today   : liste les absences approuvées en cours aujourd'hui.
-- planning_search : planning d'un employé pour une semaine donnée (nécessite matricule).
-- salary_query    : recherche bulletins de salaire par nom/matricule/mois.
-- generate_pdf    : PDF téléchargeable (absences, employees, planning, salaries).
+Exemple de réponse correcte :
+---
+PDF des absences du 14/01/2025 généré (3 absence(s)).
+
+PDF_DOWNLOAD::http://example.com/pdf/fichier.pdf::fichier.pdf::Absences du 14/01/2025
+---
+
+════════════════════════════════════════
+TOOLS DISPONIBLES ET LEUR USAGE
+════════════════════════════════════════
+
+employee_search
+  → Recherche un employé par nom, prénom, matricule, département, poste, email, téléphone.
+
+absence_today
+  → Absences approuvées EN COURS aujourd'hui.
+
+planning_search
+  → Planning hebdomadaire d'un employé (matricule obligatoire).
+
+salary_query
+  → Bulletins de salaire, masse salariale, CNSS, statistiques de paiement, PDF salaires.
+
+pointage_search
+  → Pointages (entrées/sorties) d'un employé ou de tous les employés.
+
+generate_pdf
+  → Génère un fichier PDF téléchargeable.
+  → Types : "absences" | "employees" | "planning" | "salaries"
 TXT;
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // Lecture sécurisée de la clé API
-    // ──────────────────────────────────────────────────────────────────────────
-
-    private function getApiKey(): ?string
-    {
-        return config('ai.providers.openrouter.key')
-            ?? config('services.openrouter.key')
-            ?? env('OPENROUTER_API_KEY');
-    }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Définitions OpenAI-format des tools
+    // Définitions des tools OpenAI-format
     // ──────────────────────────────────────────────────────────────────────────
 
     private function buildToolDefinitions(): array
@@ -91,15 +108,8 @@ TXT;
                     'parameters'  => [
                         'type'       => 'object',
                         'properties' => [
-                            'query' => [
-                                'type'        => 'string',
-                                'description' => 'Terme de recherche.',
-                            ],
-                            'fields' => [
-                                'type'        => 'array',
-                                'description' => 'Champs à afficher (optionnel).',
-                                'items'       => ['type' => 'string'],
-                            ],
+                            'query'  => ['type' => 'string', 'description' => 'Terme de recherche.'],
+                            'fields' => ['type' => 'array',  'description' => 'Champs à afficher (optionnel).', 'items' => ['type' => 'string']],
                         ],
                         'required' => ['query'],
                     ],
@@ -109,30 +119,20 @@ TXT;
                 'type'     => 'function',
                 'function' => [
                     'name'        => 'absence_today',
-                    'description' => 'Liste toutes les absences approuvées en cours aujourd\'hui.',
-                    'parameters'  => [
-                        'type'       => 'object',
-                        'properties' => new \stdClass(),
-                        'required'   => [],
-                    ],
+                    'description' => "Liste toutes les absences approuvées en cours aujourd'hui.",
+                    'parameters'  => ['type' => 'object', 'properties' => new \stdClass(), 'required' => []],
                 ],
             ],
             [
                 'type'     => 'function',
                 'function' => [
                     'name'        => 'planning_search',
-                    'description' => 'Retourne le planning hebdomadaire d\'un employé identifié par son matricule.',
+                    'description' => "Retourne le planning hebdomadaire d'un employé identifié par son matricule.",
                     'parameters'  => [
                         'type'       => 'object',
                         'properties' => [
-                            'matricule' => [
-                                'type'        => 'string',
-                                'description' => 'Le matricule de l\'employé (ex: EMP0001).',
-                            ],
-                            'date' => [
-                                'type'        => 'string',
-                                'description' => 'Date de référence au format YYYY-MM-DD (optionnel).',
-                            ],
+                            'matricule' => ['type' => 'string', 'description' => "Matricule de l'employé (ex: EMP0001)."],
+                            'date'      => ['type' => 'string', 'description' => 'Date de référence YYYY-MM-DD (optionnel).'],
                         ],
                         'required' => ['matricule'],
                     ],
@@ -141,37 +141,52 @@ TXT;
             [
                 'type'     => 'function',
                 'function' => [
-                    'name'        => 'generate_pdf',
-                    'description' => 'Génère un fichier PDF téléchargeable.',
+                    'name'        => 'salary_query',
+                    'description' => 'Interroge les bulletins de salaire, masse salariale, CNSS, statistiques ou génère un PDF.',
                     'parameters'  => [
                         'type'       => 'object',
                         'properties' => [
-                            'type' => [
-                                'type'        => 'string',
-                                'enum'        => ['absences', 'employees', 'planning', 'salaries'],
-                                'description' => 'Type de rapport.',
-                            ],
-                            'matricule' => ['type' => 'string'],
-                            'month'     => ['type' => 'string'],
-                            'date'      => ['type' => 'string'],
+                            'query' => ['type' => 'string',  'description' => 'Terme de recherche.'],
+                            'month' => ['type' => 'integer', 'description' => 'Mois (1-12, optionnel).'],
+                            'year'  => ['type' => 'integer', 'description' => 'Année YYYY (optionnel).'],
+                            'pdf'   => ['type' => 'boolean', 'description' => 'true pour générer un PDF.'],
                         ],
-                        'required' => ['type'],
+                        'required' => [],
                     ],
                 ],
             ],
             [
                 'type'     => 'function',
                 'function' => [
-                    'name'        => 'salary_query',
-                    'description' => 'Recherche bulletins de salaire par nom/matricule/mois.',
+                    'name'        => 'pointage_search',
+                    'description' => "Recherche les pointages d'un ou plusieurs employés sur une date ou période.",
                     'parameters'  => [
                         'type'       => 'object',
                         'properties' => [
-                            'query' => ['type' => 'string'],
-                            'month' => ['type' => 'integer'],
-                            'year'  => ['type' => 'integer'],
-                            'pdf'   => ['type' => 'boolean'],
+                            'matricule'  => ['type' => 'string', 'description' => 'Matricule (optionnel).'],
+                            'date'       => ['type' => 'string', 'description' => 'Date exacte YYYY-MM-DD (optionnel).'],
+                            'date_debut' => ['type' => 'string', 'description' => 'Début de plage YYYY-MM-DD (optionnel).'],
+                            'date_fin'   => ['type' => 'string', 'description' => 'Fin de plage YYYY-MM-DD (optionnel).'],
                         ],
+                        'required' => [],
+                    ],
+                ],
+            ],
+            [
+                'type'     => 'function',
+                'function' => [
+                    'name'        => 'generate_pdf',
+                    'description' => "Génère un fichier PDF téléchargeable.",
+                    'parameters'  => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'type'      => ['type' => 'string', 'enum' => ['absences', 'employees', 'planning', 'salaries']],
+                            'matricule' => ['type' => 'string',  'description' => 'Matricule employé (optionnel).'],
+                            'month'     => ['type' => 'integer', 'description' => 'Mois (1-12, optionnel).'],
+                            'year'      => ['type' => 'integer', 'description' => 'Année (optionnel).'],
+                            'date'      => ['type' => 'string',  'description' => 'Date YYYY-MM-DD (optionnel).'],
+                        ],
+                        'required' => ['type'],
                     ],
                 ],
             ],
@@ -191,8 +206,9 @@ TXT;
                 'employee_search' => $this->employeeTool->execute($args),
                 'absence_today'   => $this->absenceTool->execute($args),
                 'planning_search' => $this->planningTool->execute($args),
-                'salary_query'    => $this->salaryTool->execute($args),
                 'generate_pdf'    => $this->pdfTool->execute($args),
+                'salary_query'    => $this->salaryTool->execute($args),
+                'pointage_search' => $this->pointageTool->execute($args),
                 default           => "Tool inconnu : '{$name}'.",
             };
 
@@ -204,126 +220,122 @@ TXT;
             Log::error('[AssistantRH] Erreur tool', [
                 'tool'  => $name,
                 'error' => $e->getMessage(),
+                'line'  => $e->getLine(),
+                'file'  => $e->getFile(),
             ]);
             return "Erreur lors de l'exécution du tool '{$name}' : " . $e->getMessage();
         }
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // Extraction du tag PDF depuis l'historique
+    // Extraction du tag PDF depuis les messages tool
     // ──────────────────────────────────────────────────────────────────────────
 
     private function extractPdfTag(array $messages): ?string
     {
         foreach (array_reverse($messages) as $msg) {
-            if (
-                ($msg['role'] ?? '') === 'tool' &&
-                ($msg['name'] ?? '') === 'generate_pdf'
-            ) {
-                $content = trim($msg['content'] ?? '');
-                if (str_starts_with($content, 'PDF_DOWNLOAD::')) {
-                    return $content;
-                }
+            if (($msg['role'] ?? '') !== 'tool') {
+                continue;
+            }
+            $content = trim($msg['content'] ?? '');
+            if (preg_match('/(PDF_DOWNLOAD::[^\s]+::[^\s]+::[^\n]+)/', $content, $matches)) {
+                return $matches[1];
             }
         }
         return null;
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // Point d'entrée principal — retourne un tableau simple ['success', 'text']
-    // Plus de dépendance à Laravel\Ai\Responses\AgentResponse
+    // Point d'entrée principal
     // ──────────────────────────────────────────────────────────────────────────
 
-    public function prompt(string $userMessage, string $model = 'openai/gpt-4o-mini'): array
+    public function prompt(string $prompt): array
     {
-        $key = $this->getApiKey();
+        $key = config('ai.providers.openrouter.key')
+            ?? config('services.openrouter.key')
+            ?? env('OPENROUTER_API_KEY');
 
-        if (empty($key)) {
+        if (!$key) {
             Log::error('[AssistantRH] Clé API OpenRouter manquante');
             return [
-                'success' => false,
-                'text'    => 'Clé API OpenRouter manquante. Vérifiez OPENROUTER_API_KEY dans votre .env.',
+                'text'  => '⚠️ Clé API OpenRouter manquante. Vérifiez OPENROUTER_API_KEY dans votre .env.',
+                'error' => true,
             ];
         }
 
+        $model = 'openai/gpt-4o-mini';
+
         $messages = [
             ['role' => 'system', 'content' => $this->instructions()],
-            ['role' => 'user',   'content' => $userMessage],
+            ['role' => 'user',   'content' => $prompt],
         ];
 
-        $maxIterations = 6;
+        $toolDefinitions   = $this->buildToolDefinitions();
+        $totalInputTokens  = 0;
+        $totalOutputTokens = 0;
+        $maxIterations     = 8;
 
         for ($iteration = 0; $iteration < $maxIterations; $iteration++) {
 
-            Log::debug('[AssistantRH] Itération', ['i' => $iteration]);
+            Log::debug('[AssistantRH] Itération', [
+                'i'        => $iteration,
+                'messages' => count($messages),
+            ]);
 
-            try {
-                $response = Http::withHeaders([
-                    'Authorization' => 'Bearer ' . $key,
-                    'Content-Type'  => 'application/json',
-                    'HTTP-Referer'  => url('/'),
-                    'X-Title'       => config('app.name', 'HospitalRH'),
-                ])
-                ->withoutVerifying()
-                ->timeout(45)
-                ->post('https://openrouter.ai/api/v1/chat/completions', [
-                    'model'       => $model,
-                    'messages'    => $messages,
-                    'tools'       => $this->buildToolDefinitions(),
-                    'tool_choice' => 'auto',
-                ]);
-
-            } catch (\Illuminate\Http\Client\ConnectionException $e) {
-                Log::error('[AssistantRH] Erreur réseau', ['error' => $e->getMessage()]);
-                return [
-                    'success' => false,
-                    'text'    => 'Impossible de joindre OpenRouter. Vérifiez votre connexion internet.',
-                ];
-            }
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $key,
+                'Content-Type'  => 'application/json',
+                'HTTP-Referer'  => url('/'),
+                'X-Title'       => config('app.name', 'HospitalRH'),
+            ])
+            ->withoutVerifying()
+            ->timeout(60)
+            ->post('https://openrouter.ai/api/v1/chat/completions', [
+                'model'       => $model,
+                'messages'    => $messages,
+                'tools'       => $toolDefinitions,
+                'tool_choice' => 'auto',
+            ]);
 
             if ($response->failed()) {
-                $status = $response->status();
-                Log::error('[AssistantRH] API failed', ['status' => $status, 'body' => $response->body()]);
-
-                $errorMsg = match (true) {
-                    $status === 401 => 'Clé API invalide ou expirée (401).',
-                    $status === 402 => 'Quota OpenRouter épuisé (402).',
-                    $status === 429 => 'Trop de requêtes (429). Réessayez dans quelques secondes.',
-                    $status >= 500  => 'Erreur serveur OpenRouter (' . $status . ').',
-                    default         => 'Erreur API OpenRouter (' . $status . ').',
-                };
-
-                return ['success' => false, 'text' => $errorMsg];
+                Log::error('[AssistantRH] API failed', [
+                    'status' => $response->status(),
+                    'body'   => $response->body(),
+                ]);
+                return [
+                    'text'  => 'Erreur API OpenRouter (' . $response->status() . '). Vérifiez votre clé et votre quota.',
+                    'error' => true,
+                ];
             }
 
             $data = $response->json();
 
-            if (!is_array($data) || !isset($data['choices'])) {
-                return ['success' => false, 'text' => 'Réponse invalide reçue depuis OpenRouter.'];
-            }
+            $totalInputTokens  += $data['usage']['prompt_tokens']    ?? 0;
+            $totalOutputTokens += $data['usage']['completion_tokens'] ?? 0;
 
             $choice       = $data['choices'][0]     ?? null;
             $assistantMsg = $choice['message']       ?? null;
             $finishReason = $choice['finish_reason'] ?? 'stop';
 
             if (!$assistantMsg) {
-                return ['success' => false, 'text' => 'Réponse API invalide : aucun message reçu.'];
+                return ['text' => 'Réponse API invalide : aucun message reçu.', 'error' => true];
             }
 
-            // ── Tool calls ────────────────────────────────────────────────────
+            // ── Le modèle veut appeler des tools ──────────────────────────
             if ($finishReason === 'tool_calls' || !empty($assistantMsg['tool_calls'])) {
 
                 $messages[] = $assistantMsg;
 
                 foreach ($assistantMsg['tool_calls'] as $toolCall) {
-                    $toolName = $toolCall['function']['name']      ?? '';
+                    $toolName = $toolCall['function']['name']             ?? '';
                     $toolArgs = json_decode($toolCall['function']['arguments'] ?? '{}', true) ?? [];
-                    $callId   = $toolCall['id']                    ?? uniqid('call_');
+                    $callId   = $toolCall['id']                           ?? uniqid('call_');
 
                     $toolResult = $this->executeTool($toolName, $toolArgs);
 
                     Log::info('[AssistantRH] Résultat tool', [
                         'tool'    => $toolName,
+                        'call_id' => $callId,
                         'preview' => mb_substr($toolResult, 0, 300),
                     ]);
 
@@ -338,12 +350,13 @@ TXT;
                 continue;
             }
 
-            // ── Réponse texte finale ──────────────────────────────────────────
+            // ── Réponse texte finale ──────────────────────────────────────
             $text = $assistantMsg['content'] ?? null;
 
             if ($text !== null) {
                 $finalText = trim($text);
 
+                // Injecter le tag PDF si le LLM l'a omis
                 if (!str_contains($finalText, 'PDF_DOWNLOAD::')) {
                     $pdfTag = $this->extractPdfTag($messages);
                     if ($pdfTag !== null) {
@@ -351,12 +364,17 @@ TXT;
                     }
                 }
 
-                return ['success' => true, 'text' => $finalText];
+                return [
+                    'text'          => $finalText,
+                    'input_tokens'  => $totalInputTokens,
+                    'output_tokens' => $totalOutputTokens,
+                    'error'         => false,
+                ];
             }
 
-            return ['success' => false, 'text' => "Réponse inattendue (finish_reason: {$finishReason})."];
+            return ['text' => "Réponse inattendue (finish_reason: {$finishReason}).", 'error' => true];
         }
 
-        return ['success' => false, 'text' => 'Nombre maximum d\'itérations atteint.'];
+        return ['text' => "Nombre maximum d'itérations tool-calling atteint.", 'error' => true];
     }
 }

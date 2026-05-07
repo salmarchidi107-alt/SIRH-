@@ -50,7 +50,6 @@ class SalaryController extends Controller
         $employees = $query->orderByRaw("CONCAT(first_name, ' ', last_name) ASC")->paginate(50);
         $summary   = $this->payrollService->getMonthlySummary($month, $year);
 
-        // ── Départements depuis la table departments (avec fallback employees) ──
         $departments = Department::names();
 
         return view('salary.index', compact(
@@ -113,6 +112,7 @@ class SalaryController extends Controller
         $data = $request->validate([
             'month'                    => 'required|integer|min:1|max:12',
             'year'                     => 'required|integer|min:2000',
+            'currency'                 => 'nullable|string|max:10',   // ✅ AJOUTÉ
             'salary_type'              => 'nullable|in:monthly,hourly',
             'hourly_rate'              => 'nullable|numeric|min:0',
             'working_hours'            => 'nullable|numeric|min:0',
@@ -178,6 +178,7 @@ class SalaryController extends Controller
             'employee_id'              => $employee->id,
             'month'                    => $month,
             'year'                     => $year,
+            'currency'                 => $data['currency'] ?? 'MAD',  // ✅ AJOUTÉ
             'salary_type'              => $data['salary_type'] ?? 'monthly',
             'hourly_rate'              => $data['hourly_rate'] ?? 0,
             'working_hours'            => $data['working_hours'] ?? 0,

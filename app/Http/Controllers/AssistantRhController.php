@@ -7,28 +7,30 @@ use Illuminate\Http\Request;
 
 class AssistantRhController extends Controller
 {
-   public function __invoke(Request $request, AssistantRH $agent)
-{
-    $request->validate([
-        'message' => 'required|string|max:1000',
-    ]);
-
-    try {
-        $response = $agent->prompt($request->input('message'));
-
-        return response()->json([
-            'reply'  => $response->text ?? 'Pas de réponse',
-            'thread' => $response->conversationId ?? null,
+    public function __invoke(Request $request)
+    {
+        $request->validate([
+            'message' => 'required|string|max:1000',
         ]);
 
-    } catch (\Throwable $e) {
-        \Log::error('AssistantRH Error', ['message' => $e->getMessage()]);
+        try {
+            $agent    = new AssistantRH();
+            $response = $agent->prompt($request->input('message'));
 
-        return response()->json([
-            'reply' => 'Erreur serveur côté assistant',
-            'error' => config('app.debug') ? $e->getMessage() : null,
-        ], 500);
+            return response()->json([
+                'reply' => $response['text'] ?? 'Pas de réponse',
+            ], $response['error'] ?? false ? 500 : 200);
+
+        } catch (\Throwable $e) {
+            \Log::error('[AssistantRH] Controller error', [
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ]);
+
+            return response()->json([
+                'reply' => '⚠️ Erreur : ' . (config('app.debug') ? $e->getMessage() : 'contactez l\'administrateur'),
+            ], 500);
+        }
     }
-}
-
 }

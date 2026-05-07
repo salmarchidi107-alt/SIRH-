@@ -27,7 +27,7 @@
             
             {{-- Department --}}
             <select name="department" style="padding:10px 12px;border:1px solid var(--border);border-radius:8px;min-width:160px">
-                <option value="">Tous services</option>
+                <option value="">Departements</option>
                 @foreach($departments as $dept)
                     <option value="{{ $dept }}" {{ $department == $dept ? 'selected' : '' }}>{{ $dept }}</option>
                 @endforeach

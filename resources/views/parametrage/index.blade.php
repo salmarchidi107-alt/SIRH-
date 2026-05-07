@@ -71,12 +71,12 @@
     gap: 10px;
 }
 .param-form-card-header.green {
-    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
 }
 .param-form-card-header h3 {
     font-size: 0.95rem;
     font-weight: 700;
-    color: #0369a1;
+    color: #0f1731 !important;
     margin: 0;
 }
 .param-form-card-header.green h3 { color: #15803d; }
@@ -224,7 +224,7 @@
     font-family: inherit;
 }
 .btn-param-submit.blue {
-    background: linear-gradient(135deg, #0ea5e9, #0284c7);
+    background: linear-gradient(135deg, #2dd4bf, #0f766e);
     color: white;
     box-shadow: 0 4px 12px rgba(14,165,233,.3);
 }
@@ -233,7 +233,7 @@
     box-shadow: 0 6px 16px rgba(14,165,233,.4);
 }
 .btn-param-submit.green {
-    background: linear-gradient(135deg, #22c55e, #16a34a);
+   background: linear-gradient(135deg, #2dd4bf, #0f766e);
     color: white;
     box-shadow: 0 4px 12px rgba(34,197,94,.3);
 }
@@ -374,9 +374,7 @@
         {{-- Formulaire créer salle --}}
         <div class="param-form-card">
             <div class="param-form-card-header">
-                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#0369a1" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-                </svg>
+                
                 <h3>Nouvelle salle</h3>
             </div>
             <div class="param-form-card-body">
@@ -441,14 +439,14 @@
         <div class="param-list-card">
             <div class="param-list-header">
                 <h3>Toutes les salles <span class="param-count-badge">{{ $rooms->count() }}</span></h3>
-                <input type="text" class="param-search" placeholder="🔍 Rechercher…" oninput="filterList(this, 'rooms-list')">
+                <input type="text" class="param-search" placeholder=" Rechercher…" oninput="filterList(this, 'rooms-list')">
             </div>
 
             <div id="rooms-list">
                 @forelse($rooms as $room)
                 <div class="param-item" data-search="{{ strtolower($room->name . ' ' . ($room->department?->name ?? '')) }}">
                     <div class="param-item-left">
-                        <div class="param-item-icon blue">🏥</div>
+                        
                         <div>
                             <div class="param-item-name">{{ $room->name }}</div>
                             <div class="param-item-sub">
@@ -486,7 +484,7 @@
                 </div>
                 @empty
                 <div class="param-empty">
-                    <div class="param-empty-icon">🏥</div>
+                    <div class="param-empty-icon"></div>
                     <p>Aucune salle créée.<br>Utilisez le formulaire pour en ajouter une.</p>
                 </div>
                 @endforelse
@@ -505,9 +503,7 @@
         {{-- Formulaire créer département --}}
         <div class="param-form-card">
             <div class="param-form-card-header green">
-                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#15803d" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-                </svg>
+                
                 <h3>Nouveau département</h3>
             </div>
             <div class="param-form-card-body">
@@ -556,21 +552,15 @@
         {{-- Liste des départements --}}
         <div class="param-list-card">
             <div class="param-list-header">
-                <h3>Tous les départements <span class="param-count-badge" style="background:#22c55e">{{ $departments->count() }}</span></h3>
-                <input type="text" class="param-search" placeholder="🔍 Rechercher…" oninput="filterList(this, 'departments-list')">
+                <h3>Tous les départements <span class="param-count-badge" style="background:#14b8a6">{{ $departments->count() }}</span></h3>
+                <input type="text" class="param-search" placeholder=" Rechercher…" oninput="filterList(this, 'departments-list')">
             </div>
 
             <div id="departments-list">
                 @forelse($departments as $dept)
                 <div class="param-item" data-search="{{ strtolower($dept->name . ' ' . ($dept->code ?? '') . ' ' . ($dept->chef ?? '')) }}">
                     <div class="param-item-left">
-                        <div class="param-item-icon green">
-                            @if(isset($dept->color) && $dept->color)
-                            <span class="dept-color-dot" style="background:{{ $dept->color }};width:18px;height:18px;"></span>
-                            @else
-                            🏢
-                            @endif
-                        </div>
+                       
                         <div>
                             <div class="param-item-name" style="display:flex;align-items:center;gap:8px">
                                 {{ $dept->name }}
@@ -613,7 +603,7 @@
                 </div>
                 @empty
                 <div class="param-empty">
-                    <div class="param-empty-icon">🏢</div>
+                    <div class="param-empty-icon"></div>
                     <p>Aucun département créé.<br>Utilisez le formulaire pour en ajouter un.</p>
                 </div>
                 @endforelse
@@ -629,7 +619,7 @@
 <div class="param-modal-overlay" id="editRoomModal">
     <div class="param-modal">
         <div class="param-modal-header">
-            <h3>✏️ Modifier la salle</h3>
+            <h3> Modifier la salle</h3>
             <button class="btn-modal-close" onclick="closeModal('editRoomModal')">×</button>
         </div>
         <form id="editRoomForm" method="POST">
@@ -673,7 +663,7 @@
 <div class="param-modal-overlay" id="editDeptModal">
     <div class="param-modal">
         <div class="param-modal-header">
-            <h3>✏️ Modifier le département</h3>
+            <h3> Modifier le département</h3>
             <button class="btn-modal-close" onclick="closeModal('editDeptModal')">×</button>
         </div>
         <form id="editDeptForm" method="POST">

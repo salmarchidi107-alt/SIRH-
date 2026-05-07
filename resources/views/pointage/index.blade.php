@@ -5,7 +5,6 @@
 
 @push('styles')
 <style>
-    /* ── Variables thème clair ──────────────────────────── */
     :root {
         --p-bg:          #f8fafc;
         --p-surface:     #ffffff;
@@ -30,190 +29,170 @@
         --p-gray-bg:     #f8fafc;
     }
 
-    .pointage-wrap { display: flex; flex-direction: column; height: calc(100vh - 64px); background: var(--p-bg); }
+    .pointage-wrap { display:flex; flex-direction:column; height:calc(100vh - 64px); background:var(--p-bg); }
 
-    /* ── Topbar ─────────────────────────────────────────── */
+    /* Topbar */
     .pt-topbar {
-        background: var(--p-surface);
-        border-bottom: 1px solid var(--p-border);
-        padding: 0 1.5rem;
-        height: 52px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-shrink: 0;
+        background:var(--p-surface); border-bottom:1px solid var(--p-border);
+        padding:0 1.5rem; height:52px;
+        display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
     }
-    .pt-topbar-left { display: flex; align-items: center; gap: 1rem; }
-    .pt-title { font-size: 15px; font-weight: 600; color: var(--p-text); }
-    .pt-tabs { display: flex; background: var(--p-bg); border: 1px solid var(--p-border); border-radius: 8px; overflow: hidden; }
-    .pt-tab {
-        padding: 5px 16px; font-size: 12px; font-weight: 500; cursor: pointer;
-        color: var(--p-text-muted); background: transparent; border: none; transition: all .15s;
-        text-decoration: none; display: flex; align-items: center;
-    }
-    .pt-tab.active, .pt-tab:hover { background: var(--p-teal); color: #fff; }
-    .pt-topbar-right { display: flex; align-items: center; gap: .75rem; }
-    .pt-sync {
-        display: flex; align-items: center; gap: 6px;
-        font-size: 11px; color: var(--p-text-muted);
-        background: var(--p-bg); border: 1px solid var(--p-border);
-        padding: 4px 10px; border-radius: 20px;
-    }
-    .pt-sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--p-teal); animation: blink 2s infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-    .pt-btn-validate {
-        background: var(--p-teal); color: #fff; border: none;
-        padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
-        cursor: pointer; transition: background .15s;
-    }
-    .pt-btn-validate:hover { background: #0f766e; }
+    .pt-topbar-left  { display:flex; align-items:center; gap:1rem; }
+    .pt-topbar-right { display:flex; align-items:center; gap:.75rem; }
+    .pt-title { font-size:15px; font-weight:600; color:var(--p-text); }
 
-    /* ── Week nav ───────────────────────────────────────── */
+    .pt-tabs { display:flex; background:var(--p-bg); border:1px solid var(--p-border); border-radius:8px; overflow:hidden; }
+    .pt-tab {
+        padding:5px 16px; font-size:12px; font-weight:500; cursor:pointer;
+        color:var(--p-text-muted); background:transparent; border:none;
+        text-decoration:none; display:flex; align-items:center; transition:all .15s;
+    }
+    .pt-tab.active, .pt-tab:hover { background:var(--p-teal); color:#fff; }
+
+    .pt-sync {
+        display:flex; align-items:center; gap:6px; font-size:11px; color:var(--p-text-muted);
+        background:var(--p-bg); border:1px solid var(--p-border); padding:4px 10px; border-radius:20px;
+    }
+    .pt-sync-dot { width:7px; height:7px; border-radius:50%; background:var(--p-teal); animation:blink 2s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    .pt-btn-validate {
+        background:var(--p-teal); color:#fff; border:none;
+        padding:7px 16px; border-radius:8px; font-size:13px; font-weight:600;
+        cursor:pointer; transition:background .15s;
+    }
+    .pt-btn-validate:hover { background:#0f766e; }
+
+    /* Week nav */
     .pt-weeknav {
-        background: var(--p-surface); border-bottom: 1px solid var(--p-border);
-        padding: .75rem 1.5rem; display: flex; align-items: center; gap: .75rem; flex-shrink: 0;
+        background:var(--p-surface); border-bottom:1px solid var(--p-border);
+        padding:.75rem 1.5rem; display:flex; align-items:center; gap:.75rem; flex-shrink:0;
     }
     .pt-weeknav-btn {
-        background: var(--p-bg); border: 1px solid var(--p-border);
-        width: 28px; height: 28px; border-radius: 6px; cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 15px; color: var(--p-text-muted); transition: all .15s;
+        background:var(--p-bg); border:1px solid var(--p-border);
+        width:28px; height:28px; border-radius:6px; cursor:pointer;
+        display:flex; align-items:center; justify-content:center;
+        font-size:15px; color:var(--p-text-muted); transition:all .15s; text-decoration:none;
     }
-    .pt-weeknav-btn:hover { border-color: var(--p-teal); color: var(--p-teal); }
-    .pt-week-label { font-size: 13px; font-weight: 500; color: var(--p-text); }
+    .pt-weeknav-btn:hover { border-color:var(--p-teal); color:var(--p-teal); }
+    .pt-week-label { font-size:13px; font-weight:500; color:var(--p-text); }
     .pt-week-badge {
-        background: var(--p-teal-light); color: var(--p-teal);
-        font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 20px;
+        background:var(--p-teal-light); color:var(--p-teal);
+        font-size:11px; font-weight:600; padding:2px 10px; border-radius:20px;
     }
 
-    /* ── Body (day sidebar + table) ─────────────────────── */
-    .pt-body { display: flex; flex: 1; overflow: hidden; }
+    /* Body */
+    .pt-body { display:flex; flex:1; overflow:hidden; }
 
     /* Day sidebar */
     .pt-days {
-        width: 155px; flex-shrink: 0; background: var(--p-surface);
-        border-right: 1px solid var(--p-border); overflow-y: auto;
+        width:155px; flex-shrink:0; background:var(--p-surface);
+        border-right:1px solid var(--p-border); overflow-y:auto;
     }
     .pt-day {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 11px 14px; cursor: pointer; border-left: 3px solid transparent;
-        text-decoration: none; transition: all .12s;
+        display:flex; align-items:center; justify-content:space-between;
+        padding:11px 14px; cursor:pointer; border-left:3px solid transparent;
+        text-decoration:none; transition:all .12s;
     }
-    .pt-day:hover { background: var(--p-teal-bg); }
-    .pt-day.active { background: var(--p-teal-bg); border-left-color: var(--p-teal); }
-    .pt-day-name { font-size: 12px; font-weight: 600; color: var(--p-text); }
-    .pt-day-date { font-size: 11px; color: var(--p-text-muted); margin-top: 1px; }
+    .pt-day:hover { background:var(--p-teal-bg); }
+    .pt-day.active { background:var(--p-teal-bg); border-left-color:var(--p-teal); }
+    .pt-day-name { font-size:12px; font-weight:600; color:var(--p-text); }
+    .pt-day-date { font-size:11px; color:var(--p-text-muted); margin-top:1px; }
     .pt-day-check {
-        width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center; font-size: 10px;
+        width:20px; height:20px; border-radius:50%; flex-shrink:0;
+        display:flex; align-items:center; justify-content:center; font-size:10px;
     }
-    .pt-day-check.ok { background: var(--p-teal); color: #fff; }
-    .pt-day-check.pending { border: 1.5px solid var(--p-border); color: var(--p-text-light); }
+    .pt-day-check.ok      { background:var(--p-teal); color:#fff; }
+    .pt-day-check.pending { border:1.5px solid var(--p-border); color:var(--p-text-light); }
 
     /* Table */
-    .pt-table-wrap { flex: 1; overflow: auto; }
-    .pt-table { width: 100%; border-collapse: collapse; min-width: 860px; }
+    .pt-table-wrap { flex:1; overflow:auto; }
+    .pt-table { width:100%; border-collapse:collapse; min-width:860px; }
     .pt-table thead th {
-        position: sticky; top: 0; z-index: 2;
-        background: var(--p-gray-bg); border-bottom: 1px solid var(--p-border);
-        padding: 10px 12px; text-align: left; white-space: nowrap;
-        font-size: 11px; font-weight: 600; text-transform: uppercase;
-        letter-spacing: .05em; color: var(--p-text-muted);
+        position:sticky; top:0; z-index:2;
+        background:var(--p-gray-bg); border-bottom:1px solid var(--p-border);
+        padding:10px 12px; text-align:left; white-space:nowrap;
+        font-size:11px; font-weight:600; text-transform:uppercase;
+        letter-spacing:.05em; color:var(--p-text-muted);
     }
-    .pt-table td { padding: 10px 12px; border-bottom: 1px solid var(--p-border-soft); vertical-align: middle; }
-    .pt-table tbody tr:hover td { background: var(--p-teal-bg); }
+    .pt-table td { padding:10px 12px; border-bottom:1px solid var(--p-border-soft); vertical-align:middle; }
+    .pt-table tbody tr:hover td { background:var(--p-teal-bg); }
 
-    /* Badges heures */
     .pt-time-pill {
-        display: inline-block; padding: 3px 9px; border-radius: 6px;
-        font-size: 12px; font-weight: 700; letter-spacing: .02em;
+        display:inline-block; padding:3px 9px; border-radius:6px;
+        font-size:12px; font-weight:700; letter-spacing:.02em;
     }
-    .pt-pill-start  { background: var(--p-blue-bg);   color: var(--p-blue); }
-    .pt-pill-end    { background: var(--p-purple-bg);  color: var(--p-purple); }
-    .pt-pill-midnight { background: #ede9fe; color: #6d28d9; }
-    .pt-time-sep { color: var(--p-text-light); font-size: 12px; margin: 0 2px; }
+    .pt-pill-start    { background:var(--p-blue-bg);  color:var(--p-blue); }
+    .pt-pill-end      { background:var(--p-purple-bg); color:var(--p-purple); }
+    .pt-pill-midnight { background:#ede9fe; color:#6d28d9; }
+    .pt-time-sep { color:var(--p-text-light); font-size:12px; margin:0 2px; }
 
-    /* Badge pause */
-    .pt-pause {
-        display: inline-block; padding: 3px 9px; border-radius: 6px;
-        font-size: 12px; font-weight: 600;
-    }
-    .pt-pause-on  { background: var(--p-amber-bg); color: var(--p-amber); }
-    .pt-pause-off { background: var(--p-green-bg); color: var(--p-green); }
+    .pt-pause { display:inline-block; padding:3px 9px; border-radius:6px; font-size:12px; font-weight:600; }
+    .pt-pause-on  { background:var(--p-amber-bg); color:var(--p-amber); }
+    .pt-pause-off { background:var(--p-green-bg); color:var(--p-green); }
 
-    /* Statuts */
-    .pt-badge {
-        display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 500;
-    }
-    .pt-badge-absent { background: var(--p-red-bg); color: var(--p-red); }
-    .pt-badge-nobadge { background: var(--p-gray-bg); color: var(--p-text-muted); border: 1px solid var(--p-border); }
+    .pt-badge { display:inline-block; padding:3px 10px; border-radius:6px; font-size:11px; font-weight:500; }
+    .pt-badge-absent  { background:var(--p-red-bg);  color:var(--p-red); }
+    .pt-badge-nobadge { background:var(--p-gray-bg); color:var(--p-text-muted); border:1px solid var(--p-border); }
 
-    /* Shift */
-    .pt-shift { font-size: 12px; color: var(--p-text-muted); white-space: nowrap; }
-    .pt-total { font-size: 13px; font-weight: 700; color: var(--p-teal); }
-    .pt-total.long { color: var(--p-amber); }
+    .pt-total      { font-size:13px; font-weight:700; color:var(--p-teal); }
+    .pt-total.long { color:var(--p-amber); }
 
-    /* Checkbox validé */
     .pt-check {
-        width: 22px; height: 22px; border-radius: 50%; display: flex;
-        align-items: center; justify-content: center; cursor: pointer;
-        border: none; transition: all .15s;
+        width:22px; height:22px; border-radius:50%; display:flex;
+        align-items:center; justify-content:center; cursor:pointer;
+        border:none; transition:all .15s;
     }
-    .pt-check.ok { background: var(--p-teal); color: #fff; }
-    .pt-check.pending { background: transparent; border: 1.5px solid var(--p-border); color: var(--p-text-light); }
+    .pt-check.ok      { background:var(--p-teal); color:#fff; }
+    .pt-check.pending { background:transparent; border:1.5px solid var(--p-border); color:var(--p-text-light); }
 
-    /* Action buttons */
     .pt-action-btn {
-        font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 6px;
-        cursor: pointer; border: 1px solid var(--p-border); background: var(--p-surface);
-        color: var(--p-text-muted); transition: all .15s; white-space: nowrap;
+        font-size:11px; font-weight:500; padding:4px 10px; border-radius:6px;
+        cursor:pointer; border:1px solid var(--p-border); background:var(--p-surface);
+        color:var(--p-text-muted); transition:all .15s; white-space:nowrap;
     }
-    .pt-action-btn:hover { border-color: var(--p-teal); color: var(--p-teal); }
-    .pt-action-btn.keep { background: var(--p-teal-bg); border-color: var(--p-teal); color: var(--p-teal); }
+    .pt-action-btn:hover { border-color:var(--p-teal); color:var(--p-teal); }
+    .pt-action-btn.keep { background:var(--p-teal-bg); border-color:var(--p-teal); color:var(--p-teal); }
 
-    /* ── Status bar ─────────────────────────────────────── */
+    /* Status bar */
     .pt-statusbar {
-        background: var(--p-surface); border-top: 1px solid var(--p-border);
-        padding: .5rem 1.5rem; display: flex; align-items: center;
-        justify-content: space-between; flex-shrink: 0;
+        background:var(--p-surface); border-top:1px solid var(--p-border);
+        padding:.5rem 1.5rem; display:flex; align-items:center;
+        justify-content:space-between; flex-shrink:0;
     }
-    .pt-stat { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--p-text-muted); }
-    .pt-stat-dot { width: 8px; height: 8px; border-radius: 50%; }
-    .pt-stat strong { font-weight: 600; }
+    .pt-stat { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--p-text-muted); }
+    .pt-stat-dot { width:8px; height:8px; border-radius:50%; }
+    .pt-stat strong { font-weight:600; }
 
-    /* Employee avatar */
     .pt-avatar {
-        width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 11px; font-weight: 700;
-        background: var(--p-teal-light); color: var(--p-teal);
+        width:30px; height:30px; border-radius:50%; flex-shrink:0;
+        display:flex; align-items:center; justify-content:center;
+        font-size:11px; font-weight:700;
+        background:var(--p-teal-light); color:var(--p-teal);
     }
 
-    /* Dimmed row (ex: shift très court) */
-    .pt-row-dimmed td { opacity: .55; }
+    .pt-row-dimmed td { opacity:.55; }
+
+    /* Checkbox absence */
+    .absent-checkbox          { accent-color:var(--p-red); width:15px; height:15px; cursor:pointer; }
+    .absent-checkbox:disabled { opacity:.5; cursor:wait; }
 </style>
 @endpush
 
 @section('content')
 <div class="pointage-wrap">
 
-    {{-- ── Topbar ──────────────────────────────────────────── --}}
+    {{-- Topbar --}}
     <div class="pt-topbar">
         <div class="pt-topbar-left">
             <span class="pt-title">Pointage — Badgeuse</span>
             <div class="pt-tabs">
-                <a href="{{ route('pointage.index', array_merge(request()->only(['search', 'department']), ['date' => $currentDate->toDateString(), 'vue' => 'tous'])) }}"
-                   class="pt-tab {{ ($vue ?? request('vue', 'tous')) === 'tous' ? 'active' : '' }}">
-                    Tous
-                </a>
-                <a href="{{ route('pointage.index', array_merge(request()->only(['search', 'department']), ['date' => $currentDate->toDateString(), 'vue' => 'pointe'])) }}"
-                   class="pt-tab {{ ($vue ?? request('vue')) === 'pointe' ? 'active' : '' }}">
-                    Pointe
-                </a>
-                <a href="{{ route('pointage.index', array_merge(request()->only(['search', 'department']), ['date' => $currentDate->toDateString(), 'vue' => 'non_pointe'])) }}"
-                   class="pt-tab {{ ($vue ?? request('vue')) === 'non_pointe' ? 'active' : '' }}">
-                    Non pointe
-                </a>
+                <a href="{{ route('pointage.index', array_merge(request()->only(['search','department']), ['date' => $currentDate->toDateString(), 'vue' => 'tous'])) }}"
+                   class="pt-tab {{ ($vue ?? 'tous') === 'tous' ? 'active' : '' }}">Tous</a>
+                <a href="{{ route('pointage.index', array_merge(request()->only(['search','department']), ['date' => $currentDate->toDateString(), 'vue' => 'pointe'])) }}"
+                   class="pt-tab {{ ($vue ?? '') === 'pointe' ? 'active' : '' }}">Pointé</a>
+                <a href="{{ route('pointage.index', array_merge(request()->only(['search','department']), ['date' => $currentDate->toDateString(), 'vue' => 'non_pointe'])) }}"
+                   class="pt-tab {{ ($vue ?? '') === 'non_pointe' ? 'active' : '' }}">Non pointé</a>
             </div>
         </div>
         <div class="pt-topbar-right">
@@ -224,27 +203,22 @@
             </div>
             @endif
 
-            {{-- Export PDF Button --}}
-            <div class="pdf-export-dropdown">
-                <a href="{{ route('pointage.pdf', request()->only(['date', 'department', 'search', 'vue'])) }}"
-                   class="pt-btn-export" title="Exporter PDF (filtres actuels)"
-                   style="background: var(--p-primary): #22c55e;; padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; transition: background .15s; white-space: nowrap;">
-                    PDF
-                </a>
-            </div>
-            <a href="{{ route('pointage.badges-pin') }}"
-             style="background:#7c3aed;color:white;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
-            Badges PIN
+            <a href="{{ route('pointage.pdf', request()->only(['date','department','search','vue'])) }}"
+               style="background:#e2e8f0;color:#0f172a;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid var(--p-border);">
+                 PDF
             </a>
 
-            {{-- Vue d'ensemble link --}}
-            <a href="{{ route('temps.vue-ensemble', ['annee' => $currentDate->year, 'mois' => $currentDate->month]) }}"
-               class="pt-btn-overview" title="Voir vue d'ensemble mensuelle"
-               style="background: #3b82f6; color: white; padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; transition: background .15s;"
-               target="_blank">
-                 Vue Mensuelle
+            <a href="{{ route('pointage.badges-pin') }}"
+               style="background:#9CC4B7;color:white;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
+                Badges PIN
             </a>
-        
+
+            <a href="{{ route('temps.vue-ensemble', ['annee' => $currentDate->year, 'mois' => $currentDate->month]) }}"
+               style="background:#5E9E89;color:white;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;"
+               target="_blank">
+                Vue Mensuelle
+            </a>
+
             <button class="pt-btn-validate" id="btn-validate"
                     data-date="{{ $currentDate->toDateString() }}"
                     data-url="{{ route('pointage.valider-journee') }}">
@@ -253,52 +227,54 @@
         </div>
     </div>
 
-    {{-- ── FILTERS BAR - NOUVEAU ────────────────────────────── --}}
-    <div style="background: var(--p-surface); border-bottom: 1px solid var(--p-border); padding: 0.75rem 1.5rem; display: flex; gap: 0.75rem; align-items: center; font-size: 13px;">
-         <strong>Filtrer:</strong> 
-        <form method="GET" action="{{ route('pointage.index') }}" style="display: flex; gap: 0.5rem; align-items: center; flex: 1;">
+    {{-- Filters bar --}}
+    <div style="background:var(--p-surface);border-bottom:1px solid var(--p-border);padding:.75rem 1.5rem;display:flex;gap:.75rem;align-items:center;font-size:13px;">
+        <strong>Filtrer :</strong>
+        <form method="GET" action="{{ route('pointage.index') }}" style="display:flex;gap:.5rem;align-items:center;flex:1;">
             <input type="hidden" name="date" value="{{ $currentDate->toDateString() }}">
-            <input type="hidden" name="vue" value="{{ $vue ?? request('vue', 'tous') }}">
-
-            <input type="text" name="search" placeholder="Nom employé..." value="{{ request('search') }}" onchange="this.form.submit()" style="flex: 1; padding: 0.5rem; border: 1px solid var(--p-border); border-radius: 6px;">
-            <select name="department" onchange="this.form.submit()" style="padding: 0.5rem; border: 1px solid var(--p-border); border-radius: 6px;">
-                <option value=""> Tous départements</option>
+            <input type="hidden" name="vue"  value="{{ $vue ?? 'tous' }}">
+            <input type="text" name="search" placeholder="Nom employé…"
+                   value="{{ request('search') }}" onchange="this.form.submit()"
+                   style="flex:1;padding:.5rem;border:1px solid var(--p-border);border-radius:6px;">
+            <select name="department" onchange="this.form.submit()"
+                    style="padding:.5rem;border:1px solid var(--p-border);border-radius:6px;">
+                <option value="">Tous départements</option>
                 @foreach($departments as $dept)
                 <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>{{ $dept }}</option>
                 @endforeach
             </select>
-@if(request()->hasAny(['search', 'department']))
-                <a href="{{ route('pointage.index', ['date' => $currentDate->toDateString(), 'vue' => request('vue')]) }}" style="padding: 0.5rem 1rem; background: var(--p-red-bg); color: var(--p-red); border-radius: 6px; text-decoration: none; font-weight: 500;">✕ Reset</a>
+            @if(request()->hasAny(['search','department']))
+            <a href="{{ route('pointage.index', ['date' => $currentDate->toDateString(), 'vue' => request('vue')]) }}"
+               style="padding:.5rem 1rem;background:var(--p-red-bg);color:var(--p-red);border-radius:6px;text-decoration:none;font-weight:500;">
+                ✕ Reset
+            </a>
             @endif
         </form>
     </div>
 
-    {{-- ── Week nav ─────────────────────────────────────────── --}}
+    {{-- Week nav --}}
     <div class="pt-weeknav">
-
-@php
-            $prevDate = $currentDate->copy()->subWeek();
-            $nextDate = $currentDate->copy()->addWeek();
-            $filterParams = request()->only(['search', 'department']);
+        @php
+            $prevDate     = $currentDate->copy()->subWeek();
+            $nextDate     = $currentDate->copy()->addWeek();
+            $filterParams = request()->only(['search','department']);
         @endphp
         <a href="{{ route('pointage.index', array_merge($filterParams, ['date' => $prevDate->toDateString()])) }}" class="pt-weeknav-btn">&#8249;</a>
-        <span class="pt-week-label">
-            {{ $startOfWeek->translatedFormat('d M') }} – {{ $endOfWeek->translatedFormat('d M Y') }}
-        </span>
+        <span class="pt-week-label">{{ $startOfWeek->translatedFormat('d M') }} – {{ $endOfWeek->translatedFormat('d M Y') }}</span>
         <span class="pt-week-badge">Semaine {{ $currentDate->weekOfYear }}</span>
         <a href="{{ route('pointage.index', array_merge($filterParams, ['date' => $nextDate->toDateString()])) }}" class="pt-weeknav-btn">&#8250;</a>
         <a href="{{ route('pointage.index', array_merge($filterParams, ['date' => today()->toDateString()])) }}"
-           class="pt-weeknav-btn" title="Aujourd'hui" style="font-size:11px;width:auto;padding:0 10px;">
+           class="pt-weeknav-btn" style="font-size:11px;width:auto;padding:0 10px;">
             Aujourd'hui
         </a>
     </div>
 
-    {{-- ── Body ─────────────────────────────────────────────── --}}
+    {{-- Body --}}
     <div class="pt-body">
 
         {{-- Day sidebar --}}
         <div class="pt-days">
-@foreach($weekDays as $day)
+            @foreach($weekDays as $day)
             <a href="{{ route('pointage.index', array_merge($filterParams, ['date' => $day['date']->toDateString()])) }}"
                class="pt-day {{ $day['isSelected'] ? 'active' : '' }}">
                 <div>
@@ -320,23 +296,22 @@
                         <th style="width:44px">Validé</th>
                         <th>Employé</th>
                         <th>Absence</th>
-                    <th>Début/Fin shift</th>
-                    <th>Pause total</th>
-                    <th>Pause début / fin</th>
-                    <th style="width:80px">Total travaillé</th>
-                    <th>Action</th>
-
+                        <th>Début / Fin shift</th>
+                        <th>Pause total</th>
+                        <th>Pause début / fin</th>
+                        <th style="width:80px">Total travaillé</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                 @foreach($employees as $emp)
                 @php
-                    $p       = $emp['pointage'];
-                    $statut  = $p?->statut ?? 'pas_de_badge';
-                    $valide  = $p?->valide ?? false;
-                    $isDimmed = $p && $p->total_heures && $p->total_heures < 1;
-                    $isAbsent = in_array($statut, ['absent','absence']);
-                    $isNoBadge = $statut === 'pas_de_badge' && !$p?->heure_entree;
+                    $p          = $emp['pointage'];
+                    $statut     = $p?->statut ?? 'pas_de_badge';
+                    $valide     = $p?->valide ?? false;
+                    $isDimmed   = $p && $p->total_heures && $p->total_heures < 1;
+                    $isAbsent   = in_array($statut, ['absent', 'absence_injustifiee']);
+                    $isNoBadge  = $statut === 'pas_de_badge' && !$p?->heure_entree;
                     $isMidnight = $p?->heure_sortie === '00:00:00' || $p?->heure_sortie === '00:00';
                 @endphp
                 <tr class="{{ $isDimmed ? 'pt-row-dimmed' : '' }}" id="row-emp-{{ $emp['id'] }}">
@@ -365,28 +340,28 @@
                     </td>
 
                     {{-- Absence --}}
-            <td>
-    <input type="checkbox"
-           class="absent-checkbox"
-           data-employee="{{ $emp['id'] }}"
-           data-date="{{ $currentDate->toDateString() }}"
-           data-url="{{ route('pointage.toggle-absence') }}"
-           style="accent-color:var(--p-teal);width:15px;height:15px;"
-           {{ $isAbsent ? 'checked' : '' }}
-           onchange="toggleAbsence(this)">
+                    <td>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <input type="checkbox"
+                                   class="absent-checkbox"
+                                   data-employee="{{ $emp['id'] }}"
+                                   data-date="{{ $currentDate->toDateString() }}"
+                                   data-url="{{ route('pointage.toggle-absence') }}"
+                                   {{ $isAbsent ? 'checked' : '' }}
+                                   onchange="toggleAbsence(this)">
+                            <span class="pt-badge pt-badge-absent"
+                                  id="badge-absent-{{ $emp['id'] }}"
+                                  style="{{ !$isAbsent ? 'display:none;' : '' }}">
+                                Absent
+                            </span>
+                        </div>
+                    </td>
 
-    <span class="pt-badge pt-badge-absent"
-          style="{{ !$isAbsent ? 'display:none;' : '' }}">
-        Absence 
-    </span>
-</td>
-
-                    {{-- Heures travaillées --}}
+                    {{-- Début / Fin shift --}}
                     <td>
                         @if($p && $p->heure_entree)
                         <div style="display:flex;align-items:center;gap:4px;">
                             <span class="pt-time-pill pt-pill-start">
-                                
                                 {{ \Carbon\Carbon::parse($p->heure_entree)->format('H:i') }}
                             </span>
                             <span class="pt-time-sep">–</span>
@@ -424,8 +399,9 @@
                         <span class="pt-time-pill pt-pill-start">{{ $p->pause_debut }}</span>
                         <span class="pt-time-sep">–</span>
                         <span class="pt-time-pill pt-pill-end">{{ $p->pause_fin }}</span>
-@elseif($p?->pause_debut)
-                        <span class="pt-time-pill pt-pill-start">{{ $p->pause_debut }}</span> <span style="color:var(--p-text-light);font-size:11px;">en cours</span>
+                        @elseif($p?->pause_debut)
+                        <span class="pt-time-pill pt-pill-start">{{ $p->pause_debut }}</span>
+                        <span style="color:var(--p-text-light);font-size:11px;">en cours</span>
                         @else
                         <span style="color:var(--p-text-light)">—</span>
                         @endif
@@ -443,7 +419,6 @@
                     </td>
 
                     {{-- Action --}}
-
                     <td>
                         @if($p)
                         <button class="pt-action-btn {{ $p->ignore_badge ? '' : 'keep' }}"
@@ -464,7 +439,7 @@
         </div>
     </div>
 
-    {{-- ── Status bar ───────────────────────────────────────── --}}
+    {{-- Status bar --}}
     <div class="pt-statusbar">
         <div style="display:flex;gap:1.5rem;">
             <div class="pt-stat">
@@ -479,7 +454,7 @@
                 <div class="pt-stat-dot" style="background:var(--p-red)"></div>
                 Absents : <strong style="color:var(--p-red)">{{ $stats['absents'] }}</strong>
             </div>
-            <div class="pt-stat" style="margin-left:1rem;color:var(--p-text-muted);">
+            <div class="pt-stat" style="margin-left:1rem;">
                 Total employés : <strong>{{ $stats['total'] }}</strong>
             </div>
         </div>
@@ -502,113 +477,112 @@
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
 
- /* ── Sync temps affiché ─────────────────────────────── */
+/* Sync label tablette */
 @if($dernierSync)
-(function() {
+(function () {
     const syncedAt = new Date('{{ $dernierSync->derniere_connexion?->toIso8601String() }}');
-    function updateSyncLabel() {
+    function update() {
         const diff = Math.floor((Date.now() - syncedAt) / 1000);
-        let label;
-        if (diff < 60)       label = 'à l\'instant';
-        else if (diff < 3600) label = `il y a ${Math.floor(diff/60)} min`;
-        else                  label = `il y a ${Math.floor(diff/3600)}h`;
-        const el = document.getElementById('sync-ago');
-        if (el) el.textContent = label;
+        const el   = document.getElementById('sync-ago');
+        if (!el) return;
+        if      (diff < 60)   el.textContent = "à l'instant";
+        else if (diff < 3600) el.textContent = `il y a ${Math.floor(diff / 60)} min`;
+        else                  el.textContent = `il y a ${Math.floor(diff / 3600)}h`;
     }
-    updateSyncLabel();
-    setInterval(updateSyncLabel, 3000000);
+    update();
+    setInterval(update, 30000);
 })();
 @endif
 
-
-
-
-/* ── Valider la journée ─────────────────────────────── */
-document.getElementById('btn-validate').addEventListener('click', async function() {
-    const btn  = this;
-    const date = btn.dataset.date;
-    const url  = btn.dataset.url;
-
+/* Valider la journée */
+document.getElementById('btn-validate').addEventListener('click', async function () {
+    const btn = this;
     btn.disabled = true;
     btn.textContent = '…';
-
     try {
-        const res  = await fetch(url, {
-            method: 'POST',
+        const res  = await fetch(btn.dataset.url, {
+            method:  'POST',
             headers: { 'X-CSRF-TOKEN': CSRF, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({ date })
+            body:    JSON.stringify({ date: btn.dataset.date }),
         });
         const data = await res.json();
-        btn.textContent = '✓ ' + data.message;
+        btn.textContent      = '✓ ' + data.message;
         btn.style.background = '#0f766e';
-        setTimeout(() => { btn.textContent = '✓ Valider la journée'; btn.style.background = ''; btn.disabled = false; }, 300000);
-    } catch(e) {
-        btn.textContent = 'Erreur !';
+        setTimeout(() => { btn.textContent = '✓ Valider la journée'; btn.style.background = ''; btn.disabled = false; }, 3000);
+    } catch (e) {
+        btn.textContent      = 'Erreur !';
         btn.style.background = '#dc2626';
-        btn.disabled = false;
+        btn.disabled         = false;
     }
 });
 
- /* ── Toggle validé ──────────────────────────────────── */
+/* Toggle validé */
 async function toggleValider(btn) {
-    const url = btn.dataset.url;
     try {
-        const res  = await fetch(url, {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
-        });
+        const res  = await fetch(btn.dataset.url, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' } });
         const data = await res.json();
         btn.classList.toggle('ok',      data.valide);
         btn.classList.toggle('pending', !data.valide);
         btn.textContent = data.valide ? '✓' : '○';
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
 }
 
-/* ── Toggle ignorer/garder ──────────────────────────── */
+/* Toggle ignorer */
 async function toggleIgnore(btn) {
-    const url = btn.dataset.url;
     try {
-        const res  = await fetch(url, {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
-        });
+        const res  = await fetch(btn.dataset.url, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' } });
         const data = await res.json();
         btn.classList.toggle('keep', !data.ignore_badge);
         btn.textContent = data.ignore_badge ? '⊘ Ignorer' : '👁 Garder';
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
 }
+
+/* ✅ Toggle absence — corrigé */
 async function toggleAbsence(checkbox) {
-    const url = checkbox.dataset.url;
-    const employeeId = checkbox.dataset.employee;
-    const date = checkbox.dataset.date;
-    const badge = checkbox.parentElement.querySelector('.pt-badge-absent');
+    const empId    = checkbox.dataset.employee;
+    const date     = checkbox.dataset.date;
+    const url      = checkbox.dataset.url;
+    const isAbsent = checkbox.checked;
+    const badge    = document.getElementById('badge-absent-' + empId);
+
+    checkbox.disabled = true;
 
     try {
         const res = await fetch(url, {
-            method: 'POST',
+            method:  'POST',
             headers: {
                 'X-CSRF-TOKEN': CSRF,
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Accept':       'application/json',
             },
             body: JSON.stringify({
-                employee_id: employeeId,
-                date: date,
-                absent: checkbox.checked
-            })
+                employee_id: empId,
+                date:        date,
+                absent:      isAbsent,
+            }),
         });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            console.error('Erreur toggleAbsence', res.status, err);
+            checkbox.checked = !isAbsent; // rollback
+            return;
+        }
 
         const data = await res.json();
 
-        // UI update
-        badge.style.display = checkbox.checked ? 'inline-block' : 'none';
+        if (data.success) {
+            if (badge) badge.style.display = isAbsent ? 'inline-block' : 'none';
+        } else {
+            checkbox.checked = !isAbsent; // rollback
+        }
 
     } catch (e) {
-        console.error(e);
-        checkbox.checked = !checkbox.checked;
+        console.error('toggleAbsence fetch error', e);
+        checkbox.checked = !isAbsent; // rollback
+    } finally {
+        checkbox.disabled = false;
     }
 }
-
 </script>
 @endpush
-

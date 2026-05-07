@@ -217,15 +217,7 @@ class Pointage extends Model
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Calcul de pause — logique unifiée
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Retourne les minutes de pause en appliquant la même logique que
-     * PointageController::calcPauseMinutes(), avec repli sur pause_start/pause_end
-     * puis sur pause_minutes déjà stocké.
-     */
     public function calculerPauseMinutes(): int
     {
         // ── Priorité 1 : events badge (PointageEvent chargés en relation) ────
@@ -311,14 +303,7 @@ class Pointage extends Model
         return $minutes > 240 ? 0 : (int) $minutes;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Recalcul avec rechargement des events depuis la BDD
-    // ─────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Recharge les events depuis la BDD puis recalcule les heures.
-     * Utile quand on veut forcer le recalcul complet sans avoir chargé la relation.
-     */
     public function recalculerAvecEvents(bool $save = true): void
     {
         $this->load('events');

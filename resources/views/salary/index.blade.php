@@ -10,10 +10,8 @@
         <h1>Gestion de la Paie</h1>
         <p>Période : {{ \Carbon\Carbon::create($year, $month)->locale('fr')->isoFormat('MMMM YYYY') }}</p>
     </div>
-    
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <form method="GET" action="{{ route('salary.index') }}" style="display:flex;gap:8px">
-            
             <select name="month" class="form-control" style="width:130px">
                 @for($m=1; $m<=12; $m++)
                     <option value="{{ $m }}" {{ $m==$month?'selected':'' }}>
@@ -26,12 +24,21 @@
                     <option value="{{ $y }}" {{ $y==$year?'selected':'' }}>{{ $y }}</option>
                 @endfor
             </select>
+            <select name="department" style="padding:10px 12px;border:1px solid var(--border);border-radius:8px;min-width:160px">
+                <option value="">Départements</option>
+                @foreach($departments as $dept)
+                    <option value="{{ $dept }}" {{ $department == $dept ? 'selected' : '' }}>{{ $dept }}</option>
+                @endforeach
+            </select>
+            @if($search || $department)
+                <a href="{{ route('salary.index', ['year' => $year]) }}" class="btn btn-ghost">✕ Réinitialiser</a>
+            @endif
             <button type="submit" class="btn btn-ghost">Filtrer</button>
         </form>
         <form method="POST" action="{{ route('salary.generate-all') }}">
             @csrf
             <input type="hidden" name="month" value="{{ $month }}">
-            <input type="hidden" name="year" value="{{ $year }}">
+            <input type="hidden" name="year"  value="{{ $year }}">
             <button type="submit" class="btn btn-primary"
                     onclick="return confirm('Générer la paie pour tous les employés ?')">
                 Générer tout le mois
@@ -40,7 +47,6 @@
         <a href="{{ route('variables.index', ['month'=>$month,'year'=>$year]) }}" class="btn btn-ghost">
             Éléments variables
         </a>
-        
     </div>
 </div>
 
@@ -53,9 +59,7 @@
     <div class="salary-card">
         <div class="salary-label">Masse salariale brute</div>
         <div class="salary-net">{{ number_format($summary['total_gross'],0,',',' ') }} MAD</div>
-        <div style="font-size:0.75rem;opacity:0.6;margin-top:4px">
-        Coût total employeur : 0 MAD
-        </div>
+        <div style="font-size:0.75rem;opacity:0.6;margin-top:4px">Coût total employeur : 0 MAD</div>
     </div>
     <div class="salary-card">
         <div class="salary-label">Charges salariales</div>
@@ -64,7 +68,7 @@
         </div>
         <div style="font-size:0.75rem;opacity:0.6;margin-top:4px">
             CNSS : {{ number_format($summary['total_cnss_sal'],0,',',' ') }} |
-            AMO : {{ number_format($summary['total_amo_sal'],0,',',' ') }}
+            AMO  : {{ number_format($summary['total_amo_sal'],0,',',' ') }}
         </div>
     </div>
     <div class="salary-card">
@@ -84,17 +88,31 @@
     </div>
 </div>
 
-
-
 {{-- ═══ Tableau employés ══════════════════════════════════════════ --}}
 <div class="card">
     <div class="card-header">
-<div class="card-title">Employés — {{ $employees->count() }} {{ $status ? ucfirst($status) : 'au total' }}</div>
+        <div class="card-title">Employés — {{ $employees->count() }} {{ $status ? ucfirst($status) : 'au total' }}</div>
         <div style="display:flex;gap:8px">
-            <a href="{{ route('salary.index', array_merge(request()->only(['month', 'year']), ['status' => null])) }}" class="badge badge-neutral {{ ($status ?? null) === null ? 'active' : '' }}" style="{{ ($status ?? null) === null ? 'font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);' : '' }}">Tous ({{ $summary['count'] }})</a>
-            <a href="{{ route('salary.index', array_merge(request()->only(['month', 'year']), ['status' => 'draft'])) }}" class="badge badge-warning {{ $status == 'draft' ? 'active' : '' }}" style="{{ $status == 'draft' ? 'font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);' : '' }}">{{ $summary['count_draft'] }} brouillons</a>
-            <a href="{{ route('salary.index', array_merge(request()->only(['month', 'year']), ['status' => 'validated'])) }}" class="badge badge-success {{ $status == 'validated' ? 'active' : '' }}" style="{{ $status == 'validated' ? 'font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);' : '' }}">{{ $summary['count_validated'] }} validés</a>
-            <a href="{{ route('salary.index', array_merge(request()->only(['month', 'year']), ['status' => 'paid'])) }}" class="badge badge-info {{ $status == 'paid' ? 'active' : '' }}" style="{{ $status == 'paid' ? 'font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);' : '' }}">{{ $summary['count_paid'] }} rémunérer</a>
+            <a href="{{ route('salary.index', array_merge(request()->only(['month','year']), ['status'=>null])) }}"
+               class="badge badge-neutral {{ ($status??null)===null?'active':'' }}"
+               style="{{ ($status??null)===null?'font-weight:bold;box-shadow:0 2px 4px rgba(0,0,0,0.1)':'' }}">
+               Tous ({{ $summary['count'] }})
+            </a>
+            <a href="{{ route('salary.index', array_merge(request()->only(['month','year']), ['status'=>'draft'])) }}"
+               class="badge badge-warning {{ $status=='draft'?'active':'' }}"
+               style="{{ $status=='draft'?'font-weight:bold;box-shadow:0 2px 4px rgba(0,0,0,0.1)':'' }}">
+               {{ $summary['count_draft'] }} brouillons
+            </a>
+            <a href="{{ route('salary.index', array_merge(request()->only(['month','year']), ['status'=>'validated'])) }}"
+               class="badge badge-success {{ $status=='validated'?'active':'' }}"
+               style="{{ $status=='validated'?'font-weight:bold;box-shadow:0 2px 4px rgba(0,0,0,0.1)':'' }}">
+               {{ $summary['count_validated'] }} validés
+            </a>
+            <a href="{{ route('salary.index', array_merge(request()->only(['month','year']), ['status'=>'paid'])) }}"
+               class="badge badge-info {{ $status=='paid'?'active':'' }}"
+               style="{{ $status=='paid'?'font-weight:bold;box-shadow:0 2px 4px rgba(0,0,0,0.1)':'' }}">
+               {{ $summary['count_paid'] }} rémunérés
+            </a>
         </div>
     </div>
     <div class="card-body" style="padding:0">
@@ -106,7 +124,6 @@
                         <th>Département</th>
                         <th>Mode paiement</th>
                         <th>Base</th>
-
                         <th>Brut</th>
                         <th>CNSS+AMO</th>
                         <th>IR</th>
@@ -117,7 +134,10 @@
                 </thead>
                 <tbody>
                     @forelse($employees as $emp)
-                        @php $sal = $emp->salaries->first(); @endphp
+                        @php
+                            $sal = $emp->salaries->first();
+                            $cur = $sal?->currency ?? 'MAD';
+                        @endphp
                         <tr>
                             <td>
                                 <div class="font-semibold">{{ $emp->full_name }}</div>
@@ -125,28 +145,33 @@
                             </td>
                             <td>{{ $emp->department }}</td>
                             <td style="font-size:0.82rem">
-@if($emp->payment_method == 'virement')
-    Virement {{ $emp->bank ?? '—' }}
-@else
-    {{ ucfirst($emp->payment_method ?? '—') }}
-@endif
-</td>
+                                @if($emp->payment_method == 'virement')
+                                    Virement {{ $emp->bank ?? '—' }}
+                                @else
+                                    {{ ucfirst($emp->payment_method ?? '—') }}
+                                @endif
+                            </td>
                             <td>{{ number_format($emp->base_salary,0,',',' ') }}</td>
-
                             <td class="font-semibold">
-                                {{ $sal ? number_format($sal->gross_salary,0,',',' ') : '—' }}
+                                {{ $sal ? number_format($sal->gross_salary,0,',',' ').' '.$cur : '—' }}
                             </td>
                             <td class="deduction" style="font-size:0.85rem">
                                 @if($sal)
-                                    {{ number_format($sal->cnss_deduction + $sal->amo_deduction,0,',',' ') }}
+                                    {{ number_format($sal->cnss_deduction + $sal->amo_deduction,0,',',' ') }} {{ $cur }}
                                 @else —
                                 @endif
                             </td>
                             <td class="deduction" style="font-size:0.85rem">
-                                {{ $sal ? number_format($sal->ir_deduction,0,',',' ') : '—' }}
+                                {{ $sal ? number_format($sal->ir_deduction,0,',',' ').' '.$cur : '—' }}
                             </td>
                             <td class="font-semibold" style="color:var(--success)">
-                                {{ $sal ? number_format($sal->net_salary,0,',',' ').' MAD' : '—' }}
+                                @if($sal)
+                                    {{ number_format($sal->net_salary,0,',',' ') }} {{ $cur }}
+                                    @if($cur !== 'MAD')
+                                        <div style="font-size:0.7rem;color:var(--text-muted)">(enregistré en {{ $cur }})</div>
+                                    @endif
+                                @else —
+                                @endif
                             </td>
                             <td>
                                 @if($sal)
@@ -161,11 +186,9 @@
                                         <a href="{{ route('salary.create', [$emp,'month'=>$month,'year'=>$year]) }}"
                                            class="btn btn-sm btn-primary">Saisir</a>
                                     @endunless
-                                    <a href="{{ route('salary.show', $emp) }}"
-                                       class="btn btn-sm btn-ghost">Historique</a>
+                                    <a href="{{ route('salary.show', $emp) }}" class="btn btn-sm btn-ghost">Historique</a>
                                     @if($sal)
-                                        <a href="{{ route('salary.pdf', $sal) }}"
-                                           class="btn btn-sm btn-ghost">PDF</a>
+                                        <a href="{{ route('salary.pdf', $sal) }}" class="btn btn-sm btn-ghost">PDF</a>
                                     @endif
                                 </div>
                             </td>

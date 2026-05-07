@@ -543,7 +543,7 @@ tbody tr:last-child td { border-bottom: none; }
 }
 
 .btn-success {
-  background: var(--success);
+  background: #14b8a5;
   color: white;
   border-color: transparent;
 }

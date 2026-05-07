@@ -126,7 +126,7 @@ Route::middleware(['web', 'domain-tenant', 'auth', 'identify-tenant'])->group(fu
 
     // ─────────────────────────────────────────────────────────────────────
     // ACCESSIBLE À TOUS LES UTILISATEURS CONNECTÉS DU TENANT
-    // ─────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────a
     Route::middleware(['tenant-user'])->group(function () {
 
         Route::post('/ask-ai',           AssistantRhController::class)->name('assistant-rh.chat');

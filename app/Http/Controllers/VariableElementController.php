@@ -11,19 +11,67 @@ class VariableElementController extends Controller
     public function index(Request $request)
     {
         $month = (int) $request->get('month', now()->month);
-        $year = (int) $request->get('year', now()->year);
+        $year  = (int) $request->get('year',  now()->year);
 
-        $employees = Employee::with(['variableElements' => function ($query) use ($month, $year) {
-            $query->where('month', $month)->where('year', $year);
-        }])->active()->get();
+        $employees = Employee::with([
+            'variableElements' => function ($query) use ($month, $year) {
+                $query->where('month', $month)->where('year', $year);
+            }
+        ])->active()->get();
 
         $variableElements = VariableElement::where('month', $month)
             ->where('year', $year)
             ->with('employee')
             ->latest()
-            ->paginate(20);
+            ->paginate(100);
 
-        return view('variable-elements.index', compact('variableElements', 'employees', 'month', 'year'));
+        return view('variable-elements.index', [
+            'elements'  => $variableElements,
+            'employees' => $employees,
+            'month'     => $month,
+            'year'      => $year,
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'employee_id' => 'required|exists:employees,id',
+            'month'       => 'required|integer|min:1|max:12',
+            'year'        => 'required|integer',
+            'category'    => 'required|in:gain,retenue',
+            'rubrique'    => 'nullable|string|max:100', // ajouté
+            'label'       => 'required|string|max:150',
+            'amount'      => 'required|numeric|min:0',
+            'unit'        => 'nullable|string|max:20',  //  ajouté
+        ]);
+
+        VariableElement::create([
+            'employee_id' => $validated['employee_id'],
+            'month'       => $validated['month'],
+            'year'        => $validated['year'],
+            'category'    => $validated['category'],                          //  sauvegardé
+            'rubrique'    => $validated['rubrique'] ?? null,                  //  sauvegardé
+            'label'       => $validated['label'],
+            'amount'      => $validated['amount'],
+            'unit'        => $validated['unit'] ?? 'MAD',                    //  sauvegardé
+            'type'        => $validated['category'] === 'retenue'
+                                ? 'deduction'
+                                : 'gain',
+        ]);
+
+        return redirect()
+            ->route('variables.index', [
+                'month' => $validated['month'],
+                'year'  => $validated['year'],
+            ])
+            ->with('success', 'Élément ajouté avec succès.');
+    }
+
+    public function destroy(VariableElement $variableElement)
+    {
+        $variableElement->delete();
+
+        return back()->with('success', 'Élément supprimé.');
     }
 }
-

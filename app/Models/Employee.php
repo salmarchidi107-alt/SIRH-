@@ -128,9 +128,10 @@ class Employee extends Model
         return $status ? $query->where('status', $status) : $query;
     }
 
-    public function scopeDepartment(Builder $query, ?string $department): Builder
+    public function scopeDepartment(Builder $query, ?string $department = null): Builder
     {
         if (!$department) return $query;
+
 
         return $query->where(function (Builder $q) use ($department) {
             $q->where('department', $department)

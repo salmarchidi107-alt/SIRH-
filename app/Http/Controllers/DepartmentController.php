@@ -3,12 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\Department;
+use App\Traits\EnsuresTenant;
 use Illuminate\Http\Request;
 
 class DepartmentController extends Controller
 {
+    use EnsuresTenant;
+
     public function store(Request $request)
     {
+        $this->ensureTenant(); // 
+
         $request->validate([
             'name'        => 'required|string|max:255|unique:departments,name',
             'code'        => 'nullable|string|max:10',
@@ -34,6 +39,8 @@ class DepartmentController extends Controller
 
     public function update(Request $request, Department $department)
     {
+        $this->ensureTenant(); // 
+
         $request->validate([
             'name'        => 'required|string|max:255|unique:departments,name,' . $department->id,
             'code'        => 'nullable|string|max:10',
@@ -57,14 +64,14 @@ class DepartmentController extends Controller
 
     public function destroy(Department $department)
     {
-        $name = $department->name;
+        $this->ensureTenant(); // 
 
-        // Désassocier les salles avant suppression
+        $name = $department->name;
         $department->rooms()->update(['department_id' => null]);
         $department->delete();
 
         return redirect()
             ->route('parametrage.index', ['tab' => 'departments'])
-            ->with('success', 'Département « ' . $name . ' » supprimé. Les salles ont été désassociées.');
+            ->with('success', 'Département « ' . $name . ' » supprimé.');
     }
 }

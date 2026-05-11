@@ -35,6 +35,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DocumentEnteteController;
 use App\Http\Controllers\ParametrageController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\FormationController;
+use App\Http\Controllers\ReferentielController;
+
 
 // ═════════════════════════════════════════════════════════════════════════════
 // DEBUG TEMPORAIRE — À SUPPRIMER APRÈS TEST
@@ -43,11 +46,11 @@ Route::get('/debug-ai-key', function () {
     $configKey = config('ai.providers.openrouter.key');
     $envKey    = env('OPENROUTER_API_KEY');
     return response()->json([
-        'config_key'    => $configKey ? '✅ Trouvée' : '❌ Null',
-        'env_key'       => $envKey    ? '✅ Trouvée' : '❌ Null',
+        'config_key'    => $configKey ? ' Trouvée' : ' Null',
+        'env_key'       => $envKey    ? ' Trouvée' : ' Null',
         'key_preview'   => $configKey ? substr($configKey, 0, 12) . '...' : 'N/A',
         'app_env'       => config('app.env'),
-        'config_cached' => app()->configurationIsCached() ? '✅ Oui (config:cache actif)' : '❌ Non',
+        'config_cached' => app()->configurationIsCached() ? ' Oui (config:cache actif)' : '❌ Non',
     ]);
 })->middleware('auth');
 
@@ -326,16 +329,62 @@ Route::prefix('badge')->name('badge.')->group(function () {
         Route::get('/result',    [BadgePointageController::class, 'result'])     ->name('result');
     });
 });
-Route::get('/parametrage', [ParametrageController::class, 'index'])
-    ->name('parametrage.index');
- 
-// Salles (CRUD)
-Route::post('/rooms',          [RoomController::class, 'store'])  ->name('rooms.store');
-Route::put('/rooms/{room}',    [RoomController::class, 'update']) ->name('rooms.update');
-Route::delete('/rooms/{room}', [RoomController::class, 'destroy'])->name('rooms.destroy');
- 
-// Départements (CRUD — pas de GET index car intégré dans paramétrage)
-Route::post('/departments',               [DepartmentController::class, 'store'])  ->name('departments.store');
-Route::put('/departments/{department}',   [DepartmentController::class, 'update']) ->name('departments.update');
-Route::delete('/departments/{department}',[DepartmentController::class, 'destroy'])->name('departments.destroy');
- 
+Route::middleware(['admin'])->group(function () {
+    
+
+    //  AJOUTER ICI
+    Route::get('/parametrage', [ParametrageController::class, 'index'])
+        ->name('parametrage.index');
+
+    Route::post('/rooms',          [RoomController::class, 'store'])  ->name('rooms.store');
+    Route::put('/rooms/{room}',    [RoomController::class, 'update']) ->name('rooms.update');
+    Route::delete('/rooms/{room}', [RoomController::class, 'destroy'])->name('rooms.destroy');
+
+    Route::post('/departments',               [DepartmentController::class, 'store'])  ->name('departments.store');
+    Route::put('/departments/{department}',   [DepartmentController::class, 'update']) ->name('departments.update');
+    Route::delete('/departments/{department}',[DepartmentController::class, 'destroy'])->name('departments.destroy');
+});
+Route::middleware(['auth'])->prefix('lms')->name('lms.')->group(function () {
+
+    // Liste des formations
+    Route::get('/', [FormationController::class, 'index'])->name('index');
+
+    // Planning
+    Route::get('/planning', [FormationController::class, 'planning'])->name('planning');
+
+    // CRUD
+    Route::post('/',                    [FormationController::class, 'store'])->name('store');
+    Route::put('/{formation}',          [FormationController::class, 'update'])->name('update');
+    Route::delete('/{formation}',       [FormationController::class, 'destroy'])->name('destroy');
+
+    // Export PDF
+    Route::get('/export-pdf',           [FormationController::class, 'exportPdf'])->name('exportPdf');
+
+    // AJAX : employés par département
+    Route::get('/employees-by-department', [FormationController::class, 'employeesByDepartment'])->name('employeesByDepartment');
+});
+Route::middleware(['auth'])->prefix('referentiel')->name('referentiel.')->group(function () {
+
+    // Page principale (3 onglets : formateurs / formations / organismes)
+    Route::get('/', [ReferentielController::class, 'index'])->name('index');
+
+    // ── Formateurs ──
+    Route::post('/formateurs',                   [ReferentielController::class, 'storeFormateur'])->name('formateurs.store');
+    Route::put('/formateurs/{formateur}',        [ReferentielController::class, 'updateFormateur'])->name('formateurs.update');
+    Route::delete('/formateurs/{formateur}',     [ReferentielController::class, 'destroyFormateur'])->name('formateurs.destroy');
+
+    // ── Catalogue formations ──
+    Route::post('/formations',                   [ReferentielController::class, 'storeFormation'])->name('formations.store');
+    Route::put('/formations/{formation}',        [ReferentielController::class, 'updateFormation'])->name('formations.update');
+    Route::delete('/formations/{formation}',     [ReferentielController::class, 'destroyFormation'])->name('formations.destroy');
+
+    // ── Organismes ──
+    Route::post('/organismes',                   [ReferentielController::class, 'storeOrganisme'])->name('organismes.store');
+    Route::put('/organismes/{organisme}',        [ReferentielController::class, 'updateOrganisme'])->name('organismes.update');
+    Route::delete('/organismes/{organisme}',     [ReferentielController::class, 'destroyOrganisme'])->name('organismes.destroy');
+
+    // ── AJAX (utilisé par le LMS) ──
+    Route::get('/api/formateurs',   [ReferentielController::class, 'formateursActifs'])->name('api.formateurs');
+    Route::get('/api/formations',   [ReferentielController::class, 'catalogueActif'])->name('api.formations');
+    Route::get('/api/organismes',   [ReferentielController::class, 'organismesActifs'])->name('api.organismes');
+});

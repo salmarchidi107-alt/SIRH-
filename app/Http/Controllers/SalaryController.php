@@ -73,7 +73,7 @@ class SalaryController extends Controller
     }
 
     public function create(Employee $employee, Request $request)
-    {
+    { 
         $month = (int) $request->get('month', now()->month);
         $year  = (int) $request->get('year',  now()->year);
 
@@ -158,6 +158,10 @@ class SalaryController extends Controller
             'employer_tfp'             => 'nullable|numeric|min:0',
             'employer_total_cost'      => 'nullable|numeric|min:0',
         ]);
+        \Log::info('Currency reçu', [
+    'raw'       => $request->input('currency'),
+    'validated' => $data['currency'] ?? 'ABSENT',
+]);
 
         $month = (int) $data['month'];
         $year  = (int) $data['year'];
@@ -227,7 +231,11 @@ class SalaryController extends Controller
         ]);
 
         $salary->save();
-
+$salary->save();
+\Log::info('Currency après save', [
+    'id'       => $salary->id,
+    'currency' => $salary->fresh()->currency,
+]);
         return redirect()
             ->route('salary.show', $employee)
             ->with('success', 'Bulletin de paie enregistré avec succès.');

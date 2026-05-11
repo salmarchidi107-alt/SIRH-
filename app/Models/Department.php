@@ -2,16 +2,20 @@
 
 namespace App\Models;
 
+use App\Traits\HasTenantScope;
 use Illuminate\Database\Eloquent\Model;
 
 class Department extends Model
 {
+    use HasTenantScope; // ✅
+
     protected $fillable = [
         'name',
         'code',
         'color',
         'chef',
         'description',
+        'tenant_id', // ✅
     ];
 
     // =========================================================================
@@ -42,8 +46,7 @@ class Department extends Model
     // =========================================================================
 
     /**
-     * Retourne la liste des noms de départements triés alphabétiquement.
-     * Utilisé dans tous les contrôleurs via Department::names().
+     * Retourne la liste des noms de départements du tenant courant.
      * Fallback sur le champ department de la table employees si vide.
      */
     public static function names(): \Illuminate\Support\Collection
@@ -54,7 +57,7 @@ class Department extends Model
                 return $names;
             }
         } catch (\Exception $e) {
-            // Table vide ou inexistante → fallback
+            // fallback
         }
 
         return Employee::whereNotNull('department')

@@ -145,7 +145,7 @@ const EXISTING = {
             </div>
             <div style="width:1px;height:32px;background:var(--border-color);margin:0 4px"></div>
             <div style="display:flex;align-items:center;gap:10px">
-                <label style="font-size:0.85rem;color:var(--text-muted);white-space:nowrap;font-weight:600">🌍 Système</label>
+                <label style="font-size:0.85rem;color:var(--text-muted);white-space:nowrap;font-weight:600">Système</label>
                 <div style="display:flex;border:2px solid #e5e7eb;border-radius:8px;overflow:hidden">
                     <button type="button" id="btn-mad" onclick="setSystem('MAD')"
                             style="padding:9px 22px;font-weight:700;font-size:0.9rem;border:none;cursor:pointer;
@@ -570,145 +570,123 @@ const EXISTING = {
 </form>
 
 <script>
-// ============================================================
-//  ÉTAT GLOBAL
-// ============================================================
-let currentSystem = 'MAD';
+var currentSystem = 'MAD';
 
-// ============================================================
-//  CONSTANTES PAR SYSTÈME
-// ============================================================
-const SYS = {
+var SYS = {
     MAD: {
-        CNSS_SAL:    0.0448,  CNSS_PLAFOND: 6000,
-        AMO_SAL:     0.0226,  FP_RATE: 0.20,   FP_MAX: 2500,  HAS_FP: true,
-        CNSS_PAT:    0.1029,  AMO_PAT: 0.0226, TFP: 0.016,    HAS_TFP: true,
-        HEURES_REF:  191.25,
-        cur:         'MAD',
-        cot_sub:     'Mode automatique = taux légaux marocains',
-        cnss_lbl:    'CNSS salariale',
-        amo_lbl:     'AMO salariale',
-        amo_sub:     '2,26% du salaire brut',
+        CNSS_SAL: 0.0448, CNSS_PLAFOND: 6000,
+        AMO_SAL: 0.0226, FP_RATE: 0.20, FP_MAX: 2500, HAS_FP: true,
+        CNSS_PAT: 0.1029, AMO_PAT: 0.0226, TFP: 0.016, HAS_TFP: true,
+        HEURES_REF: 191.25,
+        cot_sub: 'Mode automatique = taux legaux marocains',
+        cnss_lbl: 'CNSS salariale',
+        amo_lbl: 'AMO salariale',
+        amo_sub: '2,26% du salaire brut',
         taxable_lbl: 'Net imposable (NI)',
         cot_tot_lbl: 'TOTAL COTISATIONS (CNSS+AMO)',
-        ir_title:    'IR — Impôt sur le Revenu',
-        ir_sub:      'Barème progressif annuel DGI ÷ 12',
-        ir_ann_lbl:  'IR annuel brut (barème)',
-        ir_fam_lbl:  'Déductions familiales (360 MAD/pers.)',
-        ir_mon_lbl:  'IR mensuel retenu',
-        emp_cnss_lbl:'CNSS patronale (10,29%)',
+        ir_title: 'IR - Impot sur le Revenu',
+        ir_sub: 'Bareme progressif annuel DGI 12',
+        ir_ann_lbl: 'IR annuel brut (bareme)',
+        ir_fam_lbl: 'Deductions familiales (360 MAD/pers.)',
+        ir_mon_lbl: 'IR mensuel retenu',
+        emp_cnss_lbl: 'CNSS patronale (10,29%)',
         emp_amo_lbl: 'AMO patronale (2,26%)',
         emp_tfp_lbl: 'TFP (1,60%)',
-        hr_lbl:      '191,25',
+        hr_lbl: '191,25'
     },
     MRU: {
-        CNSS_SAL:    0.01,    CNSS_PLAFOND: 15000,
-        AMO_SAL:     0.04,    FP_RATE: 0,      FP_MAX: 0,     HAS_FP: false,
-        CNSS_PAT:    0.13,    AMO_PAT: 0.02,   TFP: 0,        HAS_TFP: false,
-        HEURES_REF:  173.33,
-        cur:         'MRU',
-        cot_sub:     'Mode automatique = taux légaux mauritaniens',
-        cnss_lbl:    'CNSS salariale (Mauritanie)',
-        amo_lbl:     'CNAM salariale (Mauritanie)',
-        amo_sub:     '4% du salaire brut — assurance maladie',
+        CNSS_SAL: 0.01, CNSS_PLAFOND: 15000,
+        AMO_SAL: 0.04, FP_RATE: 0, FP_MAX: 0, HAS_FP: false,
+        CNSS_PAT: 0.13, AMO_PAT: 0.02, TFP: 0, HAS_TFP: false,
+        HEURES_REF: 173.33,
+        cot_sub: 'Mode automatique = taux legaux mauritaniens',
+        cnss_lbl: 'CNSS salariale (Mauritanie)',
+        amo_lbl: 'CNAM salariale (Mauritanie)',
+        amo_sub: '4% du salaire brut - assurance maladie',
         taxable_lbl: 'Revenu imposable ITS',
         cot_tot_lbl: 'TOTAL COTISATIONS (CNSS+CNAM)',
-        ir_title:    'ITS — Impôt sur Traitements & Salaires',
-        ir_sub:      'Barème progressif mensuel — Mauritanie',
-        ir_ann_lbl:  'ITS calculé (barème mensuel)',
-        ir_fam_lbl:  'Abattement',
-        ir_mon_lbl:  'ITS mensuel retenu',
-        emp_cnss_lbl:'CNSS patronale (13%)',
+        ir_title: 'ITS - Impot sur Traitements et Salaires',
+        ir_sub: 'Bareme progressif mensuel - Mauritanie',
+        ir_ann_lbl: 'ITS calcule (bareme mensuel)',
+        ir_fam_lbl: 'Abattement',
+        ir_mon_lbl: 'ITS mensuel retenu',
+        emp_cnss_lbl: 'CNSS patronale (13%)',
         emp_amo_lbl: 'CNAM patronale (2%)',
         emp_tfp_lbl: '',
-        hr_lbl:      '173,33',
+        hr_lbl: '173,33'
     }
 };
 
-// ============================================================
-//  BARÈMES FISCAUX
-// ============================================================
 function calcIR_MAD(annuel) {
-    if (annuel <= 30000)  return 0;
-    if (annuel <= 50000)  return (annuel - 30000) * 0.10;
-    if (annuel <= 60000)  return 2000  + (annuel - 50000) * 0.20;
-    if (annuel <= 80000)  return 4000  + (annuel - 60000) * 0.30;
-    if (annuel <= 180000) return 10000 + (annuel - 80000)  * 0.34;
+    if (annuel <= 30000) return 0;
+    if (annuel <= 50000) return (annuel - 30000) * 0.10;
+    if (annuel <= 60000) return 2000 + (annuel - 50000) * 0.20;
+    if (annuel <= 80000) return 4000 + (annuel - 60000) * 0.30;
+    if (annuel <= 180000) return 10000 + (annuel - 80000) * 0.34;
     return 44000 + (annuel - 180000) * 0.38;
 }
 
 function calcITS_MRU(mensuel) {
-    if (mensuel <= 6000)  return 0;
-    if (mensuel <= 9000)  return (mensuel - 6000) * 0.15;
-    if (mensuel <= 21000) return 450  + (mensuel - 9000)  * 0.25;
+    if (mensuel <= 6000) return 0;
+    if (mensuel <= 9000) return (mensuel - 6000) * 0.15;
+    if (mensuel <= 21000) return 450 + (mensuel - 9000) * 0.25;
     return 3450 + (mensuel - 21000) * 0.40;
 }
 
 function calcDeductFam_MAD(status, children) {
-    let d = 0;
-    if (['marie','veuf','divorce'].includes(status)) d += 360;
+    var d = 0;
+    if (status === 'marie' || status === 'veuf' || status === 'divorce') d += 360;
     d += Math.min(children, 6) * 360;
     return d;
 }
 
 function seniorityRate(years) {
-    if (years < 2)  return 0;
-    if (years < 5)  return 0.05;
+    if (years < 2) return 0;
+    if (years < 5) return 0.05;
     if (years < 12) return 0.10;
     if (years < 20) return 0.15;
     if (years < 25) return 0.20;
     return 0.25;
 }
 
-// ============================================================
-//  FORMATAGE
-// ============================================================
 function fmt(n) {
-    return parseFloat(n.toFixed(2))
-        .toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2});
+    return parseFloat(n.toFixed(2)).toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 
 function setHTML(id, val) {
-    const el = document.getElementById(id);
+    var el = document.getElementById(id);
     if (el) el.innerHTML = val + ' <span class="cur-label">' + currentSystem + '</span>';
 }
+
 function setText(id, val) {
-    const el = document.getElementById(id);
+    var el = document.getElementById(id);
     if (el) el.textContent = val;
 }
 
-// ============================================================
-//  CHANGEMENT DE SYSTÈME — met à jour h_currency
-// ============================================================
 function setSystem(sys) {
     currentSystem = sys;
 
-    // ✅ Mise à jour du champ hidden currency envoyé au serveur
-    document.getElementById('h_currency').value = sys;
+    var hCurrency = document.getElementById('h_currency');
+    if (hCurrency) hCurrency.value = sys;
 
-    const S = SYS[sys];
+    var S = SYS[sys];
 
-    // Boutons
-    document.getElementById('btn-mad').style.background = sys==='MAD' ? '#1d4ed8' : '#f9fafb';
-    document.getElementById('btn-mad').style.color      = sys==='MAD' ? 'white'   : '#6b7280';
-    document.getElementById('btn-mru').style.background = sys==='MRU' ? '#065f46' : '#f9fafb';
-    document.getElementById('btn-mru').style.color      = sys==='MRU' ? 'white'   : '#6b7280';
+    document.getElementById('btn-mad').style.background = sys === 'MAD' ? '#1d4ed8' : '#f9fafb';
+    document.getElementById('btn-mad').style.color      = sys === 'MAD' ? 'white'   : '#6b7280';
+    document.getElementById('btn-mru').style.background = sys === 'MRU' ? '#065f46' : '#f9fafb';
+    document.getElementById('btn-mru').style.color      = sys === 'MRU' ? 'white'   : '#6b7280';
 
-    // Badge
-    const badge = document.getElementById('system-badge');
-    badge.textContent       = sys==='MAD' ? 'Système marocain actif' : 'Système mauritanien actif';
-    badge.style.background  = sys==='MAD' ? '#dbeafe' : '#dcfce7';
-    badge.style.color       = sys==='MAD' ? '#1e40af' : '#14532d';
-    badge.style.borderColor = sys==='MAD' ? '#bfdbfe' : '#86efac';
+    var badge = document.getElementById('system-badge');
+    badge.textContent       = sys === 'MAD' ? 'Systeme marocain actif' : 'Systeme mauritanien actif';
+    badge.style.background  = sys === 'MAD' ? '#dbeafe' : '#dcfce7';
+    badge.style.color       = sys === 'MAD' ? '#1e40af' : '#14532d';
+    badge.style.borderColor = sys === 'MAD' ? '#bfdbfe' : '#86efac';
 
-    // Bandeaux info
-    document.getElementById('mad-info-banner').style.display = sys==='MAD' ? 'block' : 'none';
-    document.getElementById('mru-info-banner').style.display = sys==='MRU' ? 'block' : 'none';
+    document.getElementById('mad-info-banner').style.display = sys === 'MAD' ? 'block' : 'none';
+    document.getElementById('mru-info-banner').style.display = sys === 'MRU' ? 'block' : 'none';
 
-    // Tous les .cur-label
-    document.querySelectorAll('.cur-label').forEach(el => el.textContent = sys);
+    document.querySelectorAll('.cur-label').forEach(function(el) { el.textContent = sys; });
 
-    // Labels dynamiques
     setText('cot-subtitle',    S.cot_sub);
     setText('cnss-label',      S.cnss_lbl);
     setText('amo-label',       S.amo_lbl);
@@ -724,61 +702,47 @@ function setSystem(sys) {
     setText('emp-amo-label',   S.emp_amo_lbl);
     if (S.HAS_TFP) setText('emp-tfp-label', S.emp_tfp_lbl);
 
-    // Visibilités
-    document.getElementById('row-fp').style.display         = S.HAS_FP  ? '' : 'none';
-    document.getElementById('row-tfp').style.display        = S.HAS_TFP ? '' : 'none';
-    document.getElementById('row-ir-family').style.display  = sys==='MAD' ? '' : 'none';
+    document.getElementById('row-fp').style.display        = S.HAS_FP  ? '' : 'none';
+    document.getElementById('row-tfp').style.display       = S.HAS_TFP ? '' : 'none';
+    document.getElementById('row-ir-family').style.display = sys === 'MAD' ? '' : 'none';
 
-    // Heures de référence
     setText('heures-ref-label', S.hr_lbl);
-
     calculate();
 }
 
-// ============================================================
-//  MODE COTISATION
-// ============================================================
 function toggleCotisationMode() {
-    const isManual = document.querySelector('input[name="mode_cotisation"]:checked').value === 'manual';
-    ['cnss','amo','fp'].forEach(k => {
-        const a = document.getElementById(k+'-auto');
-        const m = document.getElementById(k+'-manual');
+    var checked = document.querySelector('input[name="mode_cotisation"]:checked');
+    var isManual = checked && checked.value === 'manual';
+    ['cnss','amo','fp'].forEach(function(k) {
+        var a = document.getElementById(k+'-auto');
+        var m = document.getElementById(k+'-manual');
         if (a) a.style.display = isManual ? 'none'  : 'block';
         if (m) m.style.display = isManual ? 'block' : 'none';
     });
-    const aL = document.getElementById('autoLabel');
-    const mL = document.getElementById('manuelLabel');
-    aL.style.background = isManual ? 'white'   : '#e0f2fe';
-    aL.style.color      = isManual ? 'var(--text-muted)' : '#0369a1';
-    mL.style.background = isManual ? '#fef08a' : 'white';
-    mL.style.color      = isManual ? '#78350f' : 'var(--text-muted)';
+    var aL = document.getElementById('autoLabel');
+    var mL = document.getElementById('manuelLabel');
+    if (aL) { aL.style.background = isManual ? 'white' : '#e0f2fe'; aL.style.color = isManual ? '' : '#0369a1'; }
+    if (mL) { mL.style.background = isManual ? '#fef08a' : 'white'; mL.style.color = isManual ? '#78350f' : ''; }
     calculate();
 }
 
-// ============================================================
-//  TYPE SALAIRE
-// ============================================================
 function onTypeChange() {
-    const isHourly = document.getElementById('type_hourly').checked;
+    var isHourly = document.getElementById('type_hourly').checked;
     document.getElementById('hourly_rate').disabled = !isHourly;
-    document.getElementById('base_salary').readOnly  = isHourly;
-    setText('base-sub', isHourly ? 'Calculé : taux horaire × heures travaillées' : 'Rémunération mensuelle contractuelle');
+    document.getElementById('base_salary').readOnly = isHourly;
+    setText('base-sub', isHourly ? 'Calcule : taux horaire x heures travaillees' : 'Remuneration mensuelle contractuelle');
     calculate();
 }
 
-// ============================================================
-//  CALCUL PRINCIPAL
-// ============================================================
 function calculate() {
-    const S = SYS[currentSystem];
+    var S = SYS[currentSystem];
 
-    // 1. Pointage
-    const workH    = EMPLOYEE_DATA.working_hours;
-    const otDayH   = EMPLOYEE_DATA.ot_day;
-    const absH     = EMPLOYEE_DATA.absence_hours;
-    const delayH   = EMPLOYEE_DATA.delay_hours;
-    const otNightH = parseFloat(document.getElementById('ot_night_h').value) || 0;
-    const otWkndH  = parseFloat(document.getElementById('ot_wknd_h').value)  || 0;
+    var workH    = EMPLOYEE_DATA.working_hours;
+    var otDayH   = EMPLOYEE_DATA.ot_day;
+    var absH     = EMPLOYEE_DATA.absence_hours;
+    var delayH   = EMPLOYEE_DATA.delay_hours;
+    var otNightH = parseFloat(document.getElementById('ot_night_h').value) || 0;
+    var otWkndH  = parseFloat(document.getElementById('ot_wknd_h').value)  || 0;
 
     setText('disp-working',    workH    + ' h');
     setText('disp-ot-day',     otDayH   + ' h');
@@ -788,72 +752,65 @@ function calculate() {
     setText('ot-night-h-disp', otNightH + ' h');
     setText('ot-wknd-h-disp',  otWkndH  + ' h');
 
-    // 2. Salaire de base
-    const isHourly   = document.getElementById('type_hourly').checked;
-    const hourlyRate = parseFloat(document.getElementById('hourly_rate').value) || 0;
-    let baseSalary;
+    var isHourly   = document.getElementById('type_hourly').checked;
+    var hourlyRate = parseFloat(document.getElementById('hourly_rate').value) || 0;
+    var baseSalary;
     if (isHourly) {
         baseSalary = hourlyRate * workH;
         document.getElementById('base_salary').value = baseSalary.toFixed(2);
     } else {
         baseSalary = parseFloat(document.getElementById('base_salary').value) || 0;
     }
-    const tauxH = isHourly ? hourlyRate : (baseSalary / S.HEURES_REF);
+    var tauxH = isHourly ? hourlyRate : (baseSalary / S.HEURES_REF);
 
-    // 3. Ancienneté
-    const seniority = baseSalary * seniorityRate(EMPLOYEE_DATA.seniority_years);
+    var seniority = baseSalary * seniorityRate(EMPLOYEE_DATA.seniority_years);
     setHTML('seniority-val', fmt(seniority));
 
-    // 4. Heures supp
-    const otDayAmt   = tauxH * otDayH   * 1.25;
-    const otNightAmt = tauxH * otNightH * 1.50;
-    const otWkndAmt  = tauxH * otWkndH  * 2.00;
-    const totalOT    = otDayAmt + otNightAmt + otWkndAmt;
+    var otDayAmt   = tauxH * otDayH   * 1.25;
+    var otNightAmt = tauxH * otNightH * 1.50;
+    var otWkndAmt  = tauxH * otWkndH  * 2.00;
+    var totalOT    = otDayAmt + otNightAmt + otWkndAmt;
 
     setHTML('ot-day-amt-disp',   '= ' + fmt(otDayAmt));
     setHTML('ot-night-amt-disp', '= ' + fmt(otNightAmt));
     setHTML('ot-wknd-amt-disp',  '= ' + fmt(otWkndAmt));
     setHTML('ot-total-disp',     fmt(totalOT));
 
-    // 5. Autres gains
-    const perfBonus      = parseFloat(document.getElementById('performance_bonus').value)       || 0;
-    const transport      = parseFloat(document.getElementById('transport_allowance').value)     || 0;
-    const meal           = parseFloat(document.getElementById('meal_allowance').value)          || 0;
-    const housing        = parseFloat(document.getElementById('housing_allowance').value)       || 0;
-    const responsibility = parseFloat(document.getElementById('responsibility_allowance').value) || 0;
-    const otherGains     = parseFloat(document.getElementById('other_gains').value)             || 0;
+    var perfBonus      = parseFloat(document.getElementById('performance_bonus').value)        || 0;
+    var transport      = parseFloat(document.getElementById('transport_allowance').value)      || 0;
+    var meal           = parseFloat(document.getElementById('meal_allowance').value)           || 0;
+    var housing        = parseFloat(document.getElementById('housing_allowance').value)        || 0;
+    var responsibility = parseFloat(document.getElementById('responsibility_allowance').value) || 0;
+    var otherGains     = parseFloat(document.getElementById('other_gains').value)              || 0;
 
-    // 6. Absences
-    const absDeduction = tauxH * absH;
+    var absDeduction = tauxH * absH;
     setHTML('absence-auto', fmt(absDeduction));
     document.getElementById('absence-sub').innerHTML =
-        '(' + fmt(baseSalary) + ' / <span id="heures-ref-label">' + S.hr_lbl + '</span> h) × '
+        '(' + fmt(baseSalary) + ' / <span id="heures-ref-label">' + S.hr_lbl + '</span> h) x '
         + absH + ' h = ' + fmt(absDeduction) + ' ' + currentSystem;
 
-    // 7. Brut
-    const grossSalary = Math.max(0,
+    var grossSalary = Math.max(0,
         baseSalary + seniority + totalOT
         + perfBonus + transport + meal + housing + responsibility + otherGains
         - absDeduction
     );
     setText('gross-display', fmt(grossSalary));
 
-    // Sous-titre CNSS dynamique
     if (currentSystem === 'MAD') {
-        setText('cnss-sub', '4,48% × min(' + fmt(grossSalary) + ', 6 000) = ' + fmt(Math.min(grossSalary,6000)*0.0448) + ' MAD');
+        setText('cnss-sub', '4,48% x min(' + fmt(grossSalary) + ', 6 000) = ' + fmt(Math.min(grossSalary,6000)*0.0448) + ' MAD');
     } else {
-        setText('cnss-sub', '1% × min(' + fmt(grossSalary) + ', 15 000) = ' + fmt(Math.min(grossSalary,15000)*0.01) + ' MRU');
+        setText('cnss-sub', '1% x min(' + fmt(grossSalary) + ', 15 000) = ' + fmt(Math.min(grossSalary,15000)*0.01) + ' MRU');
     }
 
-    // 8. Cotisations
-    const isManual = document.querySelector('input[name="mode_cotisation"]:checked')?.value === 'manual';
-    let cnss, amo, fp;
+    var checked2 = document.querySelector('input[name="mode_cotisation"]:checked');
+    var isManual = checked2 && checked2.value === 'manual';
+    var cnss, amo, fp;
     if (isManual) {
         cnss = parseFloat(document.getElementById('cnss-manual').value) || 0;
         amo  = parseFloat(document.getElementById('amo-manual').value)  || 0;
         fp   = S.HAS_FP ? (parseFloat(document.getElementById('fp-manual').value) || 0) : 0;
     } else {
-        const base = Math.min(grossSalary, S.CNSS_PLAFOND);
+        var base = Math.min(grossSalary, S.CNSS_PLAFOND);
         cnss = base        * S.CNSS_SAL;
         amo  = grossSalary * S.AMO_SAL;
         fp   = S.HAS_FP ? Math.min(grossSalary * S.FP_RATE, S.FP_MAX) : 0;
@@ -861,64 +818,58 @@ function calculate() {
         setHTML('amo-auto',  fmt(amo));
         setHTML('fp-auto',   fmt(fp));
     }
-    const totalCot = cnss + amo;
+    var totalCot = cnss + amo;
 
-    // 9. Imposable
-    const taxableIncome = Math.max(0, grossSalary - cnss - amo - fp);
+    var taxableIncome = Math.max(0, grossSalary - cnss - amo - fp);
     setHTML('taxable-display',   fmt(taxableIncome));
     setHTML('cot-total-display', fmt(totalCot));
 
-    // 10. Impôt
-    let irAnnuelBrut, deductFam, irMensuel;
+    var irAnnuelBrut, deductFam, irMensuel;
     if (currentSystem === 'MAD') {
         irAnnuelBrut = calcIR_MAD(taxableIncome * 12);
         deductFam    = calcDeductFam_MAD(EMPLOYEE_DATA.family_status, EMPLOYEE_DATA.children_count);
         irMensuel    = Math.max(0, irAnnuelBrut - deductFam) / 12;
         setHTML('ir-annual', fmt(irAnnuelBrut));
-        document.getElementById('ir-family').innerHTML = '−' + fmt(deductFam) + ' <span class="cur-label">MAD</span>';
+        document.getElementById('ir-family').innerHTML = '-' + fmt(deductFam) + ' <span class="cur-label">MAD</span>';
     } else {
         irAnnuelBrut = calcITS_MRU(taxableIncome);
         deductFam    = 0;
         irMensuel    = irAnnuelBrut;
         setHTML('ir-annual', fmt(irAnnuelBrut));
-        document.getElementById('ir-family').innerHTML = '−0,00 <span class="cur-label">MRU</span>';
+        document.getElementById('ir-family').innerHTML = '-0,00 <span class="cur-label">MRU</span>';
     }
     setHTML('ir-monthly', fmt(irMensuel));
 
-    // 11. Retenues
-    const advance     = parseFloat(document.getElementById('advance_deduction').value)     || 0;
-    const loan        = parseFloat(document.getElementById('loan_deduction').value)        || 0;
-    const garnishment = parseFloat(document.getElementById('garnishment_deduction').value) || 0;
-    const otherDed    = parseFloat(document.getElementById('other_deductions').value)      || 0;
-    const totalRet    = advance + loan + garnishment + otherDed;
+    var advance     = parseFloat(document.getElementById('advance_deduction').value)     || 0;
+    var loan        = parseFloat(document.getElementById('loan_deduction').value)        || 0;
+    var garnishment = parseFloat(document.getElementById('garnishment_deduction').value) || 0;
+    var otherDed    = parseFloat(document.getElementById('other_deductions').value)      || 0;
+    var totalRet    = advance + loan + garnishment + otherDed;
     setHTML('ret-total-display', fmt(totalRet));
 
-    // 12. Net
-    const netSalary = Math.max(0, grossSalary - totalCot - fp - irMensuel - totalRet);
+    var netSalary = Math.max(0, grossSalary - totalCot - fp - irMensuel - totalRet);
     setText('net-display', fmt(netSalary));
-    const tax_label = currentSystem === 'MAD' ? 'IR' : 'ITS';
+    var tax_label = currentSystem === 'MAD' ? 'IR' : 'ITS';
     setText('net-detail',
         'Brut ' + fmt(grossSalary) +
-        ' − Cotis. ' + fmt(totalCot) +
-        (fp > 0 ? ' − FP ' + fmt(fp) : '') +
-        ' − ' + tax_label + ' ' + fmt(irMensuel) +
-        ' − Retenues ' + fmt(totalRet) +
+        ' - Cotis. ' + fmt(totalCot) +
+        (fp > 0 ? ' - FP ' + fmt(fp) : '') +
+        ' - ' + tax_label + ' ' + fmt(irMensuel) +
+        ' - Retenues ' + fmt(totalRet) +
         ' (' + currentSystem + ')'
     );
 
-    // 13. Patronal
-    const empBase  = Math.min(grossSalary, S.CNSS_PLAFOND);
-    const empCnss  = empBase       * S.CNSS_PAT;
-    const empAmo   = grossSalary   * S.AMO_PAT;
-    const empTfp   = S.HAS_TFP ? grossSalary * S.TFP : 0;
-    const empTotal = netSalary + totalCot + fp + irMensuel + empCnss + empAmo + empTfp;
+    var empBase  = Math.min(grossSalary, S.CNSS_PLAFOND);
+    var empCnss  = empBase       * S.CNSS_PAT;
+    var empAmo   = grossSalary   * S.AMO_PAT;
+    var empTfp   = S.HAS_TFP ? grossSalary * S.TFP : 0;
+    var empTotal = netSalary + totalCot + fp + irMensuel + empCnss + empAmo + empTfp;
 
     setText('emp-cnss', fmt(empCnss));
     setText('emp-amo',  fmt(empAmo));
     setText('emp-tfp',  fmt(empTfp));
     setHTML('emp-total', fmt(empTotal));
 
-    // 14. Champs hidden soumis au serveur
     document.getElementById('h_gross_salary').value        = grossSalary.toFixed(2);
     document.getElementById('h_seniority_bonus').value     = seniority.toFixed(2);
     document.getElementById('h_ot_day_amount').value       = otDayAmt.toFixed(2);
@@ -947,13 +898,9 @@ function calculate() {
     document.getElementById('h_abs_hours').value           = absH.toFixed(2);
     document.getElementById('h_delay_hours').value         = delayH.toFixed(2);
     document.getElementById('h_hourly_rate').value         = (isHourly ? hourlyRate : 0).toFixed(2);
-    // ✅ h_currency déjà mis à jour dans setSystem()
 }
 
-// ============================================================
-//  INITIALISATION
-// ============================================================
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function() {
     if (EXISTING.salary_type === 'hourly') {
         document.getElementById('type_hourly').checked  = true;
         document.getElementById('hourly_rate').disabled = false;
@@ -962,10 +909,10 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
         document.getElementById('type_monthly').checked = true;
     }
-    document.querySelector('input[name="mode_cotisation"][value="' + EXISTING.mode_cotisation + '"]').checked = true;
+    var modeInput = document.querySelector('input[name="mode_cotisation"][value="' + EXISTING.mode_cotisation + '"]');
+    if (modeInput) modeInput.checked = true;
 
-    // ✅ Restaurer la devise du bulletin existant
-    const savedCurrency = EXISTING.currency || 'MAD';
+    var savedCurrency = EXISTING.currency || 'MAD';
     setSystem(savedCurrency);
     toggleCotisationMode();
 });

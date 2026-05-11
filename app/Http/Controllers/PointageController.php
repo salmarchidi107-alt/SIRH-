@@ -78,6 +78,7 @@ class PointageController extends Controller
     {
         $date        = $request->get('date', today()->toDateString());
         $currentDate = Carbon::parse($date);
+        $tenantId    = $this->getCurrentTenantId(); // ✅
 
         Carbon::setLocale('fr');
         $startOfWeek = $currentDate->copy()->startOfWeek(Carbon::MONDAY);
@@ -91,7 +92,11 @@ class PointageController extends Controller
                 'short'      => $d->translatedFormat('d M.'),
                 'isToday'    => $d->isToday(),
                 'isSelected' => $d->toDateString() === $currentDate->toDateString(),
-                'valide'     => Pointage::forDate($d->toDateString())->where('valide', true)->exists(),
+                // ✅ Filtrer par tenant_id
+                'valide'     => Pointage::forDate($d->toDateString())
+                    ->where('tenant_id', $tenantId)
+                    ->where('valide', true)
+                    ->exists(),
             ]);
         }
 
@@ -99,19 +104,17 @@ class PointageController extends Controller
         $vue         = $request->get('vue', 'tous');
 
         $employeesQuery = Employee::active()
-            ->with(['pointages' => function ($q) use ($currentDate) {
-                $q->forDate($currentDate->toDateString());
+            ->with(['pointages' => function ($q) use ($currentDate, $tenantId) {
+                // ✅ Filtrer les pointages par tenant_id et date
+                $q->forDate($currentDate->toDateString())
+                  ->where('tenant_id', $tenantId);
             }])
-            ->when($request->filled('search'), function ($q) use ($request) {
-                return $q->search($request->search);
-            })
-            ->when($request->filled('department'), function ($q) use ($request) {
-                return $q->department($request->department);
-            })
+            ->when($request->filled('search'),     fn($q) => $q->search($request->search))
+            ->when($request->filled('department'), fn($q) => $q->department($request->department))
             ->defaultOrder();
 
         $employees = $employeesQuery->get()
-            ->map(function ($emp) use ($currentDate) {
+            ->map(function ($emp) use ($currentDate, $tenantId) {
 
                 $pointage = $emp->pointages->first();
 
@@ -126,13 +129,16 @@ class PointageController extends Controller
                 }
 
                 if (!$pointage || !$pointage->ignore_badge) {
-                    $shift = Pointage::where('employee_id', $emp->id)
+                    // ✅ Filtrer les badge records par tenant via l'employé (déjà scopé)
+                    $shift = Pointage::withoutGlobalScope(TenantScope::class)
+                        ->where('employee_id', $emp->id)
+                        ->where('tenant_id', $tenantId)
                         ->whereDate('created_at', $currentDate->toDateString())
                         ->orderBy('created_at')
                         ->get();
 
                     if ($shift->isNotEmpty()) {
-                        $pointage = $this->syncPointageFromBadgeRecords($emp->id, $currentDate, $shift);
+                        $pointage = $this->syncPointageFromBadgeRecords($emp->id, $currentDate, $shift, $tenantId);
                     }
                 }
 
@@ -180,9 +186,11 @@ class PointageController extends Controller
     // =========================================================================
     public function validerJournee(Request $request): JsonResponse
     {
-        $date = $request->input('date', today()->toDateString());
+        $date     = $request->input('date', today()->toDateString());
+        $tenantId = $this->getCurrentTenantId(); // ✅
 
         $count = Pointage::forDate($date)
+            ->where('tenant_id', $tenantId) // ✅
             ->where('statut', 'present')
             ->update(['valide' => true]);
 
@@ -241,7 +249,7 @@ class PointageController extends Controller
     }
 
     // =========================================================================
-    // toggleAbsence — CORRIGÉ (bypass TenantScope + injection tenant_id)
+    // toggleAbsence
     // =========================================================================
     public function toggleAbsence(Request $request): JsonResponse
     {
@@ -257,7 +265,6 @@ class PointageController extends Controller
         $tenantId = $this->getCurrentTenantId();
 
         try {
-            // ✅ Bypass du TenantScope pour trouver l'enregistrement existant
             $pointage = Pointage::withoutGlobalScope(TenantScope::class)
                 ->where('employee_id', $empId)
                 ->where('date', $date)
@@ -272,7 +279,6 @@ class PointageController extends Controller
                     'valide'       => false,
                 ]);
             } else {
-                // ✅ Création avec tenant_id explicite
                 $pointage = Pointage::create([
                     'employee_id'  => $empId,
                     'date'         => $date,
@@ -315,21 +321,28 @@ class PointageController extends Controller
     }
 
     // =========================================================================
-    // syncPointageFromBadgeRecords
+    // syncPointageFromBadgeRecords — ✅ tenant_id injecté
     // =========================================================================
-    private function syncPointageFromBadgeRecords(int $employeeId, Carbon $date, Collection $shift): Pointage
-    {
-        $pointage = Pointage::firstOrCreate(
-            [
-                'employee_id' => $employeeId,
-                'date'        => $date->toDateString(),
-            ],
-            [
-                'statut' => 'present',
-            ]
-        );
+    private function syncPointageFromBadgeRecords(
+        int $employeeId,
+        Carbon $date,
+        Collection $shift,
+        ?int $tenantId = null
+    ): Pointage {
+        $pointage = Pointage::withoutGlobalScope(TenantScope::class)
+            ->firstOrCreate(
+                [
+                    'employee_id' => $employeeId,
+                    'date'        => $date->toDateString(),
+                    'tenant_id'   => $tenantId, // ✅
+                ],
+                [
+                    'statut'    => 'present',
+                    'tenant_id' => $tenantId, // ✅
+                ]
+            );
 
-        // ✅ Ne jamais écraser une absence
+        // Ne jamais écraser une absence
         if (in_array($pointage->statut, ['absent', 'absence_injustifiee'])) {
             return $pointage;
         }
@@ -343,12 +356,8 @@ class PointageController extends Controller
         $pauseStart = $shift->whereNotNull('pause_start')->first()?->pause_start;
         $pauseEnd   = $shift->whereNotNull('pause_end')->last()?->pause_end;
 
-        if ($pauseStart) {
-            $pointage->pause_start = $pauseStart;
-        }
-        if ($pauseEnd) {
-            $pointage->pause_end = $pauseEnd;
-        }
+        if ($pauseStart) $pointage->pause_start = $pauseStart;
+        if ($pauseEnd)   $pointage->pause_end   = $pauseEnd;
 
         $pointage->pause_minutes = $this->calcPauseMinutes($shift);
         $pointage->statut        = 'present';
@@ -403,7 +412,6 @@ class PointageController extends Controller
         for ($i = 0; $i < $count; $i++) {
             $start = strtotime($pausesStart[$i]);
             $end   = strtotime($pausesEnd[$i]);
-
             if ($end > $start) {
                 $total += ($end - $start);
             }
@@ -420,23 +428,21 @@ class PointageController extends Controller
         try {
             $date        = $request->get('date', today()->toDateString());
             $currentDate = Carbon::parse($date);
+            $tenantId    = $this->getCurrentTenantId(); // ✅
             $departments = \App\Models\Department::names();
             $vue         = $request->get('vue', 'tous');
 
             $employeesQuery = Employee::active()
-                ->with(['pointages' => function ($q) use ($currentDate) {
-                    $q->forDate($currentDate->toDateString());
+                ->with(['pointages' => function ($q) use ($currentDate, $tenantId) {
+                    $q->forDate($currentDate->toDateString())
+                      ->where('tenant_id', $tenantId); // ✅
                 }])
-                ->when($request->filled('search'), function ($q) use ($request) {
-                    return $q->search($request->search);
-                })
-                ->when($request->filled('department'), function ($q) use ($request) {
-                    return $q->department($request->department);
-                })
+                ->when($request->filled('search'),     fn($q) => $q->search($request->search))
+                ->when($request->filled('department'), fn($q) => $q->department($request->department))
                 ->defaultOrder();
 
             $employees = $employeesQuery->get()
-                ->map(function ($emp) use ($currentDate) {
+                ->map(function ($emp) use ($currentDate, $tenantId) {
                     $pointage = $emp->pointages->first();
 
                     if ($pointage && in_array($pointage->statut, ['absent', 'absence_injustifiee'])) {
@@ -449,13 +455,15 @@ class PointageController extends Controller
                     }
 
                     if (!$pointage || !$pointage->ignore_badge) {
-                        $shift = Pointage::where('employee_id', $emp->id)
+                        $shift = Pointage::withoutGlobalScope(TenantScope::class)
+                            ->where('employee_id', $emp->id)
+                            ->where('tenant_id', $tenantId) // ✅
                             ->whereDate('created_at', $currentDate->toDateString())
                             ->orderByDesc('created_at')
                             ->get();
 
                         if ($shift->isNotEmpty()) {
-                            $pointage = $this->syncPointageFromBadgeRecords($emp->id, $currentDate, $shift);
+                            $pointage = $this->syncPointageFromBadgeRecords($emp->id, $currentDate, $shift, $tenantId);
                         }
                     }
 
@@ -468,13 +476,13 @@ class PointageController extends Controller
                 });
 
             if ($vue === 'pointe') {
-                $employees = $employees->filter(function ($e) {
-                    return $e['pointage']?->heure_entree && !in_array($e['pointage']->statut ?? '', ['absent']);
-                });
+                $employees = $employees->filter(fn($e) =>
+                    $e['pointage']?->heure_entree && !in_array($e['pointage']->statut ?? '', ['absent'])
+                );
             } elseif ($vue === 'non_pointe') {
-                $employees = $employees->filter(function ($e) {
-                    return !$e['pointage']?->heure_entree || in_array($e['pointage']?->statut ?? '', ['absent', 'pas_de_badge']);
-                });
+                $employees = $employees->filter(fn($e) =>
+                    !$e['pointage']?->heure_entree || in_array($e['pointage']?->statut ?? '', ['absent', 'pas_de_badge'])
+                );
             }
 
             $stats = [
@@ -535,7 +543,7 @@ class PointageController extends Controller
     public function badgesPin(Request $request): \Illuminate\View\View
     {
         $employees = Employee::active()
-            ->when($request->filled('search'), fn($q) => $q->search($request->search))
+            ->when($request->filled('search'),     fn($q) => $q->search($request->search))
             ->when($request->filled('department'), fn($q) => $q->department($request->department))
             ->defaultOrder()
             ->get(['id', 'first_name', 'last_name', 'matricule', 'plain_pin', 'department']);

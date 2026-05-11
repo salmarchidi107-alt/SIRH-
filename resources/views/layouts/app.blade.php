@@ -285,11 +285,17 @@
             @php
                 $pointageEnAttente = 0;
                 try {
+                    $currentTenantId = config('app.current_tenant_id')
+                        ?? (auth()->check() ? auth()->user()->tenant_id : null);
+
                     $pointageEnAttente = \App\Models\Pointage::forDate(today()->toDateString())
+                        ->when($currentTenantId, fn($q) => $q->where('tenant_id', $currentTenantId))
                         ->where('valide', false)
                         ->where('statut', 'present')
                         ->count();
-                } catch (\Exception $e) {}
+                } catch (\Exception $e) {
+                    $pointageEnAttente = 0;
+                }
             @endphp
 
             <a href="{{ route('pointage.index') }}"
@@ -340,6 +346,89 @@
                 <span>Compteurs et droits d'absences</span>
             </a>
             @endif
+
+            {{-- ══════════════════════════════════════════════════
+                 LMS — Formations  (admin / rh)
+            ══════════════════════════════════════════════════ --}}
+            @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
+
+            <div class="nav-section-label">Formations</div>
+
+            {{-- Compteur formations planifiées (badge live) --}}
+            @php
+                $lmsEnAttente = 0;
+                try {
+                    $lmsTenantId = config('app.current_tenant_id')
+                        ?? (auth()->check() ? auth()->user()->tenant_id : null);
+                    $lmsEnAttente = \App\Models\Formation::where('statut', 'Planifiée')
+                        ->when($lmsTenantId, fn($q) => $q->where('tenant_id', $lmsTenantId))
+                        ->whereDate('date', '>=', today())
+                        ->count();
+                } catch (\Exception $e) {
+                    $lmsEnAttente = 0;
+                }
+            @endphp
+
+            {{-- Liste --}}
+            <a href="{{ route('lms.index') }}"
+               class="nav-item {{ request()->routeIs('lms.index') || request()->routeIs('lms.store') || request()->routeIs('lms.update') || request()->routeIs('lms.destroy') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0
+                             016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0
+                             2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+                </svg>
+                <span>Liste des formations</span>
+                @if($lmsEnAttente > 0)
+                <span class="nav-badge-live">{{ $lmsEnAttente }}</span>
+                @endif
+            </a>
+{{-- Référentiel --}}
+<a href="{{ route('referentiel.index') }}"
+   class="nav-item {{ request()->routeIs('referentiel.*') ? 'active' : '' }}">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0
+                 01 13.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5
+                 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504
+                 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0
+                 00-9-9z"/>
+    </svg>
+    <span>Référentiel Formations</span>
+</a>
+
+            {{-- Planning --}}
+            <a href="{{ route('lms.planning') }}"
+               class="nav-item {{ request()->routeIs('lms.planning') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8"  y1="2" x2="8"  y2="6"/>
+                    <line x1="3"  y1="10" x2="21" y2="10"/>
+                </svg>
+                <span>Planning formations</span>
+            </a>
+
+            @endif
+
+            {{-- ── LMS employee : mes formations ── --}}
+            @if(Auth::check() && Auth::user()->role === 'employee')
+
+            <div class="nav-section-label">Formations</div>
+
+            <a href="{{ route('lms.index') }}"
+               class="nav-item {{ request()->routeIs('lms.*') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0
+                             016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0
+                             2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+                </svg>
+                <span>Mes formations</span>
+            </a>
+
+            @endif
+            {{-- ══════════════════════════════════════════════════ --}}
 
             {{-- ── Paie (admin / rh) ── --}}
             @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
@@ -405,13 +494,9 @@
                 </svg>
                 <span>Entête</span>
             </a>
-
             @endif
-            {{-- ── FIN bloc GED ── --}}
 
-            {{-- ══════════════════════════════════════
-                 PARAMÉTRAGE (admin / rh)
-            ══════════════════════════════════════ --}}
+            {{-- ── Paramétrage (admin / rh) ── --}}
             @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
             <div class="nav-section-label">Paramétrage</div>
 
@@ -463,7 +548,7 @@
 
     </aside>
 
-    {{-- ═══════════════════════════════════════════════════ MAIN CONTENT ═══ --}}
+    {{-- MAIN CONTENT --}}
     <div class="main-content">
 
         <header class="topbar">
@@ -498,7 +583,7 @@
                     </div>
                 </div>
 
-                {{-- Global Excel Export Dropdown --}}
+                {{-- Export Dropdown --}}
                 <div class="export-wrapper" style="position: relative;">
                     <button class="topbar-btn" id="exportBtn" title="Fichier Excel Imprimable" onclick="toggleExportDropdown()">
                         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -507,33 +592,16 @@
                     </button>
                     <div class="export-dropdown" id="exportDropdown" style="display: none; position: absolute; top: 100%; right: 0; width: 280px; background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 1000; margin-top: 8px; max-height: 400px; overflow-y: auto;">
                         <div style="padding: 12px 16px; border-bottom: 1px solid #eee; font-weight: 600; color: var(--primary);"><i class="fa-solid fa-chart-column" aria-hidden="true"></i> Fichier Excel Imprimable</div>
-                        <a href="{{ route('employees.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
-                              Liste du Personnel
-                        </a>
-                        <a href="{{ route('trombinoscope.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
-                              Trombinoscope
-                        </a>
-                        <a href="/salary/export" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
-                              Bulletins de Paie
-                        </a>
-                        <a href="{{ route('absences.droits.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
-                              Droits d'Absences
-                        </a>
-                        <a href="{{ route('absences.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
-                              Demandes d'Absences
-                        </a>
-                        <a href="{{ route('absences.counters.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
-                              Compteurs Absences
-                        </a>
-                        <a href="{{ route('absences.droits.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
-                              Droits d'Absences
-                        </a>
-                        <a href="{{ route('planning.monthly.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
-                              Planning Mensuel
-                        </a>
-                        <a href="{{ route('planning.weekly.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
-                              Planning Hebdomadaire
-                        </a>
+                        <a href="{{ route('employees.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Liste du Personnel</a>
+                        <a href="{{ route('trombinoscope.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Trombinoscope</a>
+                        <a href="/salary/export" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Bulletins de Paie</a>
+                        <a href="{{ route('absences.droits.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Droits d'Absences</a>
+                        <a href="{{ route('absences.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Demandes d'Absences</a>
+                        <a href="{{ route('absences.counters.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Compteurs Absences</a>
+                        <a href="{{ route('planning.monthly.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Planning Mensuel</a>
+                        <a href="{{ route('planning.weekly.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Planning Hebdomadaire</a>
+                        {{-- Export LMS --}}
+                        <a href="{{ route('lms.exportPdf') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Formations (LMS)</a>
                     </div>
                 </div>
             </div>
@@ -681,9 +749,13 @@ async function sendWhatsAppMessage() {
     messages.scrollTop = messages.scrollHeight;
 
     try {
-        const res  = await fetch('/chat', {
+        const res  = await fetch('/ask-ai', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
             body: JSON.stringify({ message: text, thread: threadId }),
         });
         const data = await res.json();

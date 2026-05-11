@@ -4,20 +4,25 @@ namespace App\Http\Controllers;
 
 use App\Models\Room;
 use App\Models\Department;
+use App\Traits\EnsuresTenant;
 use Illuminate\Http\Request;
 
 class RoomController extends Controller
 {
+    use EnsuresTenant;
+
     public function index()
     {
+        $this->ensureTenant(); // 
         $rooms       = Room::with('department')->orderBy('name')->get();
         $departments = Department::orderBy('name')->get();
-
         return view('rooms.index', compact('rooms', 'departments'));
     }
 
     public function store(Request $request)
     {
+        $this->ensureTenant(); // 
+
         $request->validate([
             'name'          => 'required|string|max:255',
             'department_id' => 'required|exists:departments,id',
@@ -39,6 +44,8 @@ class RoomController extends Controller
 
     public function update(Request $request, Room $room)
     {
+        $this->ensureTenant(); // 
+
         $request->validate([
             'name'          => 'required|string|max:255',
             'department_id' => 'required|exists:departments,id',
@@ -60,6 +67,7 @@ class RoomController extends Controller
 
     public function destroy(Room $room)
     {
+        $this->ensureTenant(); // 
         $name = $room->name;
         $room->delete();
 

@@ -26,7 +26,8 @@ class Salary extends Model
         'employer_cnss', 'employer_amo', 'employer_tfp', 'employer_total_cost',
         // Net
         'net_salary', 'status', 'notes',
-        // ─── NEW: Mode cotisations et type salaire ─────────
+        'currency', // ✅ AJOUTÉ
+        // Mode cotisations et type salaire
         'mode_cotisation', 'cnss_deduction_manual', 'amo_deduction_manual', 'fp_deduction_manual',
         'salary_type', 'hourly_rate', 'working_hours',
         'overtime_hours_day', 'overtime_hours_night', 'overtime_hours_weekend',
@@ -66,7 +67,6 @@ class Salary extends Model
         'employer_tfp'             => 'decimal:2',
         'employer_total_cost'      => 'decimal:2',
         'net_salary'               => 'decimal:2',
-        // ─── NEW: New fields casting ────────────────────────────
         'cnss_deduction_manual'    => 'decimal:2',
         'amo_deduction_manual'     => 'decimal:2',
         'fp_deduction_manual'      => 'decimal:2',
@@ -79,30 +79,18 @@ class Salary extends Model
         'delay_hours'              => 'decimal:2',
     ];
 
-    // ── Relations ──────────────────────────────────────────────────
-
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
     }
 
-    // ── Accesseurs ─────────────────────────────────────────────────
-
     public function getMonthNameAttribute(): string
     {
         return match ($this->month) {
-            1 => 'Janvier',
-            2 => 'Février',
-            3 => 'Mars',
-            4 => 'Avril',
-            5 => 'Mai',
-            6 => 'Juin',
-            7 => 'Juillet',
-            8 => 'Août',
-            9 => 'Septembre',
-            10 => 'Octobre',
-            11 => 'Novembre',
-            12 => 'Décembre',
+            1 => 'Janvier', 2 => 'Fevrier', 3 => 'Mars',
+            4 => 'Avril', 5 => 'Mai', 6 => 'Juin',
+            7 => 'Juillet', 8 => 'Aout', 9 => 'Septembre',
+            10 => 'Octobre', 11 => 'Novembre', 12 => 'Decembre',
             default => '',
         };
     }
@@ -110,8 +98,8 @@ class Salary extends Model
     public function getStatusLabelAttribute(): string
     {
         return match($this->status) {
-            'validated' => 'Validé',
-            'paid'      => 'Payé',
+            'validated' => 'Valide',
+            'paid'      => 'Paye',
             default     => 'Brouillon',
         };
     }
@@ -124,8 +112,6 @@ class Salary extends Model
             default     => 'warning',
         };
     }
-
-    // ── Totaux calculés ────────────────────────────────────────────
 
     public function getTotalOvertimeAttribute(): float
     {
@@ -176,8 +162,6 @@ class Salary extends Model
         );
     }
 
-    // ── Helpers cotisations ────────────────────────────────────────
-
     public function isCotisationAuto(): bool
     {
         return $this->mode_cotisation === 'auto';
@@ -198,9 +182,6 @@ class Salary extends Model
         return $this->salary_type === 'monthly';
     }
 
-    /**
-     * Récupère les cotisations effectives (auto ou manuelles)
-     */
     public function getEffectiveCnss(): float
     {
         return $this->isCotisationManual() && $this->cnss_deduction_manual !== null
@@ -222,9 +203,6 @@ class Salary extends Model
             : (float) $this->fp_deduction;
     }
 
-    /**
-     * Total heures supplémentaires
-     */
     public function getTotalOvertimeHours(): float
     {
         return round(
@@ -234,4 +212,3 @@ class Salary extends Model
         );
     }
 }
-

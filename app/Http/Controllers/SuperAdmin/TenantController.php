@@ -5,8 +5,6 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Enums\TenantPlan;
-use App\Enums\TenantStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -64,8 +62,9 @@ class TenantController extends Controller
             'email_societe' => 'required|email|max:100',
             'website'       => 'nullable|url|max:100',
             'logo'          => 'nullable|image|mimes:png,svg,jpg,jpeg|max:2048',
-            'brand_color'   => 'required|regex:/^#[0-9a-fA-F]{6}$/',
-            'sidebar_color' => 'required|regex:/^#[0-9a-fA-F]{6}$/',
+            // ✅ nullable — champs supprimés du blade
+            'brand_color'   => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
+            'sidebar_color' => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
             'first_name'    => 'required|string|max:50',
             'last_name'     => 'required|string|max:50',
             'admin_email'   => 'required|email|unique:users,email',
@@ -89,8 +88,9 @@ class TenantController extends Controller
                 'email_societe' => $data['email_societe'],
                 'website'       => $data['website'] ?? null,
                 'logo_path'     => $logoPath,
-                'brand_color'   => $data['brand_color'],
-                'sidebar_color' => $data['sidebar_color'],
+                // ✅ valeur par défaut si non fourni
+                'brand_color'   => $data['brand_color']   ?? '#0d9488',
+                'sidebar_color' => $data['sidebar_color'] ?? '#0d2238',
                 'database_name' => 'tenant_' . str_replace('-', '_', $data['slug']),
             ]);
 
@@ -122,10 +122,7 @@ class TenantController extends Controller
 
     public function edit(Tenant $tenant)
     {
-        $plans    = TenantPlan::cases();
-        $statuses = TenantStatus::cases();
-
-        return view('superadmin.tenants.edit', compact('tenant', 'plans', 'statuses'));
+        return view('superadmin.tenants.edit', compact('tenant'));
     }
 
     public function update(Request $request, Tenant $tenant)
@@ -142,8 +139,9 @@ class TenantController extends Controller
             'email_societe' => 'required|email|max:100',
             'website'       => 'nullable|url|max:100',
             'logo'          => 'nullable|image|mimes:png,svg,jpg,jpeg|max:2048',
-            'brand_color'   => 'required|regex:/^#[0-9a-fA-F]{6}$/',
-            'sidebar_color' => 'required|regex:/^#[0-9a-fA-F]{6}$/',
+            // ✅ nullable — champs supprimés du blade
+            'brand_color'   => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
+            'sidebar_color' => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
         ]);
 
         if ($request->hasFile('logo')) {
@@ -164,8 +162,9 @@ class TenantController extends Controller
             'email_societe' => $data['email_societe'],
             'website'       => $data['website'] ?? null,
             'logo_path'     => $logoPath,
-            'brand_color'   => $data['brand_color'],
-            'sidebar_color' => $data['sidebar_color'],
+            // ✅ conserver l'ancienne valeur si non fourni
+            'brand_color'   => $data['brand_color']   ?? $tenant->brand_color   ?? '#0d9488',
+            'sidebar_color' => $data['sidebar_color'] ?? $tenant->sidebar_color ?? '#0d2238',
         ]);
 
         return back()->with('success', 'Tenant mis à jour.');

@@ -49,9 +49,7 @@
     </div>
 </div>
 
-<?php if(session('success')): ?>
-    <div class="alert alert-success mb-4"><?php echo e(session('success')); ?></div>
-<?php endif; ?>
+
 
 
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">

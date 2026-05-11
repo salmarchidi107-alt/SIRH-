@@ -37,7 +37,7 @@
     <!-- Input -->
     <div class="chatbot-input">
       <div class="input-wrapper">
-        <textarea id="chatInput" placeholder="Posez votre question..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <textarea id="chatInput" placeholder="Posez votre question..." rows="1" oninput="autoResize(this)"></textarea>
         <button id="chatSend" onclick="sendMessage()">➤</button>
       </div>
     </div>
@@ -176,9 +176,9 @@
   background: linear-gradient(135deg, rgba(255,255,255,0.08), transparent);
   pointer-events: none;
 }
-.pdf-download-btn:hover:not(:disabled) { 
-  opacity: .88; 
-  transform: translateY(-1px); 
+.pdf-download-btn:hover:not(:disabled) {
+  opacity: .88;
+  transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(15,33,50,0.35);
 }
 .pdf-download-btn:active:not(:disabled) { transform: translateY(0); }
@@ -205,7 +205,10 @@
   padding:11px 16px; font-size:14px; font-family:inherit;
   resize:none; max-height:100px; outline:none;
   transition:border-color .2s; line-height:1.4;
+  overflow-y: hidden;
+  scrollbar-width: none;
 }
+#chatInput::-webkit-scrollbar { display: none; }
 #chatInput:focus { border-color: var(--primary,#1a8a74); box-shadow: 0 0 0 3px rgba(26,138,116,.12); }
 #chatSend {
   width:44px; height:44px;
@@ -247,12 +250,12 @@ function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 100) + 'px';
 }
-
 // ── Touche Entrée ────────────────────────────────────────────────────────────
 function handleKey(e) {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
-    sendMessage();
+    const sendBtn = document.getElementById('chatSend');
+    if (!sendBtn.disabled) sendMessage();
   }
 }
 
@@ -378,7 +381,7 @@ function showTyping() {
   el.className = 'message bot';
   el.id = 'typingIndicator';
   el.innerHTML = `
-    <div class="avatar-small"></div>
+    <div class="avatar-small">🤖</div>
     <div class="bubble">
       <div class="typing">
         <div class="typing-dot"></div>
@@ -458,5 +461,13 @@ document.addEventListener('keydown', (e) => {
     document.getElementById('chatbotPopup').style.display = 'none';
     document.querySelector('.chatbot-toggle')?.classList.remove('active');
   }
+});
+
+document.getElementById('chatInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const sendBtn = document.getElementById('chatSend');
+        if (!sendBtn.disabled) sendMessage();
+    }
 });
 </script><?php /**PATH C:\Users\HP\SIRH-\resources\views/components/chatbot.blade.php ENDPATH**/ ?>

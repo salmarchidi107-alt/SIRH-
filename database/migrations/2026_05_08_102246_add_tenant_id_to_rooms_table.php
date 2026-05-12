@@ -6,21 +6,10 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-   public function up(): void
-{
-    Schema::table('rooms', function (Blueprint $table) {
-        $table->string('tenant_id')->nullable()->after('id');
-        $table->index('tenant_id');
-    });
-}
+    public function up(): void
+    {
+        // tenant_id déjà dans la migration de création de rooms — rien à faire
+    }
 
-public function down(): void
-{
-    Schema::table('rooms', function (Blueprint $table) {
-        $table->dropColumn('tenant_id');
-    });
-}
+    public function down(): void {}
 };

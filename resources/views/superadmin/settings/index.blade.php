@@ -1,5 +1,5 @@
-{{-- ✅ CORRECTION BUG 1 : @extends + @section au lieu d'un fichier HTML autonome
-     La sidebar réapparaît car le layout superadmin (avec sidebar) est réintégré. --}}
+
+
 @extends('layouts.superadmin')
 
 @section('title', 'Paramètres')
@@ -10,8 +10,9 @@
 @push('styles')
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+
 /* ══════════════════════════════════════════
-   VARIABLES
+   VARIABLES  — accent remplacé par #10b981
 ══════════════════════════════════════════ */
 :root {
     --bg:        #f4f5f7;
@@ -23,9 +24,9 @@
     --text-2:    #374151;
     --text-3:    #6b7280;
     --text-4:    #9ca3af;
-    --accent:    #4f46e5;
-    --accent-bg: #eef2ff;
-    --accent-h:  #4338ca;
+    --accent:    #10b981;
+    --accent-bg: #ecfdf5;
+    --accent-h:  #059669;
     --green:     #059669;
     --green-bg:  #ecfdf5;
     --green-b:   #a7f3d0;
@@ -43,106 +44,105 @@
     --shadow-md: 0 4px 12px rgba(0,0,0,.08), 0 1px 3px rgba(0,0,0,.06);
 }
 
-.page-header {
-    padding: auto;
-    margin: auto;
-}
+.page-header { padding: auto; margin: auto; }
 .page-title {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--text-1);
-    letter-spacing: -.03em;
+    font-size: 22px; font-weight: 700; color: var(--text-1); letter-spacing: -.03em;
 }
-.page-sub {
-    font-size: 13px;
-    color: var(--text-3);
-    margin-top: 3px;
-}
-.main {
-    margin:auto;
-    padding: auto;
-}
+.page-sub  { font-size: 13px; color: var(--text-3); margin-top: 3px; }
+.main      { margin: auto; padding: auto; }
 
 /* ── CARD ── */
-.sa-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-md); overflow: hidden; }
+.sa-card        { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-md); overflow: hidden; }
 .sa-card-header { display: flex; align-items: center; gap: 14px; padding: 18px 22px; border-bottom: 1px solid var(--border); background: var(--surface2); }
-.sa-card-header-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--accent-bg); display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0; border: 1px solid #c7d2fe; }
-.sa-card-title { font-size: 14px; font-weight: 700; color: var(--text-1); letter-spacing: -.01em; }
-.sa-card-sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
-.sa-card-body { padding: 20px 22px; }
+.sa-card-header-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--accent-bg); display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0; border: 1px solid #6ee7b7; }
+.sa-card-title  { font-size: 14px; font-weight: 700; color: var(--text-1); letter-spacing: -.01em; }
+.sa-card-sub    { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+.sa-card-body   { padding: 20px 22px; }
 
 /* ── SEARCH ── */
-.sa-search-wrap { position: relative; margin-bottom: 16px; }
-.sa-search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--text-4); pointer-events: none; }
+.sa-search-wrap  { position: relative; margin-bottom: 12px; }
+.sa-search-icon  { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--text-4); pointer-events: none; }
 .sa-search-input { width: 100%; box-sizing: border-box; padding: 9px 14px 9px 36px !important; background: var(--surface2) !important; border: 1px solid var(--border2) !important; border-radius: 9px !important; color: var(--text-1) !important; font-family: 'DM Sans', sans-serif; font-size: 13px; transition: border-color .15s, box-shadow .15s; }
 .sa-search-input::placeholder { color: var(--text-4); }
-.sa-search-input:focus { border-color: var(--accent) !important; outline: none; box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+.sa-search-input:focus        { border-color: var(--accent) !important; outline: none; box-shadow: 0 0 0 3px rgba(16,185,129,.12); }
+
+/* ── FILTER BUTTONS ── */
+.sa-filter-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.sa-filter-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: 1.5px solid var(--border2);
+    background: var(--surface2); color: var(--text-3);
+    transition: all .15s; font-family: 'DM Sans', sans-serif; line-height: 1;
+}
+.sa-filter-btn:hover  { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.sa-filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
 /* ── TENANT GROUPS ── */
 .sa-tenant-group { background: var(--surface2); border-radius: 10px; overflow: hidden; margin-bottom: 10px; border: 1px solid var(--border); }
-.sa-tenant-row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-bottom: 1px solid var(--border); background: #fff; }
+.sa-tenant-row   { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-bottom: 1px solid var(--border); background: #fff; }
 .sa-tenant-avatar { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; letter-spacing: .5px; }
-.sa-tenant-info { flex: 1; min-width: 0; }
-.sa-tenant-name { font-size: 13px; font-weight: 600; color: var(--text-1); }
+.sa-tenant-info   { flex: 1; min-width: 0; }
+.sa-tenant-name   { font-size: 13px; font-weight: 600; color: var(--text-1); }
 .sa-tenant-domain { font-size: 11px; color: var(--text-4); margin-top: 1px; font-family: 'DM Mono', monospace; }
 
 /* ── STATUS BADGES ── */
 .sa-badge-status { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; }
-.sa-badge-blue  { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue-b); }
-.sa-badge-green { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-b); }
+.sa-badge-blue   { background: var(--blue-bg);  color: var(--blue);  border: 1px solid var(--blue-b); }
+.sa-badge-green  { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-b); }
 
 /* ── USER ROWS ── */
-.sa-user-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px 10px 28px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; }
+.sa-user-row          { display: flex; align-items: center; gap: 12px; padding: 10px 14px 10px 28px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; }
 .sa-user-row:last-child { border-bottom: none; }
-.sa-user-row:hover { background: #f0f1ff; }
+.sa-user-row:hover    { background: #f0fdf8; }
 .sa-user-row.selected { background: var(--accent-bg); border: 1px solid #ffffff !important; border-radius: 8px; margin: 4px 8px; padding: 9px 12px 9px 20px; }
 .sa-user-avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
-.sa-user-info { flex: 1; min-width: 0; }
-.sa-user-name { font-size: 13px; font-weight: 600; color: rgb(9, 10, 10)!important }
-.sa-user-email { font-size: 11px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; font-family: 'DM Mono', monospace; }
-.sa-role-label { font-size: 11px; font-weight: 600; color: var(--text-3); background: var(--bg); border: 1px solid var(--border2); padding: 3px 9px; border-radius: 99px; flex-shrink: 0; }
-.sa-chevron { width: 14px; height: 14px; color: var(--text-4); flex-shrink: 0; }
+.sa-user-info   { flex: 1; min-width: 0; }
+.sa-user-name   { font-size: 13px; font-weight: 600; color: rgb(9,10,10) !important; }
+.sa-user-email  { font-size: 11px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; font-family: 'DM Mono', monospace; }
+.sa-role-label  { font-size: 11px; font-weight: 600; color: var(--text-3); background: var(--bg); border: 1px solid var(--border2); padding: 3px 9px; border-radius: 99px; flex-shrink: 0; }
+.sa-chevron     { width: 14px; height: 14px; color: var(--text-4); flex-shrink: 0; }
 
 /* ── EMPTY STATE ── */
 .sa-empty-state { text-align: center; color: var(--text-4); font-size: 13px; padding: 32px; }
 
 /* ── EDIT FORM ── */
-.sa-divider { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
+.sa-divider   { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
 .sa-edit-form { display: none; }
 .sa-edit-form.visible { display: block; }
-.sa-edit-form-header { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; padding: 14px 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; }
-.sa-ef-name { font-size: 15px; font-weight: 700; color: var(--text-1); }
+.sa-edit-form-header  { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; padding: 14px 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; }
+.sa-ef-name    { font-size: 15px; font-weight: 700; color: var(--text-1); }
 .sa-ef-company { font-size: 12px; color: var(--text-3); margin-top: 2px; font-family: 'DM Mono', monospace; }
-.sa-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 4px; }
+.sa-form-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 4px; }
 .sa-form-group { display: flex; flex-direction: column; gap: 6px; }
 .sa-form-group > label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-3); }
 
 /* ── INPUTS ── */
 .sa-input { background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 9px 13px; color: var(--text-1); font-family: 'DM Sans', sans-serif; font-size: 13px; width: 100%; box-sizing: border-box; transition: border-color .15s, box-shadow .15s; }
-.sa-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(79,70,229,.12); background: #fff; }
+.sa-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(16,185,129,.12); background: #fff; }
 .sa-input::placeholder { color: var(--text-4); }
 .sa-hint { font-size: 11px; color: var(--text-4); }
-.sa-pwd-wrap { position: relative; }
 .sa-pwd-wrap .sa-input { padding-right: 40px; }
+.sa-pwd-wrap   { position: relative; }
 .sa-pwd-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-4); background: none; border: none; display: flex; align-items: center; padding: 0; }
 .sa-pwd-toggle:hover { color: var(--text-2); }
 
 /* ── WARNINGS + ALERTS ── */
 .sa-warning-box { background: var(--warn-bg); border: 1px solid var(--warn-b); border-radius: 8px; padding: 11px 14px; margin-top: 18px; font-size: 12px; color: var(--warn); display: flex; gap: 9px; align-items: flex-start; }
-.sa-js-alert { display: none; padding: 11px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; margin-top: 12px; align-items: center; gap: 9px; }
-.sa-js-alert.error   { display: flex; background: var(--red-bg);   color: var(--red);   border: 1px solid var(--red-b);   }
-.sa-js-alert.success { display: flex; background: var(--green-bg); color: var(--green); border: 1px solid var(--green-b); }
+.sa-js-alert            { display: none; padding: 11px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; margin-top: 12px; align-items: center; gap: 9px; }
+.sa-js-alert.error      { display: flex; background: var(--red-bg);   color: var(--red);   border: 1px solid var(--red-b); }
+.sa-js-alert.success    { display: flex; background: var(--green-bg); color: var(--green); border: 1px solid var(--green-b); }
 
 /* ── BUTTONS ── */
-.sa-form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
-.sa-btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px; border-radius: 9px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: opacity .15s, transform .1s, background .12s; }
-.sa-btn:active { transform: scale(0.98); }
-.sa-btn-primary { background: var(--accent); color: #fff; box-shadow: 0 1px 3px rgba(79,70,229,.3); }
+.sa-form-actions  { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+.sa-btn           { display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px; border-radius: 9px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: opacity .15s, transform .1s, background .12s; }
+.sa-btn:active    { transform: scale(0.98); }
+.sa-btn-primary   { background: var(--accent); color: #fff; box-shadow: 0 1px 3px rgba(16,185,129,.3); }
 .sa-btn-primary:hover { background: var(--accent-h); }
-.sa-btn-ghost { background: var(--surface2); color: var(--text-2); border: 1px solid var(--border2); }
+.sa-btn-ghost     { background: var(--surface2); color: var(--text-2); border: 1px solid var(--border2); }
 .sa-btn-ghost:hover { background: var(--bg); }
-.sa-btn-sm { padding: 6px 12px; font-size: 12px; }
+.sa-btn-sm        { padding: 6px 12px; font-size: 12px; }
 
 @media (max-width: 640px) {
     .sa-form-grid { grid-template-columns: 1fr; }
@@ -216,14 +216,32 @@
                     type="text"
                     id="client-search"
                     class="sa-input sa-search-input"
-                    placeholder="Rechercher par nom, email ou tenant…"
-                    oninput="filterClients(this.value)"
+                    placeholder="Rechercher par nom, email ou tenant..."
+                    oninput="applyFilters()"
                 />
             </div>
 
             {{-- ════════════════════════════════════
+                 FILTRES RÔLE
+            ════════════════════════════════════ --}}
+            <div class="sa-filter-row">
+                <button type="button" class="sa-filter-btn active" data-role="all"
+                        onclick="setRoleFilter('all', this)">
+                    Tous
+                </button>
+                <button type="button" class="sa-filter-btn" data-role="admin"
+                        onclick="setRoleFilter('admin', this)">
+                    Admins
+                </button>
+                <button type="button" class="sa-filter-btn" data-role="employee"
+                        onclick="setRoleFilter('employee', this)">
+                    Employés
+                </button>
+            </div>
+
+            {{-- ════════════════════════════════════
                  CLIENT LIST
-                  CORRECTION BUG 2 :
+                 CORRECTION BUG 2 :
                  $clients est désormais une Collection groupée par tenant_id
                  (via ->groupBy('tenant_id') dans le service).
                  On itère sur chaque groupe → les tenants s'affichent correctement.
@@ -240,7 +258,7 @@
                         $tenant_id    = $tenantId ?? '0';
 
                         $colors = ['#4f46e5','#059669','#0891b2','#d97706','#db2777','#7c3aed','#0369a1'];
-                        $colorIndex = crc32($tenant_id) % count($colors);
+                        $colorIndex  = crc32($tenant_id) % count($colors);
                         $avatarColor = $colors[abs($colorIndex)];
 
                         $initials = collect(explode(' ', $tenantName))
@@ -281,6 +299,7 @@
                                  data-name="{{ strtolower($user->name) }}"
                                  data-email="{{ strtolower($user->email) }}"
                                  data-tenant="{{ strtolower($tenantName) }}"
+                                 data-role="{{ strtolower($roleLabel) }}"
                                  onclick="selectClient(
                                      {{ $user->id }},
                                      '{{ addslashes($user->name) }}',
@@ -320,7 +339,7 @@
 
                 <div class="sa-edit-form-header">
                     <div class="sa-user-avatar" id="ef-avatar"
-                         style="width:44px;height:44px;font-size:15px;border-radius:10px;background:#4f46e5;">??</div>
+                         style="width:44px;height:44px;font-size:15px;border-radius:10px;background:#10b981;">??</div>
                     <div>
                         <div class="sa-ef-name" id="ef-name">–</div>
                         <div class="sa-ef-company" id="ef-company">–</div>
@@ -410,32 +429,71 @@
 @push('scripts')
 <script src="{{ asset('js/superadmin/settings.js') }}"></script>
 <script>
-function filterClients(query) {
-    const q = query.trim().toLowerCase();
+
+/* ══════════════════════════════════════════
+   FILTRE RÔLE
+══════════════════════════════════════════ */
+let currentRoleFilter = 'all';
+
+function setRoleFilter(role, el) {
+    currentRoleFilter = role;
+    document.querySelectorAll('.sa-filter-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    applyFilters();
+}
+
+/* ══════════════════════════════════════════
+   FILTRE COMBINÉ (texte + rôle)
+══════════════════════════════════════════ */
+function applyFilters() {
+    const q = (document.getElementById('client-search').value || '').trim().toLowerCase();
+
     document.querySelectorAll('#client-list .sa-tenant-group').forEach(group => {
         const tenantSearch = group.dataset.tenantSearch || '';
-        let groupVisible = false;
+        let groupVisible   = false;
+
         group.querySelectorAll('.sa-user-row').forEach(row => {
-            const match = !q
+            /* --- filtre texte --- */
+            const textMatch = !q
                 || (row.dataset.name   || '').includes(q)
                 || (row.dataset.email  || '').includes(q)
                 || (row.dataset.tenant || '').includes(q)
                 || tenantSearch.includes(q);
-            row.style.display = match ? '' : 'none';
-            if (match) groupVisible = true;
+
+            /* --- filtre rôle ---
+               On lit data-role="admin|gérant|employee|rh..." posé par Blade.
+               Admins  : contient "admin" ou "gérant"
+               Employés: tout le reste                                      */
+            const roleRaw = (row.dataset.role || '').toLowerCase();
+            const isAdmin = roleRaw.includes('admin') || roleRaw.includes('gérant') || roleRaw.includes('gerant');
+
+            const roleMatch =
+                currentRoleFilter === 'all' ||
+                (currentRoleFilter === 'admin'    &&  isAdmin) ||
+                (currentRoleFilter === 'employee' && !isAdmin);
+
+            const visible = textMatch && roleMatch;
+            row.style.display = visible ? '' : 'none';
+            if (visible) groupVisible = true;
         });
+
         group.style.display = groupVisible ? '' : 'none';
     });
 }
 
+/* ══════════════════════════════════════════
+   SÉLECTION CLIENT
+══════════════════════════════════════════ */
 function selectClient(id, name, email, company, avatarColor) {
     document.querySelectorAll('.sa-user-row').forEach(r => r.classList.remove('selected'));
     document.querySelectorAll('.sa-user-row').forEach(row => {
         if (row.dataset.email === email.toLowerCase()) row.classList.add('selected');
     });
+
     const avatar = document.getElementById('ef-avatar');
-    avatar.textContent = name.substring(0, 2).toUpperCase();
-    avatar.style.background = avatarColor || '#1a8fa5';
+    avatar.textContent    = name.substring(0, 2).toUpperCase();
+    avatar.style.background = avatarColor || '#10b981';
+
     document.getElementById('ef-name').textContent    = name;
     document.getElementById('ef-company').textContent = company || email;
 
@@ -480,6 +538,9 @@ function togglePwd(fieldId) {
     if (input) input.type = input.type === 'password' ? 'text' : 'password';
 }
 
+/* ══════════════════════════════════════════
+   VALIDATION FORMULAIRE
+══════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('access-form')?.addEventListener('submit', e => {
         const email        = document.getElementById('field-email').value.trim();

@@ -6,26 +6,26 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('document_modeles', function (Blueprint $table) {
-    $table->id();
-    $table->string('nom');
-    $table->enum('categorie', ['attestation','certificat','contrat','avertissement','autre'])->default('autre');
-    $table->string('fichier_path');
-    $table->string('fichier_nom_original');
-    $table->text('description')->nullable();
-    $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
-    $table->timestamps();
-});
+        if (!Schema::hasTable('document_modeles')) {
+            Schema::create('document_modeles', function (Blueprint $table) {
+                $table->id();
+                $table->uuid('tenant_id')->nullable()->index();
+                $table->string('nom');
+                $table->string('categorie')->default('autre');
+                $table->longText('contenu')->nullable();
+                $table->string('fichier_path')->nullable();
+                $table->string('fichier_nom_original')->nullable();
+                $table->text('description')->nullable();
+                $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+                $table->timestamps();
+    
+                $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
+            });
+        }
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('document_modeles');

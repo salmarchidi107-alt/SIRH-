@@ -6,25 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
-{
-    Schema::table('tenants', function (Blueprint $table) {
+    {
         if (!Schema::hasColumn('tenants', 'sidebar_color')) {
-            $table->string('sidebar_color')->nullable();
+            Schema::table('tenants', function (Blueprint $table) {
+                $table->string('sidebar_color', 7)->nullable();
+            });
         }
-    });
-}
+    }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::table('tenants', function (Blueprint $table) {
-            $table->dropColumn('sidebar_color');
-        });
+        if (Schema::hasColumn('tenants', 'sidebar_color')) {
+            Schema::table('tenants', function (Blueprint $table) {
+                $table->dropColumn('sidebar_color');
+            });
+        }
     }
 };

@@ -6,25 +6,10 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::table('plannings', function (Blueprint $table) {
-            $table->time('shift_start')->nullable()->change();
-            $table->time('shift_end')->nullable()->change();
-        });
+        // shift_start et shift_end sont déjà nullable dans la migration de création — rien à faire
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::table('plannings', function (Blueprint $table) {
-            $table->time('shift_start')->nullable(false)->change();
-            $table->time('shift_end')->nullable(false)->change();
-        });
-    }
+    public function down(): void {}
 };

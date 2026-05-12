@@ -8,19 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (Schema::hasTable('employees') && !Schema::hasColumn('employees', 'tenant_id')) {
-            Schema::table('employees', function (Blueprint $table) {
-                $table->string('tenant_id', 36)->nullable()->after('id')->index();
-            });
-        }
+        // tenant_id déjà dans la migration de création employees — rien à faire
     }
 
-    public function down(): void
-    {
-        if (Schema::hasTable('employees') && Schema::hasColumn('employees', 'tenant_id')) {
-            Schema::table('employees', function (Blueprint $table) {
-                $table->dropColumn('tenant_id');
-            });
-        }
-    }
+    public function down(): void {}
 };

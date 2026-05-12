@@ -8,37 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('news', function (Blueprint $table) {
-
-            if (!Schema::hasColumn('news', 'type')) {
-                $table->string('type')->default('annual_event')->after('image');
-            }
-
-            if (!Schema::hasColumn('news', 'event_date')) {
-                $table->date('event_date')->nullable()->after('type');
-            }
-
-            if (!Schema::hasColumn('news', 'is_active')) {
-                $table->boolean('is_active')->default(true)->after('event_date');
-            }
-        });
+        // type, event_date, is_active déjà dans la migration de création — rien à faire
     }
 
-    public function down(): void
-    {
-        Schema::table('news', function (Blueprint $table) {
-
-            if (Schema::hasColumn('news', 'type')) {
-                $table->dropColumn('type');
-            }
-
-            if (Schema::hasColumn('news', 'event_date')) {
-                $table->dropColumn('event_date');
-            }
-
-            if (Schema::hasColumn('news', 'is_active')) {
-                $table->dropColumn('is_active');
-            }
-        });
-    }
+    public function down(): void {}
 };

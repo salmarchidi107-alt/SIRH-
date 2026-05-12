@@ -8,17 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('settings', function (Blueprint $table) {
-            $table->id();
-            $table->string('group', 100);
-            $table->string('name', 100);
-            $table->json('payload');
-            $table->timestamp('created_at')->useCurrent();
-            $table->timestamp('updated_at')->useCurrent();
+        if (!Schema::hasTable('settings')) {
+            Schema::create('settings', function (Blueprint $table) {
+                $table->id();
+                $table->uuid('tenant_id')->nullable()->index();
+                $table->string('group', 100);
+                $table->string('name', 100);
+                $table->json('payload');
+                $table->timestamp('created_at')->useCurrent();
+                $table->timestamp('updated_at')->useCurrent();
 
-            $table->unique(['group', 'name']);
-            $table->index(['group', 'name']);
-        });
+                $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
+                $table->unique(['group', 'name', 'tenant_id'], 'settings_group_name_tenant_unique');
+                $table->index(['group', 'name']);
+            });
+        }
     }
 
     public function down(): void
@@ -26,4 +30,3 @@ return new class extends Migration
         Schema::dropIfExists('settings');
     }
 };
-

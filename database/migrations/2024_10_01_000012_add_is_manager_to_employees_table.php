@@ -8,15 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('employees', function (Blueprint $table) {
-            $table->boolean('is_manager')->default(false)->after('manager_id');
-        });
+        if (!Schema::hasColumn('employees', 'is_manager')) {
+            Schema::table('employees', function (Blueprint $table) {
+                $table->boolean('is_manager')->default(false)->after('manager_id');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('employees', function (Blueprint $table) {
-            $table->dropColumn('is_manager');
-        });
+        if (Schema::hasColumn('employees', 'is_manager')) {
+            Schema::table('employees', function (Blueprint $table) {
+                $table->dropColumn('is_manager');
+            });
+        }
     }
 };

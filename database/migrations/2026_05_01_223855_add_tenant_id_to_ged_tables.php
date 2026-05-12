@@ -8,31 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('documents', function (Blueprint $table) {
-            $table->uuid('tenant_id')->nullable()->after('id')->index();
-        });
-
-        Schema::table('document_entetes', function (Blueprint $table) {
-            $table->uuid('tenant_id')->nullable()->after('id')->index();
-        });
-
-        Schema::table('document_modeles', function (Blueprint $table) {
-            $table->uuid('tenant_id')->nullable()->after('id')->index();
-        });
+        // tenant_id déjà dans les migrations de création GED — rien à faire
     }
 
-    public function down(): void
-    {
-        Schema::table('documents', function (Blueprint $table) {
-            $table->dropColumn('tenant_id');
-        });
-
-        Schema::table('document_entetes', function (Blueprint $table) {
-            $table->dropColumn('tenant_id');
-        });
-
-        Schema::table('document_modeles', function (Blueprint $table) {
-            $table->dropColumn('tenant_id');
-        });
-    }
+    public function down(): void {}
 };

@@ -8,15 +8,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('plannings', function (Blueprint $table) {
-            $table->string('room')->nullable()->after('notes');
-        });
+        // Colonne 'room' déjà ajoutée dans 2026_04_28_112448 — on vérifie avant d'insérer
+        if (!Schema::hasColumn('plannings', 'room')) {
+            Schema::table('plannings', function (Blueprint $table) {
+                $table->string('room')->nullable()->after('notes');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('plannings', function (Blueprint $table) {
-            $table->dropColumn('room');
-        });
+        // Ne pas supprimer : géré par la migration principale
     }
 };

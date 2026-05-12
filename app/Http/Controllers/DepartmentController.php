@@ -3,19 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\Department;
-use App\Traits\EnsuresTenant;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class DepartmentController extends Controller
 {
-    use EnsuresTenant;
-
     public function store(Request $request)
     {
-        $this->ensureTenant(); // 
+        $tenantId = Auth::user()->tenant_id;
 
         $request->validate([
-            'name'        => 'required|string|max:255|unique:departments,name',
+            'name'        => 'required|string|max:255|unique:departments,name,NULL,id,tenant_id,' . $tenantId,
             'code'        => 'nullable|string|max:10',
             'color'       => 'nullable|string|max:7',
             'chef'        => 'nullable|string|max:255',
@@ -24,6 +22,7 @@ class DepartmentController extends Controller
             'name.unique' => 'Un département avec ce nom existe déjà.',
         ]);
 
+        // tenant_id injecté automatiquement par HasTenantScope::creating()
         Department::create([
             'name'        => $request->name,
             'code'        => $request->code ? strtoupper($request->code) : null,
@@ -39,10 +38,10 @@ class DepartmentController extends Controller
 
     public function update(Request $request, Department $department)
     {
-        $this->ensureTenant(); // 
+        $tenantId = Auth::user()->tenant_id;
 
         $request->validate([
-            'name'        => 'required|string|max:255|unique:departments,name,' . $department->id,
+            'name'        => 'required|string|max:255|unique:departments,name,' . $department->id . ',id,tenant_id,' . $tenantId,
             'code'        => 'nullable|string|max:10',
             'color'       => 'nullable|string|max:7',
             'chef'        => 'nullable|string|max:255',
@@ -64,8 +63,6 @@ class DepartmentController extends Controller
 
     public function destroy(Department $department)
     {
-        $this->ensureTenant(); // 
-
         $name = $department->name;
         $department->rooms()->update(['department_id' => null]);
         $department->delete();

@@ -6,25 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::table('documents', function (Blueprint $table) {
-            if (!Schema::hasColumn('documents', 'contenu')) {
+        if (!Schema::hasColumn('documents', 'contenu')) {
+            Schema::table('documents', function (Blueprint $table) {
                 $table->longText('contenu')->nullable()->after('modele_id');
-            }
-        });
+            });
+        }
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::table('documents', function (Blueprint $table) {
-            $table->dropColumn('contenu');
-        });
+        if (Schema::hasColumn('documents', 'contenu')) {
+            Schema::table('documents', function (Blueprint $table) {
+                $table->dropColumn('contenu');
+            });
+        }
     }
 };

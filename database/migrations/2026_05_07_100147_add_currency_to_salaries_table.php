@@ -8,16 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('salaries', function (Blueprint $table) {
-            // 'MAD' par défaut pour tous les bulletins existants
-            $table->string('currency', 10)->default('MAD')->after('status');
-        });
+        if (!Schema::hasColumn('salaries', 'currency')) {
+            Schema::table('salaries', function (Blueprint $table) {
+                $table->string('currency', 10)->default('MAD')->after('status');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('salaries', function (Blueprint $table) {
-            $table->dropColumn('currency');
-        });
+        if (Schema::hasColumn('salaries', 'currency')) {
+            Schema::table('salaries', function (Blueprint $table) {
+                $table->dropColumn('currency');
+            });
+        }
     }
 };

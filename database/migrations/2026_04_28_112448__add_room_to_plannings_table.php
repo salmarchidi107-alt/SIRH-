@@ -6,45 +6,48 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::table('week_templates', function (Blueprint $table) {
-            $table->string('monday_room')->nullable()->after('monday_end');
-            $table->string('tuesday_room')->nullable()->after('tuesday_end');
-            $table->string('wednesday_room')->nullable()->after('wednesday_end');
-            $table->string('thursday_room')->nullable()->after('thursday_end');
-            $table->string('friday_room')->nullable()->after('friday_end');
-            $table->string('saturday_room')->nullable()->after('saturday_end');
-            $table->string('sunday_room')->nullable()->after('sunday_end');
-        });
+        $weekRoomCols = [
+            'monday_room'    => 'monday_end',
+            'tuesday_room'   => 'tuesday_end',
+            'wednesday_room' => 'wednesday_end',
+            'thursday_room'  => 'thursday_end',
+            'friday_room'    => 'friday_end',
+            'saturday_room'  => 'saturday_end',
+            'sunday_room'    => 'sunday_end',
+        ];
 
-        Schema::table('plannings', function (Blueprint $table) {
-            $table->string('room')->nullable()->after('notes');
-        });
+        foreach ($weekRoomCols as $col => $after) {
+            if (!Schema::hasColumn('week_templates', $col)) {
+                Schema::table('week_templates', function (Blueprint $table) use ($col, $after) {
+                    $table->string($col)->nullable()->after($after);
+                });
+            }
+        }
+
+        if (!Schema::hasColumn('plannings', 'room')) {
+            Schema::table('plannings', function (Blueprint $table) {
+                $table->string('room')->nullable()->after('notes');
+            });
+        }
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::table('week_templates', function (Blueprint $table) {
-            $table->dropColumn([
-                'monday_room',
-                'tuesday_room',
-                'wednesday_room',
-                'thursday_room',
-                'friday_room',
-                'saturday_room',
-                'sunday_room',
-            ]);
-        });
-
-        Schema::table('plannings', function (Blueprint $table) {
-            $table->dropColumn('room');
-        });
+        $cols = ['monday_room', 'tuesday_room', 'wednesday_room', 'thursday_room',
+                 'friday_room', 'saturday_room', 'sunday_room'];
+        foreach ($cols as $col) {
+            if (Schema::hasColumn('week_templates', $col)) {
+                Schema::table('week_templates', function (Blueprint $table) use ($col) {
+                    $table->dropColumn($col);
+                });
+            }
+        }
+        if (Schema::hasColumn('plannings', 'room')) {
+            Schema::table('plannings', function (Blueprint $table) {
+                $table->dropColumn('room');
+            });
+        }
     }
 };

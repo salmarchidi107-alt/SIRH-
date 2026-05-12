@@ -21,7 +21,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('rooms', function (Blueprint $table) {
-            $table->dropColumn(['capacity', 'description']);
+            if (Schema::hasColumn('rooms', 'capacity')) $table->dropColumn('capacity');
+            if (Schema::hasColumn('rooms', 'description')) $table->dropColumn('description');
         });
     }
 };

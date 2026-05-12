@@ -6,24 +6,10 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::table('tenants', function (Blueprint $table) {
-            $table->string('name')->nullable()->change();
-        });
+        // slug déjà nullable dans la migration de création — rien à faire
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::table('tenants', function (Blueprint $table) {
-            $table->string('name')->nullable(false)->change();
-        });
-    }
+    public function down(): void {}
 };
-

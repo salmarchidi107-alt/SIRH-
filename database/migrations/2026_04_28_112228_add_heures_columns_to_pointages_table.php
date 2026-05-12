@@ -9,16 +9,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('pointages', function (Blueprint $table) {
-            $table->decimal('heures_travaillees', 5, 2)->nullable()->after('total_heures');
-            $table->decimal('heures_supplementaires', 5, 2)->nullable()->after('heures_travaillees');
+            if (!Schema::hasColumn('pointages', 'heures_travaillees')) {
+                $table->decimal('heures_travaillees', 5, 2)->nullable()->after('total_heures');
+            }
+            if (!Schema::hasColumn('pointages', 'heures_supplementaires')) {
+                $table->decimal('heures_supplementaires', 5, 2)->nullable()->after('heures_travaillees');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('pointages', function (Blueprint $table) {
-            $table->dropColumn(['heures_travaillees', 'heures_supplementaires']);
+            if (Schema::hasColumn('pointages', 'heures_travaillees')) $table->dropColumn('heures_travaillees');
+            if (Schema::hasColumn('pointages', 'heures_supplementaires')) $table->dropColumn('heures_supplementaires');
         });
     }
 };
-

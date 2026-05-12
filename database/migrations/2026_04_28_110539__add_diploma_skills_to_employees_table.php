@@ -9,15 +9,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('employees', function (Blueprint $table) {
-            $table->string('diploma_type')->nullable()->after('position');
-            $table->text('skills')->nullable()->after('diploma_type');
+            if (!Schema::hasColumn('employees', 'diploma_type')) {
+                $table->string('diploma_type')->nullable()->after('position');
+            }
+            if (!Schema::hasColumn('employees', 'skills')) {
+                $table->text('skills')->nullable()->after('diploma_type');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('employees', function (Blueprint $table) {
-            $table->dropColumn(['diploma_type', 'skills']);
+            if (Schema::hasColumn('employees', 'diploma_type')) $table->dropColumn('diploma_type');
+            if (Schema::hasColumn('employees', 'skills')) $table->dropColumn('skills');
         });
     }
 };

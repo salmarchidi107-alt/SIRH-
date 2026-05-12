@@ -9,16 +9,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('employees', function (Blueprint $table) {
-            $table->string('pin')->nullable()->after('matricule');
-            $table->string('signature')->nullable()->after('pin');
+            if (!Schema::hasColumn('employees', 'pin')) {
+                $table->string('pin')->nullable()->after('matricule');
+            }
+            if (!Schema::hasColumn('employees', 'signature')) {
+                $table->longText('signature')->nullable()->after('pin');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('employees', function (Blueprint $table) {
-            $table->dropColumn(['pin', 'signature']);
+            if (Schema::hasColumn('employees', 'pin')) $table->dropColumn('pin');
+            if (Schema::hasColumn('employees', 'signature')) $table->dropColumn('signature');
         });
     }
 };
-

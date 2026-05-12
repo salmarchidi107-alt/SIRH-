@@ -266,62 +266,63 @@
         </div>
     </div>
 
-    {{-- ══════════════════════════════════════
-         Créer compte utilisateur
-    ══════════════════════════════════════ --}}
-    <div class="card mb-4">
-        <div class="card-header">
-            <div class="card-title">Créer un compte utilisateur</div>
+   {{-- Créer compte utilisateur --}}
+<div class="card mb-4">
+    <div class="card-header">
+        <div class="card-title">Créer un compte utilisateur </div>
+    </div>
+    <div class="card-body">
+        <div class="form-group">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                <input type="checkbox" name="create_account" value="1" 
+                       id="create_account" 
+                       {{ old('create_account') ? 'checked' : '' }}>
+                <span>Créer un compte utilisateur pour cet employé</span>
+            </label>
         </div>
-        <div class="card-body">
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" name="create_account" value="1" id="create_account">
-                    Créer un compte utilisateur pour cet employé
-                </label>
-            </div>
-            <div id="account_fields" style="display:none;">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Rôle utilisateur *</label>
-                        <select name="user_role" class="form-control">
-                            <option value="">Sélectionner rôle</option>
-                            <option value="employee" selected>Employé</option>
-                            <option value="rh">Responsable RH</option>
-                            <option value="admin">Administrateur</option>
-                        </select>
-                        @error('user_role') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+
+        <div id="account_fields" style="display:{{ old('create_account') ? 'block' : 'none' }};margin-top:16px;">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Rôle utilisateur </label>
+                    <select name="user_role" class="form-control">
+                        <option value="">Sélectionner rôle</option>
+                        <option value="employee" {{ old('user_role', 'employee') == 'employee' ? 'selected' : '' }}>Employé</option>
+                        <option value="rh"       {{ old('user_role') == 'rh'                  ? 'selected' : '' }}>Responsable RH</option>
+                        <option value="admin"    {{ old('user_role') == 'admin'               ? 'selected' : '' }}>Administrateur</option>
+                    </select>
+                    @error('user_role') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+                </div>
+                <div class="form-group">
+                    <label>Mot de passe </label>
+                    <div class="password-group">
+                        <input type="password" name="user_password" id="user_password" class="form-control">
+                        <button type="button" class="toggle-password" data-target="user_password">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" opacity="0.5"/>
+                                <circle cx="12" cy="12" r="3.5"/>
+                            </svg>
+                        </button>
                     </div>
-                    <div class="form-group">
-                        <label>Mot de passe *</label>
-                        <div class="password-group">
-                            <input type="password" name="user_password" id="user_password" class="form-control" min="8">
-                            <button type="button" class="toggle-password" data-target="user_password" title="Afficher/Masquer">
-                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" opacity="0.5"/>
-                                    <circle cx="12" cy="12" r="3.5"/>
-                                </svg>
-                            </button>
-                        </div>
-                        @error('user_password') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+                    @error('user_password') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+                </div>
+                <div class="form-group">
+                    <label>Confirmer mot de passe </label>
+                    <div class="password-group">
+                        <input type="password" name="user_password_confirmation" id="user_password_confirmation" class="form-control">
+                        <button type="button" class="toggle-password" data-target="user_password_confirmation">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" opacity="0.5"/>
+                                <circle cx="12" cy="12" r="3.5"/>
+                            </svg>
+                        </button>
                     </div>
-                    <div class="form-group">
-                        <label>Confirmer mot de passe *</label>
-                        <div class="password-group">
-                            <input type="password" name="user_password_confirmation" id="user_password_confirmation" class="form-control" min="8">
-                            <button type="button" class="toggle-password" data-target="user_password_confirmation" title="Afficher/Masquer">
-                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" opacity="0.5"/>
-                                    <circle cx="12" cy="12" r="3.5"/>
-                                </svg>
-                            </button>
-                        </div>
-                        @error('user_password_confirmation') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
-                    </div>
+                    @error('user_password_confirmation') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
             </div>
         </div>
     </div>
+</div>
 
     {{-- ══════════════════════════════════════
          Contrat de Travail

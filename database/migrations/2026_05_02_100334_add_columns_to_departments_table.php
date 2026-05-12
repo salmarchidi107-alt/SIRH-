@@ -21,13 +21,33 @@ return new class extends Migration
             if (!Schema::hasColumn('departments', 'description')) {
                 $table->text('description')->nullable()->after('chef');
             }
+            if (!Schema::hasColumn('departments', 'tenant_id')) {
+                $table->string('tenant_id', 36)->nullable()->after('id')->index();
+            }
         });
+
+        // Ajouter la contrainte unique composite (name, tenant_id) maintenant que les deux colonnes existent
+        // On vérifie que l'index n'existe pas déjà
+        try {
+            Schema::table('departments', function (Blueprint $table) {
+                $table->unique(['name', 'tenant_id'], 'departments_name_tenant_unique');
+            });
+        } catch (\Exception $e) {
+            // Index déjà existant — ignorer
+        }
     }
 
     public function down(): void
     {
         Schema::table('departments', function (Blueprint $table) {
-            $table->dropColumn(['code', 'color', 'chef', 'description']);
+            try { $table->dropUnique('departments_name_tenant_unique'); } catch (\Exception $e) {}
+            $table->dropColumn(array_filter([
+                Schema::hasColumn('departments', 'code')        ? 'code'        : null,
+                Schema::hasColumn('departments', 'color')       ? 'color'       : null,
+                Schema::hasColumn('departments', 'chef')        ? 'chef'        : null,
+                Schema::hasColumn('departments', 'description') ? 'description' : null,
+                Schema::hasColumn('departments', 'tenant_id')   ? 'tenant_id'   : null,
+            ]));
         });
     }
 };

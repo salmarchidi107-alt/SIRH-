@@ -9,8 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tenants', function (Blueprint $table) {
-
-            // ── Supprimer les anciennes colonnes si elles existent ─────────
+            // Supprimer plan et status s'ils existent encore
             if (Schema::hasColumn('tenants', 'plan')) {
                 $table->dropColumn('plan');
             }
@@ -18,7 +17,6 @@ return new class extends Migration
                 $table->dropColumn('status');
             }
 
-            // ── Ajouter les nouvelles colonnes si elles n'existent pas ─────
             if (!Schema::hasColumn('tenants', 'sector')) {
                 $table->string('sector', 50)->nullable()->after('slug');
             }
@@ -55,21 +53,5 @@ return new class extends Migration
         });
     }
 
-    public function down(): void
-    {
-        Schema::table('tenants', function (Blueprint $table) {
-            $table->dropColumn(array_filter([
-                Schema::hasColumn('tenants', 'address')       ? 'address'       : null,
-                Schema::hasColumn('tenants', 'phone')         ? 'phone'         : null,
-                Schema::hasColumn('tenants', 'ice')           ? 'ice'           : null,
-                Schema::hasColumn('tenants', 'email_societe') ? 'email_societe' : null,
-                Schema::hasColumn('tenants', 'website')       ? 'website'       : null,
-                Schema::hasColumn('tenants', 'sidebar_color') ? 'sidebar_color' : null,
-                Schema::hasColumn('tenants', 'database_name') ? 'database_name' : null,
-            ]));
-
-            $table->enum('plan',   ['starter', 'pro', 'enterprise'])->default('starter');
-            $table->enum('status', ['trial', 'active', 'suspended'])->default('trial');
-        });
-    }
+    public function down(): void {}
 };

@@ -8,16 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('variable_elements', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('employee_id')->constrained()->cascadeOnDelete();
-            $table->tinyInteger('month');
-            $table->smallInteger('year');
-            $table->string('type'); // gain | retenue
-            $table->string('label'); // Prime transport, Avance, Absence...
-            $table->decimal('amount', 10, 2);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('variable_elements')) {
+            Schema::create('variable_elements', function (Blueprint $table) {
+                $table->id();
+                $table->uuid('tenant_id')->nullable()->index();
+                $table->foreignId('employee_id')->constrained()->cascadeOnDelete();
+                $table->tinyInteger('month');
+                $table->smallInteger('year');
+                $table->string('type'); // gain | retenue
+                $table->string('label');
+                $table->decimal('amount', 10, 2);
+                $table->timestamps();
+    
+                $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
+            });
+        }
     }
 
     public function down(): void

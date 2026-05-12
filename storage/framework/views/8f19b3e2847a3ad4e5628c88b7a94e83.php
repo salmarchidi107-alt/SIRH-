@@ -336,12 +336,6 @@
 </div>
 
 
-<?php if(session('success')): ?>
-<div class="param-alert success" style="max-width:600px;margin-bottom:20px">
-    ✓ <?php echo e(session('success')); ?>
-
-</div>
-<?php endif; ?>
 <?php if(session('error')): ?>
 <div class="param-alert error" style="max-width:600px;margin-bottom:20px">
     ✗ <?php echo e(session('error')); ?>

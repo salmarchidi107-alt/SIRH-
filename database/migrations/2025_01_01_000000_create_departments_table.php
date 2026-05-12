@@ -9,20 +9,25 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('departments', function (Blueprint $table) {
-            $table->id();
-            $table->string('name')->unique();
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('departments')) {
+            Schema::create('departments', function (Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->timestamps();
+            });
+        }
 
-        Schema::table('employees', function (Blueprint $table) {
-            $table->foreignId('department_id')
-                ->nullable()
-                ->after('department')
-                ->constrained('departments')
-                ->nullOnDelete();
-        });
+        if (!Schema::hasColumn('employees', 'department_id')) {
+            Schema::table('employees', function (Blueprint $table) {
+                $table->foreignId('department_id')
+                    ->nullable()
+                    ->after('department')
+                    ->constrained('departments')
+                    ->nullOnDelete();
+            });
+        }
 
+        // Peupler les départements depuis les employés existants
         $existingDepartments = DB::table('employees')
             ->select('department')
             ->distinct()
@@ -30,9 +35,9 @@ return new class extends Migration
             ->pluck('department');
 
         foreach ($existingDepartments as $name) {
-            if (! empty(trim($name))) {
+            if (!empty(trim($name))) {
                 DB::table('departments')->insertOrIgnore([
-                    'name' => trim($name),
+                    'name'       => trim($name),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -40,20 +45,18 @@ return new class extends Migration
         }
 
         $departments = DB::table('departments')->pluck('id', 'name');
-
         foreach ($departments as $name => $id) {
-            DB::table('employees')
-                ->where('department', $name)
-                ->update(['department_id' => $id]);
+            DB::table('employees')->where('department', $name)->update(['department_id' => $id]);
         }
     }
 
     public function down(): void
     {
-        Schema::table('employees', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('department_id');
-        });
-
+        if (Schema::hasColumn('employees', 'department_id')) {
+            Schema::table('employees', function (Blueprint $table) {
+                $table->dropConstrainedForeignId('department_id');
+            });
+        }
         Schema::dropIfExists('departments');
     }
 };

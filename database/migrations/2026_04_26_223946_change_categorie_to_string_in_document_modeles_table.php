@@ -6,23 +6,10 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::table('document_modeles', function (Blueprint $table) {
-            $table->string('categorie')->default('autre')->change();
-        });
+        // categorie est déjà string dans la migration de création — rien à faire
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::table('document_modeles', function (Blueprint $table) {
-            $table->enum('categorie', ['attestation','certificat','contrat','avertissement','autre'])->default('autre')->change();
-        });
-    }
+    public function down(): void {}
 };

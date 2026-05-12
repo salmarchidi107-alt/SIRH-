@@ -13,6 +13,7 @@ use App\Exports\EmployeesExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Exception;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -135,7 +136,24 @@ class EmployeeController extends Controller
     public function store(StoreEmployeeRequest $request)
     {
         try {
-            $this->employeeService->create($request->validated());
+            DB::transaction(function () use ($request) {
+                // Création de l'employé via le service
+                $employee = $this->employeeService->create($request->validated());
+
+                // Création du compte utilisateur (optionnelle)
+                if ($request->boolean('create_account')) {
+                    $user = User::create([
+                        'name'      => $employee->first_name . ' ' . $employee->last_name,
+                        'email'     => $employee->email,
+                        'password'  => Hash::make($request->user_password),
+                        'role'      => $request->user_role,
+                        'tenant_id' => config('app.current_tenant_id') ?? auth()->user()->tenant_id,
+                    ]);
+
+                    // Lier l'utilisateur à l'employé
+                    $employee->update(['user_id' => $user->id]);
+                }
+            });
 
             return redirect()->route('employees.index')
                 ->with('success', 'Employé créé avec succès.');
@@ -145,7 +163,7 @@ class EmployeeController extends Controller
 
         } catch (Exception $e) {
             Log::error('Employee store error', ['error' => $e->getMessage()]);
-            return back()->withErrors(['error' => 'Erreur création employé'])->withInput();
+            return back()->withErrors(['error' => 'Erreur création employé : ' . $e->getMessage()])->withInput();
         }
     }
 
@@ -164,7 +182,7 @@ class EmployeeController extends Controller
             if (is_null($employee->plain_pin)) {
                 $plainPin            = sprintf('%04d%s', rand(1000, 9999), chr(rand(65, 90)) . chr(rand(65, 90)));
                 $employee->plain_pin = $plainPin;
-                $employee->pin       = \Illuminate\Support\Facades\Hash::make($plainPin);
+                $employee->pin       = Hash::make($plainPin);
                 $employee->saveQuietly();
                 Log::info("Generated PIN for employee {$employee->id}: {$plainPin}");
             }
@@ -240,7 +258,7 @@ class EmployeeController extends Controller
 
         $plainPin            = sprintf('%04d%s', rand(1000, 9999), chr(rand(65, 90)) . chr(rand(65, 90)));
         $employee->plain_pin = $plainPin;
-        $employee->pin       = \Illuminate\Support\Facades\Hash::make($plainPin);
+        $employee->pin       = Hash::make($plainPin);
         $employee->save();
 
         Log::info("Regenerated PIN for employee {$employee->id} ({$employee->full_name}): {$plainPin}");
@@ -302,9 +320,6 @@ class EmployeeController extends Controller
     // HELPERS PRIVÉS
     // =========================================================================
 
-    /**
-     * Construit la requête de base employés avec filtres optionnels.
-     */
     private function buildQuery(Request $request)
     {
         return Employee::query()
@@ -321,10 +336,6 @@ class EmployeeController extends Controller
             ->when($request->status,     fn($q, $status) => $q->status($status));
     }
 
-    /**
-     * Récupère la liste des départements.
-     * Priorité : table departments → fallback champ employees.department.
-     */
     private function getDepartmentsList()
     {
         try {

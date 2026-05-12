@@ -6,24 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::table('employees', function (Blueprint $table) {
-            $table->unsignedInteger('sort_order')->default(9999)->after('status');
-        });
+        if (!Schema::hasColumn('employees', 'sort_order')) {
+            Schema::table('employees', function (Blueprint $table) {
+                $table->unsignedInteger('sort_order')->default(9999)->after('status');
+            });
+        }
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::table('employees', function (Blueprint $table) {
-            $table->dropColumn('sort_order');
-        });
+        if (Schema::hasColumn('employees', 'sort_order')) {
+            Schema::table('employees', function (Blueprint $table) {
+                $table->dropColumn('sort_order');
+            });
+        }
     }
 };
-

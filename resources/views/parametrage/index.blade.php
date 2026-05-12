@@ -335,12 +335,7 @@
     </div>
 </div>
 
-{{-- Alertes session --}}
-@if(session('success'))
-<div class="param-alert success" style="max-width:600px;margin-bottom:20px">
-    ✓ {{ session('success') }}
-</div>
-@endif
+
 @if(session('error'))
 <div class="param-alert error" style="max-width:600px;margin-bottom:20px">
     ✗ {{ session('error') }}

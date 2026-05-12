@@ -142,17 +142,19 @@ class EmployeeController extends Controller
 
                 // Création du compte utilisateur (optionnelle)
                 if ($request->boolean('create_account')) {
-                    $user = User::create([
-                        'name'      => $employee->first_name . ' ' . $employee->last_name,
-                        'email'     => $employee->email,
-                        'password'  => Hash::make($request->user_password),
-                        'role'      => $request->user_role,
-                        'tenant_id' => config('app.current_tenant_id') ?? auth()->user()->tenant_id,
-                    ]);
+    $tenantId = config('app.current_tenant_id') ?? auth()->user()->tenant_id;
 
-                    // Lier l'utilisateur à l'employé
-                    $employee->update(['user_id' => $user->id]);
-                }
+    $user = User::create([
+        'name'      => $employee->first_name . ' ' . $employee->last_name,
+        'email'     => $employee->email,
+        'password'  => Hash::make($request->user_password),
+        'role'      => $request->user_role ?? 'employee',
+        'tenant_id' => $tenantId, //  toujours présent
+    ]);
+
+    $employee->update(['user_id' => $user->id]);
+}
+                
             });
 
             return redirect()->route('employees.index')

@@ -22,11 +22,6 @@ class BadgePointageController extends Controller
 
     // ─── Résolution employé ──────────────────────────────────────────────────
 
-    /**
-     * Trouve l'employé lié au User connecté.
-     * Essaie d'abord user->employee (via employee_id),
-     * puis Employee::where('user_id') en fallback legacy.
-     */
     private function resolveEmployee(): ?Employee
     {
         /** @var User|null $user */
@@ -42,7 +37,8 @@ class BadgePointageController extends Controller
         }
 
         // Cas 2 : legacy — employee.user_id pointe vers ce User
-        return Employee::where('user_id', $user->id)->first();
+        // with('user') pour éviter le null sur $employee->user plus tard
+        return Employee::where('user_id', $user->id)->with('user')->first();
     }
 
     private function getAuthEmployee(): Employee
@@ -55,6 +51,27 @@ class BadgePointageController extends Controller
 
         return $employee;
     }
+
+    // ─── Résolution tenant_id ────────────────────────────────────────────────
+
+   private function resolveTenantId(Employee $employee): string|int|null
+{
+    // Source 1 : config middleware
+    $tenantId = config('app.current_tenant_id');
+    if (! blank($tenantId)) return $tenantId;
+
+    // Source 2 : user badge connecté
+    $badgeUser = auth('badge')->user();
+    if (! blank($badgeUser?->tenant_id)) return $badgeUser->tenant_id;
+
+    // Source 3 : relation user de l'employé
+    if (! blank($employee->user?->tenant_id)) return $employee->user->tenant_id;
+
+    // Source 4 : fallback — premier admin avec tenant_id
+    return \App\Models\User::whereNotNull('tenant_id')
+        ->where('role', 'admin')
+        ->value('tenant_id');
+}
 
     // ─── Helpers Carbon ─────────────────────────────────────────────────────
 
@@ -113,9 +130,7 @@ class BadgePointageController extends Controller
 
     public function entree(Request $request)
     {
-        
         $employee = $this->getAuthEmployee();
-
         $this->recordAction('entree', $employee);
         $request->session()->flash('last_type', 'entree');
         return redirect()->route('badge.result');
@@ -151,9 +166,7 @@ class BadgePointageController extends Controller
 
     public function recordAction(string $type, Employee $employee): void
     {
-      
         $now     = $this->nowCasa();
-       
         $today   = $now->format('Y-m-d');
         $nowTime = $now->format('H:i:s');
 
@@ -162,33 +175,32 @@ class BadgePointageController extends Controller
             'employee_id' => $employee->id,
             'type'        => $type,
         ]);
-   
-        
+
         // 2. Synchronisation Pointage RH
+        // tenant_id résolu proprement — ne plante plus si user est null
         $pointage = Pointage::firstOrCreate(
             ['employee_id' => $employee->id, 'date' => $today],
-            ['statut' => 'present', 'valide' => false, 'source' => 'badge', 'tenant_id' => $employee->user->tenant_id ]
+            [
+                'statut'    => 'present',
+                'valide'    => false,
+                'source'    => 'badge',
+                'tenant_id' => $this->resolveTenantId($employee),
+            ]
         );
-   
-//  TODO: add pause start and pause end logi
-      if ($type === 'entree' && !$pointage->heure_entree) {
-    $pointage->heure_entree = $nowTime;
-}
 
-elseif ($type === 'pause' && !$pointage->pause_start) {
-    $pointage->pause_start = $nowTime;
-}
+        // TODO: add pause start and pause end logic
+        if ($type === 'entree' && ! $pointage->heure_entree) {
+            $pointage->heure_entree = $nowTime;
+        } elseif ($type === 'pause' && ! $pointage->pause_start) {
+            $pointage->pause_start = $nowTime;
+        } elseif ($type === 'retour_pause' && ! $pointage->pause_end) {
+            $pointage->pause_end = $nowTime;
+        } elseif ($type === 'sortie') {
+            $pointage->heure_sortie = $nowTime;
+        }
 
-elseif ($type === 'retour_pause' && !$pointage->pause_end) {
-    $pointage->pause_end = $nowTime;
-}
-
-elseif ($type === 'sortie') {
-    $pointage->heure_sortie = $nowTime;
-}
-        //  dd($pointage,$nowTime);
         $pointage->save();
-        // dd($pointage);
+
         if (method_exists($pointage, 'calculerTotalHeures')) {
             $pointage->calculerTotalHeures(false);
         }
@@ -214,10 +226,6 @@ elseif ($type === 'sortie') {
         };
     }
 
-    /**
-     * Résumé commun dashboard + result.
-     * Les heures sont converties en timezone Casablanca.
-     */
     private function buildShiftSummary($shift): array
     {
         $entrees = $shift->where('type', 'entree')->values();
@@ -232,12 +240,6 @@ elseif ($type === 'sortie') {
         ];
     }
 
-    /**
-     * Temps de travail réel = somme des périodes entree[i] -> sortie[i].
-     *
-     * Séquence : entree(8h) pause(10h) entree(10h30) sortie(17h)
-     * Couples  : (8h->10h) + (10h30->17h) = 2h + 6h30 = 8h30
-     */
     private function calcTotalTime($entrees, $sorties): string
     {
         if ($entrees->isEmpty() || $sorties->isEmpty()) {
@@ -257,9 +259,6 @@ elseif ($type === 'sortie') {
         return floor($total / 3600) . 'h ' . floor(($total % 3600) / 60) . 'm';
     }
 
-    /**
-     * Temps de pause = somme des périodes pause[i] -> entree[i+1].
-     */
     private function calcTotalPause($pauses, $retours): string
     {
         if ($pauses->isEmpty() || $retours->isEmpty()) {

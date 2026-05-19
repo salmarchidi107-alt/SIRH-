@@ -76,13 +76,44 @@
         <div class="card-body">
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Service *</label>
-                    <input type="text" name="department" class="form-control" value="{{ old('department', $employee->department) }}" required list="depts">
-                    <datalist id="depts">
-                        <option value="Médecine Générale"><option value="Chirurgie"><option value="Urgences">
-                        <option value="Pédiatrie"><option value="Radiologie"><option value="Laboratoire">
-                        <option value="Pharmacie"><option value="Administration"><option value="Ressources Humaines">
-                    </datalist>
+                   {{-- ── Département — menu déroulant depuis la BDD ── --}}
+<div class="form-group">
+    <label>Service / Département *</label>
+
+    <select name="department" class="form-control" required>
+        <option value="">— Sélectionner un département —</option>
+
+        @forelse($departments ?? [] as $dept)
+            @php
+                $deptName = is_object($dept) ? $dept->name : $dept;
+            @endphp
+
+            <option value="{{ $deptName }}"
+                {{ old('department', $employee->department) == $deptName ? 'selected' : '' }}>
+                {{ $deptName }}
+            </option>
+
+        @empty
+            <option disabled>Aucun département disponible</option>
+        @endforelse
+    </select>
+
+    @error('department')
+        <span style="color:var(--danger);font-size:0.75rem">
+            {{ $message }}
+        </span>
+    @enderror
+
+    @if(empty($departments) || count($departments) === 0)
+        <small style="color:#f59e0b;font-size:0.75rem">
+            ⚠️ Aucun département configuré —
+            <a href="{{ route('parametrage.index', ['tab' => 'departments']) }}"
+               style="color:#f59e0b">
+                créez-en un dans Paramétrage
+            </a>
+        </small>
+    @endif
+</div>
                 </div>
                 <div class="form-group">
                     <label>Poste *</label>
@@ -216,8 +247,8 @@
                 </div>
                 <div class="form-group">
                     <label>Début du contrat</label>
-                    <input type="date" name="contract_start_date" class="form-control"
-                    value="{{ old('contract_start_date', $employee->contract_start_date?->format('Y-m-d')) }}" readonly                </div>
+<input type="date" name="contract_start_date" class="form-control"
+                    value="{{ old('contract_start_date', $employee->contract_start_date?->format('Y-m-d')) }}" readonly                </div>                </div>
                 <div class="form-group">
                     <label>Date de fin (si CDD)</label>
                     <input type="date" name="contract_end_date" class="form-control" value="{{ old('contract_end_date', $employee->contract_end_date?->format('Y-m-d')) }}">
@@ -330,4 +361,3 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 @endsection
-

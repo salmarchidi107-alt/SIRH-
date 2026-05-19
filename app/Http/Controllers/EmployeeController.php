@@ -133,12 +133,28 @@ class EmployeeController extends Controller
         }
     }
 
-   public function store(StoreEmployeeRequest $request)
+    public function store(StoreEmployeeRequest $request)
     {
         try {
             DB::transaction(function () use ($request) {
-                // Le service gère TOUT : création employé + compte user si create_account = true
-                $this->employeeService->create($request->validated());
+                // Création de l'employé via le service
+                $employee = $this->employeeService->create($request->validated());
+
+                // Création du compte utilisateur (optionnelle)
+                if ($request->boolean('create_account')) {
+    $tenantId = config('app.current_tenant_id') ?? auth()->user()->tenant_id;
+
+    $user = User::create([
+        'name'      => $employee->first_name . ' ' . $employee->last_name,
+        'email'     => $employee->email,
+        'password'  => Hash::make($request->user_password),
+        'role'      => $request->user_role ?? 'employee',
+        'tenant_id' => $tenantId, //  toujours présent
+    ]);
+
+    $employee->update(['user_id' => $user->id]);
+}
+
             });
 
             return redirect()->route('employees.index')
@@ -152,6 +168,7 @@ class EmployeeController extends Controller
             return back()->withErrors(['error' => 'Erreur création employé : ' . $e->getMessage()])->withInput();
         }
     }
+
     public function show(Employee $employee)
     {
         if (auth()->user()->role === 'employee' && auth()->user()->employee_id != $employee->id) {
@@ -324,14 +341,22 @@ class EmployeeController extends Controller
     private function getDepartmentsList()
     {
         try {
-            $departments = Department::orderBy('name')->pluck('name');
+            // Forcer le tenant_id de l'utilisateur connecté
+            $tenantId = auth()->user()->tenant_id;
+
+            $departments = Department::where('tenant_id', $tenantId)
+                ->orderBy('name')
+                ->pluck('name');
+
             if ($departments->isNotEmpty()) {
                 return $departments;
             }
+
         } catch (Exception $e) {
-            // Table inexistante ou vide → fallback
+            Log::warning('getDepartmentsList error: ' . $e->getMessage());
         }
 
+        // Fallback : départements déjà utilisés dans les employés
         return Employee::whereNotNull('department')
             ->where('department', '!=', '')
             ->distinct()

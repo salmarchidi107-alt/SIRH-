@@ -176,7 +176,7 @@
         <div class="sa-card-header"><div class="sa-card-title">Compte admin principal</div></div>
         <div class="sa-card-body" style="display:flex;flex-direction:column;gap:0;">
 
-            {{-- ✅ Prénom + Nom pré-remplis avec les valeurs actuelles --}}
+            {{-- Prénom + Nom pré-remplis avec les valeurs actuelles --}}
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" class="sa-field">
                 <div>
                     <label class="sa-label">Prénom

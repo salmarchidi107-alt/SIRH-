@@ -44,7 +44,7 @@ unset($__errorArgs, $__bag); ?>
                 </div>
                 <div class="form-group">
                     <label>Nom *</label>
-                    <input type="text" name="last_name" class="form-control" value="<?php echo e(old('last_name')); ?>" required placeholder="Alami">
+                    <input type="text" name="last_name" class="form-control" value="<?php echo e(old('last_name')); ?>" >
                     <?php $__errorArgs = ['last_name'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -55,8 +55,8 @@ endif;
 unset($__errorArgs, $__bag); ?>
                 </div>
                 <div class="form-group">
-                    <label>Email *</label>
-                    <input type="email" name="email" class="form-control" value="<?php echo e(old('email')); ?>" required placeholder="m.alami@hospitalrh.ma">
+                    <label>Email </label>
+                    <input type="email" name="email" class="form-control" value="<?php echo e(old('email')); ?>"  autocomplete="new-email">
                     <?php $__errorArgs = ['email'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -68,7 +68,7 @@ unset($__errorArgs, $__bag); ?>
                 </div>
                 <div class="form-group">
                     <label>Téléphone</label>
-                    <input type="text" name="phone" class="form-control" value="<?php echo e(old('phone')); ?>" placeholder="0612345678">
+                    <input type="text" name="phone" class="form-control" value="<?php echo e(old('phone')); ?>" >
                 </div>
                 <div class="form-group">
                     <label>Date de naissance</label>
@@ -350,7 +350,7 @@ unset($__errorArgs, $__bag); ?>
             <div class="form-group">
                 <label>Mot de passe</label>
                 <div class="password-group">
-                    <input type="password" name="user_password" id="user_password" class="form-control">
+                    <input type="password" name="user_password" id="user_password" class="form-control" autocomplete="new-password">
                     <button type="button" class="toggle-password" data-target="user_password">
                         <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" opacity="0.5"/>

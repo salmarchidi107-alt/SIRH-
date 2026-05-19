@@ -28,7 +28,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="stat-card" style="background: linear-gradient(135deg, #0ea5e9, #38bdf8); padding: 20px; border-radius: 12px; color: white;">
         <div style="display: flex; align-items: center; gap: 12px;">
             <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
@@ -79,7 +79,7 @@
                         <div style="display: flex; gap: 8px; flex-shrink: 0;">
                             <form method="POST" action="{{ route('absences.approve', $absence) }}">
                                 @csrf
-                                @method('PUT')
+
                                 <button type="submit" class="btn btn-sm" style="background: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 0.8rem;">
                                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                                         <polyline points="20 6 9 17 4 12"/>
@@ -187,4 +187,3 @@
 }
 </style>
 @endsection
-

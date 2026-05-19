@@ -41,17 +41,17 @@
                 </div>
                 <div class="form-group">
                     <label>Nom *</label>
-                    <input type="text" name="last_name" class="form-control" value="{{ old('last_name') }}" required placeholder="Alami">
+                    <input type="text" name="last_name" class="form-control" value="{{ old('last_name') }}" >
                     @error('last_name') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group">
-                    <label>Email *</label>
-                    <input type="email" name="email" class="form-control" value="{{ old('email') }}" required placeholder="m.alami@hospitalrh.ma">
+                    <label>Email </label>
+                    <input type="email" name="email" class="form-control" value="{{ old('email') }}"  autocomplete="new-email">
                     @error('email') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group">
                     <label>Téléphone</label>
-                    <input type="text" name="phone" class="form-control" value="{{ old('phone') }}" placeholder="0612345678">
+                    <input type="text" name="phone" class="form-control" value="{{ old('phone') }}" >
                 </div>
                 <div class="form-group">
                     <label>Date de naissance</label>
@@ -286,7 +286,7 @@
             <div class="form-group">
                 <label>Mot de passe</label>
                 <div class="password-group">
-                    <input type="password" name="user_password" id="user_password" class="form-control">
+                    <input type="password" name="user_password" id="user_password" class="form-control" autocomplete="new-password">
                     <button type="button" class="toggle-password" data-target="user_password">
                         <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" opacity="0.5"/>

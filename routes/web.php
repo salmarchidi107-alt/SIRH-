@@ -252,11 +252,11 @@ Route::get('/weekly/pdf', [PlanningController::class, 'exportWeeklyPdf'])
     });
 
         // ── Absences (validation admin) ───────────────────────────────────
-        Route::prefix('absences')->name('absences.')->group(function () {
-            Route::post('/{absence}/approve', [AbsenceController::class, 'approve'])->name('approve');
-            Route::post('/{absence}/reject',  [AbsenceController::class, 'reject']) ->name('reject');
-        });
 
+Route::prefix('absences')->name('absences.')->group(function () {
+    Route::match(['POST', 'PUT'], '/{absence}/approve', [AbsenceController::class, 'approve'])->name('approve');
+    Route::match(['POST', 'PUT'], '/{absence}/reject',  [AbsenceController::class, 'reject']) ->name('reject');
+});
         // ── Salary (admin/RH) ─────────────────────────────────────────────
         Route::prefix('salary')->name('salary.')->middleware(['role:admin,rh'])->group(function () {
             Route::get('/',                     [SalaryController::class, 'index'])         ->name('index');

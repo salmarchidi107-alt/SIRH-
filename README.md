@@ -14,3 +14,4 @@ Login at http://hospitalrh.test (configure hosts file) or http://localhost:8000 
 php artisan serve
 ```
 
+

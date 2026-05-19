@@ -95,13 +95,53 @@ unset($__errorArgs, $__bag); ?>
         <div class="card-body">
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Service *</label>
-                    <input type="text" name="department" class="form-control" value="<?php echo e(old('department', $employee->department)); ?>" required list="depts">
-                    <datalist id="depts">
-                        <option value="Médecine Générale"><option value="Chirurgie"><option value="Urgences">
-                        <option value="Pédiatrie"><option value="Radiologie"><option value="Laboratoire">
-                        <option value="Pharmacie"><option value="Administration"><option value="Ressources Humaines">
-                    </datalist>
+                   
+<div class="form-group">
+    <label>Service / Département *</label>
+
+    <select name="department" class="form-control" required>
+        <option value="">— Sélectionner un département —</option>
+
+        <?php $__empty_1 = true; $__currentLoopData = $departments ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dept): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+            <?php
+                $deptName = is_object($dept) ? $dept->name : $dept;
+            ?>
+
+            <option value="<?php echo e($deptName); ?>"
+                <?php echo e(old('department', $employee->department) == $deptName ? 'selected' : ''); ?>>
+                <?php echo e($deptName); ?>
+
+            </option>
+
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+            <option disabled>Aucun département disponible</option>
+        <?php endif; ?>
+    </select>
+
+    <?php $__errorArgs = ['department'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+        <span style="color:var(--danger);font-size:0.75rem">
+            <?php echo e($message); ?>
+
+        </span>
+    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+
+    <?php if(empty($departments) || count($departments) === 0): ?>
+        <small style="color:#f59e0b;font-size:0.75rem">
+            ⚠️ Aucun département configuré —
+            <a href="<?php echo e(route('parametrage.index', ['tab' => 'departments'])); ?>"
+               style="color:#f59e0b">
+                créez-en un dans Paramétrage
+            </a>
+        </small>
+    <?php endif; ?>
+</div>
                 </div>
                 <div class="form-group">
                     <label>Poste *</label>
@@ -109,16 +149,9 @@ unset($__errorArgs, $__bag); ?>
                 </div>
                 <div class="form-group">
                     <label>Type de diplôme</label>
-                    <select name="diploma_type" class="form-control">
-                        <option value="">Sélectionner...</option>
-                        <option value="Bac" <?php echo e(old('diploma_type', $employee->diploma_type) == 'Bac' ? 'selected' : ''); ?>>Bac</option>
-                        <option value="Bac+2" <?php echo e(old('diploma_type', $employee->diploma_type) == 'Bac+2' ? 'selected' : ''); ?>>Bac+2 (DUT, BTS)</option>
-                        <option value="Bac+3" <?php echo e(old('diploma_type', $employee->diploma_type) == 'Bac+3' ? 'selected' : ''); ?>>Bac+3 (Licence)</option>
-                        <option value="Bac+4" <?php echo e(old('diploma_type', $employee->diploma_type) == 'Bac+4' ? 'selected' : ''); ?>>Bac+4 (Master 1)</option>
-                        <option value="Bac+5" <?php echo e(old('diploma_type', $employee->diploma_type) == 'Bac+5' ? 'selected' : ''); ?>>Bac+5 (Master 2)</option>
-                        <option value="Doctorat" <?php echo e(old('diploma_type', $employee->diploma_type) == 'Doctorat' ? 'selected' : ''); ?>>Doctorat</option>
-                        <option value="Formation professionnelle" <?php echo e(old('diploma_type', $employee->diploma_type) == 'Formation professionnelle' ? 'selected' : ''); ?>>Formation professionnelle</option>
-                    </select>
+                   <input type="text" name="diploma_type" class="form-control"
+       value="<?php echo e(old('diploma_type', $employee->diploma_type)); ?>"
+       placeholder="">
                 </div>
                 <div class="form-group">
                     <label>Site de travail</label>
@@ -134,23 +167,9 @@ unset($__errorArgs, $__bag); ?>
                 </div>
                 <div class="form-group">
                     <label>Compétences</label>
-                    <select name="skills" class="form-control">
-                        <option value="">Sélectionner...</option>
-                        <option value="Médecine générale" <?php echo e(old('skills', $employee->skills) == 'Médecine générale' ? 'selected' : ''); ?>>Médecine générale</option>
-                        <option value="Chirurgie générale" <?php echo e(old('skills', $employee->skills) == 'Chirurgie générale' ? 'selected' : ''); ?>>Chirurgie générale</option>
-                        <option value="Urgences et soins intensifs" <?php echo e(old('skills', $employee->skills) == 'Urgences et soins intensifs' ? 'selected' : ''); ?>>Urgences et soins intensifs</option>
-                        <option value="Pédiatrie" <?php echo e(old('skills', $employee->skills) == 'Pédiatrie' ? 'selected' : ''); ?>>Pédiatrie</option>
-                        <option value="Gynécologie obstétrique" <?php echo e(old('skills', $employee->skills) == 'Gynécologie obstétrique' ? 'selected' : ''); ?>>Gynécologie obstétrique</option>
-                        <option value="Cardiologie" <?php echo e(old('skills', $employee->skills) == 'Cardiologie' ? 'selected' : ''); ?>>Cardiologie</option>
-                        <option value="Neurologie" <?php echo e(old('skills', $employee->skills) == 'Neurologie' ? 'selected' : ''); ?>>Neurologie</option>
-                        <option value="Oncologie" <?php echo e(old('skills', $employee->skills) == 'Oncologie' ? 'selected' : ''); ?>>Oncologie</option>
-                        <option value="Radiologie" <?php echo e(old('skills', $employee->skills) == 'Radiologie' ? 'selected' : ''); ?>>Radiologie</option>
-                        <option value="Laboratoire" <?php echo e(old('skills', $employee->skills) == 'Laboratoire' ? 'selected' : ''); ?>>Laboratoire</option>
-                        <option value="Pharmacie" <?php echo e(old('skills', $employee->skills) == 'Pharmacie' ? 'selected' : ''); ?>>Pharmacie</option>
-                        <option value="Anesthésie" <?php echo e(old('skills', $employee->skills) == 'Anesthésie' ? 'selected' : ''); ?>>Anesthésie</option>
-                        <option value="Management hospitalier" <?php echo e(old('skills', $employee->skills) == 'Management hospitalier' ? 'selected' : ''); ?>>Management hospitalier</option>
-                        <option value="Informatique médicale" <?php echo e(old('skills', $employee->skills) == 'Informatique médicale' ? 'selected' : ''); ?>>Informatique médicale</option>
-                    </select>
+                    <input type="text" name="skills" class="form-control"
+       value="<?php echo e(old('skills', $employee->skills)); ?>"
+       placeholder="">
                 </div>
                 <div class="form-group">
                     <label>Contrat *</label>
@@ -256,8 +275,8 @@ unset($__errorArgs, $__bag); ?>
                 </div>
                 <div class="form-group">
                     <label>Début du contrat</label>
-                    <input type="date" name="contract_start_date" class="form-control"
-                    value="<?php echo e(old('contract_start_date', $employee->contract_start_date?->format('Y-m-d'))); ?>" readonly                </div>
+<input type="date" name="contract_start_date" class="form-control"
+                    value="<?php echo e(old('contract_start_date', $employee->contract_start_date?->format('Y-m-d'))); ?>" readonly                </div>                </div>
                 <div class="form-group">
                     <label>Date de fin (si CDD)</label>
                     <input type="date" name="contract_end_date" class="form-control" value="<?php echo e(old('contract_end_date', $employee->contract_end_date?->format('Y-m-d'))); ?>">
@@ -371,6 +390,5 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 <?php $__env->stopSection(); ?>
-
 
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\Projects\SIRH-\resources\views/employees/edit.blade.php ENDPATH**/ ?>

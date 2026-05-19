@@ -121,16 +121,9 @@
                 </div>
                 <div class="form-group">
                     <label>Type de diplôme</label>
-                    <select name="diploma_type" class="form-control">
-                        <option value="">Sélectionner...</option>
-                        <option value="Bac" {{ old('diploma_type', $employee->diploma_type) == 'Bac' ? 'selected' : '' }}>Bac</option>
-                        <option value="Bac+2" {{ old('diploma_type', $employee->diploma_type) == 'Bac+2' ? 'selected' : '' }}>Bac+2 (DUT, BTS)</option>
-                        <option value="Bac+3" {{ old('diploma_type', $employee->diploma_type) == 'Bac+3' ? 'selected' : '' }}>Bac+3 (Licence)</option>
-                        <option value="Bac+4" {{ old('diploma_type', $employee->diploma_type) == 'Bac+4' ? 'selected' : '' }}>Bac+4 (Master 1)</option>
-                        <option value="Bac+5" {{ old('diploma_type', $employee->diploma_type) == 'Bac+5' ? 'selected' : '' }}>Bac+5 (Master 2)</option>
-                        <option value="Doctorat" {{ old('diploma_type', $employee->diploma_type) == 'Doctorat' ? 'selected' : '' }}>Doctorat</option>
-                        <option value="Formation professionnelle" {{ old('diploma_type', $employee->diploma_type) == 'Formation professionnelle' ? 'selected' : '' }}>Formation professionnelle</option>
-                    </select>
+                   <input type="text" name="diploma_type" class="form-control"
+       value="{{ old('diploma_type', $employee->diploma_type) }}"
+       placeholder="">
                 </div>
                 <div class="form-group">
                     <label>Site de travail</label>
@@ -139,23 +132,9 @@
                 </div>
                 <div class="form-group">
                     <label>Compétences</label>
-                    <select name="skills" class="form-control">
-                        <option value="">Sélectionner...</option>
-                        <option value="Médecine générale" {{ old('skills', $employee->skills) == 'Médecine générale' ? 'selected' : '' }}>Médecine générale</option>
-                        <option value="Chirurgie générale" {{ old('skills', $employee->skills) == 'Chirurgie générale' ? 'selected' : '' }}>Chirurgie générale</option>
-                        <option value="Urgences et soins intensifs" {{ old('skills', $employee->skills) == 'Urgences et soins intensifs' ? 'selected' : '' }}>Urgences et soins intensifs</option>
-                        <option value="Pédiatrie" {{ old('skills', $employee->skills) == 'Pédiatrie' ? 'selected' : '' }}>Pédiatrie</option>
-                        <option value="Gynécologie obstétrique" {{ old('skills', $employee->skills) == 'Gynécologie obstétrique' ? 'selected' : '' }}>Gynécologie obstétrique</option>
-                        <option value="Cardiologie" {{ old('skills', $employee->skills) == 'Cardiologie' ? 'selected' : '' }}>Cardiologie</option>
-                        <option value="Neurologie" {{ old('skills', $employee->skills) == 'Neurologie' ? 'selected' : '' }}>Neurologie</option>
-                        <option value="Oncologie" {{ old('skills', $employee->skills) == 'Oncologie' ? 'selected' : '' }}>Oncologie</option>
-                        <option value="Radiologie" {{ old('skills', $employee->skills) == 'Radiologie' ? 'selected' : '' }}>Radiologie</option>
-                        <option value="Laboratoire" {{ old('skills', $employee->skills) == 'Laboratoire' ? 'selected' : '' }}>Laboratoire</option>
-                        <option value="Pharmacie" {{ old('skills', $employee->skills) == 'Pharmacie' ? 'selected' : '' }}>Pharmacie</option>
-                        <option value="Anesthésie" {{ old('skills', $employee->skills) == 'Anesthésie' ? 'selected' : '' }}>Anesthésie</option>
-                        <option value="Management hospitalier" {{ old('skills', $employee->skills) == 'Management hospitalier' ? 'selected' : '' }}>Management hospitalier</option>
-                        <option value="Informatique médicale" {{ old('skills', $employee->skills) == 'Informatique médicale' ? 'selected' : '' }}>Informatique médicale</option>
-                    </select>
+                    <input type="text" name="skills" class="form-control"
+       value="{{ old('skills', $employee->skills) }}"
+       placeholder="">
                 </div>
                 <div class="form-group">
                     <label>Contrat *</label>

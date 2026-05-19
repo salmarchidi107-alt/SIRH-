@@ -7,14 +7,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-
 class User extends Authenticatable
 {
-
     protected $fillable = [
         'name',
+        'first_name',       // ← ajouté
+        'last_name',        // ← ajouté
         'email',
         'password',
+        'plain_password',   // ← ajouté
         'role',
         'tenant_id',
         'employee_id',
@@ -23,6 +24,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        // NE PAS cacher plain_password sinon il n'apparaît pas dans les requêtes
     ];
 
     protected $casts = [
@@ -33,7 +35,7 @@ class User extends Authenticatable
 
     public function tenant()
     {
-return $this->belongsTo(\App\Models\Tenant::class, 'tenant_id');
+        return $this->belongsTo(\App\Models\Tenant::class, 'tenant_id');
     }
 
     public function employee()
@@ -52,10 +54,10 @@ return $this->belongsTo(\App\Models\Tenant::class, 'tenant_id');
         return $tenantId ? $query->where('tenant_id', $tenantId) : $query;
     }
 
-    // ─── Roles Constants ────────────────────────────────────────────────────────
+    // ─── Roles Constants ─────────────────────────────────────────────────────
 
-    const ROLE_ADMIN = 'admin';
-    const ROLE_EMPLOYEE = 'employee';
+    const ROLE_ADMIN      = 'admin';
+    const ROLE_EMPLOYEE   = 'employee';
     const ROLE_SUPERADMIN = 'superadmin';
 
     public function isSuperAdmin(): bool
@@ -74,9 +76,10 @@ return $this->belongsTo(\App\Models\Tenant::class, 'tenant_id');
     }
 
     public function isAdminOrRh(): bool
-{
-    return in_array($this->role, ['admin', 'rh']);
-}
+    {
+        return in_array($this->role, ['admin', 'rh']);
+    }
+
     public function isEmployee(): bool
     {
         return $this->role === self::ROLE_EMPLOYEE;
@@ -86,19 +89,15 @@ return $this->belongsTo(\App\Models\Tenant::class, 'tenant_id');
     {
         return match($this->role) {
             self::ROLE_SUPERADMIN => 'Super Administrateur',
-            self::ROLE_ADMIN => 'Administrateur',
-            'rh' => 'Responsable RH',
-            self::ROLE_EMPLOYEE => 'Employé',
-            default => 'Employé',
+            self::ROLE_ADMIN      => 'Administrateur',
+            'rh'                  => 'Responsable RH',
+            self::ROLE_EMPLOYEE   => 'Employé',
+            default               => 'Employé',
         };
     }
 
-    /**
-     * Override parent can() method for custom role-based permissions from config/roles.php
-     */
     public function can($abilities, $arguments = []): bool
     {
-        // Handle string permission (existing usage)
         if (is_string($abilities)) {
             $permissions = config('roles.permissions', []);
             if (isset($permissions[$abilities])) {
@@ -107,8 +106,6 @@ return $this->belongsTo(\App\Models\Tenant::class, 'tenant_id');
             }
             return false;
         }
-
-        // Delegate to parent for other cases (array, Gate, etc.)
         return parent::can($abilities, $arguments);
     }
 
@@ -117,4 +114,3 @@ return $this->belongsTo(\App\Models\Tenant::class, 'tenant_id');
         return $this->morphToMany(config('permission.models.role'), 'modelable');
     }
 }
-

@@ -11,7 +11,6 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class DocumentController extends Controller
 {
-    /* ── Liste ───────────────────────────────────────────────── */
     public function index(Request $request)
     {
         $query = Document::with(['employe', 'createdBy', 'modele'])->latest();
@@ -27,7 +26,6 @@ class DocumentController extends Controller
         return view('ged.index', compact('documents', 'employes', 'modeles'));
     }
 
-    /* ── Créer ───────────────────────────────────────────────── */
     public function store(Request $request)
     {
         $request->validate([
@@ -53,7 +51,6 @@ class DocumentController extends Controller
             ->with('success', 'Document généré avec succès.');
     }
 
-    /* ── Page édition ────────────────────────────────────────── */
     public function edit(Document $document)
     {
         $document->load(['employe', 'modele']);
@@ -61,6 +58,7 @@ class DocumentController extends Controller
         $employes = \App\Models\Employee::orderBy('last_name')->orderBy('first_name')->get();
         $modeles  = \App\Models\DocumentModele::orderBy('nom')->get();
         $tenant   = auth()->user()?->tenant;
+        $entete   = DocumentEntete::getActive();
 
         $contenuInitial = base64_encode($document->contenu ?? $document->modele?->contenu ?? '');
 
@@ -88,10 +86,13 @@ class DocumentController extends Controller
         });
 
         $tenantJson = [
-            'societe'   => $tenant?->name          ?? config('app.name'),
-            'adresse'   => $tenant?->address        ?? '',
-            'telephone' => $tenant?->phone          ?? '',
-            'email'     => $tenant?->email_societe  ?? '',
+            'societe'       => $entete?->nom_societe ?: ($tenant?->name          ?? ''),
+            'adresse'       => $entete?->adresse     ?: ($tenant?->address       ?? ''),
+            'telephone'     => $entete?->telephone   ?: ($tenant?->phone         ?? ''),
+            'email_societe' => $entete?->email       ?: ($tenant?->email_societe ?? ''),
+            'site_web'      => $entete?->site_web    ?: ($tenant?->website       ?? ''),
+            'ice'           => $entete?->ice         ?: ($tenant?->ice           ?? ''),
+            'rc'            => $entete?->rc          ?? '',
         ];
 
         return view('ged.edit', compact(
@@ -100,7 +101,6 @@ class DocumentController extends Controller
         ));
     }
 
-    /* ── Mettre à jour ───────────────────────────────────────── */
     public function update(Request $request, Document $document)
     {
         $request->validate([
@@ -123,7 +123,6 @@ class DocumentController extends Controller
             ->with('success', 'Document modifié avec succès.');
     }
 
-    /* ── Supprimer ───────────────────────────────────────────── */
     public function destroy(Document $document)
     {
         $document->delete();
@@ -132,7 +131,6 @@ class DocumentController extends Controller
             ->with('success', 'Document supprimé.');
     }
 
-    /* ── Télécharger PDF ─────────────────────────────────────── */
     public function download(Document $document)
     {
         $document->load(['modele', 'employe']);
@@ -146,37 +144,31 @@ class DocumentController extends Controller
             abort(404, 'Aucun contenu disponible pour ce document.');
         }
 
-        // ── Valeurs indexées par nom de variable ──────────────────────────────
         $values = [
-    'nom'           => $employee?->last_name     ?? '—',
-    'prenom'        => $employee?->first_name    ?? '—',
-    'matricule'     => $employee?->matricule     ?? '—',
-    'poste'         => $employee?->position      ?? '—',
-    'departement'   => $employee?->department    ?? '—',
-    'contrat'       => $employee?->contract_type ?? '—',
-    'date_embauche' => $employee?->hire_date
-                        ? \Carbon\Carbon::parse($employee->hire_date)->format('d/m/Y')
-                        : '—',
-    'salaire'       => $employee?->salary
-                        ? number_format($employee->salary, 2, ',', ' ') . ' MAD'
-                        : '—',
-    'date'          => $document->date_document?->format('d/m/Y') ?? now()->format('d/m/Y'),
-    'aujourd_hui'   => now()->format('d/m/Y'),
-    'mois_annee'    => now()->translatedFormat('F Y'),
-    'annee'         => now()->format('Y'),
-
-    // ── Société — lire depuis Tenant en priorité ──────────────
-    'societe'       => $entete?->nom_societe ?: ($tenant?->name          ?? '—'),
-    'adresse'       => $entete?->adresse     ?: ($tenant?->address       ?? '—'),
-    'telephone'     => $entete?->telephone   ?: ($tenant?->phone         ?? '—'),
-    'email_societe' => $entete?->email       ?: ($tenant?->email_societe ?? '—'),
-    'site_web'      => $entete?->site_web    ?: ($tenant?->website       ?? '—'),
-    'ice'           => $entete?->ice         ?: ($tenant?->ice           ?? '—'),
-    // ──────────────────────────────────────────────────────────
-
-    'logo_societe'  => $this->buildLogoHtml($entete, $tenant),
-];
-
+            'nom'           => $employee?->last_name     ?? '—',
+            'prenom'        => $employee?->first_name    ?? '—',
+            'matricule'     => $employee?->matricule     ?? '—',
+            'poste'         => $employee?->position      ?? '—',
+            'departement'   => $employee?->department    ?? '—',
+            'contrat'       => $employee?->contract_type ?? '—',
+            'date_embauche' => $employee?->hire_date
+                                ? \Carbon\Carbon::parse($employee->hire_date)->format('d/m/Y')
+                                : '—',
+            'salaire'       => $employee?->salary
+                                ? number_format($employee->salary, 2, ',', ' ') . ' MAD'
+                                : '—',
+            'date'          => $document->date_document?->format('d/m/Y') ?? now()->format('d/m/Y'),
+            'aujourd_hui'   => now()->format('d/m/Y'),
+            'mois_annee'    => now()->translatedFormat('F Y'),
+            'annee'         => now()->format('Y'),
+            'societe'       => $tenant?->name ?$tenant?->name: ($entete?->nom_societe          ?? '—'),
+            'adresse'       => $tenant?->address     ?$tenant?->address: ($entete?->adresse       ?? '—'),
+            'telephone'     => $tenant?->phone   ?$tenant?->phone: ($entete?->telephone         ?? '—'),
+            'email_societe' => $tenant?->email_societe       ?$tenant?->email_societe: ($entete?->email_societe ?? '—'),
+            'site_web'      => $tenant?->website    ?$tenant?->website: ($entete?->site_web       ?? '—'),
+            'ice'           => $tenant?->ice         ?$tenant?->ice: ($entete?->ice           ?? '—'),
+            'logo_societe'  => $this->buildLogoHtml($entete, $tenant),
+        ];
 
         $search  = [];
         $replace = [];
@@ -186,24 +178,20 @@ class DocumentController extends Controller
             $search[]  = '{{' . $key . '}}';
             $replace[] = $value;
         }
-
+        // dd($values,$tenant);
         $html = str_replace($search, $replace, $html);
-
-        // Normalise le HTML pour éviter les coupures parasites de DomPDF
         $html = $this->normaliserHtmlPourDomPdf($html);
 
-        $htmlEntete    = $this->buildEnteteHtml($entete, $tenant);
+        $htmlEntete = $this->buildEnteteHtml($entete, $tenant);
 
-        // Pied de page — on passe les replacements au format {{variable}}
         $replacementsForPied = array_combine(
             array_map(fn($k) => '{{' . $k . '}}', array_keys($values)),
             array_values($values)
         );
         $htmlPiedInner = $this->buildPiedDePageInner($entete, $replacementsForPied);
 
-        // Si pas d'entête → marge minimale pour éviter l'espace vide en haut
         $enteteHauteur = $htmlEntete    ? '145px' : '20px';
-        $piedHauteur   = $htmlPiedInner ? '60px'  : '20px';
+        $piedHauteur   = $htmlPiedInner ? '100px'  : '20px';
 
         $htmlFull = '<!DOCTYPE html>
 <html lang="fr">
@@ -216,9 +204,7 @@ class DocumentController extends Controller
             margin-left:   40px;
             margin-right:  40px;
         }
-
         * { box-sizing: border-box; }
-
         body {
             font-family: DejaVu Sans, Arial, sans-serif;
             font-size: 13px;
@@ -227,21 +213,14 @@ class DocumentController extends Controller
             margin: 0;
             padding: 0;
         }
-
         p {
             margin: 0 0 8px 0;
             padding: 0;
             white-space: normal;
             word-wrap: break-word;
         }
-
         table { width: 100%; border-collapse: collapse; }
         td, th { padding: 4px 8px; }
-
-        /*
-         * Entête fixée en haut de chaque page.
-         * top négatif = remonte dans la marge @page (comportement DomPDF).
-         */
         .entete-fixee {
             position: fixed;
             top:    -' . $enteteHauteur . ';
@@ -252,11 +231,6 @@ class DocumentController extends Controller
             padding-bottom: 8px;
             overflow: hidden;
         }
-
-        /*
-         * Pied de page fixé en bas de chaque page.
-         * bottom négatif = descend dans la marge @page (comportement DomPDF).
-         */
         .pied-de-page {
             position: fixed;
             bottom: -' . $piedHauteur . ';
@@ -269,22 +243,17 @@ class DocumentController extends Controller
             padding-top: 6px;
             background: #fff;
         }
-
         .contenu-principal {
             padding-top: 4px;
         }
     </style>
 </head>
 <body>
-
     ' . ($htmlPiedInner ? '<div class="pied-de-page">' . $htmlPiedInner . '</div>' : '') . '
-
     ' . ($htmlEntete ? '<div class="entete-fixee">' . $htmlEntete . '</div>' : '') . '
-
     <div class="contenu-principal">
         ' . $html . '
     </div>
-
 </body>
 </html>';
 
@@ -303,25 +272,16 @@ class DocumentController extends Controller
         return $pdf->download($filename);
     }
 
-    /* ── Normalise le HTML pour éviter les coupures parasites ───
-     *
-     * DomPDF interprète les \n dans le source HTML comme des espaces,
-     * ce qui peut couper visuellement les phrases en deux lignes.
-     * On supprime les \n à l'intérieur des <p> et entre balises inline.
-     * ─────────────────────────────────────────────────────────── */
     private function normaliserHtmlPourDomPdf(string $html): string
     {
-        // Normalise les fins de ligne
         $html = preg_replace('/\r\n|\r/', "\n", $html);
 
-        // Supprime les \n entre balises inline fermantes et ouvrantes
         $html = preg_replace(
             '/(<\/(?:span|strong|em|a|b|i|u|small|sub|sup)>)\s*\n\s*(<(?:span|strong|em|a|b|i|u|small|sub|sup))/i',
             '$1 $2',
             $html
         );
 
-        // Supprime les \n à l'intérieur de chaque <p>...</p>
         $html = preg_replace_callback('/<p([^>]*)>(.*?)<\/p>/is', function ($matches) {
             $content = preg_replace('/\s*\n\s*/', ' ', $matches[2]);
             return '<p' . $matches[1] . '>' . $content . '</p>';
@@ -330,7 +290,6 @@ class DocumentController extends Controller
         return $html;
     }
 
-    /* ── Entête HTML : logo gauche, infos centre ─────────────── */
     private function buildEnteteHtml(?DocumentEntete $entete, $tenant): string
     {
         if (!$entete) return '';
@@ -379,7 +338,6 @@ class DocumentController extends Controller
         return $html;
     }
 
-    /* ── Pied de page — contenu intérieur ───────────────────── */
     private function buildPiedDePageInner(?DocumentEntete $entete, array $replacements): string
     {
         if (!$entete || empty($entete->contenu_pied_de_page)) {
@@ -393,7 +351,6 @@ class DocumentController extends Controller
         );
     }
 
-    /* ── Logo HTML (fallback tenant si pas d'entête) ─────────── */
     private function buildLogoHtml(?DocumentEntete $entete, $tenant): string
     {
         if ($entete?->logo_path) {

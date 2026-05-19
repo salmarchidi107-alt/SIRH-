@@ -327,10 +327,13 @@ Route::prefix('badge')->name('badge.')->group(function () {
         Route::post('/sortie',   [BadgePointageController::class, 'sortie'])     ->name('sortie');
         Route::post('/action',   [BadgePointageController::class, 'handleAction'])->name('action');
         Route::get('/result',    [BadgePointageController::class, 'result'])     ->name('result');
+        Route::post('/geo/save', [BadgeAuthController::class, 'saveGeo'])->name('geo.save');
     });
 });
+
+
 Route::middleware(['admin'])->group(function () {
-    
+
 
     //  AJOUTER ICI
     Route::get('/parametrage', [ParametrageController::class, 'index'])

@@ -8,9 +8,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 
 class TenantController extends Controller
@@ -22,21 +21,15 @@ class TenantController extends Controller
         if ($s = $request->search) {
             $query->where(fn($q) => $q
                 ->where('name',    'like', "%{$s}%")
-                ->orWhere('slug',   'like', "%{$s}%")
                 ->orWhere('sector', 'like', "%{$s}%")
             );
         }
 
-        $tenants = $query->orderByDesc('created_at')->paginate(20)->withQueryString();
-
+        $tenants       = $query->orderByDesc('created_at')->paginate(20)->withQueryString();
         $recentTenants = Tenant::latest()->take(5)->pluck('name');
 
         $counts = [
             'all'            => Tenant::count(),
-            'active'         => Tenant::active()->count(),
-            'trial'          => Tenant::byStatus('trial')->count(),
-            'suspended'      => Tenant::byStatus('suspended')->count(),
-            'inactive'       => Tenant::byStatus('inactive')->count(),
             'total_users'    => User::whereNotNull('tenant_id')->count(),
             'new_this_month' => Tenant::where('created_at', '>=', now()->startOfMonth())->count(),
         ];
@@ -53,16 +46,15 @@ class TenantController extends Controller
     {
         $data = $request->validate([
             'company_name'  => 'required|string|max:100',
-            'slug'          => 'required|string|max:50|unique:tenants,slug|regex:/^[a-z0-9\-]+$/',
             'sector'        => 'nullable|string|max:50',
             'region'        => 'required|string',
+            'region_other'  => 'nullable|string|max:100',
             'address'       => 'required|string|max:255',
             'phone'         => 'required|string|max:20',
             'ice'           => 'required|string|size:15',
             'email_societe' => 'required|email|max:100',
             'website'       => 'nullable|url|max:100',
             'logo'          => 'nullable|image|mimes:png,svg,jpg,jpeg|max:2048',
-            // ✅ nullable — champs supprimés du blade
             'brand_color'   => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
             'sidebar_color' => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
             'first_name'    => 'required|string|max:50',
@@ -71,7 +63,11 @@ class TenantController extends Controller
             'temp_password' => 'required|string|min:8',
         ]);
 
-        DB::transaction(function () use ($data, $request) {
+        $region = ($data['region'] === 'Autre' && !empty($data['region_other']))
+            ? $data['region_other']
+            : $data['region'];
+
+        DB::transaction(function () use ($data, $request, $region) {
             $logoPath = $request->hasFile('logo')
                 ? $request->file('logo')->store('tenants/logos', 'public')
                 : null;
@@ -79,41 +75,40 @@ class TenantController extends Controller
             $tenant = Tenant::create([
                 'id'            => Str::uuid()->toString(),
                 'name'          => $data['company_name'],
-                'slug'          => $data['slug'],
                 'sector'        => $data['sector'] ?? null,
-                'region'        => $data['region'],
+                'region'        => $region,
                 'address'       => $data['address'],
                 'phone'         => $data['phone'],
                 'ice'           => $data['ice'],
                 'email_societe' => $data['email_societe'],
                 'website'       => $data['website'] ?? null,
                 'logo_path'     => $logoPath,
-                // ✅ valeur par défaut si non fourni
                 'brand_color'   => $data['brand_color']   ?? '#0d9488',
                 'sidebar_color' => $data['sidebar_color'] ?? '#0d2238',
-                'database_name' => 'tenant_' . str_replace('-', '_', $data['slug']),
             ]);
 
-            $domainName = $data['slug'] . '.hospitalrh.test';
 
-            if (DB::table('domains')->where('domain', $domainName)->exists()) {
-                throw ValidationException::withMessages([
-                    'slug' => "Le domaine {$domainName} existe déjà.",
-                ]);
-            }
-
-            $tenant->domains()->create([
-                'id'     => Str::uuid()->toString(),
-                'domain' => $domainName,
-            ]);
-
-            User::create([
+            // Construire les données user selon les colonnes disponibles
+            $userData = [
                 'name'      => $data['first_name'] . ' ' . $data['last_name'],
                 'email'     => $data['admin_email'],
                 'password'  => Hash::make($data['temp_password']),
                 'role'      => 'admin',
                 'tenant_id' => $tenant->id,
-            ]);
+            ];
+
+            // Ajouter les colonnes optionnelles seulement si elles existent en base
+            if (Schema::hasColumn('users', 'first_name')) {
+                $userData['first_name'] = $data['first_name'];
+            }
+            if (Schema::hasColumn('users', 'last_name')) {
+                $userData['last_name'] = $data['last_name'];
+            }
+            if (Schema::hasColumn('users', 'plain_password')) {
+                $userData['plain_password'] = $data['temp_password'];
+            }
+
+            User::create($userData);
         });
 
         return redirect()->route('superadmin.tenants.index')
@@ -129,21 +124,28 @@ class TenantController extends Controller
     {
         $data = $request->validate([
             'company_name'  => 'required|string|max:100',
-            'slug'          => ['required', 'regex:/^[a-z0-9\-]+$/',
-                                Rule::unique('tenants', 'slug')->ignore($tenant->id)],
             'sector'        => 'nullable|string|max:50',
             'region'        => 'required|string',
+            'region_other'  => 'nullable|string|max:100',
             'address'       => 'required|string|max:255',
             'phone'         => 'required|string|max:20',
             'ice'           => 'required|string|size:15',
             'email_societe' => 'required|email|max:100',
             'website'       => 'nullable|url|max:100',
             'logo'          => 'nullable|image|mimes:png,svg,jpg,jpeg|max:2048',
-            // ✅ nullable — champs supprimés du blade
             'brand_color'   => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
             'sidebar_color' => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
+            'first_name'    => 'nullable|string|max:50',
+            'last_name'     => 'nullable|string|max:50',
+            'admin_email'   => 'nullable|email|max:100',
+            'temp_password' => 'nullable|string|min:8',
         ]);
 
+        $region = ($data['region'] === 'Autre' && !empty($data['region_other']))
+            ? $data['region_other']
+            : $data['region'];
+
+        // ── Logo ──────────────────────────────────────────────────
         if ($request->hasFile('logo')) {
             if ($tenant->logo_path) Storage::disk('public')->delete($tenant->logo_path);
             $logoPath = $request->file('logo')->store('tenants/logos', 'public');
@@ -151,21 +153,54 @@ class TenantController extends Controller
             $logoPath = $tenant->logo_path;
         }
 
+        // ── Tenant ────────────────────────────────────────────────
         $tenant->update([
             'name'          => $data['company_name'],
-            'slug'          => $data['slug'],
             'sector'        => $data['sector'] ?? null,
-            'region'        => $data['region'],
+            'region'        => $region,
             'address'       => $data['address'],
             'phone'         => $data['phone'],
             'ice'           => $data['ice'],
             'email_societe' => $data['email_societe'],
             'website'       => $data['website'] ?? null,
             'logo_path'     => $logoPath,
-            // ✅ conserver l'ancienne valeur si non fourni
             'brand_color'   => $data['brand_color']   ?? $tenant->brand_color   ?? '#0d9488',
             'sidebar_color' => $data['sidebar_color'] ?? $tenant->sidebar_color ?? '#0d2238',
         ]);
+
+        // ── Admin ─────────────────────────────────────────────────
+        $admin = $tenant->admin;
+        if ($admin) {
+            $adminUpdates = [];
+
+            if (!empty($data['first_name']) || !empty($data['last_name'])) {
+                $firstName = !empty($data['first_name']) ? $data['first_name'] : ($admin->first_name ?? explode(' ', $admin->name)[0] ?? '');
+                $lastName  = !empty($data['last_name'])  ? $data['last_name']  : ($admin->last_name  ?? (explode(' ', $admin->name, 2)[1] ?? ''));
+                $adminUpdates['name'] = trim($firstName . ' ' . $lastName);
+
+                if (Schema::hasColumn('users', 'first_name')) {
+                    $adminUpdates['first_name'] = $firstName;
+                }
+                if (Schema::hasColumn('users', 'last_name')) {
+                    $adminUpdates['last_name'] = $lastName;
+                }
+            }
+
+            if (!empty($data['admin_email'])) {
+                $adminUpdates['email'] = $data['admin_email'];
+            }
+
+            if (!empty($data['temp_password'])) {
+                $adminUpdates['password'] = Hash::make($data['temp_password']);
+                if (Schema::hasColumn('users', 'plain_password')) {
+                    $adminUpdates['plain_password'] = $data['temp_password'];
+                }
+            }
+
+            if (!empty($adminUpdates)) {
+                $admin->update($adminUpdates);
+            }
+        }
 
         return back()->with('success', 'Tenant mis à jour.');
     }

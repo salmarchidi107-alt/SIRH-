@@ -1,19 +1,12 @@
-
-
 @extends('layouts.superadmin')
 
 @section('title', 'Paramètres')
 
 @section('content')
 
-{{-- Styles spécifiques à cette page --}}
 @push('styles')
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-
-/* ══════════════════════════════════════════
-   VARIABLES  — accent remplacé par #10b981
-══════════════════════════════════════════ */
 :root {
     --bg:        #f4f5f7;
     --surface:   #ffffff;
@@ -52,7 +45,6 @@
 .page-sub  { font-size: 13px; color: var(--text-3); margin-top: 3px; }
 .main      { margin: auto; padding: auto; }
 
-/* ── CARD ── */
 .sa-card        { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-md); overflow: hidden; }
 .sa-card-header { display: flex; align-items: center; gap: 14px; padding: 18px 22px; border-bottom: 1px solid var(--border); background: var(--surface2); }
 .sa-card-header-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--accent-bg); display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0; border: 1px solid #6ee7b7; }
@@ -60,39 +52,27 @@
 .sa-card-sub    { font-size: 12px; color: var(--text-3); margin-top: 2px; }
 .sa-card-body   { padding: 20px 22px; }
 
-/* ── SEARCH ── */
 .sa-search-wrap  { position: relative; margin-bottom: 12px; }
 .sa-search-icon  { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--text-4); pointer-events: none; }
 .sa-search-input { width: 100%; box-sizing: border-box; padding: 9px 14px 9px 36px !important; background: var(--surface2) !important; border: 1px solid var(--border2) !important; border-radius: 9px !important; color: var(--text-1) !important; font-family: 'DM Sans', sans-serif; font-size: 13px; transition: border-color .15s, box-shadow .15s; }
 .sa-search-input::placeholder { color: var(--text-4); }
 .sa-search-input:focus        { border-color: var(--accent) !important; outline: none; box-shadow: 0 0 0 3px rgba(16,185,129,.12); }
 
-/* ── FILTER BUTTONS ── */
 .sa-filter-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-.sa-filter-btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 600;
-    cursor: pointer; border: 1.5px solid var(--border2);
-    background: var(--surface2); color: var(--text-3);
-    transition: all .15s; font-family: 'DM Sans', sans-serif; line-height: 1;
-}
+.sa-filter-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border2); background: var(--surface2); color: var(--text-3); transition: all .15s; font-family: 'DM Sans', sans-serif; line-height: 1; }
 .sa-filter-btn:hover  { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
 .sa-filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-/* ── TENANT GROUPS ── */
 .sa-tenant-group { background: var(--surface2); border-radius: 10px; overflow: hidden; margin-bottom: 10px; border: 1px solid var(--border); }
 .sa-tenant-row   { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-bottom: 1px solid var(--border); background: #fff; }
 .sa-tenant-avatar { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; letter-spacing: .5px; }
 .sa-tenant-info   { flex: 1; min-width: 0; }
 .sa-tenant-name   { font-size: 13px; font-weight: 600; color: var(--text-1); }
-.sa-tenant-domain { font-size: 11px; color: var(--text-4); margin-top: 1px; font-family: 'DM Mono', monospace; }
 
-/* ── STATUS BADGES ── */
 .sa-badge-status { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; }
 .sa-badge-blue   { background: var(--blue-bg);  color: var(--blue);  border: 1px solid var(--blue-b); }
 .sa-badge-green  { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-b); }
 
-/* ── USER ROWS ── */
 .sa-user-row          { display: flex; align-items: center; gap: 12px; padding: 10px 14px 10px 28px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .12s; }
 .sa-user-row:last-child { border-bottom: none; }
 .sa-user-row:hover    { background: #f0fdf8; }
@@ -104,10 +84,12 @@
 .sa-role-label  { font-size: 11px; font-weight: 600; color: var(--text-3); background: var(--bg); border: 1px solid var(--border2); padding: 3px 9px; border-radius: 99px; flex-shrink: 0; }
 .sa-chevron     { width: 14px; height: 14px; color: var(--text-4); flex-shrink: 0; }
 
-/* ── EMPTY STATE ── */
 .sa-empty-state { text-align: center; color: var(--text-4); font-size: 13px; padding: 32px; }
 
-/* ── EDIT FORM ── */
+.sa-section-sep { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-4); display: flex; align-items: center; gap: 10px; margin: 0 0 14px; }
+.sa-section-sep::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.sa-readonly-badge { display: inline-flex; align-items: center; font-size: 10px; font-weight: 600; background: var(--bg); border: 1px solid var(--border2); color: var(--text-4); padding: 2px 8px; border-radius: 99px; }
+
 .sa-divider   { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
 .sa-edit-form { display: none; }
 .sa-edit-form.visible { display: block; }
@@ -118,23 +100,24 @@
 .sa-form-group { display: flex; flex-direction: column; gap: 6px; }
 .sa-form-group > label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-3); }
 
-/* ── INPUTS ── */
 .sa-input { background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 9px 13px; color: var(--text-1); font-family: 'DM Sans', sans-serif; font-size: 13px; width: 100%; box-sizing: border-box; transition: border-color .15s, box-shadow .15s; }
 .sa-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(16,185,129,.12); background: #fff; }
 .sa-input::placeholder { color: var(--text-4); }
+
+.sa-input-readonly { background: #f3f4f6 !important; color: var(--text-3) !important; cursor: default !important; border-color: var(--border) !important; font-family: 'DM Mono', monospace; }
+.sa-input-readonly:focus { box-shadow: none !important; border-color: var(--border) !important; background: #f3f4f6 !important; }
+
 .sa-hint { font-size: 11px; color: var(--text-4); }
 .sa-pwd-wrap .sa-input { padding-right: 40px; }
 .sa-pwd-wrap   { position: relative; }
 .sa-pwd-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-4); background: none; border: none; display: flex; align-items: center; padding: 0; }
 .sa-pwd-toggle:hover { color: var(--text-2); }
 
-/* ── WARNINGS + ALERTS ── */
 .sa-warning-box { background: var(--warn-bg); border: 1px solid var(--warn-b); border-radius: 8px; padding: 11px 14px; margin-top: 18px; font-size: 12px; color: var(--warn); display: flex; gap: 9px; align-items: flex-start; }
 .sa-js-alert            { display: none; padding: 11px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; margin-top: 12px; align-items: center; gap: 9px; }
 .sa-js-alert.error      { display: flex; background: var(--red-bg);   color: var(--red);   border: 1px solid var(--red-b); }
 .sa-js-alert.success    { display: flex; background: var(--green-bg); color: var(--green); border: 1px solid var(--green-b); }
 
-/* ── BUTTONS ── */
 .sa-form-actions  { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
 .sa-btn           { display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px; border-radius: 9px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: opacity .15s, transform .1s, background .12s; }
 .sa-btn:active    { transform: scale(0.98); }
@@ -151,46 +134,24 @@
 </style>
 @endpush
 
-{{-- ════════════════════════════════════
-     PAGE HEADER
-════════════════════════════════════ --}}
 <div class="page-header">
     <div class="page-title">Paramètres</div>
     <div class="page-sub">Gestion des accès clients</div>
 </div>
 
-{{-- ════════════════════════════════════
-     FLASH MESSAGES
-════════════════════════════════════ --}}
-@if (session('success'))
-    <div class="main" style="padding-bottom:0;margin-bottom:0;">
-        <div class="sa-js-alert success" style="display:flex;">
-            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path d="M5 13l4 4L19 7"/>
-            </svg>
-            <span>{{ session('success') }}</span>
-        </div>
-    </div>
-@endif
 
 @if ($errors->any())
     <div class="main" style="padding-bottom:0;margin-bottom:0;">
         <div class="sa-js-alert error" style="display:flex;">
-            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/>
-            </svg>
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
             <span>{{ $errors->first() }}</span>
         </div>
     </div>
 @endif
 
-{{-- ════════════════════════════════════
-     MAIN CONTENT
-════════════════════════════════════ --}}
 <div class="main">
     <div class="sa-card">
 
-        {{-- CARD HEADER --}}
         <div class="sa-card-header">
             <div class="sa-card-header-icon">
                 <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -204,60 +165,32 @@
             </div>
         </div>
 
-        {{-- CARD BODY --}}
         <div class="sa-card-body">
 
-            {{-- SEARCH --}}
             <div class="sa-search-wrap">
                 <svg class="sa-search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
                 </svg>
-                <input
-                    type="text"
-                    id="client-search"
-                    class="sa-input sa-search-input"
-                    placeholder="Rechercher par nom, email ou tenant..."
-                    oninput="applyFilters()"
-                />
+                <input type="text" id="client-search" class="sa-input sa-search-input"
+                       placeholder="Rechercher par nom, email ou tenant..."
+                       oninput="applyFilters()" />
             </div>
 
-            {{-- ════════════════════════════════════
-                 FILTRES RÔLE
-            ════════════════════════════════════ --}}
             <div class="sa-filter-row">
-                <button type="button" class="sa-filter-btn active" data-role="all"
-                        onclick="setRoleFilter('all', this)">
-                    Tous
-                </button>
-                <button type="button" class="sa-filter-btn" data-role="admin"
-                        onclick="setRoleFilter('admin', this)">
-                    Admins
-                </button>
-                <button type="button" class="sa-filter-btn" data-role="employee"
-                        onclick="setRoleFilter('employee', this)">
-                    Employés
-                </button>
+                <button type="button" class="sa-filter-btn active" data-role="all" onclick="setRoleFilter('all', this)">Tous</button>
+                <button type="button" class="sa-filter-btn" data-role="admin" onclick="setRoleFilter('admin', this)">Admins</button>
+                <button type="button" class="sa-filter-btn" data-role="employee" onclick="setRoleFilter('employee', this)">Employés</button>
             </div>
 
-            {{-- ════════════════════════════════════
-                 CLIENT LIST
-                 CORRECTION BUG 2 :
-                 $clients est désormais une Collection groupée par tenant_id
-                 (via ->groupBy('tenant_id') dans le service).
-                 On itère sur chaque groupe → les tenants s'affichent correctement.
-            ════════════════════════════════════ --}}
             <div id="client-list">
-
                 @forelse ($clients as $tenantId => $users)
                     @php
                         $tenant       = optional($users->first())->tenant;
-                        $tenantName   = $tenant?->name ?? 'Sans tenant';
-                        $tenantDomain = $tenant?->domain ?? '';
-                        $userCount    = $users->count();
+                        $tenantName   = $tenant?->name ?? 'Sans tenant';                        $userCount    = $users->count();
                         $isActive     = $tenant?->status === 'active';
                         $tenant_id    = $tenantId ?? '0';
 
-                        $colors = ['#4f46e5','#059669','#0891b2','#d97706','#db2777','#7c3aed','#0369a1'];
+                        $colors      = ['#4f46e5','#059669','#0891b2','#d97706','#db2777','#7c3aed','#0369a1'];
                         $colorIndex  = crc32($tenant_id) % count($colors);
                         $avatarColor = $colors[abs($colorIndex)];
 
@@ -267,34 +200,29 @@
                             ->join('');
                     @endphp
 
-                    <div class="sa-tenant-group"
-                         data-tenant-search="{{ strtolower($tenantName) }}">
+                    <div class="sa-tenant-group" data-tenant-search="{{ strtolower($tenantName) }}">
 
-                        {{-- TENANT HEADER ROW --}}
                         <div class="sa-tenant-row">
-                            <div class="sa-tenant-avatar" style="background: {{ $avatarColor }};">
-                                {{ $initials }}
-                            </div>
+                            <div class="sa-tenant-avatar" style="background: {{ $avatarColor }};">{{ $initials }}</div>
                             <div class="sa-tenant-info">
                                 <div class="sa-tenant-name">{{ $tenantName }}</div>
-                                @if($tenantDomain)
-                                    <div class="sa-tenant-domain">{{ $tenantDomain }}</div>
-                                @endif
                             </div>
                             <span class="sa-badge-status {{ $isActive ? 'sa-badge-green' : 'sa-badge-blue' }}">
                                 {{ $isActive ? 'Actif' : 'Essai' }} · {{ $userCount }} utilisateur{{ $userCount > 1 ? 's' : '' }}
                             </span>
                         </div>
 
-                        {{-- USER ROWS --}}
                         @foreach ($users as $user)
                             @php
                                 $userInitials = collect(explode(' ', $user->name))
                                     ->take(2)
                                     ->map(fn($w) => strtoupper(substr($w, 0, 1)))
                                     ->join('');
-                                $roleLabel = $user->getRoleDisplayName();
+                                $roleLabel    = $user->getRoleDisplayName();
+                                // Echapper le mot de passe en clair pour injection JS securisee
+                                $plainPwd     = addslashes($user->plain_password ?? '');
                             @endphp
+
                             <div class="sa-user-row"
                                  data-name="{{ strtolower($user->name) }}"
                                  data-email="{{ strtolower($user->email) }}"
@@ -304,14 +232,13 @@
                                      {{ $user->id }},
                                      '{{ addslashes($user->name) }}',
                                      '{{ addslashes($user->email) }}',
+                                     '{{ $plainPwd }}',
                                      '{{ addslashes($tenantName) }}',
                                      '{{ $avatarColor }}'
                                  )"
                                  role="button"
                                  tabindex="0">
-                                <div class="sa-user-avatar" style="background: {{ $avatarColor }};">
-                                    {{ $userInitials }}
-                                </div>
+                                <div class="sa-user-avatar" style="background: {{ $avatarColor }};">{{ $userInitials }}</div>
                                 <div class="sa-user-info">
                                     <div class="sa-user-name">{{ $user->name }}</div>
                                     <div class="sa-user-email">{{ $user->email }}</div>
@@ -323,17 +250,12 @@
                             </div>
                         @endforeach
 
-                    </div>{{-- /.sa-tenant-group --}}
-
+                    </div>
                 @empty
                     <div class="sa-empty-state">Aucun client trouvé.</div>
                 @endforelse
+            </div>
 
-            </div>{{-- /#client-list --}}
-
-            {{-- ════════════════════════════════════
-                 EDIT FORM
-            ════════════════════════════════════ --}}
             <div id="edit-form" class="sa-edit-form" aria-hidden="true">
                 <hr class="sa-divider" />
 
@@ -345,54 +267,98 @@
                         <div class="sa-ef-company" id="ef-company">–</div>
                     </div>
                     <button type="button" class="sa-btn sa-btn-ghost sa-btn-sm"
-                            onclick="closeForm()" style="margin-left:auto;">
-                        ✕ Fermer
-                    </button>
+                            onclick="closeForm()" style="margin-left:auto;">✕ Fermer</button>
                 </div>
 
                 <form id="access-form" method="POST" action="" novalidate>
                     @csrf
-                    @method('POST')
+
+                    {{-- SECTION 1 : PARAMÈTRES ACTUELS --}}
+                    <div class="sa-section-sep">
+                        Paramètres actuels
+                        <span class="sa-readonly-badge">lecture seule</span>
+                    </div>
+
+                    <div class="sa-form-grid" style="margin-bottom: 22px;">
+
+                        <div class="sa-form-group">
+                            <label for="field-current-email">Email actuel</label>
+                            <input class="sa-input sa-input-readonly" type="text"
+                                   id="field-current-email" readonly tabindex="-1" placeholder="—" />
+                            <span class="sa-hint">Adresse email enregistrée en base</span>
+                        </div>
+
+                        {{-- MOT DE PASSE EN CLAIR --}}
+                        <div class="sa-form-group">
+                            <label for="field-current-pwd">Mot de passe actuel</label>
+                            <div style="position:relative;">
+                                <input type="password"
+                                       id="field-current-pwd"
+                                       class="sa-input sa-input-readonly"
+                                       readonly
+                                       tabindex="-1"
+                                       placeholder="Non défini"
+                                       style="padding-right:42px;" />
+                                <button type="button"
+                                        onclick="toggleCurrentPwd()"
+                                        style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--text-4);display:flex;align-items:center;">
+                                    <svg id="eye-icon-current-pwd"
+                                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                         style="width:18px;height:18px;pointer-events:none;">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7
+                                                 -1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <span class="sa-hint">Visible uniquement par le super admin</span>
+                        </div>
+
+                    </div>
+
+                    {{-- SECTION 2 : MODIFIER LES ACCÈS --}}
+                    <div class="sa-section-sep">Modifier les accès</div>
 
                     <div class="sa-form-grid">
+
                         <div class="sa-form-group">
                             <label for="field-email">Nouvel email</label>
                             <input class="sa-input" type="email" id="field-email"
                                    name="email" placeholder="ex: admin@societe.com" />
                             <span class="sa-hint">Laisser vide pour ne pas modifier</span>
                         </div>
+
                         <div class="sa-form-group">
                             <label for="field-email-confirm">Confirmer l'email</label>
                             <input class="sa-input" type="email" id="field-email-confirm"
                                    name="email_confirmation" placeholder="Répéter l'email" />
                         </div>
+
                         <div class="sa-form-group">
                             <label for="field-pwd">Nouveau mot de passe</label>
                             <div class="sa-pwd-wrap">
                                 <input class="sa-input" type="password" id="field-pwd"
                                        name="password" placeholder="Nouveau mot de passe" />
-                                <button type="button" class="sa-pwd-toggle" onclick="togglePwd('field-pwd')">
-                                    <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                        <circle cx="12" cy="12" r="3"/>
-                                    </svg>
+                                <button type="button" class="sa-pwd-toggle"
+                                        onclick="togglePwd('field-pwd')" title="Afficher / masquer">
                                 </button>
                             </div>
                             <span class="sa-hint">Min. 8 caractères</span>
                         </div>
+
                         <div class="sa-form-group">
                             <label for="field-pwd-confirm">Confirmer le mot de passe</label>
                             <div class="sa-pwd-wrap">
                                 <input class="sa-input" type="password" id="field-pwd-confirm"
                                        name="password_confirmation" placeholder="Répéter le mot de passe" />
-                                <button type="button" class="sa-pwd-toggle" onclick="togglePwd('field-pwd-confirm')">
-                                    <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                        <circle cx="12" cy="12" r="3"/>
-                                    </svg>
+                                <button type="button" class="sa-pwd-toggle"
+                                        onclick="togglePwd('field-pwd-confirm')" title="Afficher / masquer">
                                 </button>
                             </div>
                         </div>
+
                     </div>
 
                     <div class="sa-warning-box">
@@ -404,8 +370,7 @@
 
                     <div class="sa-js-alert" id="js-alert">
                         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="M15 9l-6 6M9 9l6 6"/>
+                            <circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/>
                         </svg>
                         <span id="js-alert-msg"></span>
                     </div>
@@ -419,20 +384,18 @@
                             Enregistrer les modifications
                         </button>
                     </div>
-                </form>
-            </div>{{-- /#edit-form --}}
 
-        </div>{{-- /.sa-card-body --}}
-    </div>{{-- /.sa-card --}}
-</div>{{-- /.main --}}
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
 
 @push('scripts')
 <script src="{{ asset('js/superadmin/settings.js') }}"></script>
 <script>
 
-/* ══════════════════════════════════════════
-   FILTRE RÔLE
-══════════════════════════════════════════ */
 let currentRoleFilter = 'all';
 
 function setRoleFilter(role, el) {
@@ -442,65 +405,62 @@ function setRoleFilter(role, el) {
     applyFilters();
 }
 
-/* ══════════════════════════════════════════
-   FILTRE COMBINÉ (texte + rôle)
-══════════════════════════════════════════ */
 function applyFilters() {
     const q = (document.getElementById('client-search').value || '').trim().toLowerCase();
-
     document.querySelectorAll('#client-list .sa-tenant-group').forEach(group => {
         const tenantSearch = group.dataset.tenantSearch || '';
         let groupVisible   = false;
-
         group.querySelectorAll('.sa-user-row').forEach(row => {
-            /* --- filtre texte --- */
             const textMatch = !q
                 || (row.dataset.name   || '').includes(q)
                 || (row.dataset.email  || '').includes(q)
                 || (row.dataset.tenant || '').includes(q)
                 || tenantSearch.includes(q);
-
-            /* --- filtre rôle ---
-               On lit data-role="admin|gérant|employee|rh..." posé par Blade.
-               Admins  : contient "admin" ou "gérant"
-               Employés: tout le reste                                      */
             const roleRaw = (row.dataset.role || '').toLowerCase();
             const isAdmin = roleRaw.includes('admin') || roleRaw.includes('gérant') || roleRaw.includes('gerant');
-
             const roleMatch =
                 currentRoleFilter === 'all' ||
                 (currentRoleFilter === 'admin'    &&  isAdmin) ||
                 (currentRoleFilter === 'employee' && !isAdmin);
-
             const visible = textMatch && roleMatch;
             row.style.display = visible ? '' : 'none';
             if (visible) groupVisible = true;
         });
-
         group.style.display = groupVisible ? '' : 'none';
     });
 }
 
-/* ══════════════════════════════════════════
-   SÉLECTION CLIENT
-══════════════════════════════════════════ */
-function selectClient(id, name, email, company, avatarColor) {
+/* ✅ plainPassword ajouté comme 4ème paramètre */
+function selectClient(id, name, email, plainPassword, company, avatarColor) {
+
     document.querySelectorAll('.sa-user-row').forEach(r => r.classList.remove('selected'));
     document.querySelectorAll('.sa-user-row').forEach(row => {
         if (row.dataset.email === email.toLowerCase()) row.classList.add('selected');
     });
 
     const avatar = document.getElementById('ef-avatar');
-    avatar.textContent    = name.substring(0, 2).toUpperCase();
+    avatar.textContent      = name.substring(0, 2).toUpperCase();
     avatar.style.background = avatarColor || '#10b981';
 
     document.getElementById('ef-name').textContent    = name;
     document.getElementById('ef-company').textContent = company || email;
 
+    const currentEmailField = document.getElementById('field-current-email');
+    const currentPwdField   = document.getElementById('field-current-pwd');
+
+    currentEmailField.value = email;
+
+    /* ✅ Afficher le mot de passe en clair */
+    currentPwdField.value       = plainPassword || '';
+    currentPwdField.type        = 'password';
+    currentPwdField.placeholder = plainPassword ? '••••••••' : 'Non défini';
+
     document.getElementById('access-form').action =
         `/superadmin/settings/clients/${id}/access`;
 
-    clearFields(); hideAlert();
+    clearFields();
+    hideAlert();
+
     const form = document.getElementById('edit-form');
     form.classList.add('visible');
     form.setAttribute('aria-hidden', 'false');
@@ -510,12 +470,24 @@ function selectClient(id, name, email, company, avatarColor) {
 function closeForm() {
     document.querySelectorAll('.sa-user-row').forEach(r => r.classList.remove('selected'));
     const form = document.getElementById('edit-form');
-    if (form) { form.classList.remove('visible'); form.setAttribute('aria-hidden', 'true'); }
-    clearFields(); hideAlert();
+    if (form) {
+        form.classList.remove('visible');
+        form.setAttribute('aria-hidden', 'true');
+    }
+    const currentEmailField = document.getElementById('field-current-email');
+    const currentPwdField   = document.getElementById('field-current-pwd');
+    if (currentEmailField) currentEmailField.value = '';
+    if (currentPwdField) {
+        currentPwdField.value       = '';
+        currentPwdField.placeholder = '—';
+        currentPwdField.type        = 'password';
+    }
+    clearFields();
+    hideAlert();
 }
 
 function clearFields() {
-    ['field-email','field-email-confirm','field-pwd','field-pwd-confirm'].forEach(id => {
+    ['field-email', 'field-email-confirm', 'field-pwd', 'field-pwd-confirm'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
@@ -538,9 +510,29 @@ function togglePwd(fieldId) {
     if (input) input.type = input.type === 'password' ? 'text' : 'password';
 }
 
-/* ══════════════════════════════════════════
-   VALIDATION FORMULAIRE
-══════════════════════════════════════════ */
+function toggleCurrentPwd() {
+    const input = document.getElementById('field-current-pwd');
+    const icon  = document.getElementById('eye-icon-current-pwd');
+    if (!input) return;
+
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+
+    if (!icon) return;
+    icon.innerHTML = isHidden
+        ? `<path stroke-linecap="round" stroke-linejoin="round"
+                 d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7
+                    a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243
+                    M9.878 9.878l4.242 4.242M9.88 9.88L6.59 6.59m7.532 7.532l3.29 3.29
+                    M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.477 0 8.268 2.943 9.542 7
+                    a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>`
+        : `<path stroke-linecap="round" stroke-linejoin="round"
+                 d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+           <path stroke-linecap="round" stroke-linejoin="round"
+                 d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7
+                    -1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>`;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('access-form')?.addEventListener('submit', e => {
         const email        = document.getElementById('field-email').value.trim();
@@ -549,22 +541,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const pwdConfirm   = document.getElementById('field-pwd-confirm').value;
 
         if (!email && !pwd) {
-            e.preventDefault(); showAlert('Veuillez remplir au moins un champ.', 'error'); return;
+            e.preventDefault();
+            showAlert('Veuillez remplir au moins un champ (email ou mot de passe).', 'error');
+            return;
         }
         if (email) {
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                e.preventDefault(); showAlert("L'adresse email n'est pas valide.", 'error'); return;
+                e.preventDefault();
+                showAlert("L'adresse email n'est pas valide.", 'error');
+                return;
             }
             if (email !== emailConfirm) {
-                e.preventDefault(); showAlert('Les adresses email ne correspondent pas.', 'error'); return;
+                e.preventDefault();
+                showAlert('Les adresses email ne correspondent pas.', 'error');
+                return;
             }
         }
         if (pwd) {
             if (pwd.length < 8) {
-                e.preventDefault(); showAlert('Le mot de passe doit contenir au moins 8 caractères.', 'error'); return;
+                e.preventDefault();
+                showAlert('Le mot de passe doit contenir au moins 8 caractères.', 'error');
+                return;
             }
             if (pwd !== pwdConfirm) {
-                e.preventDefault(); showAlert('Les mots de passe ne correspondent pas.', 'error'); return;
+                e.preventDefault();
+                showAlert('Les mots de passe ne correspondent pas.', 'error');
+                return;
             }
         }
     });

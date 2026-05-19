@@ -6,7 +6,7 @@
 @section('content')
 <div class="container-fluid py-4 px-4">
 
-    
+
     @if($errors->any())
         <div class="alert alert-danger alert-dismissible fade show mb-4">
             <ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
@@ -107,7 +107,9 @@
                             <span class="var-chip" onclick="insererVariable(this,'@{{adresse}}')"><span class="var-name">@{{adresse}}</span></span>
                             <span class="var-chip" onclick="insererVariable(this,'@{{telephone}}')"><span class="var-name">@{{telephone}}</span></span>
                             <span class="var-chip" onclick="insererVariable(this,'@{{email_societe}}')"><span class="var-name">@{{email_societe}}</span></span>
-                        </div>
+                            <span class="var-chip" onclick="insererVariable(this,'@{{site_web}}')"><span class="var-name">@{{site_web}}</span></span>
+                            <span class="var-chip" onclick="insererVariable(this,'@{{ice}}')"><span class="var-name">@{{ice}}</span></span>
+                            </div>
                     </div>
 
                     <div>

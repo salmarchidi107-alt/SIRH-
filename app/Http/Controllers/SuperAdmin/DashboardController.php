@@ -15,9 +15,6 @@ class DashboardController extends Controller
         $stats = [
             'total_tenants'       => Tenant::count(),
             'total_users'       => User::whereNotNull('tenant_id')->count(),
-            'active_tenants'   => Tenant::where('status', TenantStatus::Active->value)->count(),
-            'trial_tenants'    => Tenant::where('status', TenantStatus::Trial->value)->count(),
-            'inactive_tenants' => Tenant::where('status', 'inactive')->count(),
             'new_tenants_month'   => Tenant::whereMonth('created_at', Carbon::now()->month)
                                         ->whereYear('created_at', Carbon::now()->year)
                                         ->count(),

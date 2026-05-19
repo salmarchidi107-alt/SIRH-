@@ -18,7 +18,6 @@
                     <thead>
                         <tr>
                             <th>Nom</th>
-                            <th>Slug</th>
                             <th>Sector</th>
                             <th>Users</th>
                             <th>Créé le</th>
@@ -35,10 +34,6 @@
                                     <div class="sa-table__name">{{ $client->name }}</div>
                                     <div class="sa-table__meta">{{ $client->admin?->name ?? 'No admin' }}</div>
                                 </div>
-                            </td>
-                            <td>
-                                <code>{{ $client->slug }}</code>
-                                <div class="sa-table__meta">{{ $client->domain }}</div>
                             </td>
                             <td>{{ $client->sector ?? 'N/A' }}</td>
                             <td>{{ $client->users_count }}</td>

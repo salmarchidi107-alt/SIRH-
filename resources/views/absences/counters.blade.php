@@ -10,13 +10,13 @@
         <p>Année {{ $year }} — Calcul des droits acquis {{ $search ? ' | Recherche: ' . $search : '' }} {{ $department ? ' | Service: ' . $department : '' }}</p>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
-        
-        
-        
+
+
+
         {{-- Filters Form --}}
         <form method="GET" action="{{ route('absences.counters') }}" style="display:flex;gap:12px;align-items:end;flex-wrap:wrap">
             <input type="hidden" name="year" value="{{ $year }}">
-            
+
             {{-- Search --}}
             <div class="search-bar" style="position:relative">
                 <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--text-muted)">
@@ -24,7 +24,7 @@
                 </svg>
                 <input type="text" name="search" placeholder="Rechercher employé..." value="{{ $search ?? '' }}" style="padding:10px 12px 10px 40px;border:1px solid var(--border);border-radius:8px;min-width:220px">
             </div>
-            
+
             {{-- Department --}}
             <select name="department" style="padding:10px 12px;border:1px solid var(--border);border-radius:8px;min-width:160px">
                 <option value="">Departements</option>
@@ -32,16 +32,16 @@
                     <option value="{{ $dept }}" {{ $department == $dept ? 'selected' : '' }}>{{ $dept }}</option>
                 @endforeach
             </select>
-            
+
             {{-- Year --}}
             <select name="year" style="padding:10px 12px;border:1px solid var(--border);border-radius:8px">
                 @for($y = now()->year + 1; $y >= now()->year - 3; $y--)
                     <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }}>{{ $y }}</option>
                 @endfor
             </select>
-            
+
             <button type="submit" class="btn btn-primary" style="padding:10px 24px">Filtrer</button>
-            
+
             @if($search || $department)
                 <a href="{{ route('absences.counters', ['year' => $year]) }}" class="btn btn-ghost">✕ Réinitialiser</a>
             @endif
@@ -172,17 +172,5 @@
     </div>
 </div>
 
-{{-- Legend --}}
-<div class="card" style="margin-top:24px;background:var(--bg-secondary)">
-    <div style="padding:16px">
-        <div style="font-weight:600;margin-bottom:12px"> Légende</div>
-        <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:0.85rem;color:var(--text-muted)">
-            <div><span style="color:#10b981;font-weight:700">Vert</span> — Solde positif</div>
-            <div><span style="color:#f59e0b;font-weight:700">Orange</span> — Solde faible (<3 jours)</div>
-            <div><span style="color:#dc2626;font-weight:700">Rouge</span> — Solde négatif (dépassement)</div>
-            <div><strong>Pris</strong> = Congés annuels, maladie, sans solde approuvés</div>
-            <div><strong>En attente</strong> = Demandes non encore traitées</div>
-        </div>
-    </div>
-</div>
+
 @endsection

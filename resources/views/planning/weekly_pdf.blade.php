@@ -4,73 +4,203 @@
     <meta charset="UTF-8">
     <title>Planning Hebdomadaire</title>
     <style>
-        body { font-family: DejaVu Sans, sans-serif; color: #222; margin: 24px; }
-        h1 { font-size: 18px; margin-bottom: 4px; }
-        p { margin: 2px 0 8px; font-size: 12px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        th, td { border: 1px solid #ccc; padding: 6px 8px; font-size: 10px; }
-        th { background: #f0f0f0; text-align: left; }
-        .meta { margin-bottom: 16px; font-size: 11px; }
-        .note { margin-top: 12px; font-size: 10px; color: #555; }
+        body { font-family: DejaVu Sans, sans-serif; color: #1a2e44; margin: 20px; font-size: 10px; }
+
+        h1 { font-size: 16px; font-weight: bold; margin-bottom: 2px; color: #1a2e44; }
+
+        .meta { font-size: 10px; color: #555; margin-bottom: 14px; }
+        .meta span { margin-right: 16px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        thead tr th {
+            background-color: #eaf4f4;
+            color: #1a2e44;
+            font-size: 9px;
+            font-weight: bold;
+            text-align: center;
+            padding: 6px 4px;
+            border: 1px solid #cdd8e0;
+            text-transform: uppercase;
+        }
+
+        thead tr th:first-child,
+        thead tr th:nth-child(2) {
+            text-align: left;
+            padding-left: 8px;
+        }
+
+        tbody tr td {
+            border: 1px solid #cdd8e0;
+            padding: 5px 4px;
+            vertical-align: top;
+        }
+
+        td.emp-name {
+            font-weight: bold;
+            font-size: 9px;
+            color: #1a2e44;
+            padding-left: 8px;
+        }
+
+        td.emp-dept {
+            font-size: 8px;
+            color: #666;
+            padding-left: 8px;
+        }
+
+        .shift-cell {
+            text-align: center;
+        }
+
+        .shift-block {
+            border-radius: 5px;
+            padding: 3px 4px;
+            margin-bottom: 3px;
+            font-size: 8px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .shift-matin      { background: #cce8fb; color: #1565c0; }
+        .shift-apres_midi { background: #ffe0a0; color: #8a5000; }
+        .shift-nuit       { background: #d6d8f7; color: #3a3a8a; }
+        .shift-garde      { background: #f8c8f0; color: #8a1a80; }
+        .shift-journee    { background: #c8f0e0; color: #1a6040; }
+        .shift-default    { background: #e8eef2; color: #3a5068; }
+
+        .shift-time {
+            font-size: 7px;
+            font-weight: normal;
+            margin-top: 1px;
+        }
+
+        .shift-room {
+            font-size: 7px;
+            font-weight: normal;
+            font-style: italic;
+            color: #888;
+            margin-top: 1px;
+        }
+
+        .no-shift {
+            color: #ccc;
+            font-size: 9px;
+        }
+
+        tbody tr:nth-child(odd) td {
+            background-color: #f9fbfc;
+        }
+        tbody tr:nth-child(even) td {
+            background-color: #ffffff;
+        }
+
+        .footer {
+            margin-top: 12px;
+            font-size: 8px;
+            color: #aaa;
+            text-align: right;
+        }
     </style>
 </head>
 <body>
+
     <h1>Planning Hebdomadaire</h1>
     <div class="meta">
-        <p>Semaine {{ $week }} / {{ $year }}</p>
-        <p>Période : {{ $startOfWeek->format('d/m/Y') }} - {{ $endOfWeek->format('d/m/Y') }}</p>
+        <span>Semaine {{ $week }} / {{ $year }}</span>
+        <span>{{ $startOfWeek->format('d/m/Y') }} — {{ $endOfWeek->format('d/m/Y') }}</span>
         @if(!empty($department))
-            <p>Service : {{ $department }}</p>
-        @endif
-        @if(!empty($search))
-            <p>Recherche : {{ $search }}</p>
+            <span>Service : <strong>{{ $department }}</strong></span>
         @endif
     </div>
+
+    @php
+        $days = [];
+        for ($i = 0; $i < 7; $i++) {
+            $days[] = $startOfWeek->copy()->addDays($i);
+        }
+
+        $dayLabels = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
+
+        $shiftClasses = [
+            'matin'      => 'shift-matin',
+            'apres_midi' => 'shift-apres_midi',
+            'nuit'       => 'shift-nuit',
+            'garde'      => 'shift-garde',
+            'journee'    => 'shift-journee',
+        ];
+
+        $shiftLabels = [
+            'matin'      => 'Matin',
+            'apres_midi' => 'Après-midi',
+            'nuit'       => 'Nuit',
+            'garde'      => 'Garde',
+            'journee'    => 'Journée',
+        ];
+    @endphp
 
     <table>
         <thead>
             <tr>
-                <th>Employé</th>
-                <th>Département</th>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Début</th>
-                <th>Fin</th>
-                <th>Salle</th>
-                <th>Notes</th>
+                <th style="width:15%;">EMPLOYÉ</th>
+                <th style="width:10%;">DÉPARTEMENT</th>
+                @foreach($days as $i => $day)
+                    <th style="width:10.7%;">
+                        {{ $dayLabels[$i] }}<br>
+                        <span style="font-weight:normal; text-transform:none;">{{ $day->format('d M') }}</span>
+                    </th>
+                @endforeach
             </tr>
         </thead>
         <tbody>
             @forelse($employees as $employee)
-                @php $employeePlannings = $plannings->get($employee->id, collect()); @endphp
-                @forelse($employeePlannings as $planning)
-                    <tr>
-                        <td>{{ $employee->full_name }}</td>
-                        <td>{{ $employee->department }}</td>
-                        <td>{{ $planning->date?->format('d/m/Y') }}</td>
-                        <td>{{ ucfirst(str_replace('_', ' ', $planning->shift_type)) }}</td>
-                        <td>{{ $planning->shift_start }}</td>
-                        <td>{{ $planning->shift_end }}</td>
-                        <td>{{ $planning->room ?? '' }}</td>
-                        <td>{{ $planning->notes ?? '' }}</td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td>{{ $employee->full_name }}</td>
-                        <td>{{ $employee->department }}</td>
-                        <td colspan="6" style="text-align:center;">Aucun shift planifié cette semaine</td>
-                    </tr>
-                @endforelse
+                @php
+                    $employeePlannings = $plannings->get($employee->id, collect());
+                    // ✅ groupBy date → plusieurs shifts par jour supportés
+                    $byDate = $employeePlannings->groupBy(fn($p) => $p->date?->format('Y-m-d'));
+                @endphp
+                <tr>
+                    <td class="emp-name">{{ $employee->full_name }}</td>
+                    <td class="emp-dept">{{ $employee->department }}</td>
+
+                    @foreach($days as $day)
+                        @php $dayShifts = $byDate->get($day->format('Y-m-d'), collect()); @endphp
+                        <td class="shift-cell">
+                            @forelse($dayShifts as $planning)
+                                @php
+                                    $badgeClass = $shiftClasses[$planning->shift_type] ?? 'shift-default';
+                                    $label = $shiftLabels[$planning->shift_type] ?? ucfirst(str_replace('_', ' ', $planning->shift_type));
+                                @endphp
+                                <div class="shift-block {{ $badgeClass }}">
+                                    {{ $label }}
+                                    <div class="shift-time">{{ $planning->shift_start }} – {{ $planning->shift_end }}</div>
+                                    @if($planning->room)
+                                        <div class="shift-room">{{ $planning->room }}</div>
+                                    @endif
+                                </div>
+                            @empty
+                                <span class="no-shift">—</span>
+                            @endforelse
+                        </td>
+                    @endforeach
+                </tr>
             @empty
                 <tr>
-                    <td colspan="8" style="text-align:center;">Aucun planning disponible pour cette sélection.</td>
+                    <td colspan="9" style="text-align:center; padding:16px; color:#888;">
+                        Aucun employé trouvé pour cette sélection.
+                    </td>
                 </tr>
             @endforelse
         </tbody>
     </table>
 
-    <div class="note">
-        Ce document est généré pour export PDF et peut être utilisé dans un éditeur PDF.
+    <div class="footer">
+        Généré le {{ now()->format('d/m/Y à H:i') }}
     </div>
+
 </body>
 </html>

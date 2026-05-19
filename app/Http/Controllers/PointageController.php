@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\Pointage;
 use App\Models\BadgeRecord;
-use App\Models\Tablette;
 use App\Scopes\TenantScope;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -74,7 +73,7 @@ class PointageController extends Controller
     // =========================================================================
     // index
     // =========================================================================
-    public function index(Request $request): View
+     public function index(Request $request): View
     {
         $date        = $request->get('date', today()->toDateString());
         $currentDate = Carbon::parse($date);
@@ -102,6 +101,13 @@ class PointageController extends Controller
         $departments = \App\Models\Department::names();
         $vue         = $request->get('vue', 'tous');
 
+        // ── Charger TOUS les BadgeRecords du jour en une seule requête ──
+        // (évite N+1 queries)
+        $allBadgeRecords = BadgeRecord::whereDate('created_at', $currentDate->toDateString())
+            ->orderBy('created_at')
+            ->get()
+            ->groupBy('employee_id');
+
         $employeesQuery = Employee::active()
             ->with(['pointages' => function ($q) use ($currentDate, $tenantId) {
                 $q->forDate($currentDate->toDateString())
@@ -112,9 +118,10 @@ class PointageController extends Controller
             ->defaultOrder();
 
         $employees = $employeesQuery->get()
-            ->map(function ($emp) use ($currentDate, $tenantId) {
+            ->map(function ($emp) use ($currentDate, $tenantId, $allBadgeRecords) {
 
                 $pointage = $emp->pointages->first();
+                $shift    = $allBadgeRecords->get($emp->id, collect());
 
                 // Ne jamais écraser une absence
                 if ($pointage && in_array($pointage->statut, ['absent', 'absence_injustifiee'])) {
@@ -123,16 +130,11 @@ class PointageController extends Controller
                         'nom'      => $emp->first_name . ' ' . $emp->last_name,
                         'avatar'   => strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1)),
                         'pointage' => $pointage,
+                        'geo'      => null,
                     ];
                 }
 
                 if (! $pointage || ! $pointage->ignore_badge) {
-                    // Récupère les BadgeRecords (pas les Pointages)
-                    $shift = BadgeRecord::where('employee_id', $emp->id)
-                        ->whereDate('created_at', $currentDate->toDateString())
-                        ->orderBy('created_at')
-                        ->get();
-
                     if ($shift->isNotEmpty()) {
                         $pointage = $this->syncPointageFromBadgeRecords(
                             $emp->id, $currentDate, $shift, $tenantId
@@ -140,11 +142,15 @@ class PointageController extends Controller
                     }
                 }
 
+                // ── Extraire les données géo du premier BadgeRecord 'entree' ──
+                $geoData = $this->extractGeoFromBadgeRecords($shift);
+
                 return [
                     'id'       => $emp->id,
                     'nom'      => $emp->first_name . ' ' . $emp->last_name,
                     'avatar'   => strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1)),
                     'pointage' => $pointage,
+                    'geo'      => $geoData,
                 ];
             });
 
@@ -164,19 +170,70 @@ class PointageController extends Controller
             'absents'    => $employees->filter(fn($e) => in_array($e['pointage']?->statut, ['absent', 'absence_injustifiee']))->count(),
             'en_attente' => $employees->filter(fn($e) => ! $e['pointage'] || $e['pointage']?->statut === 'pas_de_badge')->count(),
             'total'      => $employees->count(),
+            // ── Nouveau stat : combien ont une géoloc valide ──
+            'geo_ok'     => $employees->filter(fn($e) => isset($e['geo']) && !($e['geo']['denied'] ?? true))->count(),
         ];
-
-        $dernierSync = null;
-        try {
-            $dernierSync = Tablette::where('active', true)
-                ->latest('derniere_connexion')
-                ->first();
-        } catch (\Exception $e) {}
 
         return view('pointage.index', compact(
             'employees', 'departments', 'weekDays', 'currentDate',
-            'startOfWeek', 'endOfWeek', 'stats', 'dernierSync', 'vue'
+            'startOfWeek', 'endOfWeek', 'stats', 'vue'
         ));
+    }
+
+    // =========================================================================
+    //  NOUVELLE méthode privée : extraire les données géo depuis les BadgeRecords
+    //  Prend le premier enregistrement 'entree' qui a des coordonnées GPS.
+    // =========================================================================
+    private function extractGeoFromBadgeRecords(\Illuminate\Support\Collection $shift): ?array
+    {
+        if ($shift->isEmpty()) return null;
+
+        // Chercher en priorité le premier badge 'entree' avec coordonnées
+        $record = $shift
+            ->where('type', 'entree')
+            ->whereNotNull('latitude')
+            ->where('geolocation_denied', false)
+            ->first();
+
+        // Fallback : n'importe quel badge avec coordonnées
+        if (! $record) {
+            $record = $shift
+                ->whereNotNull('latitude')
+                ->where('geolocation_denied', false)
+                ->first();
+        }
+
+        // Aucun badge avec géoloc → retourner statut denied si badge existe
+        if (! $record) {
+            // Au moins un badge a été créé mais sans coords
+            if ($shift->isNotEmpty()) {
+                $firstBadge = $shift->first();
+                return [
+                    'denied'      => true,
+                    'latitude'    => null,
+                    'longitude'   => null,
+                    'accuracy'    => null,
+                    'address'     => null,
+                    'reason'      => $firstBadge->geolocation_denied ? 'denied_by_user' : 'no_coords',
+                    'recorded_at' => null,
+                ];
+            }
+            return null;
+        }
+
+        return [
+            'denied'      => false,
+            'latitude'    => (float) $record->latitude,
+            'longitude'   => (float) $record->longitude,
+            'accuracy'    => $record->accuracy ? (int) $record->accuracy : null,
+            'address'     => $record->location_address,
+            'reason'      => '',
+            'recorded_at' => $record->created_at
+                ? \Carbon\Carbon::parse($record->created_at)
+                    ->setTimezone('Africa/Casablanca')
+                    ->format('H:i:s')
+                : null,
+        ];
     }
 
     // =========================================================================

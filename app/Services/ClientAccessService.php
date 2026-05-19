@@ -3,60 +3,56 @@
 namespace App\Services;
 
 use App\Models\User;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Collection;
 
 class ClientAccessService
 {
     /**
-     * Récupère tous les utilisateurs liés à un tenant existant,
-     * avec leur tenant chargé en eager loading.
-     *
-     * ✅ CORRECTION BUG 2 :
-     *   - whereHas('tenant')  → exclut les tenant_id orphelins (tenant supprimé)
-     *     en remplacement de whereNotNull('tenant_id') qui laissait passer les FK mortes
-     *   - ->groupBy('tenant_id') → groupe la collection par tenant pour la vue Blade,
-     *     évitant l'affichage "Sans tenant"
+     * Retourne tous les utilisateurs groupés par tenant_id
      */
     public function getAllClients(): Collection
     {
-        return User::whereHas('tenant')
-            ->with('tenant')
+        // Colonnes de base toujours présentes
+        $columns = ['id', 'name', 'email', 'role', 'tenant_id'];
+
+        // Ajouter les colonnes optionnelles si elles existent
+        if (Schema::hasColumn('users', 'first_name'))    $columns[] = 'first_name';
+        if (Schema::hasColumn('users', 'last_name'))     $columns[] = 'last_name';
+        if (Schema::hasColumn('users', 'plain_password')) $columns[] = 'plain_password';
+
+        return User::with('tenant')
+            ->whereNotNull('tenant_id')
+            ->select($columns)
+            ->orderBy('tenant_id')
             ->orderBy('name')
             ->get()
             ->groupBy('tenant_id');
     }
 
     /**
-     * Modifie l'email et/ou le mot de passe d'un client.
-     * Ne met à jour que les champs fournis (non null).
-     * Réinitialise email_verified_at si l'email change.
+     * Met à jour email et/ou mot de passe d'un utilisateur
      */
-    public function updateClientAccess(
-        User    $user,
-        ?string $email,
-        ?string $password
-    ): void {
-        $changes = [];
+    public function updateClientAccess(User $user, ?string $email, ?string $password): void
+    {
+        $updates = [];
 
-        if ($email && $email !== $user->email) {
-            $changes['email']             = $email;
-            $changes['email_verified_at'] = null;
+        if (!empty($email)) {
+            $updates['email'] = $email;
         }
 
-        if ($password) {
-            $changes['password'] = Hash::make($password);
+        if (!empty($password)) {
+            $updates['password'] = Hash::make($password);
+
+            // Stocker en clair seulement si la colonne existe
+            if (Schema::hasColumn('users', 'plain_password')) {
+                $updates['plain_password'] = $password;
+            }
         }
 
-        if (! empty($changes)) {
-            $user->update($changes);
-
-            Log::info('SuperAdmin updated client access', [
-                'super_admin_id' => auth()->id(),
-                'client_id'      => $user->id,
-                'fields_changed' => array_keys($changes),
-            ]);
+        if (!empty($updates)) {
+            $user->update($updates);
         }
     }
 }

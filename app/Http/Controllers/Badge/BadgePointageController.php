@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Badge;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\User;
+use App\Models\BadgeRecord;
 use App\Models\Employee;
 use App\Models\Pointage;
-use App\Models\BadgeRecord;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class BadgePointageController extends Controller
@@ -20,24 +20,18 @@ class BadgePointageController extends Controller
         Auth::shouldUse('badge');
     }
 
-    // ─── Résolution employé ──────────────────────────────────────────────────
+    // ─── Résolution employé ──────────────────────────────────────────────
 
     private function resolveEmployee(): ?Employee
     {
         /** @var User|null $user */
         $user = auth('badge')->user();
+        if (! $user) return null;
 
-        if (! $user) {
-            return null;
-        }
-
-        // Cas 1 : employee_id renseigné sur le User (relation directe)
         if ($user->employee_id && $user->employee) {
             return $user->employee;
         }
 
-        // Cas 2 : legacy — employee.user_id pointe vers ce User
-        // with('user') pour éviter le null sur $employee->user plus tard
         return Employee::where('user_id', $user->id)->with('user')->first();
     }
 
@@ -52,41 +46,37 @@ class BadgePointageController extends Controller
         return $employee;
     }
 
-    // ─── Résolution tenant_id ────────────────────────────────────────────────
+    // ─── Résolution tenant_id ────────────────────────────────────────────
 
-   private function resolveTenantId(Employee $employee): string|int|null
-{
-    // Source 1 : config middleware
-    $tenantId = config('app.current_tenant_id');
-    if (! blank($tenantId)) return $tenantId;
-
-    // Source 2 : user badge connecté
-    $badgeUser = auth('badge')->user();
-    if (! blank($badgeUser?->tenant_id)) return $badgeUser->tenant_id;
-
-    // Source 3 : relation user de l'employé
-    if (! blank($employee->user?->tenant_id)) return $employee->user->tenant_id;
-
-    // Source 4 : fallback — premier admin avec tenant_id
-    return \App\Models\User::whereNotNull('tenant_id')
-        ->where('role', 'admin')
-        ->value('tenant_id');
-}
-
-    // ─── Helpers Carbon ─────────────────────────────────────────────────────
-
-    private function nowCasa(): Carbon
+    private function resolveTenantId(Employee $employee): string|int|null
     {
-        return Carbon::now(self::TZ);
+        $tenantId = config('app.current_tenant_id');
+        if (! blank($tenantId)) return $tenantId;
+
+        $badgeUser = auth('badge')->user();
+        if (! blank($badgeUser?->tenant_id)) return $badgeUser->tenant_id;
+
+        if (! blank($employee->user?->tenant_id)) return $employee->user->tenant_id;
+
+        return \App\Models\User::whereNotNull('tenant_id')
+            ->where('role', 'admin')
+            ->value('tenant_id');
     }
 
-    private function todayCasa(): Carbon
+    // ─── Helpers Carbon ──────────────────────────────────────────────────
+
+    private function nowCasa(): Carbon  { return Carbon::now(self::TZ); }
+    private function todayCasa(): Carbon { return Carbon::today(self::TZ); }
+
+    // ─── Pages ───────────────────────────────────────────────────────────
+
+    /** Page d'accueil badgeuse (choix Entrée / Sortie) */
+    public function pointage()
     {
-        return Carbon::today(self::TZ);
+        return view('badge.pointage');
     }
 
-    // ─── Controllers ────────────────────────────────────────────────────────
-
+    /** Dashboard employé connecté (avec résumé shift) */
     public function dashboard(Request $request)
     {
         $employee = $this->getAuthEmployee();
@@ -102,82 +92,86 @@ class BadgePointageController extends Controller
         ]);
     }
 
+    /** Page de résultat après pointage */
+    public function result(Request $request)
+    {
+        $employee = $this->getAuthEmployee();
+        $shift    = $this->getTodayShift($employee);
+        $type     = $request->session()->get('last_type', 'entree');
+
+        // Données géo depuis la session (stockées par BadgeAuthController)
+        $geoData  = $request->session()->get('last_geo', []);
+
+        $pauseRecords  = $shift->where('type', 'pause')->values();
+        $retourRecords = $shift->where('type', 'retour_pause')->values();
+
+        $todayShift = array_merge(
+            $this->buildShiftSummary($shift),
+            [
+                'pause_start'       => $pauseRecords->first()?->created_at?->setTimezone(self::TZ)->format('H:i'),
+                'pause_end'         => $retourRecords->first()?->created_at?->setTimezone(self::TZ)->format('H:i'),
+                'total_pause_human' => $this->calcTotalPause($pauseRecords, $retourRecords),
+            ]
+        );
+
+        return view('badge.result', compact('employee', 'todayShift', 'type', 'geoData'));
+    }
+
+    // ─── Actions AJAX (dashboard blade) ──────────────────────────────────
+
     public function handleAction(Request $request)
     {
         $request->validate(['action' => 'required|string']);
 
         $employee = $this->getAuthEmployee();
         $realType = $this->resolveType($request->action);
-        $this->recordAction($realType, $employee);
 
-        $request->session()->flash('last_type', $request->action);
+        $geoData = [
+            'latitude'  => $request->filled('geo_latitude')  ? (float) $request->input('geo_latitude')  : null,
+            'longitude' => $request->filled('geo_longitude') ? (float) $request->input('geo_longitude') : null,
+            'accuracy'  => $request->filled('geo_accuracy')  ? (float) $request->input('geo_accuracy')  : null,
+            'address'   => $request->input('geo_address'),
+            'denied'    => $request->boolean('geo_denied'),
+        ];
+
+        $this->recordAction($realType, $employee, $geoData);
+
+        $request->session()->put('last_type', $realType);
+        $request->session()->put('last_geo',  $geoData);
 
         return response()->json([
             'success'  => true,
             'redirect' => route('badge.result'),
-            'message'  => 'Pointage enregistré avec succès',
         ]);
     }
 
-    public function action(Request $request)
-    {
-        $employee = $this->getAuthEmployee();
-        $realType = $this->resolveType($request->action ?? 'entree');
-        $this->recordAction($realType, $employee);
+    // ─── Enregistrement principal ─────────────────────────────────────────
 
-        return response()->json(['success' => true, 'redirect' => route('badge.pointage')]);
-    }
-
-    public function entree(Request $request)
-    {
-        $employee = $this->getAuthEmployee();
-        $this->recordAction('entree', $employee);
-        $request->session()->flash('last_type', 'entree');
-        return redirect()->route('badge.result');
-    }
-
-    public function sortie(Request $request)
-    {
-        $employee = $this->getAuthEmployee();
-        $this->recordAction('sortie', $employee);
-        $request->session()->flash('last_type', 'sortie');
-        return redirect()->route('badge.result');
-    }
-
-    public function result(Request $request)
-    {
-        $employee = $this->getAuthEmployee();
-        $shift    = $this->getTodayShift($employee);
-        $type     = $request->session()->get('last_type', 'action');
-
-        $pauseRecords  = $shift->where('type', 'pause')->values();
-        $retourRecords = $shift->where('type', 'entree')->slice(1)->values();
-
-        $todayShift = array_merge($this->buildShiftSummary($shift), [
-            'pause_start'       => $pauseRecords->first()?->created_at?->setTimezone(self::TZ)->format('H:i'),
-            'pause_end'         => $retourRecords->first()?->created_at?->setTimezone(self::TZ)->format('H:i'),
-            'total_pause_human' => $this->calcTotalPause($pauseRecords, $retourRecords),
-        ]);
-
-        return view('badge.result', compact('employee', 'todayShift', 'type'));
-    }
-
-    // ─── Enregistrement ─────────────────────────────────────────────────────
-
-    public function recordAction(string $type, Employee $employee): void
+    /**
+     * Enregistre un BadgeRecord + synchronise le Pointage RH.
+     *
+     * @param  string   $type     entree | pause | retour_pause | sortie
+     * @param  Employee $employee
+     * @param  array    $geoData  latitude, longitude, accuracy, address, denied
+     */
+    public function recordAction(string $type, Employee $employee, array $geoData = []): void
     {
         $now     = $this->nowCasa();
         $today   = $now->format('Y-m-d');
         $nowTime = $now->format('H:i:s');
 
-        // 1. BadgeRecord
+        // ── 1. BadgeRecord avec géolocalisation ──────────────────────────
         BadgeRecord::create([
-            'employee_id' => $employee->id,
-            'type'        => $type,
+            'employee_id'        => $employee->id,
+            'type'               => $type,
+            'latitude'           => $geoData['latitude']  ?? null,
+            'longitude'          => $geoData['longitude'] ?? null,
+            'accuracy'           => $geoData['accuracy']  ?? null,
+            'location_address'   => isset($geoData['address']) ? substr($geoData['address'], 0, 255) : null,
+            'geolocation_denied' => $geoData['denied']    ?? false,
         ]);
 
-        // 2. Synchronisation Pointage RH
-        // tenant_id résolu proprement — ne plante plus si user est null
+        // ── 2. Synchronisation Pointage RH ───────────────────────────────
         $pointage = Pointage::firstOrCreate(
             ['employee_id' => $employee->id, 'date' => $today],
             [
@@ -188,16 +182,13 @@ class BadgePointageController extends Controller
             ]
         );
 
-        // TODO: add pause start and pause end logic
-        if ($type === 'entree' && ! $pointage->heure_entree) {
-            $pointage->heure_entree = $nowTime;
-        } elseif ($type === 'pause' && ! $pointage->pause_start) {
-            $pointage->pause_start = $nowTime;
-        } elseif ($type === 'retour_pause' && ! $pointage->pause_end) {
-            $pointage->pause_end = $nowTime;
-        } elseif ($type === 'sortie') {
-            $pointage->heure_sortie = $nowTime;
-        }
+        match ($type) {
+            'entree'       => $pointage->heure_entree === null && ($pointage->heure_entree = $nowTime),
+            'pause'        => $pointage->pause_start  === null && ($pointage->pause_start  = $nowTime),
+            'retour_pause' => $pointage->pause_end    === null && ($pointage->pause_end    = $nowTime),
+            'sortie'       => ($pointage->heure_sortie = $nowTime),
+            default        => null,
+        };
 
         $pointage->save();
 
@@ -206,7 +197,7 @@ class BadgePointageController extends Controller
         }
     }
 
-    // ─── Helpers privés ─────────────────────────────────────────────────────
+    // ─── Helpers privés ───────────────────────────────────────────────────
 
     private function getTodayShift(Employee $employee)
     {
@@ -219,9 +210,10 @@ class BadgePointageController extends Controller
     private function resolveType(string $action): string
     {
         return match ($action) {
-            'debut', 'retour_pause', 'entree' => 'entree',
-            'pause', 'sortie_pause'            => 'pause',
-            'fin', 'fin_shift', 'sortie'       => 'sortie',
+            'debut', 'entree'            => 'entree',
+            'pause', 'sortie_pause'      => 'pause',
+            'retour_pause'               => 'retour_pause',
+            'fin', 'fin_shift', 'sortie' => 'sortie',
             default => throw new \InvalidArgumentException("Action invalide : {$action}"),
         };
     }
@@ -242,18 +234,14 @@ class BadgePointageController extends Controller
 
     private function calcTotalTime($entrees, $sorties): string
     {
-        if ($entrees->isEmpty() || $sorties->isEmpty()) {
-            return '0h 0m';
-        }
+        if ($entrees->isEmpty() || $sorties->isEmpty()) return '0h 0m';
 
         $total = 0;
         $count = min($entrees->count(), $sorties->count());
 
         for ($i = 0; $i < $count; $i++) {
             $diff = $sorties[$i]->created_at->timestamp - $entrees[$i]->created_at->timestamp;
-            if ($diff > 0) {
-                $total += $diff;
-            }
+            if ($diff > 0) $total += $diff;
         }
 
         return floor($total / 3600) . 'h ' . floor(($total % 3600) / 60) . 'm';
@@ -261,18 +249,14 @@ class BadgePointageController extends Controller
 
     private function calcTotalPause($pauses, $retours): string
     {
-        if ($pauses->isEmpty() || $retours->isEmpty()) {
-            return '0m';
-        }
+        if ($pauses->isEmpty() || $retours->isEmpty()) return '0m';
 
         $total = 0;
         $count = min($pauses->count(), $retours->count());
 
         for ($i = 0; $i < $count; $i++) {
             $diff = $retours[$i]->created_at->timestamp - $pauses[$i]->created_at->timestamp;
-            if ($diff > 0) {
-                $total += $diff;
-            }
+            if ($diff > 0) $total += $diff;
         }
 
         $minutes = floor($total / 60);

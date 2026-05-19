@@ -126,7 +126,7 @@
                 @empty
                 <tr>
                     <td colspan="7" class="text-center p-12 text-muted-foreground">
-                        <div class="text-6xl mb-3">📅</div>
+
                         <div>Aucune absence trouvée</div>
                     </td>
                 </tr>
@@ -137,4 +137,3 @@
     <div class="px-4">{{ $absences->withQueryString()->links() }}</div>
 </div>
 @endsection
-

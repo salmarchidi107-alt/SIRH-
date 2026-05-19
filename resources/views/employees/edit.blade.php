@@ -216,8 +216,8 @@
                 </div>
                 <div class="form-group">
                     <label>Début du contrat</label>
-                    <input type="date" name="contract_start_date" class="form-control" value="{{ old('contract_start_date', $employee->contract_start_date?->format('Y-m-d')) }}">
-                </div>
+                    <input type="date" name="contract_start_date" class="form-control"
+                    value="{{ old('contract_start_date', $employee->contract_start_date?->format('Y-m-d')) }}" readonly                </div>
                 <div class="form-group">
                     <label>Date de fin (si CDD)</label>
                     <input type="date" name="contract_end_date" class="form-control" value="{{ old('contract_end_date', $employee->contract_end_date?->format('Y-m-d')) }}">
@@ -316,5 +316,18 @@
         </div>
     </div>
 </form>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const hireDate  = document.querySelector('[name="hire_date"]');
+    const startDate = document.querySelector('[name="contract_start_date"]');
+
+    hireDate.addEventListener('input', function () {
+        startDate.value = this.value;
+    });
+    startDate.addEventListener('input', function () {
+        hireDate.value = this.value;
+    });
+});
+</script>
 @endsection
 

@@ -6,11 +6,10 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateClientAccessRequest extends FormRequest
 {
-
     public function authorize(): bool
     {
         return true;
-
+    }
 
     public function rules(): array
     {
@@ -33,17 +32,15 @@ class UpdateClientAccessRequest extends FormRequest
         ];
     }
 
-
     public function messages(): array
     {
         return [
-            'email.email'    => "L'adresse email n'est pas valide.",
-            'email.unique'   => "Cette adresse email est déjà utilisée.",
-            'password.min'   => "Le mot de passe doit contenir au moins 8 caractères.",
-            'password.confirmed' => "Les mots de passe ne correspondent pas.",
+            'email.email'            => "L'adresse email n'est pas valide.",
+            'email.unique'           => "Cette adresse email est déjà utilisée.",
+            'password.min'           => "Le mot de passe doit contenir au moins 8 caractères.",
+            'password.confirmed'     => "Les mots de passe ne correspondent pas.",
         ];
     }
-
 
     public function attributes(): array
     {

@@ -85,6 +85,8 @@
                                 <span class="var-chip" onclick="insererVariable(this,'@{{adresse}}')"><span class="var-name">@{{adresse}}</span></span>
                                 <span class="var-chip" onclick="insererVariable(this,'@{{telephone}}')"><span class="var-name">@{{telephone}}</span></span>
                                 <span class="var-chip" onclick="insererVariable(this,'@{{email_societe}}')"><span class="var-name">@{{email_societe}}</span></span>
+                                <span class="var-chip" onclick="insererVariable(this,'@{{site_web}}')"><span class="var-name">@{{site_web}}</span></span>
+                                <span class="var-chip" onclick="insererVariable(this,'@{{ice}}')"><span class="var-name">@{{ice}}</span></span>
                             </div>
                         </div>
 

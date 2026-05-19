@@ -133,28 +133,12 @@ class EmployeeController extends Controller
         }
     }
 
-    public function store(StoreEmployeeRequest $request)
+   public function store(StoreEmployeeRequest $request)
     {
         try {
             DB::transaction(function () use ($request) {
-                // Création de l'employé via le service
-                $employee = $this->employeeService->create($request->validated());
-
-                // Création du compte utilisateur (optionnelle)
-                if ($request->boolean('create_account')) {
-    $tenantId = config('app.current_tenant_id') ?? auth()->user()->tenant_id;
-
-    $user = User::create([
-        'name'      => $employee->first_name . ' ' . $employee->last_name,
-        'email'     => $employee->email,
-        'password'  => Hash::make($request->user_password),
-        'role'      => $request->user_role ?? 'employee',
-        'tenant_id' => $tenantId, //  toujours présent
-    ]);
-
-    $employee->update(['user_id' => $user->id]);
-}
-                
+                // Le service gère TOUT : création employé + compte user si create_account = true
+                $this->employeeService->create($request->validated());
             });
 
             return redirect()->route('employees.index')
@@ -168,7 +152,6 @@ class EmployeeController extends Controller
             return back()->withErrors(['error' => 'Erreur création employé : ' . $e->getMessage()])->withInput();
         }
     }
-
     public function show(Employee $employee)
     {
         if (auth()->user()->role === 'employee' && auth()->user()->employee_id != $employee->id) {

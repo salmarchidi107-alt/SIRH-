@@ -39,49 +39,48 @@
             <div class="sa-field">
                 <label class="sa-label">Nom de la société *</label>
                 <input type="text" name="company_name" id="company-name" class="sa-input"
-                       value="{{ old('company_name') }}" oninput="updatePreview()" required>
+                       value="{{ old('company_name') }}" required>
                 @error('company_name')<div class="sa-error">{{ $message }}</div>@enderror
             </div>
 
-            {{-- Slug + Secteur --}}
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" class="sa-field">
-                <div>
-                    <label class="sa-label">Slug URL *</label>
-                    <input type="text" name="slug" id="slug" class="sa-input"
-                           value="{{ old('slug') }}" oninput="updatePreview()" required pattern="[a-z0-9\-]+">
-                    @error('slug')<div class="sa-error">{{ $message }}</div>@enderror
-                </div>
-                <div>
-                    <label class="sa-label">Secteur</label>
-                    <select name="sector" id="sector-select" class="sa-input"
-                            onchange="toggleSectorOther(this.value)">
-                        @foreach(['SaaS / Tech','Finance','Santé','Éducation','Retail','Autre'] as $s)
-                        <option {{ old('sector') === $s ? 'selected' : '' }}>{{ $s }}</option>
-                        @endforeach
-                    </select>
-                    <div id="sector-other-wrap" style="margin-top:8px;display:{{ old('sector') === 'Autre' ? 'block' : 'none' }};">
-                        <input type="text" name="sector_other" class="sa-input"
-                               value="{{ old('sector_other') }}"
-                               placeholder="Précisez le secteur...">
-                    </div>
+            {{-- Secteur --}}
+            <div class="sa-field">
+                <label class="sa-label">Secteur</label>
+                <select name="sector" id="sector-select" class="sa-input"
+                        onchange="toggleSectorOther(this.value)">
+                    @foreach(['SaaS / Tech','Finance','Santé','Éducation','Retail','Autre'] as $s)
+                    <option {{ old('sector') === $s ? 'selected' : '' }}>{{ $s }}</option>
+                    @endforeach
+                </select>
+                <div id="sector-other-wrap" style="margin-top:8px;display:{{ old('sector') === 'Autre' ? 'block' : 'none' }};">
+                    <input type="text" name="sector_other" class="sa-input"
+                           value="{{ old('sector_other') }}"
+                           placeholder="Précisez le secteur...">
                 </div>
             </div>
 
             {{-- Région --}}
             <div class="sa-field">
                 <label class="sa-label">Région *</label>
-                <select name="region" class="sa-input" required>
+                <select name="region" id="region-select" class="sa-input" required
+                        onchange="toggleRegionOther(this.value)">
                     <option value="">Choisir une région...</option>
                     @foreach([
                         'Casablanca-Settat','Rabat-Salé-Kénitra','Fès-Meknès','Marrakech-Safi',
                         'Béni Mellal-Khénifra','Tanger-Tétouan-Al Hoceïma','Oriental',
                         'Drâa-Tafilalet','Souss-Massa','Guelmim-Oued Noun',
-                        'Laâyoune-Sakia El Hamra','Dakhla-Oued Ed-Dahab'
+                        'Laâyoune-Sakia El Hamra','Dakhla-Oued Ed-Dahab','Autre'
                     ] as $r)
                     <option {{ old('region') == $r ? 'selected' : '' }}>{{ $r }}</option>
                     @endforeach
                 </select>
+                <div id="region-other-wrap" style="margin-top:8px;display:{{ old('region') === 'Autre' ? 'block' : 'none' }};">
+                    <input type="text" name="region_other" id="region-other-input" class="sa-input"
+                           value="{{ old('region_other') }}"
+                           placeholder="Précisez la région...">
+                </div>
                 @error('region')<div class="sa-error">{{ $message }}</div>@enderror
+                @error('region_other')<div class="sa-error">{{ $message }}</div>@enderror
             </div>
 
             {{-- Adresse --}}
@@ -143,6 +142,8 @@
                 @error('logo')<div class="sa-error">{{ $message }}</div>@enderror
             </div>
 
+        </div>
+    </div>
 
     {{-- Admin --}}
     <div class="sa-card" style="margin-bottom:16px;">
@@ -188,58 +189,6 @@
 
 @push('scripts')
 <script>
-function getInitials(name) {
-    return name.trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '?';
-}
-
-function updatePreview() {
-    const name    = document.getElementById('company-name').value || 'App';
-    const slug    = document.getElementById('slug').value || 'app';
-    const brand   = document.getElementById('brand-color').value || '#1a8fa5';
-    const sidebar = document.getElementById('sidebar-color')?.value || '#0d2137';
-    const ini     = getInitials(name);
-
-    ['prev-nav-logo', 'prev-logo-big'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) { el.textContent = ini; el.style.setProperty('background', brand, 'important'); }
-    });
-
-    const navName   = document.getElementById('prev-nav-name');
-    const prevSlug  = document.getElementById('prev-slug');
-    const prevTitle = document.getElementById('prev-title');
-    if (navName)   navName.textContent  = name;
-    if (prevSlug)  prevSlug.textContent = slug + '.hospitalrh.test';
-    if (prevTitle) prevTitle.textContent = name;
-
-    const btn = document.getElementById('prev-btn');
-    if (btn) btn.style.setProperty('background', brand, 'important');
-
-    const sidebarEl = document.getElementById('prev-sidebar');
-    if (sidebarEl) sidebarEl.style.setProperty('background', sidebar, 'important');
-
-    const brandHex   = document.getElementById('brand-hex');
-    const sidebarHex = document.getElementById('sidebar-hex');
-    if (brandHex)   brandHex.value   = brand;
-    if (sidebarHex) sidebarHex.value = sidebar;
-}
-
-function syncColor(type) {
-    const hex = document.getElementById(type + '-hex').value;
-    if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
-        document.getElementById(type + '-color').value = hex;
-        updatePreview();
-    }
-}
-
-function setColor(type, color, el) {
-    document.getElementById(type + '-color').value = color;
-    document.getElementById(type + '-hex').value   = color;
-    const selector = type === 'sidebar' ? '.sidebar-swatch' : '.sa-swatch:not(.sidebar-swatch)';
-    document.querySelectorAll(selector).forEach(s => s.classList.remove('active'));
-    el.classList.add('active');
-    updatePreview();
-}
-
 function handleFile(input) {
     if (!input.files || !input.files[0]) return;
     const r = new FileReader();
@@ -256,24 +205,29 @@ function toggleSectorOther(val) {
     if (wrap) wrap.style.display = val === 'Autre' ? 'block' : 'none';
 }
 
-document.addEventListener('DOMContentLoaded', updatePreview);
+function toggleRegionOther(val) {
+    const wrap  = document.getElementById('region-other-wrap');
+    const input = document.getElementById('region-other-input');
+    if (!wrap) return;
+    if (val === 'Autre') {
+        wrap.style.display = 'block';
+        input.required = true;
+    } else {
+        wrap.style.display = 'none';
+        input.required = false;
+        input.value = '';
+    }
+}
 </script>
 @endpush
 
 @push('styles')
 <style>
-/* Cards pleine largeur */
 .sa-card {
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box;
 }
-
-#prev-sidebar       { background: #0d2137 !important; transition: background 0.3s ease; }
-#prev-sidebar *     { transition: background 0.3s ease, color 0.3s ease; }
-#prev-btn           { transition: background 0.3s ease !important; }
-#prev-nav-logo, #prev-logo-big { transition: background 0.3s ease !important; }
-
 @media (max-width: 640px) {
     .sa-page-title { font-size: 15px !important; }
     div[style*="grid-template-columns:1fr 1fr"] {

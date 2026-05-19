@@ -4,7 +4,7 @@
     <div class="flex justify-between items-center mb-8">
         <div>
             <h1 class="text-3xl font-bold text-gray-900">Détails du Tenant</h1>
-            <p class="text-gray-600 mt-1">{{ $tenant->name }} ({{ $tenant->slug }})</p>
+            <p class="text-gray-600 mt-1">{{ $tenant->name }} </p>
         </div>
         <div class="flex gap-3">
             <a href="{{ route('superadmin.tenants.edit', $tenant) }}"
@@ -112,7 +112,7 @@
         </div>
 
         <div class="text-right">
-            <a href="{{ route('superadmin.clients.show', $tenant->slug) }}"
+            <a href="{{ route('superadmin.clients.show') }}"
                class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
                 Voir Client →
             </a>

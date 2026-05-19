@@ -266,64 +266,62 @@
         </div>
     </div>
 
-   {{-- Créer compte utilisateur --}}
+{{-- Créer compte utilisateur --}}
 <div class="card mb-4">
     <div class="card-header">
-        <div class="card-title">Créer un compte utilisateur </div>
+        <div class="card-title">Créer un compte utilisateur</div>
     </div>
     <div class="card-body">
-        <div class="form-group">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Rôle utilisateur</label>
+                <select name="user_role" class="form-control">
+                    <option value="">Sélectionner rôle</option>
+                    <option value="employee" {{ old('user_role', 'employee') == 'employee' ? 'selected' : '' }}>Employé</option>
+                    <option value="rh"       {{ old('user_role') == 'rh'                  ? 'selected' : '' }}>Responsable RH</option>
+                    <option value="admin"    {{ old('user_role') == 'admin'               ? 'selected' : '' }}>Administrateur</option>
+                </select>
+                @error('user_role') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+            </div>
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <div class="password-group">
+                    <input type="password" name="user_password" id="user_password" class="form-control">
+                    <button type="button" class="toggle-password" data-target="user_password">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" opacity="0.5"/>
+                            <circle cx="12" cy="12" r="3.5"/>
+                        </svg>
+                    </button>
+                </div>
+                @error('user_password') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+            </div>
+            <div class="form-group">
+                <label>Confirmer mot de passe</label>
+                <div class="password-group">
+                    <input type="password" name="user_password_confirmation" id="user_password_confirmation" class="form-control">
+                    <button type="button" class="toggle-password" data-target="user_password_confirmation">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" opacity="0.5"/>
+                            <circle cx="12" cy="12" r="3.5"/>
+                        </svg>
+                    </button>
+                </div>
+                @error('user_password_confirmation') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+            </div>
+        </div>
+
+        {{-- Checkbox en bas --}}
+        <div class="form-group" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
             <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-                <input type="checkbox" name="create_account" value="1" 
-                       id="create_account" 
+                <input type="checkbox" name="create_account" value="1"
+                       id="create_account"
                        {{ old('create_account') ? 'checked' : '' }}>
                 <span>Créer un compte utilisateur pour cet employé</span>
             </label>
         </div>
-
-        <div id="account_fields" style="display:{{ old('create_account') ? 'block' : 'none' }};margin-top:16px;">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Rôle utilisateur </label>
-                    <select name="user_role" class="form-control">
-                        <option value="">Sélectionner rôle</option>
-                        <option value="employee" {{ old('user_role', 'employee') == 'employee' ? 'selected' : '' }}>Employé</option>
-                        <option value="rh"       {{ old('user_role') == 'rh'                  ? 'selected' : '' }}>Responsable RH</option>
-                        <option value="admin"    {{ old('user_role') == 'admin'               ? 'selected' : '' }}>Administrateur</option>
-                    </select>
-                    @error('user_role') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
-                </div>
-                <div class="form-group">
-                    <label>Mot de passe </label>
-                    <div class="password-group">
-                        <input type="password" name="user_password" id="user_password" class="form-control">
-                        <button type="button" class="toggle-password" data-target="user_password">
-                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" opacity="0.5"/>
-                                <circle cx="12" cy="12" r="3.5"/>
-                            </svg>
-                        </button>
-                    </div>
-                    @error('user_password') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
-                </div>
-                <div class="form-group">
-                    <label>Confirmer mot de passe </label>
-                    <div class="password-group">
-                        <input type="password" name="user_password_confirmation" id="user_password_confirmation" class="form-control">
-                        <button type="button" class="toggle-password" data-target="user_password_confirmation">
-                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" opacity="0.5"/>
-                                <circle cx="12" cy="12" r="3.5"/>
-                            </svg>
-                        </button>
-                    </div>
-                    @error('user_password_confirmation') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
-                </div>
-            </div>
-        </div>
     </div>
 </div>
-
     {{-- ══════════════════════════════════════
          Contrat de Travail
     ══════════════════════════════════════ --}}
@@ -340,7 +338,8 @@
                 </div>
                 <div class="form-group">
                     <label>Début du contrat</label>
-                    <input type="date" name="contract_start_date" class="form-control" value="{{ old('contract_start_date') }}">
+                    <input type="date" name="contract_start_date" class="form-control"
+                    value="{{ old('contract_start_date') }}" readonly>
                 </div>
                 <div class="form-group">
                     <label>Date de fin (si CDD)</label>
@@ -431,11 +430,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 2000);
     });
 
-    // ── Afficher les champs compte utilisateur ───────────────
-    document.getElementById('create_account').addEventListener('change', function () {
-        document.getElementById('account_fields').style.display = this.checked ? 'block' : 'none';
-    });
-
     // ── Toggle visibilité mot de passe ───────────────────────
     document.querySelectorAll('.toggle-password').forEach(btn => {
         btn.addEventListener('click', function () {
@@ -447,6 +441,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';
         });
     });
+    const hireDate  = document.querySelector('[name="hire_date"]');
+    const startDate = document.querySelector('[name="contract_start_date"]');
+
+    hireDate.addEventListener('input', function () {
+    startDate.value = this.value;
+});
+    startDate.addEventListener('input', function () {
+    hireDate.value = this.value;
+});
 });
 </script>
 @endsection

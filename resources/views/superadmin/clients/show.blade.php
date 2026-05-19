@@ -7,7 +7,6 @@
     <div class="sa-main__head">
         <h1 class="sa-main__title">
             {{ $tenant->name }}
-            <small class="sa-main__subtitle">({{ $tenant->slug }})</small>
         </h1>
     </div>
 

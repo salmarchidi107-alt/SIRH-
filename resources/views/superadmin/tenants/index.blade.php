@@ -37,7 +37,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
         </svg>
-        <input type="text" name="search" placeholder="Rechercher par nom, slug, secteur…"
+        <input type="text" name="search" placeholder="Rechercher par nom,secteur…"
                value="{{ request('search') }}" oninput="this.form.submit()">
     </div>
 </form>
@@ -83,7 +83,6 @@
                             </div>
                             <div>
                                 <div style="font-weight:700;font-size:13px;color:var(--text);">{{ $t->name }}</div>
-                                <div style="font-size:11px;color:var(--text-muted);font-family:monospace;">{{ $t->domain }}</div>
                             </div>
                         </div>
                     </td>
@@ -101,8 +100,7 @@
                     <td>
                         <div style="font-size:12px;color:var(--text);">{{ $t->phone ?? '—' }}</div>
                         <div style="font-size:11px;color:var(--text-muted);">{{ $t->email_societe ?? '—' }}</div>
-                    </td>
-                    <td>
+                    </td>                    <td>
                         <span style="font-weight:700;font-size:14px;color:var(--text);">{{ $t->users_count }}</span>
                     </td>
                     <td style="font-size:12px;color:var(--text-muted);">{{ $t->admin?->name ?? '—' }}</td>

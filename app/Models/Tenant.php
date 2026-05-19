@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\TenantPlan;
-use App\Enums\TenantStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -32,13 +30,6 @@ class Tenant extends BaseTenant
         'brand_color',
         'sidebar_color',
         'database_name',
-        'plan',
-        'status',
-    ];
-
-    protected $casts = [
-        'plan'   => TenantPlan::class,
-        'status' => TenantStatus::class,
     ];
 
     public static function getCustomColumns(): array
@@ -73,23 +64,12 @@ class Tenant extends BaseTenant
         return $this->hasOne(User::class, 'tenant_id')->where('role', 'admin');
     }
 
-// ─── Query Scopes ─────────────────────────────────────────────────────────
-
-    public function scopeActive($query)
-    {
-        return $query->where('status', TenantStatus::Active->value);
-    }
-
-    public function scopeByStatus($query, string $status)
-    {
-        return $query->where('status', $status);
-    }
 
 // ─── Accessors ────────────────────────────────────────────────────────────
 
     public function getDomainAttribute(): string
     {
-        return ($this->slug ?? '') . '.hospitalrh.test';
+        return ($this->slug ?? '') . '.sirh.test';
     }
 
     public function getInitialsAttribute(): string

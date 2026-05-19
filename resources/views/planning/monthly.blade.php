@@ -125,15 +125,12 @@
             <table style="width:100%;border-collapse:collapse;font-size:0.75rem">
                 <thead>
                     <tr style="background:var(--surface-2)">
-                        {{-- Colonne Employé --}}
                         <th style="padding:14px 10px;text-align:left;min-width:150px;position:sticky;left:0;background:var(--surface-2);z-index:10;border-bottom:2px solid var(--border)">
                             Collaborateur
                         </th>
-                        {{-- Colonne Salle --}}
                         <th style="padding:14px 8px;text-align:center;min-width:80px;position:sticky;left:150px;background:var(--surface-2);z-index:10;border-bottom:2px solid var(--border);border-left:1px solid var(--border)">
                             Salle
                         </th>
-                        {{-- Colonnes jours --}}
                         @for($i = 1; $i <= $endOfMonth->day; $i++)
                         @php
                             $dayDate  = \Carbon\Carbon::create($year, $month, $i);
@@ -154,10 +151,8 @@
                 <tbody>
                     @forelse($employees as $emp)
                     @php
-                        $empPlannings = isset($plannings) ? ($plannings->get($emp->id, collect()) ?? collect()) : collect();
-
-                        // Salle la plus fréquente du mois
-                        $roomCounts    = $empPlannings->whereNotNull('room')->groupBy('room')->map->count();
+                        $empPlannings   = isset($plannings) ? ($plannings->get($emp->id, collect()) ?? collect()) : collect();
+                        $roomCounts     = $empPlannings->whereNotNull('room')->groupBy('room')->map->count();
                         $mostCommonRoom = $roomCounts->isNotEmpty() ? $roomCounts->sortDesc()->keys()->first() : null;
                     @endphp
                     <tr style="border-bottom:1px solid var(--border)">
@@ -202,15 +197,8 @@
                             $dayDateStr = $dayDate->format('Y-m-d');
                             $isWeekend  = in_array($dayDate->dayOfWeek, [\Carbon\Carbon::SUNDAY, \Carbon\Carbon::SATURDAY]);
                             $isToday    = $dayDate->isToday();
+                            $isAbsent   = $emp->hasApprovedAbsenceOn($dayDate);
 
-                            $dayPlanning = $empPlannings->filter(function($p) use ($dayDateStr) {
-                                return $p->date && $p->date->format('Y-m-d') === $dayDateStr;
-                            })->first();
-
-                            // Vérifier absence approuvée
-                            $isAbsent = $emp->hasApprovedAbsenceOn($dayDate);
-
-                            // Récupérer le type d'absence pour le tooltip
                             $absenceType = '';
                             if ($isAbsent) {
                                 $absence = $emp->absences
@@ -219,6 +207,11 @@
                                     ->first();
                                 $absenceType = $absence?->type ?? 'Absence';
                             }
+
+                            // CORRECTION : tous les shifts du jour
+                            $dayPlannings = $empPlannings->filter(function($p) use ($dayDateStr) {
+                                return $p->date && \Carbon\Carbon::parse($p->date)->format('Y-m-d') === $dayDateStr;
+                            })->values();
                         @endphp
                         <td style="padding:2px;text-align:center;vertical-align:middle;min-width:38px;width:38px;
                             {{ $isWeekend ? 'background:#f8fafc' : '' }}
@@ -226,56 +219,60 @@
                             title="{{ $dayDate->format('d/m/Y') }}{{ $isAbsent ? ' — Absent : '.$absenceType : '' }}">
 
                             @if($isAbsent)
-                                {{-- ABSENT --}}
                                 <div style="background:linear-gradient(135deg,#ef4444,#f87171);color:white;border-radius:3px;font-size:0.5rem;font-weight:700;padding:2px 1px;min-height:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(239,68,68,0.4)"
                                      title="Absent : {{ $absenceType }}">
                                     ABS
                                 </div>
-                            @elseif($dayPlanning)
-                                {{-- SHIFT --}}
+
+                            @elseif($dayPlannings->isNotEmpty())
+                                {{-- TOUS LES SHIFTS DU JOUR empilés --}}
                                 <div style="display:flex;flex-direction:column;align-items:stretch;gap:1px">
-                                    @if(in_array($dayPlanning->shift_type ?? '', ['matin', 'journee']))
-                                    <div style="font-size:0.45rem;padding:2px 1px;border-radius:2px;background:#0ea5e9;color:white;font-weight:600;line-height:1.2"
-                                         title="Matin {{ substr($dayPlanning->shift_start ?? '', 0, 5) }}{{ $dayPlanning->room ? ' — '.$dayPlanning->room : '' }}">
-                                        {{ substr($dayPlanning->shift_start ?? '', 0, 5) }}
-                                        @if($dayPlanning->room)
-                                        <div style="font-size:0.38rem;opacity:0.9;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">{{ $dayPlanning->room }}</div>
-                                        @endif
-                                    </div>
-                                    @endif
+                                    @foreach($dayPlannings as $dayPlanning)
 
-                                    @if(in_array($dayPlanning->shift_type ?? '', ['apres_midi', 'journee']))
-                                    <div style="font-size:0.45rem;padding:2px 1px;border-radius:2px;background:#f59e0b;color:white;font-weight:600;line-height:1.2"
-                                         title="Après-midi {{ substr($dayPlanning->shift_end ?? '', 0, 5) }}{{ $dayPlanning->room ? ' — '.$dayPlanning->room : '' }}">
-                                        {{ substr($dayPlanning->shift_end ?? '', 0, 5) }}
-                                        @if($dayPlanning->room && $dayPlanning->shift_type === 'apres_midi')
-                                        <div style="font-size:0.38rem;opacity:0.9;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">{{ $dayPlanning->room }}</div>
+                                        @if(in_array($dayPlanning->shift_type ?? '', ['matin', 'journee']))
+                                        <div style="font-size:0.45rem;padding:2px 1px;border-radius:2px;background:#0ea5e9;color:white;font-weight:600;line-height:1.2"
+                                             title="Matin {{ substr($dayPlanning->shift_start ?? '', 0, 5) }}{{ $dayPlanning->room ? ' — '.$dayPlanning->room : '' }}">
+                                            {{ substr($dayPlanning->shift_start ?? '', 0, 5) }}
+                                            @if($dayPlanning->room)
+                                            <div style="font-size:0.38rem;opacity:0.9;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">{{ $dayPlanning->room }}</div>
+                                            @endif
+                                        </div>
                                         @endif
-                                    </div>
-                                    @endif
 
-                                    @if(($dayPlanning->shift_type ?? '') === 'nuit')
-                                    <div style="font-size:0.4rem;padding:2px 1px;border-radius:2px;background:#6366f1;color:white;font-weight:600;line-height:1.2"
-                                         title="Nuit {{ substr($dayPlanning->shift_start ?? '', 0, 5) }}-{{ substr($dayPlanning->shift_end ?? '', 0, 5) }}{{ $dayPlanning->room ? ' — '.$dayPlanning->room : '' }}">
-                                        {{ substr($dayPlanning->shift_start ?? '', 0, 5) }}-{{ substr($dayPlanning->shift_end ?? '', 0, 5) }}
-                                        @if($dayPlanning->room)
-                                        <div style="font-size:0.38rem;opacity:0.9;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">{{ $dayPlanning->room }}</div>
+                                        @if(in_array($dayPlanning->shift_type ?? '', ['apres_midi', 'journee']))
+                                        <div style="font-size:0.45rem;padding:2px 1px;border-radius:2px;background:#f59e0b;color:white;font-weight:600;line-height:1.2"
+                                             title="Après-midi {{ substr($dayPlanning->shift_end ?? '', 0, 5) }}{{ $dayPlanning->room ? ' — '.$dayPlanning->room : '' }}">
+                                            {{ substr($dayPlanning->shift_end ?? '', 0, 5) }}
+                                            @if($dayPlanning->room && $dayPlanning->shift_type === 'apres_midi')
+                                            <div style="font-size:0.38rem;opacity:0.9;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">{{ $dayPlanning->room }}</div>
+                                            @endif
+                                        </div>
                                         @endif
-                                    </div>
-                                    @endif
 
-                                    @if(($dayPlanning->shift_type ?? '') === 'garde')
-                                    <div style="font-size:0.4rem;padding:2px 1px;border-radius:2px;background:#ef4444;color:white;font-weight:600;line-height:1.2"
-                                         title="Garde {{ substr($dayPlanning->shift_start ?? '', 0, 5) }}-{{ substr($dayPlanning->shift_end ?? '', 0, 5) }}{{ $dayPlanning->room ? ' — '.$dayPlanning->room : '' }}">
-                                        {{ substr($dayPlanning->shift_start ?? '', 0, 5) }}-{{ substr($dayPlanning->shift_end ?? '', 0, 5) }}
-                                        @if($dayPlanning->room)
-                                        <div style="font-size:0.38rem;opacity:0.9;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">{{ $dayPlanning->room }}</div>
+                                        @if(($dayPlanning->shift_type ?? '') === 'nuit')
+                                        <div style="font-size:0.4rem;padding:2px 1px;border-radius:2px;background:#6366f1;color:white;font-weight:600;line-height:1.2"
+                                             title="Nuit {{ substr($dayPlanning->shift_start ?? '', 0, 5) }}-{{ substr($dayPlanning->shift_end ?? '', 0, 5) }}{{ $dayPlanning->room ? ' — '.$dayPlanning->room : '' }}">
+                                            {{ substr($dayPlanning->shift_start ?? '', 0, 5) }}-{{ substr($dayPlanning->shift_end ?? '', 0, 5) }}
+                                            @if($dayPlanning->room)
+                                            <div style="font-size:0.38rem;opacity:0.9;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">{{ $dayPlanning->room }}</div>
+                                            @endif
+                                        </div>
                                         @endif
-                                    </div>
-                                    @endif
+
+                                        @if(($dayPlanning->shift_type ?? '') === 'garde')
+                                        <div style="font-size:0.4rem;padding:2px 1px;border-radius:2px;background:linear-gradient(135deg, #d766cd, #ef9be8);color:white;font-weight:600;line-height:1.2"
+                                             title="Garde {{ substr($dayPlanning->shift_start ?? '', 0, 5) }}-{{ substr($dayPlanning->shift_end ?? '', 0, 5) }}{{ $dayPlanning->room ? ' — '.$dayPlanning->room : '' }}">
+                                            {{ substr($dayPlanning->shift_start ?? '', 0, 5) }}-{{ substr($dayPlanning->shift_end ?? '', 0, 5) }}
+                                            @if($dayPlanning->room)
+                                            <div style="font-size:0.38rem;opacity:0.9;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">{{ $dayPlanning->room }}</div>
+                                            @endif
+                                        </div>
+                                        @endif
+
+                                    @endforeach
                                 </div>
+
                             @else
-                                {{-- VIDE --}}
                                 <div style="width:4px;height:4px;border-radius:50%;background:transparent;margin:auto"></div>
                             @endif
                         </td>
@@ -295,32 +292,7 @@
     </div>
 </div>
 
-{{-- Légende --}}
-<div style="display:flex;gap:16px;margin-top:16px;flex-wrap:wrap;align-items:center">
-    <div style="display:flex;align-items:center;gap:6px">
-        <div style="width:14px;height:14px;background:#0ea5e9;border-radius:3px"></div>
-        <span style="font-size:0.8rem">Matin</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:6px">
-        <div style="width:14px;height:14px;background:#f59e0b;border-radius:3px"></div>
-        <span style="font-size:0.8rem">Après-midi</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:6px">
-        <div style="width:14px;height:14px;background:#6366f1;border-radius:3px"></div>
-        <span style="font-size:0.8rem">Nuit</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:6px">
-        <div style="width:14px;height:14px;background:#ef4444;border-radius:3px"></div>
-        <span style="font-size:0.8rem">Garde</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:6px">
-        <div style="width:14px;height:14px;background:linear-gradient(135deg,#ef4444,#f87171);border-radius:3px"></div>
-        <span style="font-size:0.8rem">Absent</span>
-    </div>
-    <div style="margin-left:auto;font-size:0.75rem;color:var(--text-muted)">
-        💡 Survolez une cellule pour voir les détails (heure + salle)
-    </div>
-</div>
+
 
 <script>
 function openPlanningModal() {
@@ -353,7 +325,6 @@ function updateRoom(select) {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            // Mettre à jour le badge texte sous le select
             const badge = select.parentElement.querySelector('div');
             const selectedText = select.options[select.selectedIndex]?.text ?? '';
             if (badge) {

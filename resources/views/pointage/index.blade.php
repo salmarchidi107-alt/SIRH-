@@ -1,4 +1,3 @@
-{{-- resources/views/pointage/index.blade.php --}}
 @extends('layouts.app')
 
 @section('title', 'Pointage — Badgeuse')
@@ -107,7 +106,7 @@
 
     /* Table */
     .pt-table-wrap { flex:1; overflow:auto; }
-    .pt-table { width:100%; border-collapse:collapse; min-width:860px; }
+    .pt-table { width:100%; border-collapse:collapse; min-width:980px; }
     .pt-table thead th {
         position:sticky; top:0; z-index:2;
         background:var(--p-gray-bg); border-bottom:1px solid var(--p-border);
@@ -173,9 +172,38 @@
 
     .pt-row-dimmed td { opacity:.55; }
 
-    /* Checkbox absence */
     .absent-checkbox          { accent-color:var(--p-red); width:15px; height:15px; cursor:pointer; }
     .absent-checkbox:disabled { opacity:.5; cursor:wait; }
+
+    /* ── GÉOLOCALISATION — tooltip au survol de l'icône ── */
+    .geo-tooltip-wrap { position: relative; display: inline-block; }
+    .geo-tooltip {
+        display: none;
+        position: absolute; bottom: calc(100% + 8px); left: 50%;
+        transform: translateX(-50%);
+        background: #0f172a; color: #fff;
+        border-radius: 10px; padding: 12px 16px;
+        font-size: 12px; line-height: 1.5;
+        white-space: nowrap; z-index: 999;
+        box-shadow: 0 8px 24px rgba(0,0,0,.3);
+        min-width: 200px;
+    }
+    .geo-tooltip::after {
+        content: '';
+        position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+        border: 6px solid transparent; border-top-color: #0f172a;
+    }
+    .geo-tooltip-wrap:hover .geo-tooltip { display: block; }
+    .geo-tooltip-row { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px; }
+    .geo-tooltip-row:last-child { margin-bottom: 0; }
+    .geo-tooltip-label { color: #94a3b8; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+    .geo-tooltip-val   { color: #fff; font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+    .geo-maps-link {
+        display: block; margin-top: 8px;
+        color: #5eead4; font-size: 10px; text-decoration: none;
+        border-top: 1px solid #1e293b; padding-top: 8px;
+    }
+    .geo-maps-link:hover { color: #99f6e4; }
 </style>
 @endpush
 
@@ -196,29 +224,19 @@
             </div>
         </div>
         <div class="pt-topbar-right">
-            @if($dernierSync)
-            <div class="pt-sync">
-                <div class="pt-sync-dot"></div>
-                <span>Sync tablette <strong id="sync-ago">—</strong></span>
-            </div>
-            @endif
-
             <a href="{{ route('pointage.pdf', request()->only(['date','department','search','vue'])) }}"
                style="background:#e2e8f0;color:#0f172a;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid var(--p-border);">
-                 PDF
+                PDF
             </a>
-
             <a href="{{ route('pointage.badges-pin') }}"
                style="background:#9CC4B7;color:white;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
                 Badges PIN
             </a>
-
             <a href="{{ route('temps.vue-ensemble', ['annee' => $currentDate->year, 'mois' => $currentDate->month]) }}"
                style="background:#5E9E89;color:white;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;"
                target="_blank">
                 Vue Mensuelle
             </a>
-
             <button class="pt-btn-validate" id="btn-validate"
                     data-date="{{ $currentDate->toDateString() }}"
                     data-url="{{ route('pointage.valider-journee') }}">
@@ -294,6 +312,7 @@
                 <thead>
                     <tr>
                         <th style="width:44px">Validé</th>
+                        <th style="width:32px" title="Géolocalisation GPS">GÉOLOC</th>
                         <th>Employé</th>
                         <th>Absence</th>
                         <th>Début / Fin shift</th>
@@ -313,6 +332,26 @@
                     $isAbsent   = in_array($statut, ['absent', 'absence_injustifiee']);
                     $isNoBadge  = $statut === 'pas_de_badge' && !$p?->heure_entree;
                     $isMidnight = $p?->heure_sortie === '00:00:00' || $p?->heure_sortie === '00:00';
+
+                    // ── Données géoloc du premier badge de la journée ──
+                    $geo    = $emp['geo'] ?? null;
+                    $hasGeo = $geo && !($geo['denied'] ?? true) && isset($geo['latitude'], $geo['longitude']);
+
+                    // Adresse courte pour affichage (quartier + ville ou coords)
+                    $geoShort = null;
+                    if ($hasGeo) {
+                        if (!empty($geo['address'])) {
+                            // Prendre les 2 premiers éléments de l'adresse
+                            $parts    = array_map('trim', explode(',', $geo['address']));
+                            $geoShort = implode(', ', array_slice($parts, 0, 2));
+                        } else {
+                            $geoShort = number_format($geo['latitude'], 4).'°, '.number_format(abs($geo['longitude']), 4).'°';
+                        }
+                    }
+
+                    $mapsUrl = $hasGeo
+                        ? 'https://www.google.com/maps?q='.$geo['latitude'].','.$geo['longitude']
+                        : null;
                 @endphp
                 <tr class="{{ $isDimmed ? 'pt-row-dimmed' : '' }}" id="row-emp-{{ $emp['id'] }}">
 
@@ -328,6 +367,54 @@
                         </button>
                         @else
                         <div class="pt-check pending">○</div>
+                        @endif
+                    </td>
+
+                    {{-- ── GÉOLOC : juste une icône entre Validé et Employé ── --}}
+                    <td style="text-align:center;padding:10px 6px;">
+                        @if($hasGeo)
+                            <div class="geo-tooltip-wrap">
+                                <a href="{{ $mapsUrl }}" target="_blank"
+                                   style="font-size:18px;text-decoration:none;cursor:pointer;"
+                                   title="{{ $geoShort }}">📍</a>
+                                <div class="geo-tooltip">
+                                    @if(!empty($geo['address']))
+                                    <div style="font-weight:600;margin-bottom:8px;color:#e2e8f0;font-size:12px;max-width:220px;white-space:normal;line-height:1.4;">
+                                        {{ $geo['address'] }}
+                                    </div>
+                                    @endif
+                                    <div class="geo-tooltip-row">
+                                        <span class="geo-tooltip-label">Latitude</span>
+                                        <span class="geo-tooltip-val">{{ number_format($geo['latitude'], 5) }}°</span>
+                                    </div>
+                                    <div class="geo-tooltip-row">
+                                        <span class="geo-tooltip-label">Longitude</span>
+                                        <span class="geo-tooltip-val">{{ ($geo['longitude'] < 0 ? '−' : '') }}{{ number_format(abs($geo['longitude']), 5) }}°</span>
+                                    </div>
+                                    @if(!empty($geo['accuracy']))
+                                    <div class="geo-tooltip-row">
+                                        <span class="geo-tooltip-label">Précision</span>
+                                        <span class="geo-tooltip-val" style="color:{{ $geo['accuracy'] <= 30 ? '#86efac' : '#fde68a' }}">
+                                            ± {{ $geo['accuracy'] }} m
+                                        </span>
+                                    </div>
+                                    @endif
+                                    @if(!empty($geo['recorded_at']))
+                                    <div class="geo-tooltip-row">
+                                        <span class="geo-tooltip-label">À</span>
+                                        <span class="geo-tooltip-val">{{ $geo['recorded_at'] }}</span>
+                                    </div>
+                                    @endif
+                                    <a href="{{ $mapsUrl }}" target="_blank" class="geo-maps-link">
+                                        🗺 Voir sur Google Maps →
+                                    </a>
+                                </div>
+                            </div>
+                        @elseif($p && $p->heure_entree)
+                            {{-- Badge présent mais pas de géoloc --}}
+                            <span style="font-size:16px;opacity:.3;" title="Géolocalisation non disponible">📍</span>
+                        @else
+                            <span style="color:var(--p-text-light);font-size:12px;">—</span>
                         @endif
                     </td>
 
@@ -457,17 +544,11 @@
             <div class="pt-stat" style="margin-left:1rem;">
                 Total employés : <strong>{{ $stats['total'] }}</strong>
             </div>
+            <div class="pt-stat">
+                <div class="pt-stat-dot" style="background:var(--p-teal)"></div>
+                GPS actifs : <strong style="color:var(--p-teal)">{{ $stats['geo_ok'] ?? 0 }}</strong>
+            </div>
         </div>
-        @if($dernierSync)
-        <div class="pt-stat">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--p-text-light)" stroke-width="1.5">
-                <rect x="2" y="2" width="5" height="12" rx="1"/>
-                <rect x="9" y="2" width="5" height="5" rx="1"/>
-                <rect x="9" y="9" width="5" height="5" rx="1"/>
-            </svg>
-            Tablette : <strong style="color:var(--p-teal)">{{ $dernierSync->nom }}</strong>
-        </div>
-        @endif
     </div>
 
 </div>
@@ -477,112 +558,59 @@
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
 
-/* Sync label tablette */
-@if($dernierSync)
-(function () {
-    const syncedAt = new Date('{{ $dernierSync->derniere_connexion?->toIso8601String() }}');
-    function update() {
-        const diff = Math.floor((Date.now() - syncedAt) / 1000);
-        const el   = document.getElementById('sync-ago');
-        if (!el) return;
-        if      (diff < 60)   el.textContent = "à l'instant";
-        else if (diff < 3600) el.textContent = `il y a ${Math.floor(diff / 60)} min`;
-        else                  el.textContent = `il y a ${Math.floor(diff / 3600)}h`;
-    }
-    update();
-    setInterval(update, 30000);
-})();
-@endif
-
-/* Valider la journée */
 document.getElementById('btn-validate').addEventListener('click', async function () {
     const btn = this;
-    btn.disabled = true;
-    btn.textContent = '…';
+    btn.disabled = true; btn.textContent = '…';
     try {
         const res  = await fetch(btn.dataset.url, {
-            method:  'POST',
-            headers: { 'X-CSRF-TOKEN': CSRF, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body:    JSON.stringify({ date: btn.dataset.date }),
+            method:'POST',
+            headers:{'X-CSRF-TOKEN':CSRF,'Content-Type':'application/json','Accept':'application/json'},
+            body: JSON.stringify({date: btn.dataset.date}),
         });
         const data = await res.json();
-        btn.textContent      = '✓ ' + data.message;
+        btn.textContent = '✓ '+data.message;
         btn.style.background = '#0f766e';
-        setTimeout(() => { btn.textContent = '✓ Valider la journée'; btn.style.background = ''; btn.disabled = false; }, 3000);
-    } catch (e) {
-        btn.textContent      = 'Erreur !';
-        btn.style.background = '#dc2626';
-        btn.disabled         = false;
+        setTimeout(()=>{btn.textContent='✓ Valider la journée';btn.style.background='';btn.disabled=false;},3000);
+    } catch(e){
+        btn.textContent='Erreur !'; btn.style.background='#dc2626'; btn.disabled=false;
     }
 });
 
-/* Toggle validé */
-async function toggleValider(btn) {
-    try {
-        const res  = await fetch(btn.dataset.url, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' } });
+async function toggleValider(btn){
+    try{
+        const res  = await fetch(btn.dataset.url,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF,'Accept':'application/json'}});
         const data = await res.json();
-        btn.classList.toggle('ok',      data.valide);
-        btn.classList.toggle('pending', !data.valide);
-        btn.textContent = data.valide ? '✓' : '○';
-    } catch (e) { console.error(e); }
+        btn.classList.toggle('ok',data.valide); btn.classList.toggle('pending',!data.valide);
+        btn.textContent = data.valide?'✓':'○';
+    }catch(e){console.error(e);}
 }
 
-/* Toggle ignorer */
-async function toggleIgnore(btn) {
-    try {
-        const res  = await fetch(btn.dataset.url, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' } });
+async function toggleIgnore(btn){
+    try{
+        const res  = await fetch(btn.dataset.url,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF,'Accept':'application/json'}});
         const data = await res.json();
-        btn.classList.toggle('keep', !data.ignore_badge);
-        btn.textContent = data.ignore_badge ? '⊘ Ignorer' : '👁 Garder';
-    } catch (e) { console.error(e); }
+        btn.classList.toggle('keep',!data.ignore_badge);
+        btn.textContent = data.ignore_badge?'⊘ Ignorer':'👁 Garder';
+    }catch(e){console.error(e);}
 }
 
-/* ✅ Toggle absence — corrigé */
-async function toggleAbsence(checkbox) {
-    const empId    = checkbox.dataset.employee;
-    const date     = checkbox.dataset.date;
-    const url      = checkbox.dataset.url;
-    const isAbsent = checkbox.checked;
-    const badge    = document.getElementById('badge-absent-' + empId);
-
-    checkbox.disabled = true;
-
-    try {
-        const res = await fetch(url, {
-            method:  'POST',
-            headers: {
-                'X-CSRF-TOKEN': CSRF,
-                'Content-Type': 'application/json',
-                'Accept':       'application/json',
-            },
-            body: JSON.stringify({
-                employee_id: empId,
-                date:        date,
-                absent:      isAbsent,
-            }),
+async function toggleAbsence(checkbox){
+    const empId=checkbox.dataset.employee, date=checkbox.dataset.date,
+          url=checkbox.dataset.url, isAbsent=checkbox.checked;
+    const badge=document.getElementById('badge-absent-'+empId);
+    checkbox.disabled=true;
+    try{
+        const res=await fetch(url,{
+            method:'POST',
+            headers:{'X-CSRF-TOKEN':CSRF,'Content-Type':'application/json','Accept':'application/json'},
+            body:JSON.stringify({employee_id:empId,date,absent:isAbsent}),
         });
-
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            console.error('Erreur toggleAbsence', res.status, err);
-            checkbox.checked = !isAbsent; // rollback
-            return;
-        }
-
-        const data = await res.json();
-
-        if (data.success) {
-            if (badge) badge.style.display = isAbsent ? 'inline-block' : 'none';
-        } else {
-            checkbox.checked = !isAbsent; // rollback
-        }
-
-    } catch (e) {
-        console.error('toggleAbsence fetch error', e);
-        checkbox.checked = !isAbsent; // rollback
-    } finally {
-        checkbox.disabled = false;
-    }
+        if(!res.ok){checkbox.checked=!isAbsent;return;}
+        const data=await res.json();
+        if(data.success){if(badge)badge.style.display=isAbsent?'inline-block':'none';}
+        else{checkbox.checked=!isAbsent;}
+    }catch(e){console.error(e);checkbox.checked=!isAbsent;}
+    finally{checkbox.disabled=false;}
 }
 </script>
 @endpush

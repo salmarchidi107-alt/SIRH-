@@ -48,13 +48,6 @@
     }
     .pt-tab.active, .pt-tab:hover { background:var(--p-teal); color:#fff; }
 
-    .pt-sync {
-        display:flex; align-items:center; gap:6px; font-size:11px; color:var(--p-text-muted);
-        background:var(--p-bg); border:1px solid var(--p-border); padding:4px 10px; border-radius:20px;
-    }
-    .pt-sync-dot { width:7px; height:7px; border-radius:50%; background:var(--p-teal); animation:blink 2s infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-
     .pt-btn-validate {
         background:var(--p-teal); color:#fff; border:none;
         padding:7px 16px; border-radius:8px; font-size:13px; font-weight:600;
@@ -85,21 +78,32 @@
 
     /* Day sidebar */
     .pt-days {
-        width:155px; flex-shrink:0; background:var(--p-surface);
+        width:165px; flex-shrink:0; background:var(--p-surface);
         border-right:1px solid var(--p-border); overflow-y:auto;
     }
     .pt-day {
-        display:flex; align-items:center; justify-content:space-between;
+        display:flex; align-items:flex-start; justify-content:space-between;
         padding:11px 14px; cursor:pointer; border-left:3px solid transparent;
-        text-decoration:none; transition:all .12s;
+        text-decoration:none; transition:all .12s; border-bottom:1px solid var(--p-border-soft);
     }
     .pt-day:hover { background:var(--p-teal-bg); }
     .pt-day.active { background:var(--p-teal-bg); border-left-color:var(--p-teal); }
     .pt-day-name { font-size:12px; font-weight:600; color:var(--p-text); }
     .pt-day-date { font-size:11px; color:var(--p-text-muted); margin-top:1px; }
+
+    /* ── Info validation sous le jour ── */
+    .pt-day-validator {
+        font-size:10px; color:var(--p-teal); margin-top:4px;
+        display:flex; align-items:center; gap:2px; font-weight:500;
+    }
+    .pt-day-validator-time {
+        font-size:9px; color:var(--p-text-light); margin-top:1px;
+    }
+
     .pt-day-check {
         width:20px; height:20px; border-radius:50%; flex-shrink:0;
         display:flex; align-items:center; justify-content:center; font-size:10px;
+        margin-top:1px;
     }
     .pt-day-check.ok      { background:var(--p-teal); color:#fff; }
     .pt-day-check.pending { border:1.5px solid var(--p-border); color:var(--p-text-light); }
@@ -171,15 +175,13 @@
     }
 
     .pt-row-dimmed td { opacity:.55; }
-
     .absent-checkbox          { accent-color:var(--p-red); width:15px; height:15px; cursor:pointer; }
     .absent-checkbox:disabled { opacity:.5; cursor:wait; }
 
-    /* ── GÉOLOCALISATION — tooltip au survol de l'icône ── */
+    /* Géolocalisation */
     .geo-tooltip-wrap { position: relative; display: inline-block; }
     .geo-tooltip {
-        display: none;
-        position: absolute; bottom: calc(100% + 8px); left: 50%;
+        display: none; position: absolute; bottom: calc(100% + 8px); left: 50%;
         transform: translateX(-50%);
         background: #0f172a; color: #fff;
         border-radius: 10px; padding: 12px 16px;
@@ -189,19 +191,17 @@
         min-width: 200px;
     }
     .geo-tooltip::after {
-        content: '';
-        position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+        content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
         border: 6px solid transparent; border-top-color: #0f172a;
     }
     .geo-tooltip-wrap:hover .geo-tooltip { display: block; }
     .geo-tooltip-row { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px; }
     .geo-tooltip-row:last-child { margin-bottom: 0; }
     .geo-tooltip-label { color: #94a3b8; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
-    .geo-tooltip-val   { color: #fff; font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+    .geo-tooltip-val   { color: #fff; font-weight: 600; font-size: 11px; }
     .geo-maps-link {
-        display: block; margin-top: 8px;
-        color: #5eead4; font-size: 10px; text-decoration: none;
-        border-top: 1px solid #1e293b; padding-top: 8px;
+        display: block; margin-top: 8px; color: #5eead4; font-size: 10px;
+        text-decoration: none; border-top: 1px solid #1e293b; padding-top: 8px;
     }
     .geo-maps-link:hover { color: #99f6e4; }
 </style>
@@ -282,22 +282,31 @@
         <span class="pt-week-badge">Semaine {{ $currentDate->weekOfYear }}</span>
         <a href="{{ route('pointage.index', array_merge($filterParams, ['date' => $nextDate->toDateString()])) }}" class="pt-weeknav-btn">&#8250;</a>
         <a href="{{ route('pointage.index', array_merge($filterParams, ['date' => today()->toDateString()])) }}"
-           class="pt-weeknav-btn" style="font-size:11px;width:auto;padding:0 10px;">
-            Aujourd'hui
-        </a>
+           class="pt-weeknav-btn" style="font-size:11px;width:auto;padding:0 10px;">Aujourd'hui</a>
     </div>
 
     {{-- Body --}}
     <div class="pt-body">
 
-        {{-- Day sidebar --}}
+        {{-- ── Day sidebar avec validation ── --}}
         <div class="pt-days">
             @foreach($weekDays as $day)
             <a href="{{ route('pointage.index', array_merge($filterParams, ['date' => $day['date']->toDateString()])) }}"
                class="pt-day {{ $day['isSelected'] ? 'active' : '' }}">
-                <div>
+                <div style="flex:1;min-width:0;">
                     <div class="pt-day-name">{{ $day['label'] }}</div>
                     <div class="pt-day-date">{{ $day['short'] }}</div>
+                    {{-- ✅ Qui a validé + quand --}}
+                    @if($day['valide'] && $day['validated_by'])
+                        <div class="pt-day-validator">
+                            ✓ {{ $day['validated_by'] }}
+                        </div>
+                        @if($day['validated_at'])
+                        <div class="pt-day-validator-time">{{ $day['validated_at'] }}</div>
+                        @endif
+                    @elseif(!$day['valide'])
+                        <div style="font-size:9px;color:var(--p-text-light);margin-top:3px;font-style:italic;">Non validé</div>
+                    @endif
                 </div>
                 <div class="pt-day-check {{ $day['valide'] ? 'ok' : 'pending' }}">
                     {{ $day['valide'] ? '✓' : '○' }}
@@ -332,26 +341,9 @@
                     $isAbsent   = in_array($statut, ['absent', 'absence_injustifiee']);
                     $isNoBadge  = $statut === 'pas_de_badge' && !$p?->heure_entree;
                     $isMidnight = $p?->heure_sortie === '00:00:00' || $p?->heure_sortie === '00:00';
-
-                    // ── Données géoloc du premier badge de la journée ──
-                    $geo    = $emp['geo'] ?? null;
-                    $hasGeo = $geo && !($geo['denied'] ?? true) && isset($geo['latitude'], $geo['longitude']);
-
-                    // Adresse courte pour affichage (quartier + ville ou coords)
-                    $geoShort = null;
-                    if ($hasGeo) {
-                        if (!empty($geo['address'])) {
-                            // Prendre les 2 premiers éléments de l'adresse
-                            $parts    = array_map('trim', explode(',', $geo['address']));
-                            $geoShort = implode(', ', array_slice($parts, 0, 2));
-                        } else {
-                            $geoShort = number_format($geo['latitude'], 4).'°, '.number_format(abs($geo['longitude']), 4).'°';
-                        }
-                    }
-
-                    $mapsUrl = $hasGeo
-                        ? 'https://www.google.com/maps?q='.$geo['latitude'].','.$geo['longitude']
-                        : null;
+                    $geo        = $emp['geo'] ?? null;
+                    $hasGeo     = $geo && !($geo['denied'] ?? true) && isset($geo['latitude'], $geo['longitude']);
+                    $mapsUrl    = $hasGeo ? 'https://www.google.com/maps?q='.$geo['latitude'].','.$geo['longitude'] : null;
                 @endphp
                 <tr class="{{ $isDimmed ? 'pt-row-dimmed' : '' }}" id="row-emp-{{ $emp['id'] }}">
 
@@ -370,13 +362,12 @@
                         @endif
                     </td>
 
-                    {{-- ── GÉOLOC : juste une icône entre Validé et Employé ── --}}
+                    {{-- Géoloc --}}
                     <td style="text-align:center;padding:10px 6px;">
                         @if($hasGeo)
                             <div class="geo-tooltip-wrap">
                                 <a href="{{ $mapsUrl }}" target="_blank"
-                                   style="font-size:18px;text-decoration:none;cursor:pointer;"
-                                   title="{{ $geoShort }}">📍</a>
+                                   style="font-size:18px;text-decoration:none;cursor:pointer;">📍</a>
                                 <div class="geo-tooltip">
                                     @if(!empty($geo['address']))
                                     <div style="font-weight:600;margin-bottom:8px;color:#e2e8f0;font-size:12px;max-width:220px;white-space:normal;line-height:1.4;">
@@ -405,13 +396,10 @@
                                         <span class="geo-tooltip-val">{{ $geo['recorded_at'] }}</span>
                                     </div>
                                     @endif
-                                    <a href="{{ $mapsUrl }}" target="_blank" class="geo-maps-link">
-                                        🗺 Voir sur Google Maps →
-                                    </a>
+                                    <a href="{{ $mapsUrl }}" target="_blank" class="geo-maps-link">🗺 Voir sur Google Maps →</a>
                                 </div>
                             </div>
                         @elseif($p && $p->heure_entree)
-                            {{-- Badge présent mais pas de géoloc --}}
                             <span style="font-size:16px;opacity:.3;" title="Géolocalisation non disponible">📍</span>
                         @else
                             <span style="color:var(--p-text-light);font-size:12px;">—</span>
@@ -542,7 +530,7 @@
                 Absents : <strong style="color:var(--p-red)">{{ $stats['absents'] }}</strong>
             </div>
             <div class="pt-stat" style="margin-left:1rem;">
-                Total employés : <strong>{{ $stats['total'] }}</strong>
+                Total : <strong>{{ $stats['total'] }}</strong>
             </div>
             <div class="pt-stat">
                 <div class="pt-stat-dot" style="background:var(--p-teal)"></div>
@@ -558,59 +546,136 @@
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
 
+// ── Valider la journée complète ──────────────────────────────────────────────
 document.getElementById('btn-validate').addEventListener('click', async function () {
     const btn = this;
-    btn.disabled = true; btn.textContent = '…';
+    btn.disabled = true;
+    btn.textContent = '…';
     try {
         const res  = await fetch(btn.dataset.url, {
-            method:'POST',
-            headers:{'X-CSRF-TOKEN':CSRF,'Content-Type':'application/json','Accept':'application/json'},
+            method: 'POST',
+            headers: {'X-CSRF-TOKEN': CSRF, 'Content-Type': 'application/json', 'Accept': 'application/json'},
             body: JSON.stringify({date: btn.dataset.date}),
         });
         const data = await res.json();
-        btn.textContent = '✓ '+data.message;
-        btn.style.background = '#0f766e';
-        setTimeout(()=>{btn.textContent='✓ Valider la journée';btn.style.background='';btn.disabled=false;},3000);
-    } catch(e){
-        btn.textContent='Erreur !'; btn.style.background='#dc2626'; btn.disabled=false;
+        if (data.success) {
+            btn.textContent = '✓ ' + data.message;
+            btn.style.background = '#0f766e';
+
+            // Mettre à jour la sidebar du jour courant sans recharger
+            updateDaySidebarValidation(data.validator, data.validated_at);
+
+            setTimeout(() => {
+                btn.textContent = '✓ Valider la journée';
+                btn.style.background = '';
+                btn.disabled = false;
+            }, 3000);
+        } else {
+            btn.textContent = 'Erreur !';
+            btn.style.background = '#dc2626';
+            btn.disabled = false;
+        }
+    } catch(e) {
+        btn.textContent = 'Erreur !';
+        btn.style.background = '#dc2626';
+        btn.disabled = false;
     }
 });
 
-async function toggleValider(btn){
-    try{
-        const res  = await fetch(btn.dataset.url,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF,'Accept':'application/json'}});
-        const data = await res.json();
-        btn.classList.toggle('ok',data.valide); btn.classList.toggle('pending',!data.valide);
-        btn.textContent = data.valide?'✓':'○';
-    }catch(e){console.error(e);}
+// Met à jour visuellement le jour actif dans la sidebar
+function updateDaySidebarValidation(validatorName, validatedAt) {
+    const activeDay = document.querySelector('.pt-day.active');
+    if (!activeDay) return;
+
+    // Changer le cercle en vert
+    const check = activeDay.querySelector('.pt-day-check');
+    if (check) {
+        check.className = 'pt-day-check ok';
+        check.textContent = '✓';
+    }
+
+    // Ajouter ou mettre à jour le nom du validateur
+    const dayInfo = activeDay.querySelector('div[style]') ?? activeDay.querySelector('div');
+    if (dayInfo) {
+        let validatorEl = dayInfo.querySelector('.pt-day-validator');
+        if (!validatorEl) {
+            validatorEl = document.createElement('div');
+            validatorEl.className = 'pt-day-validator';
+            dayInfo.appendChild(validatorEl);
+        }
+        validatorEl.textContent = '✓ ' + (validatorName || '');
+
+        let timeEl = dayInfo.querySelector('.pt-day-validator-time');
+        if (!timeEl && validatedAt) {
+            timeEl = document.createElement('div');
+            timeEl.className = 'pt-day-validator-time';
+            dayInfo.appendChild(timeEl);
+        }
+        if (timeEl && validatedAt) timeEl.textContent = validatedAt;
+
+        // Enlever le "Non validé"
+        const nonValide = dayInfo.querySelector('div[style*="italic"]');
+        if (nonValide) nonValide.remove();
+    }
+
+    // Changer le border gauche
+    activeDay.style.borderLeftColor = '#0d9488';
 }
 
-async function toggleIgnore(btn){
-    try{
-        const res  = await fetch(btn.dataset.url,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF,'Accept':'application/json'}});
-        const data = await res.json();
-        btn.classList.toggle('keep',!data.ignore_badge);
-        btn.textContent = data.ignore_badge?'⊘ Ignorer':'👁 Garder';
-    }catch(e){console.error(e);}
-}
-
-async function toggleAbsence(checkbox){
-    const empId=checkbox.dataset.employee, date=checkbox.dataset.date,
-          url=checkbox.dataset.url, isAbsent=checkbox.checked;
-    const badge=document.getElementById('badge-absent-'+empId);
-    checkbox.disabled=true;
-    try{
-        const res=await fetch(url,{
-            method:'POST',
-            headers:{'X-CSRF-TOKEN':CSRF,'Content-Type':'application/json','Accept':'application/json'},
-            body:JSON.stringify({employee_id:empId,date,absent:isAbsent}),
+// ── Toggle valider un pointage individuel ────────────────────────────────────
+async function toggleValider(btn) {
+    try {
+        const res  = await fetch(btn.dataset.url, {
+            method: 'POST',
+            headers: {'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json'},
         });
-        if(!res.ok){checkbox.checked=!isAbsent;return;}
-        const data=await res.json();
-        if(data.success){if(badge)badge.style.display=isAbsent?'inline-block':'none';}
-        else{checkbox.checked=!isAbsent;}
-    }catch(e){console.error(e);checkbox.checked=!isAbsent;}
-    finally{checkbox.disabled=false;}
+        const data = await res.json();
+        btn.classList.toggle('ok', data.valide);
+        btn.classList.toggle('pending', !data.valide);
+        btn.textContent = data.valide ? '✓' : '○';
+    } catch(e) { console.error(e); }
+}
+
+// ── Toggle ignore badge ──────────────────────────────────────────────────────
+async function toggleIgnore(btn) {
+    try {
+        const res  = await fetch(btn.dataset.url, {
+            method: 'POST',
+            headers: {'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json'},
+        });
+        const data = await res.json();
+        btn.classList.toggle('keep', !data.ignore_badge);
+        btn.textContent = data.ignore_badge ? '⊘ Ignorer' : '👁 Garder';
+    } catch(e) { console.error(e); }
+}
+
+// ── Toggle absence ───────────────────────────────────────────────────────────
+async function toggleAbsence(checkbox) {
+    const empId    = checkbox.dataset.employee;
+    const date     = checkbox.dataset.date;
+    const url      = checkbox.dataset.url;
+    const isAbsent = checkbox.checked;
+    const badge    = document.getElementById('badge-absent-' + empId);
+    checkbox.disabled = true;
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {'X-CSRF-TOKEN': CSRF, 'Content-Type': 'application/json', 'Accept': 'application/json'},
+            body: JSON.stringify({employee_id: empId, date, absent: isAbsent}),
+        });
+        if (!res.ok) { checkbox.checked = !isAbsent; return; }
+        const data = await res.json();
+        if (data.success) {
+            if (badge) badge.style.display = isAbsent ? 'inline-block' : 'none';
+        } else {
+            checkbox.checked = !isAbsent;
+        }
+    } catch(e) {
+        console.error(e);
+        checkbox.checked = !isAbsent;
+    } finally {
+        checkbox.disabled = false;
+    }
 }
 </script>
 @endpush

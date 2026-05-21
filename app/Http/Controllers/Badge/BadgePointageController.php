@@ -1,4 +1,7 @@
 <?php
+// ============================================================
+//  app/Http/Controllers/Badge/BadgePointageController.php
+// ============================================================
 
 namespace App\Http\Controllers\Badge;
 
@@ -24,7 +27,6 @@ class BadgePointageController extends Controller
 
     private function resolveEmployee(): ?Employee
     {
-        /** @var User|null $user */
         $user = auth('badge')->user();
         if (! $user) return null;
 
@@ -65,18 +67,16 @@ class BadgePointageController extends Controller
 
     // ─── Helpers Carbon ──────────────────────────────────────────────────
 
-    private function nowCasa(): Carbon  { return Carbon::now(self::TZ); }
+    private function nowCasa(): Carbon   { return Carbon::now(self::TZ); }
     private function todayCasa(): Carbon { return Carbon::today(self::TZ); }
 
     // ─── Pages ───────────────────────────────────────────────────────────
 
-    /** Page d'accueil badgeuse (choix Entrée / Sortie) */
     public function pointage()
     {
         return view('badge.pointage');
     }
 
-    /** Dashboard employé connecté (avec résumé shift) */
     public function dashboard(Request $request)
     {
         $employee = $this->getAuthEmployee();
@@ -92,14 +92,11 @@ class BadgePointageController extends Controller
         ]);
     }
 
-    /** Page de résultat après pointage */
     public function result(Request $request)
     {
         $employee = $this->getAuthEmployee();
         $shift    = $this->getTodayShift($employee);
         $type     = $request->session()->get('last_type', 'entree');
-
-        // Données géo depuis la session (stockées par BadgeAuthController)
         $geoData  = $request->session()->get('last_geo', []);
 
         $pauseRecords  = $shift->where('type', 'pause')->values();
@@ -134,6 +131,7 @@ class BadgePointageController extends Controller
             'denied'    => $request->boolean('geo_denied'),
         ];
 
+        // Pas de photo faciale dans le dashboard AJAX (flux rapide)
         $this->recordAction($realType, $employee, $geoData);
 
         $request->session()->put('last_type', $realType);
@@ -150,26 +148,45 @@ class BadgePointageController extends Controller
     /**
      * Enregistre un BadgeRecord + synchronise le Pointage RH.
      *
-     * @param  string   $type     entree | pause | retour_pause | sortie
+     * @param  string   $type      entree | pause | retour_pause | sortie
      * @param  Employee $employee
-     * @param  array    $geoData  latitude, longitude, accuracy, address, denied
+     * @param  array    $geoData   latitude, longitude, accuracy, address, denied
+     * @param  array    $photoData face_photo_path, face_photo_disk, face_photo_base64,
+     *                             face_photo_size, face_photo_mime  ← NOUVEAU
      */
-    public function recordAction(string $type, Employee $employee, array $geoData = []): void
-    {
+    public function recordAction(
+        string   $type,
+        Employee $employee,
+        array    $geoData   = [],
+        array    $photoData = []   // ← NOUVEAU paramètre
+    ): void {
         $now     = $this->nowCasa();
         $today   = $now->format('Y-m-d');
         $nowTime = $now->format('H:i:s');
 
-        // ── 1. BadgeRecord avec géolocalisation ──────────────────────────
-        BadgeRecord::create([
-            'employee_id'        => $employee->id,
-            'type'               => $type,
-            'latitude'           => $geoData['latitude']  ?? null,
-            'longitude'          => $geoData['longitude'] ?? null,
-            'accuracy'           => $geoData['accuracy']  ?? null,
-            'location_address'   => isset($geoData['address']) ? substr($geoData['address'], 0, 255) : null,
-            'geolocation_denied' => $geoData['denied']    ?? false,
-        ]);
+        // ── 1. BadgeRecord avec géolocalisation + photo ──────────────────
+        BadgeRecord::create(array_merge(
+            [
+                'employee_id'        => $employee->id,
+                'type'               => $type,
+                // Géolocalisation
+                'latitude'           => $geoData['latitude']  ?? null,
+                'longitude'          => $geoData['longitude'] ?? null,
+                'accuracy'           => $geoData['accuracy']  ?? null,
+                'location_address'   => isset($geoData['address'])
+                                            ? substr($geoData['address'], 0, 255)
+                                            : null,
+                'geolocation_denied' => $geoData['denied']    ?? false,
+            ],
+            // Photo faciale (merge si fournie, sinon valeurs nulles par défaut)
+            $photoData ?: [
+                'face_photo_path'   => null,
+                'face_photo_disk'   => 'public',
+                'face_photo_base64' => null,
+                'face_photo_size'   => 0,
+                'face_photo_mime'   => null,
+            ]
+        ));
 
         // ── 2. Synchronisation Pointage RH ───────────────────────────────
         $pointage = Pointage::firstOrCreate(

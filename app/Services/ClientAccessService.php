@@ -14,12 +14,10 @@ class ClientAccessService
      */
     public function getAllClients(): Collection
     {
-        // Colonnes de base toujours présentes
         $columns = ['id', 'name', 'email', 'role', 'tenant_id'];
 
-        // Ajouter les colonnes optionnelles si elles existent
-        if (Schema::hasColumn('users', 'first_name'))    $columns[] = 'first_name';
-        if (Schema::hasColumn('users', 'last_name'))     $columns[] = 'last_name';
+        if (Schema::hasColumn('users', 'first_name'))     $columns[] = 'first_name';
+        if (Schema::hasColumn('users', 'last_name'))      $columns[] = 'last_name';
         if (Schema::hasColumn('users', 'plain_password')) $columns[] = 'plain_password';
 
         return User::with('tenant')
@@ -33,6 +31,7 @@ class ClientAccessService
 
     /**
      * Met à jour email et/ou mot de passe d'un utilisateur
+     * Le chiffrement de plain_password est géré automatiquement par le Model
      */
     public function updateClientAccess(User $user, ?string $email, ?string $password): void
     {
@@ -45,8 +44,8 @@ class ClientAccessService
         if (!empty($password)) {
             $updates['password'] = Hash::make($password);
 
-            // Stocker en clair seulement si la colonne existe
             if (Schema::hasColumn('users', 'plain_password')) {
+                // Le setter du Model chiffre automatiquement
                 $updates['plain_password'] = $password;
             }
         }

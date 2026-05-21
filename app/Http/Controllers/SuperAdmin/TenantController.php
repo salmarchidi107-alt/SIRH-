@@ -20,7 +20,7 @@ class TenantController extends Controller
 
         if ($s = $request->search) {
             $query->where(fn($q) => $q
-                ->where('name',    'like', "%{$s}%")
+                ->where('name',   'like', "%{$s}%")
                 ->orWhere('sector', 'like', "%{$s}%")
             );
         }
@@ -87,8 +87,6 @@ class TenantController extends Controller
                 'sidebar_color' => $data['sidebar_color'] ?? '#0d2238',
             ]);
 
-
-            // Construire les données user selon les colonnes disponibles
             $userData = [
                 'name'      => $data['first_name'] . ' ' . $data['last_name'],
                 'email'     => $data['admin_email'],
@@ -97,7 +95,6 @@ class TenantController extends Controller
                 'tenant_id' => $tenant->id,
             ];
 
-            // Ajouter les colonnes optionnelles seulement si elles existent en base
             if (Schema::hasColumn('users', 'first_name')) {
                 $userData['first_name'] = $data['first_name'];
             }
@@ -105,6 +102,7 @@ class TenantController extends Controller
                 $userData['last_name'] = $data['last_name'];
             }
             if (Schema::hasColumn('users', 'plain_password')) {
+                // Le setter du Model chiffre automatiquement
                 $userData['plain_password'] = $data['temp_password'];
             }
 
@@ -145,7 +143,6 @@ class TenantController extends Controller
             ? $data['region_other']
             : $data['region'];
 
-        // ── Logo ──────────────────────────────────────────────────
         if ($request->hasFile('logo')) {
             if ($tenant->logo_path) Storage::disk('public')->delete($tenant->logo_path);
             $logoPath = $request->file('logo')->store('tenants/logos', 'public');
@@ -153,7 +150,6 @@ class TenantController extends Controller
             $logoPath = $tenant->logo_path;
         }
 
-        // ── Tenant ────────────────────────────────────────────────
         $tenant->update([
             'name'          => $data['company_name'],
             'sector'        => $data['sector'] ?? null,
@@ -168,7 +164,6 @@ class TenantController extends Controller
             'sidebar_color' => $data['sidebar_color'] ?? $tenant->sidebar_color ?? '#0d2238',
         ]);
 
-        // ── Admin ─────────────────────────────────────────────────
         $admin = $tenant->admin;
         if ($admin) {
             $adminUpdates = [];
@@ -178,12 +173,8 @@ class TenantController extends Controller
                 $lastName  = !empty($data['last_name'])  ? $data['last_name']  : ($admin->last_name  ?? (explode(' ', $admin->name, 2)[1] ?? ''));
                 $adminUpdates['name'] = trim($firstName . ' ' . $lastName);
 
-                if (Schema::hasColumn('users', 'first_name')) {
-                    $adminUpdates['first_name'] = $firstName;
-                }
-                if (Schema::hasColumn('users', 'last_name')) {
-                    $adminUpdates['last_name'] = $lastName;
-                }
+                if (Schema::hasColumn('users', 'first_name')) $adminUpdates['first_name'] = $firstName;
+                if (Schema::hasColumn('users', 'last_name'))  $adminUpdates['last_name']  = $lastName;
             }
 
             if (!empty($data['admin_email'])) {
@@ -193,6 +184,7 @@ class TenantController extends Controller
             if (!empty($data['temp_password'])) {
                 $adminUpdates['password'] = Hash::make($data['temp_password']);
                 if (Schema::hasColumn('users', 'plain_password')) {
+                    // Le setter du Model chiffre automatiquement
                     $adminUpdates['plain_password'] = $data['temp_password'];
                 }
             }

@@ -1,4 +1,7 @@
 <?php
+// ============================================================
+//  app/Http/Controllers/Badge/BadgeAuthController.php
+// ============================================================
 
 namespace App\Http\Controllers\Badge;
 
@@ -9,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class BadgeAuthController extends Controller
@@ -28,8 +32,9 @@ class BadgeAuthController extends Controller
         $action = $request->input('action', 'entree');
 
         $request->validate([
-            'pin'       => 'required|string|size:6|regex:/^[0-9]{4}[A-Z]{2}$/',
-            'signature' => 'required|string',
+            'pin'        => 'required|string|size:6|regex:/^[0-9]{4}[A-Z]{2}$/',
+            'signature'  => 'required|string',
+            'face_photo' => 'nullable|string', // data-URL base64 depuis la caméra
         ]);
 
         // ── 1. Vérifier le PIN ──────────────────────────────────────────
@@ -85,7 +90,7 @@ class BadgeAuthController extends Controller
         // ── 6. Construire les données géo ───────────────────────────────
         $geoData = $this->buildGeoData($request);
 
-        // ── 7. Reverse geocoding côté serveur (fallback si le client n'a pas pu) ──
+        // ── 7. Reverse geocoding côté serveur (fallback) ────────────────
         if (! $geoData['denied']
             && $geoData['latitude'] !== null
             && $geoData['longitude'] !== null
@@ -96,7 +101,6 @@ class BadgeAuthController extends Controller
             );
         }
 
-        // ── 8. Log complet pour diagnostic ──────────────────────────────
         Log::info('Badge geoData final avant session', [
             'denied'    => $geoData['denied'],
             'latitude'  => $geoData['latitude'],
@@ -105,12 +109,19 @@ class BadgeAuthController extends Controller
             'address'   => $geoData['address'],
         ]);
 
+        // ── 8. Traiter la photo faciale ─────────────────────────────────
+        $photoData = $this->buildPhotoData(
+            $request->input('face_photo'),
+            $employee->id
+        );
+
         // ── 9. Enregistrer le pointage ──────────────────────────────────
         try {
             app(BadgePointageController::class)->recordAction(
                 $recordType,
                 $employee,
-                $geoData
+                $geoData,
+                $photoData   // ← NOUVEAU : données photo passées au controller
             );
         } catch (\Exception $e) {
             Log::error('Badge pointage error', [
@@ -120,7 +131,6 @@ class BadgeAuthController extends Controller
         }
 
         // ── 10. Stocker en session et rediriger ─────────────────────────
-        // On stocke APRÈS le pointage pour éviter tout écrasement de session
         $request->session()->put('last_type', $recordType);
         $request->session()->put('last_geo',  $geoData);
         $request->session()->save();
@@ -140,13 +150,77 @@ class BadgeAuthController extends Controller
     // ── Helpers privés ────────────────────────────────────────────────────
 
     /**
-     * Extrait, valide et nettoie les données GPS envoyées depuis le formulaire.
-     *
-     * geo_denied vaut :
-     *   "0"  → géoloc accordée  (on doit avoir lat/lng)
-     *   "1"  → géoloc refusée   (pas de coords)
-     *   ""   → non envoyé       (traité comme refusé)
+     * Traite le data-URL base64 de la photo faciale.
+     * Sauvegarde le fichier sur disque ET conserve le base64 brut.
+     * Retourne un tableau prêt à merger dans BadgeRecord::create().
      */
+    private function buildPhotoData(?string $dataUrl, int $employeeId): array
+    {
+        if (empty($dataUrl)) {
+            return $this->emptyPhotoData();
+        }
+
+        try {
+            // Format attendu : data:image/jpeg;base64,/9j/4AAQ…
+            if (! preg_match('/^data:([a-z\/]+);base64,(.+)$/s', $dataUrl, $m)) {
+                Log::warning('Badge photo : format data-URL invalide');
+                return $this->emptyPhotoData();
+            }
+
+            $mime   = strtolower($m[1]);
+            $base64 = $m[2];
+
+            $allowed = ['image/jpeg', 'image/png', 'image/webp'];
+            if (! in_array($mime, $allowed, true)) {
+                Log::warning('Badge photo : MIME non autorisé', ['mime' => $mime]);
+                return $this->emptyPhotoData();
+            }
+
+            $binary = base64_decode($base64, strict: true);
+            if ($binary === false) {
+                Log::warning('Badge photo : base64 invalide');
+                return $this->emptyPhotoData();
+            }
+
+            $size = strlen($binary);
+            if ($size > 5 * 1024 * 1024) {
+                Log::warning('Badge photo : trop volumineuse', ['size' => $size]);
+                return $this->emptyPhotoData();
+            }
+
+            $ext      = match ($mime) { 'image/png' => 'png', 'image/webp' => 'webp', default => 'jpg' };
+            $filename = 'emp_' . $employeeId . '_' . now()->format('Ymd_His') . '_' . Str::random(6) . '.' . $ext;
+            $path     = 'pointages/faces/' . $filename;
+
+            Storage::disk('public')->put($path, $binary);
+
+            Log::info('Badge photo : sauvegardée', ['path' => $path, 'size' => $size, 'mime' => $mime]);
+
+            return [
+                'face_photo_path'   => $path,
+                'face_photo_disk'   => 'public',
+                'face_photo_base64' => $base64,
+                'face_photo_size'   => $size,
+                'face_photo_mime'   => $mime,
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Badge photo : erreur inattendue', ['error' => $e->getMessage()]);
+            return $this->emptyPhotoData();
+        }
+    }
+
+    private function emptyPhotoData(): array
+    {
+        return [
+            'face_photo_path'   => null,
+            'face_photo_disk'   => 'public',
+            'face_photo_base64' => null,
+            'face_photo_size'   => 0,
+            'face_photo_mime'   => null,
+        ];
+    }
+
     private function buildGeoData(Request $request): array
     {
         $rawLat    = trim((string) $request->input('geo_latitude',  ''));
@@ -155,7 +229,6 @@ class BadgeAuthController extends Controller
         $rawDenied = trim((string) $request->input('geo_denied',    '1'));
         $rawAddr   = trim((string) $request->input('geo_address',   ''));
 
-        // Log complet pour diagnostiquer
         Log::info('Badge geo_data reçu (raw)', [
             'geo_denied'    => $rawDenied,
             'geo_latitude'  => $rawLat,
@@ -164,110 +237,57 @@ class BadgeAuthController extends Controller
             'geo_address'   => $rawAddr,
         ]);
 
-        // ── geo_denied : "0" = autorisé, tout le reste = refusé ─────────
-        // On compare explicitement à la string "0" pour éviter tout
-        // problème de cast PHP (filter_var, intval, boolval, etc.)
-        $denied = ($rawDenied !== '0');
-
-        // Si pas de coordonnées → denied quoi qu'il arrive
         if ($rawLat === '' || $rawLng === '') {
-            Log::warning('Badge geo : coordonnées vides → denied forcé', [
-                'geo_denied_raw' => $rawDenied,
-                'denied_forced'  => true,
-            ]);
-            return [
-                'latitude'  => null,
-                'longitude' => null,
-                'accuracy'  => null,
-                'address'   => null,
-                'denied'    => true,
-            ];
+            Log::warning('Badge geo : coordonnées vides → denied forcé');
+            return ['latitude' => null, 'longitude' => null, 'accuracy' => null, 'address' => null, 'denied' => true];
         }
 
         $lat = (float) $rawLat;
         $lng = (float) $rawLng;
         $acc = ($rawAcc !== '') ? (float) $rawAcc : null;
 
-        // Validation plages géographiques
         if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
-            Log::warning('Badge geo : coordonnées hors plage', [
-                'lat' => $lat,
-                'lng' => $lng,
-            ]);
-            return [
-                'latitude'  => null,
-                'longitude' => null,
-                'accuracy'  => null,
-                'address'   => null,
-                'denied'    => true,
-            ];
+            Log::warning('Badge geo : coordonnées hors plage', ['lat' => $lat, 'lng' => $lng]);
+            return ['latitude' => null, 'longitude' => null, 'accuracy' => null, 'address' => null, 'denied' => true];
         }
-
-        // Adresse reçue depuis le client (reverse geocoding JS)
-        $address = ($rawAddr !== '') ? $rawAddr : null;
 
         $result = [
             'latitude'  => $lat,
             'longitude' => $lng,
             'accuracy'  => ($acc !== null && $acc > 0) ? (int) round($acc) : null,
-            'address'   => $address,
-            'denied'    => false,   // on a des coords valides → pas denied
+            'address'   => ($rawAddr !== '') ? $rawAddr : null,
+            'denied'    => false,
         ];
 
         Log::info('Badge geo : données construites', $result);
-
         return $result;
     }
 
-    /**
-     * Reverse geocoding via Nominatim (OpenStreetMap, gratuit, sans clé API).
-     * Utilisé en fallback si le JS n'a pas pu envoyer l'adresse.
-     */
     private function reverseGeocode(float $lat, float $lng): ?string
     {
         try {
             $response = Http::timeout(6)
-                ->withHeaders([
-                    'User-Agent'      => 'HospitalRH-Badge/1.0 contact@hospitalrh.ma',
-                    'Accept-Language' => 'fr',
-                ])
+                ->withHeaders(['User-Agent' => 'HospitalRH-Badge/1.0 contact@hospitalrh.ma', 'Accept-Language' => 'fr'])
                 ->get('https://nominatim.openstreetmap.org/reverse', [
-                    'lat'             => $lat,
-                    'lon'             => $lng,
-                    'format'          => 'json',
-                    'zoom'            => 18,
-                    'accept-language' => 'fr',
+                    'lat' => $lat, 'lon' => $lng, 'format' => 'json', 'zoom' => 18, 'accept-language' => 'fr',
                 ]);
 
             if ($response->successful()) {
-                $data = $response->json();
-                $a    = $data['address'] ?? [];
-
-                // Construire une adresse lisible
-                $road    = $a['road'] ?? $a['pedestrian'] ?? $a['footway'] ?? $a['path'] ?? null;
+                $data    = $response->json();
+                $a       = $data['address'] ?? [];
+                $road    = $a['road'] ?? $a['pedestrian'] ?? $a['footway'] ?? null;
                 $num     = $a['house_number'] ?? null;
                 $quarter = $a['quarter'] ?? $a['neighbourhood'] ?? $a['suburb'] ?? null;
-                $city    = $a['city'] ?? $a['town'] ?? $a['village'] ?? $a['municipality'] ?? null;
+                $city    = $a['city'] ?? $a['town'] ?? $a['village'] ?? null;
                 $state   = $a['state'] ?? $a['region'] ?? null;
                 $country = $a['country'] ?? null;
-
-                $street = null;
-                if ($road && $num)  $street = $num . ' ' . $road;
-                elseif ($road)      $street = $road;
-
-                $parts = array_filter([$street, $quarter, $city, $state, $country]);
-
+                $street  = $road ? ($num ? $num . ' ' . $road : $road) : null;
+                $parts   = array_filter([$street, $quarter, $city, $state, $country]);
                 return implode(', ', $parts) ?: ($data['display_name'] ?? null);
             }
-
-            Log::warning('Reverse geocoding : réponse non-ok', [
-                'status' => $response->status(),
-            ]);
-
         } catch (\Exception $e) {
             Log::warning('Reverse geocoding failed', ['error' => $e->getMessage()]);
         }
-
         return null;
     }
 }

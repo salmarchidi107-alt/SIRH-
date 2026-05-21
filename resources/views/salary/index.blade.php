@@ -50,14 +50,14 @@
     </div>
 </div>
 
-
-
 {{-- ═══ KPIs ══════════════════════════════════════════════════════ --}}
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">
     <div class="salary-card">
         <div class="salary-label">Masse salariale brute</div>
         <div class="salary-net">{{ number_format($summary['total_gross'],0,',',' ') }} MAD</div>
-        <div style="font-size:0.75rem;opacity:0.6;margin-top:4px">Coût total employeur : 0 MAD</div>
+        <div style="font-size:0.75rem;opacity:0.6;margin-top:4px">
+            Coût employeur : {{ number_format($summary['total_employer_cost'] ?? 0,0,',',' ') }} MAD
+        </div>
     </div>
     <div class="salary-card">
         <div class="salary-label">Charges salariales</div>
@@ -171,13 +171,74 @@
                                 @else —
                                 @endif
                             </td>
+
+                            {{-- ── Statut avec tracking saisie / validation / paiement ── --}}
                             <td>
                                 @if($sal)
-                                    <span class="badge badge-{{ $sal->status_color }}">{{ $sal->status_label }}</span>
+                                    <div style="display:flex;flex-direction:column;gap:4px;">
+
+                                        {{-- Badge statut --}}
+                                        <span class="badge badge-{{ $sal->status_color }}">
+                                            {{ $sal->status_label }}
+                                        </span>
+
+                                        {{-- Qui a saisi --}}
+                                        @if($sal->created_by)
+                                            <div style="font-size:0.7rem;color:#64748b;display:flex;align-items:center;gap:3px;white-space:nowrap;"
+                                                 title="Saisi le {{ \Carbon\Carbon::parse($sal->created_at)->format('d/m/Y à H:i') }}">
+                                                {{-- Icône crayon --}}
+                                                <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                </svg>
+                                                <span>Saisi : <strong>{{ $sal->createdBy?->name ?? '—' }}</strong></span>
+                                                @if($sal->created_at)
+                                                    <span style="color:#94a3b8;">
+                                                        · {{ \Carbon\Carbon::parse($sal->created_at)->format('d/m H\hi') }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        @endif
+
+                                        {{-- Qui a validé --}}
+                                        @if(in_array($sal->status, ['validated', 'paid']) && $sal->validated_by)
+                                            <div style="font-size:0.7rem;color:#0d9488;display:flex;align-items:center;gap:3px;white-space:nowrap;"
+                                                 title="Validé le {{ \Carbon\Carbon::parse($sal->validated_at)->format('d/m/Y à H:i') }}">
+                                                {{-- Icône coche --}}
+                                                <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                                <span>Validé : <strong>{{ $sal->validatedBy?->name ?? '—' }}</strong></span>
+                                                @if($sal->validated_at)
+                                                    <span style="color:#94a3b8;">
+                                                        · {{ \Carbon\Carbon::parse($sal->validated_at)->format('d/m H\hi') }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        @endif
+
+                                        {{-- Qui a payé --}}
+                                        @if($sal->status === 'paid' && $sal->paid_by)
+                                            <div style="font-size:0.7rem;color:#1d4ed8;display:flex;align-items:center;gap:3px;white-space:nowrap;"
+                                                 title="Payé le {{ \Carbon\Carbon::parse($sal->paid_at)->format('d/m/Y à H:i') }}">
+                                                {{-- Icône carte bancaire --}}
+                                                <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/>
+                                                </svg>
+                                                <span>Payé : <strong>{{ $sal->paidBy?->name ?? '—' }}</strong></span>
+                                                @if($sal->paid_at)
+                                                    <span style="color:#94a3b8;">
+                                                        · {{ \Carbon\Carbon::parse($sal->paid_at)->format('d/m H\hi') }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        @endif
+
+                                    </div>
                                 @else
                                     <span class="badge badge-secondary">Non généré</span>
                                 @endif
                             </td>
+
                             <td>
                                 <div style="display:flex;gap:4px">
                                     @unless(auth()->user()->isEmployee())

@@ -3,19 +3,21 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Crypt;
 
 class User extends Authenticatable
 {
+    use HasFactory, Notifiable;
+
     protected $fillable = [
         'name',
-        'first_name',       // ← ajouté
-        'last_name',        // ← ajouté
+        'first_name',
+        'last_name',
         'email',
         'password',
-        'plain_password',   // ← ajouté
+        'plain_password',
         'role',
         'tenant_id',
         'employee_id',
@@ -23,8 +25,8 @@ class User extends Authenticatable
 
     protected $hidden = [
         'password',
+        'plain_password',
         'remember_token',
-        // NE PAS cacher plain_password sinon il n'apparaît pas dans les requêtes
     ];
 
     protected $casts = [
@@ -32,6 +34,38 @@ class User extends Authenticatable
         'password'          => 'hashed',
         'tenant_id'         => 'string',
     ];
+
+    // ─── Roles Constants ──────────────────────────────────────────────────────
+
+    const ROLE_SUPERADMIN = 'superadmin';
+    const ROLE_ADMIN      = 'admin';
+    const ROLE_RH         = 'rh';
+    const ROLE_EMPLOYEE   = 'employee';
+
+    // ─── Encrypt / Decrypt plain_password ────────────────────────────────────
+
+    public function setPlainPasswordAttribute(?string $value): void
+    {
+        if (!is_null($value)) {
+            $this->attributes['plain_password'] = Crypt::encryptString($value);
+        } else {
+            $this->attributes['plain_password'] = null;
+        }
+    }
+
+    public function getPlainPasswordAttribute(?string $value): ?string
+    {
+        if (is_null($value)) return null;
+
+        try {
+            return Crypt::decryptString($value);
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            // Ancienne valeur en clair (avant migration)
+            return $value;
+        }
+    }
+
+    // ─── Relations ────────────────────────────────────────────────────────────
 
     public function tenant()
     {
@@ -54,11 +88,7 @@ class User extends Authenticatable
         return $tenantId ? $query->where('tenant_id', $tenantId) : $query;
     }
 
-    // ─── Roles Constants ─────────────────────────────────────────────────────
-
-    const ROLE_ADMIN      = 'admin';
-    const ROLE_EMPLOYEE   = 'employee';
-    const ROLE_SUPERADMIN = 'superadmin';
+    // ─── Role Helpers ─────────────────────────────────────────────────────────
 
     public function isSuperAdmin(): bool
     {
@@ -72,12 +102,12 @@ class User extends Authenticatable
 
     public function isRh(): bool
     {
-        return $this->role === 'rh';
+        return $this->role === self::ROLE_RH;
     }
 
     public function isAdminOrRh(): bool
     {
-        return in_array($this->role, ['admin', 'rh']);
+        return in_array($this->role, [self::ROLE_ADMIN, self::ROLE_RH]);
     }
 
     public function isEmployee(): bool
@@ -90,19 +120,20 @@ class User extends Authenticatable
         return match($this->role) {
             self::ROLE_SUPERADMIN => 'Super Administrateur',
             self::ROLE_ADMIN      => 'Administrateur',
-            'rh'                  => 'Responsable RH',
+            self::ROLE_RH         => 'Responsable RH',
             self::ROLE_EMPLOYEE   => 'Employé',
             default               => 'Employé',
         };
     }
+
+    // ─── Permissions ──────────────────────────────────────────────────────────
 
     public function can($abilities, $arguments = []): bool
     {
         if (is_string($abilities)) {
             $permissions = config('roles.permissions', []);
             if (isset($permissions[$abilities])) {
-                $allowedRoles = $permissions[$abilities];
-                return in_array($this->role, (array) $allowedRoles);
+                return in_array($this->role, (array) $permissions[$abilities]);
             }
             return false;
         }

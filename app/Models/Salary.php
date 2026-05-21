@@ -4,10 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use \App\Traits\HasTenantScope;
 
 class Salary extends Model
 {
+    use HasTenantScope;
+
     protected $fillable = [
+        'tenant_id',
         'employee_id', 'month', 'year',
         // Gains
         'base_salary', 'seniority_bonus',
@@ -26,12 +30,18 @@ class Salary extends Model
         'employer_cnss', 'employer_amo', 'employer_tfp', 'employer_total_cost',
         // Net
         'net_salary', 'status', 'notes',
-        'currency', // ✅ AJOUTÉ
+        'currency',
         // Mode cotisations et type salaire
         'mode_cotisation', 'cnss_deduction_manual', 'amo_deduction_manual', 'fp_deduction_manual',
         'salary_type', 'hourly_rate', 'working_hours',
         'overtime_hours_day', 'overtime_hours_night', 'overtime_hours_weekend',
         'absence_hours', 'delay_hours',
+        // Garde
+        'garde_hours',
+        // Tracking saisie / validation / paiement
+        'created_by',
+        'validated_by', 'validated_at',
+        'paid_by',      'paid_at',
     ];
 
     protected $casts = [
@@ -40,7 +50,7 @@ class Salary extends Model
         'overtime_hours'           => 'decimal:2',
         'overtime_day_amount'      => 'decimal:2',
         'overtime_night_amount'    => 'decimal:2',
-        'overtime_weekend_amount'  => 'decimal:2',
+        'overtime_hours_weekend'   => 'decimal:2',
         'performance_bonus'        => 'decimal:2',
         'transport_allowance'      => 'decimal:2',
         'meal_allowance'           => 'decimal:2',
@@ -74,30 +84,57 @@ class Salary extends Model
         'working_hours'            => 'decimal:2',
         'overtime_hours_day'       => 'decimal:2',
         'overtime_hours_night'     => 'decimal:2',
-        'overtime_hours_weekend'   => 'decimal:2',
+        'overtime_weekend_amount'  => 'decimal:2',
         'absence_hours'            => 'decimal:2',
         'delay_hours'              => 'decimal:2',
+        'garde_hours'              => 'decimal:2',
+        // Dates de tracking
+        'validated_at'             => 'datetime',
+        'paid_at'                  => 'datetime',
     ];
+
+    // -------------------------------------------------------------------------
+    // Relations
+    // -------------------------------------------------------------------------
 
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
     }
 
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function validatedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'validated_by');
+    }
+
+    public function paidBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'paid_by');
+    }
+
+    // -------------------------------------------------------------------------
+    // Accesseurs
+    // -------------------------------------------------------------------------
+
     public function getMonthNameAttribute(): string
     {
         return match ($this->month) {
-            1 => 'Janvier', 2 => 'Fevrier', 3 => 'Mars',
-            4 => 'Avril', 5 => 'Mai', 6 => 'Juin',
-            7 => 'Juillet', 8 => 'Aout', 9 => 'Septembre',
-            10 => 'Octobre', 11 => 'Novembre', 12 => 'Decembre',
+            1  => 'Janvier',   2  => 'Fevrier',   3  => 'Mars',
+            4  => 'Avril',     5  => 'Mai',        6  => 'Juin',
+            7  => 'Juillet',   8  => 'Aout',       9  => 'Septembre',
+            10 => 'Octobre',   11 => 'Novembre',   12 => 'Decembre',
             default => '',
         };
     }
 
     public function getStatusLabelAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'validated' => 'Valide',
             'paid'      => 'Paye',
             default     => 'Brouillon',
@@ -106,7 +143,7 @@ class Salary extends Model
 
     public function getStatusColorAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'validated' => 'success',
             'paid'      => 'info',
             default     => 'warning',
@@ -162,6 +199,18 @@ class Salary extends Model
         );
     }
 
+    // Montant indemnite de garde (taux horaire x heures de garde)
+    public function getGardeAmountAttribute(): float
+    {
+        if (! $this->base_salary || ! $this->garde_hours) return 0;
+        $tauxH = $this->base_salary / 191.25;
+        return round($tauxH * $this->garde_hours, 2);
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
     public function isCotisationAuto(): bool
     {
         return $this->mode_cotisation === 'auto';
@@ -206,8 +255,8 @@ class Salary extends Model
     public function getTotalOvertimeHours(): float
     {
         return round(
-            ($this->overtime_hours_day ?? 0) +
-            ($this->overtime_hours_night ?? 0) +
+            ($this->overtime_hours_day     ?? 0) +
+            ($this->overtime_hours_night   ?? 0) +
             ($this->overtime_hours_weekend ?? 0), 2
         );
     }

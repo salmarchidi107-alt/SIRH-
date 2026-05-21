@@ -1,21 +1,37 @@
 <?php
-
+// ============================================================
+//  app/Models/BadgeRecord.php
+// ============================================================
 
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class BadgeRecord extends Model
 {
     protected $fillable = [
         'employee_id',
         'type',
+
+        // Géolocalisation
         'latitude',
         'longitude',
         'accuracy',
         'location_address',
         'geolocation_denied',
+
+        // Photo faciale ← AJOUTÉ
+        'face_photo_path',
+        'face_photo_disk',
+        'face_photo_base64',
+        'face_photo_size',
+        'face_photo_mime',
+    ];
+
+    protected $hidden = [
+        'face_photo_base64', // trop lourd pour les sérialisations JSON
     ];
 
     protected $casts = [
@@ -23,6 +39,7 @@ class BadgeRecord extends Model
         'longitude'          => 'float',
         'accuracy'           => 'float',
         'geolocation_denied' => 'boolean',
+        'face_photo_size'    => 'integer',
     ];
 
     // ── Relations ─────────────────────────────────────────────────────────
@@ -32,9 +49,35 @@ class BadgeRecord extends Model
         return $this->belongsTo(Employee::class);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
+    // ── Accessors photo ───────────────────────────────────────────────────
 
-    /** Indique si le pointage a des coordonnées GPS valides. */
+    /** URL publique de la photo (via fichier disque). */
+    public function getFacePhotoUrlAttribute(): ?string
+    {
+        if (! $this->face_photo_path) return null;
+
+        return Storage::disk($this->face_photo_disk ?? 'public')
+                      ->url($this->face_photo_path);
+    }
+
+    /** Taille lisible : "142 Ko" ou "1.4 Mo". */
+    public function getFacePhotoSizeHumanAttribute(): string
+    {
+        if (! $this->face_photo_size) return '—';
+        $kb = round($this->face_photo_size / 1024, 1);
+        return $kb >= 1024
+            ? round($kb / 1024, 2) . ' Mo'
+            : $kb . ' Ko';
+    }
+
+    /** true si une photo a été enregistrée. */
+    public function hasFacePhoto(): bool
+    {
+        return ! empty($this->face_photo_path);
+    }
+
+    // ── Helpers géo ───────────────────────────────────────────────────────
+
     public function hasLocation(): bool
     {
         return $this->latitude !== null
@@ -42,26 +85,23 @@ class BadgeRecord extends Model
             && ! $this->geolocation_denied;
     }
 
-    /** Retourne la précision arrondie en mètres, ou null. */
     public function accuracyMeters(): ?int
     {
         return $this->accuracy !== null ? (int) round($this->accuracy) : null;
     }
 
-    /** Indique si la précision est considérée bonne (≤ 30 m). */
     public function isHighAccuracy(): bool
     {
         return $this->accuracy !== null && $this->accuracy <= 30;
     }
 
-    /** Retourne les coords formatées pour Google Maps. */
     public function googleMapsUrl(): ?string
     {
         if (! $this->hasLocation()) return null;
         return "https://www.google.com/maps?q={$this->latitude},{$this->longitude}";
     }
 
-    /** Scopes ─────────────────────────────────────────────────────────── */
+    // ── Scopes ────────────────────────────────────────────────────────────
 
     public function scopeWithLocation($query)
     {
@@ -78,5 +118,10 @@ class BadgeRecord extends Model
     public function scopeOfType($query, string $type)
     {
         return $query->where('type', $type);
+    }
+
+    public function scopeWithPhoto($query)
+    {
+        return $query->whereNotNull('face_photo_path');
     }
 }

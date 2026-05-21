@@ -429,7 +429,6 @@ function applyFilters() {
     });
 }
 
-/* ✅ plainPassword ajouté comme 4ème paramètre */
 function selectClient(id, name, email, plainPassword, company, avatarColor) {
 
     document.querySelectorAll('.sa-user-row').forEach(r => r.classList.remove('selected'));
@@ -449,7 +448,6 @@ function selectClient(id, name, email, plainPassword, company, avatarColor) {
 
     currentEmailField.value = email;
 
-    /* ✅ Afficher le mot de passe en clair */
     currentPwdField.value       = plainPassword || '';
     currentPwdField.type        = 'password';
     currentPwdField.placeholder = plainPassword ? '••••••••' : 'Non défini';

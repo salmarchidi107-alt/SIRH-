@@ -50,13 +50,13 @@
 </div>
 
 
-
-
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">
     <div class="salary-card">
         <div class="salary-label">Masse salariale brute</div>
         <div class="salary-net"><?php echo e(number_format($summary['total_gross'],0,',',' ')); ?> MAD</div>
-        <div style="font-size:0.75rem;opacity:0.6;margin-top:4px">Coût total employeur : 0 MAD</div>
+        <div style="font-size:0.75rem;opacity:0.6;margin-top:4px">
+            Coût employeur : <?php echo e(number_format($summary['total_employer_cost'] ?? 0,0,',',' ')); ?> MAD
+        </div>
     </div>
     <div class="salary-card">
         <div class="salary-label">Charges salariales</div>
@@ -177,13 +177,78 @@
                                 <?php else: ?> —
                                 <?php endif; ?>
                             </td>
+
+                            
                             <td>
                                 <?php if($sal): ?>
-                                    <span class="badge badge-<?php echo e($sal->status_color); ?>"><?php echo e($sal->status_label); ?></span>
+                                    <div style="display:flex;flex-direction:column;gap:4px;">
+
+                                        
+                                        <span class="badge badge-<?php echo e($sal->status_color); ?>">
+                                            <?php echo e($sal->status_label); ?>
+
+                                        </span>
+
+                                        
+                                        <?php if($sal->created_by): ?>
+                                            <div style="font-size:0.7rem;color:#64748b;display:flex;align-items:center;gap:3px;white-space:nowrap;"
+                                                 title="Saisi le <?php echo e(\Carbon\Carbon::parse($sal->created_at)->format('d/m/Y à H:i')); ?>">
+                                                
+                                                <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                </svg>
+                                                <span>Saisi : <strong><?php echo e($sal->createdBy?->name ?? '—'); ?></strong></span>
+                                                <?php if($sal->created_at): ?>
+                                                    <span style="color:#94a3b8;">
+                                                        · <?php echo e(\Carbon\Carbon::parse($sal->created_at)->format('d/m H\hi')); ?>
+
+                                                    </span>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        
+                                        <?php if(in_array($sal->status, ['validated', 'paid']) && $sal->validated_by): ?>
+                                            <div style="font-size:0.7rem;color:#0d9488;display:flex;align-items:center;gap:3px;white-space:nowrap;"
+                                                 title="Validé le <?php echo e(\Carbon\Carbon::parse($sal->validated_at)->format('d/m/Y à H:i')); ?>">
+                                                
+                                                <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                                <span>Validé : <strong><?php echo e($sal->validatedBy?->name ?? '—'); ?></strong></span>
+                                                <?php if($sal->validated_at): ?>
+                                                    <span style="color:#94a3b8;">
+                                                        · <?php echo e(\Carbon\Carbon::parse($sal->validated_at)->format('d/m H\hi')); ?>
+
+                                                    </span>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        
+                                        <?php if($sal->status === 'paid' && $sal->paid_by): ?>
+                                            <div style="font-size:0.7rem;color:#1d4ed8;display:flex;align-items:center;gap:3px;white-space:nowrap;"
+                                                 title="Payé le <?php echo e(\Carbon\Carbon::parse($sal->paid_at)->format('d/m/Y à H:i')); ?>">
+                                                
+                                                <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/>
+                                                </svg>
+                                                <span>Payé : <strong><?php echo e($sal->paidBy?->name ?? '—'); ?></strong></span>
+                                                <?php if($sal->paid_at): ?>
+                                                    <span style="color:#94a3b8;">
+                                                        · <?php echo e(\Carbon\Carbon::parse($sal->paid_at)->format('d/m H\hi')); ?>
+
+                                                    </span>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endif; ?>
+
+                                    </div>
                                 <?php else: ?>
                                     <span class="badge badge-secondary">Non généré</span>
                                 <?php endif; ?>
                             </td>
+
                             <td>
                                 <div style="display:flex;gap:4px">
                                     <?php if (! (auth()->user()->isEmployee())): ?>
@@ -211,4 +276,5 @@
 </div>
 
 <?php $__env->stopSection(); ?>
+
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\Projects\SIRH-\resources\views/salary/index.blade.php ENDPATH**/ ?>

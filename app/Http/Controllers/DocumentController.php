@@ -158,7 +158,6 @@ class DocumentController extends Controller
                                 ? number_format($employee->salary, 2, ',', ' ') . ' MAD'
                                 : '—',
             'date'          => $document->date_document?->format('d/m/Y') ?? now()->format('d/m/Y'),
-            'aujourd_hui'   => now()->format('d/m/Y'),
             'mois_annee'    => now()->translatedFormat('F Y'),
             'annee'         => now()->format('Y'),
             'societe'       => $tenant?->name ?$tenant?->name: ($entete?->nom_societe          ?? '—'),

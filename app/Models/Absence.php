@@ -27,29 +27,33 @@ class Absence extends Model
     ];
 
     protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
+        'start_date'  => 'date',
+        'end_date'    => 'date',
         'approved_at' => 'datetime',
     ];
 
     const TYPES = [
-        'conge_annuel' => 'Congé Annuel',
-        'conge_maladie' => 'Congé Maladie',
-        'conge_maternite' => 'Congé Maternité',
-        'conge_paternite' => 'Congé Paternité',
-        'conge_sans_solde' => 'Congé Sans Solde',
-        'absence_justifiee' => 'Absence Justifiée',
+        'conge_annuel'        => 'Congé Annuel',
+        'conge_maladie'       => 'Congé Maladie',
+        'conge_maternite'     => 'Congé Maternité',
+        'conge_paternite'     => 'Congé Paternité',
+        'conge_sans_solde'    => 'Congé Sans Solde',
+        'absence_justifiee'   => 'Absence Justifiée',
         'absence_injustifiee' => 'Absence Injustifiée',
-        'formation' => 'Formation',
-        'mission' => 'Mission',
+        'formation'           => 'Formation',
+        'mission'             => 'Mission',
     ];
 
     const STATUSES = [
-        'pending' => 'En attente',
-        'approved' => 'Approuvé',
-        'rejected' => 'Rejeté',
+        'pending'   => 'En attente',
+        'approved'  => 'Approuvé',
+        'rejected'  => 'Rejeté',
         'cancelled' => 'Annulé',
     ];
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Relations
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function employee()
     {
@@ -61,15 +65,34 @@ class Absence extends Model
         return $this->belongsTo(Employee::class, 'replacement_id');
     }
 
+    /**
+     * Relation legacy — conservée telle quelle (pointe vers Employee).
+     * Utilisée dans les vues existantes, ne pas modifier.
+     */
     public function approver()
     {
         return $this->belongsTo(Employee::class, 'approved_by');
+    }
+
+    /**
+     * Relation vers User : l'admin/RH connecté qui a approuvé ou rejeté.
+     * Utilisation dans les vues  : $absence->approvedByUser->name
+     * Utilisation dans with()    : 'approvedByUser:id,name'
+     * Utilisation dans le contrôleur : ->with(['approvedByUser:id,name'])
+     */
+    public function approvedByUser()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'approved_by');
     }
 
     public function tenant()
     {
         return $this->belongsTo(\App\Models\Tenant::class);
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Scopes
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function scopeStatus(Builder $query, ?string $status): Builder
     {
@@ -96,7 +119,7 @@ class Absence extends Model
 
         return $query->whereHas('employee', function (Builder $q) use ($term) {
             $q->where('first_name', 'like', $term)
-              ->orWhere('last_name', 'like', $term);
+              ->orWhere('last_name',  'like', $term);
         });
     }
 
@@ -111,4 +134,3 @@ class Absence extends Model
         });
     }
 }
-

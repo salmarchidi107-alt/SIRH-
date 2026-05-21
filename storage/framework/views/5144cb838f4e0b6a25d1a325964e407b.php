@@ -1,6 +1,10 @@
 <?php $__env->startSection('title', 'LMS — Planning des Formations'); ?>
 <?php $__env->startSection('page-title', 'Planning des Formations'); ?>
 
+<?php
+    $isEmployee = auth()->user()->isEmployee();
+?>
+
 <?php $__env->startPush('styles'); ?>
 <style>
 :root {
@@ -70,28 +74,19 @@
 .pg-name { font-size:13px; font-weight:500; color:#111827; line-height:1.2; }
 .pg-dept { font-size:11px; color:#9ca3af; margin-top:1px; }
 .pg-form-cell { padding:12px; font-size:12px; color:#6b7280; }
-/* Cellule jour — plus haute pour afficher titre + horaire */
 .pg-day  { padding:6px 5px; text-align:center; height:64px; display:flex; align-items:center; justify-content:center; }
 
-/* Session avec titre + horaire */
+/* Session */
 .pg-session {
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     background:var(--teal-light); border:0.5px solid var(--teal-mid);
     border-radius:5px; padding:5px 7px; width:100%;
     cursor:pointer; text-align:center; line-height:1.3;
-    transition:background .12s; text-decoration:none;
-    overflow:hidden;
+    transition:background .12s; text-decoration:none; overflow:hidden;
 }
 .pg-session:hover { background:var(--teal-mid); }
-.pg-sess-titre {
-    font-size:11px; font-weight:500; color:var(--teal-dark);
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    max-width:100%; display:block;
-}
-.pg-sess-heure {
-    font-size:10px; color:var(--teal); margin-top:2px;
-    white-space:nowrap; display:block; font-variant-numeric:tabular-nums;
-}
+.pg-sess-titre { font-size:11px; font-weight:500; color:var(--teal-dark); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; display:block; }
+.pg-sess-heure { font-size:10px; color:var(--teal); margin-top:2px; white-space:nowrap; display:block; font-variant-numeric:tabular-nums; }
 
 .pg-create { display:flex; align-items:center; justify-content:center; gap:3px; font-size:11px; color:#d1d5db; cursor:pointer; padding:4px; transition:color .12s; background:none; border:none; width:100%; }
 .pg-create:hover { color:var(--teal); }
@@ -99,7 +94,7 @@
 .lp-empty { text-align:center; padding:60px 20px; color:#9ca3af; }
 .lp-empty i { font-size:40px; display:block; margin-bottom:10px; }
 
-/* Modal (styles partages avec index) */
+/* Modal */
 .lms-ov { display:none; position:fixed; inset:0; background:rgba(17,24,39,.48); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(2px); }
 .lms-ov.open { display:flex; }
 .lms-modal { background:#fff; border-radius:14px; border:0.5px solid var(--border); width:600px; max-width:96vw; max-height:93vh; overflow-y:auto; box-shadow:0 24px 64px rgba(0,0,0,.18); animation:mIn .18s ease; }
@@ -133,7 +128,6 @@
 <?php $__env->startSection('content'); ?>
 <div class="lp">
 
-
     
     <div class="lp-header">
         <div>
@@ -141,24 +135,29 @@
             <div class="lp-sub">Semaine du <?php echo e($debutSem->locale('fr')->translatedFormat('d F')); ?> au <?php echo e($finSem->locale('fr')->translatedFormat('d F Y')); ?></div>
         </div>
         <div class="lp-acts">
+            
             <div class="lp-toggle">
                 <a href="<?php echo e(route('lms.index')); ?>">Liste</a>
                 <a href="<?php echo e(route('lms.planning')); ?>" class="active">Planning</a>
             </div>
-            <a href="<?php echo e(route('referentiel.index')); ?>" class="btn-lp btn-ghost">
-                 Referentiel
-            </a>
-            <a href="<?php echo e(route('lms.exportPdf')); ?>" class="btn-lp btn-ghost">
-                Exporter PDF
-            </a>
-            <button class="btn-lp btn-main" onclick="openModal()">
-                <i class="fas fa-plus"></i> Ajouter formation
-            </button>
+
+            
+            <?php if(!$isEmployee): ?>
+                <a href="<?php echo e(route('referentiel.index')); ?>" class="btn-lp btn-ghost">Referentiel</a>
+                <a href="<?php echo e(route('lms.exportPdf')); ?>" class="btn-lp btn-ghost">Exporter PDF</a>
+                <button class="btn-lp btn-main" onclick="openModal()">
+                    <i class="fas fa-plus"></i> Ajouter formation
+                </button>
+            <?php endif; ?>
         </div>
     </div>
 
     
+    
+    
     <form method="GET" action="<?php echo e(route('lms.planning')); ?>" class="lp-bar">
+
+        
         <div style="display:flex;align-items:center;gap:6px;">
             <a href="<?php echo e(route('lms.planning', ['semaine'=>$semaine-1,'annee'=>$annee,'formation'=>request('formation'),'presence'=>request('presence')])); ?>"
                class="lp-week-btn">
@@ -171,24 +170,27 @@
             </a>
         </div>
 
-        <select name="formation" class="lp-sel" onchange="this.form.submit()">
-            <option value="">Toutes les formations</option>
-            <?php $__currentLoopData = \App\Models\Formation::getTitres(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $t): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                <option value="<?php echo e($t); ?>" <?php echo e(request('formation')===$t?'selected':''); ?>><?php echo e($t); ?></option>
-            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-        </select>
+        
+        <?php if(!$isEmployee): ?>
+            <select name="formation" class="lp-sel" onchange="this.form.submit()">
+                <option value="">Toutes les formations</option>
+                <?php $__currentLoopData = \App\Models\Formation::getTitres(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $t): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <option value="<?php echo e($t); ?>" <?php echo e(request('formation')===$t?'selected':''); ?>><?php echo e($t); ?></option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </select>
 
-        <select name="presence" class="lp-sel" onchange="this.form.submit()">
-            <option value="">Tous les employes</option>
-            <option value="present" <?php echo e(request('presence')==='present'?'selected':''); ?>>Avec formation</option>
-            <option value="absent"  <?php echo e(request('presence')==='absent' ?'selected':''); ?>>Sans formation</option>
-        </select>
+            <select name="presence" class="lp-sel" onchange="this.form.submit()">
+                <option value="">Tous les employes</option>
+                <option value="present" <?php echo e(request('presence')==='present'?'selected':''); ?>>Avec formation</option>
+                <option value="absent"  <?php echo e(request('presence')==='absent' ?'selected':''); ?>>Sans formation</option>
+            </select>
 
-        <?php if(request()->hasAny(['formation','presence'])): ?>
-        <a href="<?php echo e(route('lms.planning', ['semaine'=>$semaine,'annee'=>$annee])); ?>"
-           class="btn-lp btn-ghost" style="padding:7px 12px;height:34px;">
-            <i class="fas fa-times"></i>
-        </a>
+            <?php if(request()->hasAny(['formation','presence'])): ?>
+            <a href="<?php echo e(route('lms.planning', ['semaine'=>$semaine,'annee'=>$annee])); ?>"
+               class="btn-lp btn-ghost" style="padding:7px 12px;height:34px;">
+                <i class="fas fa-times"></i>
+            </a>
+            <?php endif; ?>
         <?php endif; ?>
 
         <input type="hidden" name="semaine" value="<?php echo e($semaine); ?>">
@@ -206,7 +208,6 @@
                         <?php $__currentLoopData = $joursSemaine; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $jour): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                             <?php
                                 $isToday = $jour->isToday();
-                                // Jour en français : Lun, Mar, Mer, Jeu, Ven, Sam, Dim
                                 $joursFr = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
                                 $dowFr   = $joursFr[$jour->dayOfWeekIso - 1] ?? $jour->format('D');
                             ?>
@@ -227,14 +228,14 @@
                 ?>
                 <?php $__empty_1 = true; $__currentLoopData = $employees; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $idx => $emp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                     <?php
-                        $c       = $avC[$idx % 7];
-                        $prenom  = $emp->prenom ?? $emp->first_name ?? '';
-                        $nom     = $emp->nom    ?? $emp->last_name  ?? $emp->name ?? '';
-                        $full    = trim("$prenom $nom") ?: '—';
-                        $ini     = strtoupper(mb_substr($prenom?:$nom,0,1).mb_substr($nom,0,1));
-                        $dept    = $emp->getAttribute('dept_name') ?? $emp->dept_name ?? '—';
+                        $c        = $avC[$idx % 7];
+                        $prenom   = $emp->prenom ?? $emp->first_name ?? '';
+                        $nom      = $emp->nom    ?? $emp->last_name  ?? $emp->name ?? '';
+                        $full     = trim("$prenom $nom") ?: '—';
+                        $ini      = strtoupper(mb_substr($prenom?:$nom,0,1).mb_substr($nom,0,1));
+                        $dept     = $emp->getAttribute('dept_name') ?? $emp->dept_name ?? '—';
                         $empForms = $formationsSemaine->where('employee_id', $emp->id);
-                        $mainF   = $empForms->first()?->titre ?? '—';
+                        $mainF    = $empForms->first()?->titre ?? '—';
                     ?>
                     <tr>
                         <td>
@@ -247,6 +248,7 @@
                             </div>
                         </td>
                         <td><div class="pg-form-cell"><?php echo e($mainF); ?></div></td>
+
                         <?php $__currentLoopData = $joursSemaine; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $jour): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                             <?php
                                 $dateStr = $jour->format('Y-m-d');
@@ -259,13 +261,25 @@
                                             $hDeb = substr($session->heure_debut, 0, 5);
                                             $hFin = substr($session->heure_fin,   0, 5);
                                         ?>
-                                        <span class="pg-session"
-                                              title="<?php echo e($session->titre); ?> — <?php echo e($hDeb); ?> à <?php echo e($hFin); ?>"
-                                              onclick='prefillModal(<?php echo e($emp->id); ?>, "<?php echo e($dateStr); ?>", <?php echo json_encode($session, 15, 512) ?>, <?php echo e($emp->department_id ?? 'null'); ?>)'>
-                                            <span class="pg-sess-titre"><?php echo e(Str::limit($session->titre, 14)); ?></span>
-                                            <span class="pg-sess-heure"><?php echo e($hDeb); ?> – <?php echo e($hFin); ?></span>
-                                        </span>
-                                    <?php else: ?>
+                                        
+                                        <?php if(!$isEmployee): ?>
+                                            <span class="pg-session"
+                                                  title="<?php echo e($session->titre); ?> — <?php echo e($hDeb); ?> à <?php echo e($hFin); ?>"
+                                                  onclick='prefillModal(<?php echo e($emp->id); ?>, "<?php echo e($dateStr); ?>", <?php echo json_encode($session, 15, 512) ?>, <?php echo e($emp->department_id ?? 'null'); ?>)'>
+                                                <span class="pg-sess-titre"><?php echo e(Str::limit($session->titre, 14)); ?></span>
+                                                <span class="pg-sess-heure"><?php echo e($hDeb); ?> – <?php echo e($hFin); ?></span>
+                                            </span>
+                                        <?php else: ?>
+                                            
+                                            <span class="pg-session" style="cursor:default;"
+                                                  title="<?php echo e($session->titre); ?> — <?php echo e($hDeb); ?> à <?php echo e($hFin); ?>">
+                                                <span class="pg-sess-titre"><?php echo e(Str::limit($session->titre, 14)); ?></span>
+                                                <span class="pg-sess-heure"><?php echo e($hDeb); ?> – <?php echo e($hFin); ?></span>
+                                            </span>
+                                        <?php endif; ?>
+
+                                    <?php elseif(!$isEmployee): ?>
+                                        
                                         <button type="button" class="pg-create"
                                                 onclick='prefillModal(<?php echo e($emp->id); ?>, "<?php echo e($dateStr); ?>", null, <?php echo e($emp->department_id ?? 'null'); ?>)'>
                                             <i class="fas fa-plus" style="font-size:10px;"></i> Créer
@@ -293,6 +307,7 @@
 </div>
 
 
+<?php if(!$isEmployee): ?>
 <div class="lms-ov" id="lmsOv" onclick="backdropClose(event)">
 <div class="lms-modal" id="lmsModal">
 
@@ -402,10 +417,12 @@
 
 </div>
 </div>
+<?php endif; ?>
 
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startPush('scripts'); ?>
+<?php if(!auth()->user()->isEmployee()): ?>
 <script>
 /* ─── Modal open/close ─── */
 function openModal()  { resetModal(); document.getElementById('lmsOv').classList.add('open'); document.body.style.overflow='hidden'; }
@@ -428,7 +445,7 @@ function resetModal() {
     loadReferentiel();
 }
 
-/* ─── Referentiel : charge depuis la DB ─── */
+/* ─── Referentiel ─── */
 const rfCache = { formations: null, formateurs: null, organismes: null };
 
 function loadReferentiel() {
@@ -442,15 +459,9 @@ function loadReferentiel() {
 function loadSelect(selId, url, labelKey, cacheKey, freeId, fieldName, placeholder) {
     const sel = document.getElementById(selId);
     if (!sel) return Promise.resolve();
-
-    if (rfCache[cacheKey]) {
-        buildOptions(sel, rfCache[cacheKey], labelKey, placeholder, freeId, fieldName);
-        return Promise.resolve();
-    }
-
+    if (rfCache[cacheKey]) { buildOptions(sel, rfCache[cacheKey], labelKey, placeholder, freeId, fieldName); return Promise.resolve(); }
     sel.innerHTML = `<option value="">Chargement...</option>`;
     sel.disabled  = true;
-
     return fetch(url)
         .then(r => r.json())
         .then(data => { rfCache[cacheKey] = data; buildOptions(sel, data, labelKey, placeholder, freeId, fieldName); sel.disabled = false; })
@@ -489,23 +500,13 @@ function setSelectOrFree(selId, inputId, fieldName, val) {
     const sel = document.getElementById(selId);
     const inp = document.getElementById(inputId);
     if (!sel || !inp || !val) return;
-
-    // Chercher l'option dont la valeur correspond exactement
     const found = Array.from(sel.options).some(o => o.value === val && o.value !== '' && o.value !== '__autre__');
-
     if (found) {
-        sel.value   = val;
-        sel.name    = fieldName;
-        inp.classList.add('hidden');
-        inp.required = false;
-        inp.value   = '';
+        sel.value = val; sel.name = fieldName;
+        inp.classList.add('hidden'); inp.required = false; inp.value = '';
     } else {
-        // Valeur non trouvée dans le referentiel → champ libre
-        sel.value   = '__autre__';
-        sel.removeAttribute('name');
-        inp.classList.remove('hidden');
-        inp.required = true;
-        inp.value   = val;
+        sel.value = '__autre__'; sel.removeAttribute('name');
+        inp.classList.remove('hidden'); inp.required = true; inp.value = val;
     }
 }
 
@@ -531,13 +532,9 @@ function loadEmployees(deptId, selectedId = null) {
 
 /* ─── Pre-remplir depuis la grille ─── */
 function prefillModal(empId, dateStr, session, deptId) {
-    // Vider le cache pour forcer le rechargement si besoin
-    // (important si le referentiel a ete modifie entre temps)
-
     document.getElementById('fDate').value = dateStr;
 
     if (session) {
-        // Champs simples — avant l'ouverture du modal
         document.getElementById('lmsForm').reset();
         document.getElementById('lmsForm').action = `/lms/${session.id}`;
         document.getElementById('fMethod').value  = 'PUT';
@@ -548,51 +545,36 @@ function prefillModal(empId, dateStr, session, deptId) {
         document.getElementById('fFin').value     = (session.heure_fin   || '').slice(0, 5);
         document.getElementById('fStatut').value  = session.statut || 'Planifiée';
 
-        // Réinitialiser les champs libres
         ['fTitreLib','fFormateurLib','fOrganismeLib'].forEach(id => {
             const el = document.getElementById(id);
             el.classList.add('hidden'); el.required = false; el.value = '';
         });
-        // Remettre les names sur les selects
         ['fTitre','fFormateur','fOrganisme'].forEach((id, i) => {
-            const fields = ['titre','formateur','organisme'];
-            document.getElementById(id).name = fields[i];
+            document.getElementById(id).name = ['titre','formateur','organisme'][i];
         });
 
-        // Réinitialiser employe
         const empSel = document.getElementById('fEmp');
         empSel.innerHTML = '<option value="">Chargement...</option>';
         empSel.disabled = true;
 
-        // Ouvrir le modal immédiatement
         document.getElementById('lmsOv').classList.add('open');
         document.body.style.overflow = 'hidden';
 
-        // Charger le referentiel PUIS remplir les selects
         loadReferentiel().then(() => {
             setSelectOrFree('fTitre',    'fTitreLib',    'titre',     session.titre);
             setSelectOrFree('fFormateur','fFormateurLib','formateur', session.formateur);
             setSelectOrFree('fOrganisme','fOrganismeLib','organisme', session.organisme);
         });
 
-        // Charger département + employé en parallèle
         if (deptId) {
             document.getElementById('fDept').value = deptId;
             loadEmployees(deptId, empId);
-        } else if (session.employee_id) {
-            // Fallback : chercher le dept via employee_id
-            fetch(`<?php echo e(route('lms.employeesByDepartment')); ?>?departement_id=0`)
-                .catch(() => {});
         }
-
     } else {
-        // Nouvelle formation : reset complet
         resetModal();
         document.getElementById('fDate').value = dateStr;
-
         document.getElementById('lmsOv').classList.add('open');
         document.body.style.overflow = 'hidden';
-
         if (deptId) {
             document.getElementById('fDept').value = deptId;
             loadEmployees(deptId, empId);
@@ -600,9 +582,9 @@ function prefillModal(empId, dateStr, session, deptId) {
     }
 }
 
-// Pre-charger le referentiel au chargement de la page
 document.addEventListener('DOMContentLoaded', () => loadReferentiel());
 </script>
+<?php endif; ?>
 <?php $__env->stopPush(); ?>
 
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\Projects\SIRH-\resources\views/lms/planning.blade.php ENDPATH**/ ?>

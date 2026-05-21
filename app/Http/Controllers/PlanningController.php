@@ -30,36 +30,45 @@ class PlanningController extends Controller
 
     public function index(Request $request)
     {
-        $employee_id = $request->employee_id;
-        $room_id     = $request->room_id;
-        $month       = $request->month ?? now()->month;
-        $year        = $request->year  ?? now()->year;
+        $month      = $request->month ?? now()->month;
+        $year       = $request->year ?? now()->year;
+        $search     = $request->search;
+        $department = $request->department;
+        $shift_type = $request->shift_type;
 
-        // Résoudre le nom de la salle depuis l'ID
-        $roomName = null;
-        if ($room_id) {
-            $room     = Room::find($room_id);
-            $roomName = $room?->name;
-        }
+        $startOfMonth = Carbon::create($year, $month, 1)->startOfMonth();
+        $endOfMonth   = $startOfMonth->copy()->endOfMonth();
 
-        $plannings = Planning::with(['employee', 'room'])
-            ->whereMonth('date', $month)
-            ->whereYear('date', $year)
-            ->when($employee_id, fn($q) => $q->where('employee_id', $employee_id))
-            ->when($roomName,    fn($q) => $q->where('room', $roomName))
+        $employees = Employee::query()
+            ->when($search, function ($q) use ($search) {
+                $q->where(function ($query) use ($search) {
+                    $query->where('first_name', 'like', "%{$search}%")
+                          ->orWhere('last_name', 'like', "%{$search}%");
+                });
+            })
+            ->when($department, function ($q) use ($department) {
+                $q->where('department', $department);
+            })
+            ->orderBy('last_name')
             ->get();
 
-        $employees = Employee::active()->get();
-        $rooms     = Room::all();
+        $plannings   = $this->planningService->getPlanningsBetween($startOfMonth, $endOfMonth);
+        $departments = $this->planningService->getDepartments();
 
         return view('planning.index', compact(
-            'plannings', 'employees', 'rooms',
-            'month', 'year', 'employee_id', 'room_id'
+            'employees',
+            'plannings',
+            'departments',
+            'month',
+            'year',
+            'search',
+            'department',
+            'shift_type'
         ));
     }
 
     // =========================================================================
-    // WEEKLY — try/catch supprimé pour exposer les vraies erreurs
+    // WEEKLY
     // =========================================================================
 
     public function weekly(Request $request)
@@ -69,6 +78,7 @@ class PlanningController extends Controller
         $year       = (int) ($request->year ?? now()->year);
         $search     = $request->search;
         $department = $request->department;
+        $shift_type = $request->shift_type;  // ← récupéré
         $roomId     = $request->room_id;
 
         $showAllRooms = empty($roomId);
@@ -93,7 +103,7 @@ class PlanningController extends Controller
         return view('planning.weekly', compact(
             'employees', 'plannings', 'weekDays', 'week', 'year',
             'startOfWeek', 'endOfWeek', 'search', 'department',
-            'departments', 'rooms', 'showAllRooms'
+            'departments', 'rooms', 'showAllRooms', 'shift_type'  // ← ajouté
         ));
     }
 
@@ -101,38 +111,53 @@ class PlanningController extends Controller
     // MONTHLY
     // =========================================================================
 
-    public function monthly(Request $request)
-    {
-        try {
-            $month      = $request->month      ?? now()->month;
-            $year       = $request->year       ?? now()->year;
-            $search     = $request->search;
-            $department = $request->department;
+   public function monthly(Request $request)
+{
+    try {
+        $month      = $request->month      ?? now()->month;
+        $year       = $request->year       ?? now()->year;
+        $search     = $request->search;
+        $department = $request->department;
+        $shift_type = $request->shift_type;   // ← NOUVEAU
+        $roomId     = $request->room_id;       // ← NOUVEAU
 
-            $startOfMonth = Carbon::create($year, $month, 1)->startOfMonth();
-            $endOfMonth   = $startOfMonth->copy()->endOfMonth();
+        $startOfMonth = Carbon::create($year, $month, 1)->startOfMonth();
+        $endOfMonth   = $startOfMonth->copy()->endOfMonth();
 
-            $employees   = $this->planningService->filterEmployees($search, $department);
-            $plannings   = $this->planningService->getPlanningsBetween($startOfMonth, $endOfMonth);
-            $departments = $this->planningService->getDepartments();
-
-            $daysOfMonth = collect();
-            $currentDay  = $startOfMonth->copy();
-            while ($currentDay <= $endOfMonth) {
-                $daysOfMonth->push($currentDay->copy());
-                $currentDay->addDay();
-            }
-
-            return view('planning.monthly', compact(
-                'employees', 'plannings', 'daysOfMonth',
-                'month', 'year', 'startOfMonth', 'endOfMonth',
-                'search', 'department', 'departments'
-            ));
-        } catch (Exception $e) {
-            Log::error('Planning monthly error: ' . $e->getMessage());
-            return view('planning.monthly', ['error' => 'Erreur planning mensuel.']);
+        // Résoudre le nom de la salle depuis l'ID (même logique que weekly)
+        $roomName = null;
+        if ($roomId) {
+            $room     = Room::find($roomId);
+            $roomName = $room?->name;
         }
+
+        $showAllRooms = empty($roomId);
+
+        $employees   = $this->planningService->filterEmployees(
+            $search, $department, $roomId, $showAllRooms, $startOfMonth, $endOfMonth
+        );
+        $plannings   = $this->planningService->getPlanningsBetween($startOfMonth, $endOfMonth, $roomName);
+        $departments = $this->planningService->getDepartments();
+        $rooms       = Room::all();   // ← NOUVEAU : pour le select salle
+
+        $daysOfMonth = collect();
+        $currentDay  = $startOfMonth->copy();
+        while ($currentDay <= $endOfMonth) {
+            $daysOfMonth->push($currentDay->copy());
+            $currentDay->addDay();
+        }
+
+        return view('planning.monthly', compact(
+            'employees', 'plannings', 'daysOfMonth',
+            'month', 'year', 'startOfMonth', 'endOfMonth',
+            'search', 'department', 'departments',
+            'rooms', 'shift_type', 'roomId'   // ← NOUVEAU
+        ));
+    } catch (Exception $e) {
+        Log::error('Planning monthly error: ' . $e->getMessage());
+        return view('planning.monthly', ['error' => 'Erreur planning mensuel.']);
     }
+}
 
     // =========================================================================
     // STORE
@@ -141,12 +166,9 @@ class PlanningController extends Controller
     public function store(StorePlanningRequest $request)
     {
         try {
-            Planning::updateOrCreate(
-                ['employee_id' => $request->employee_id, 'date' => $request->date],
-                $request->validated()
-            );
+            Planning::create($request->validated());
 
-            return back()->with('success', 'Planning mis à jour.');
+            return back()->with('success', 'Planning créé.');
         } catch (Exception $e) {
             Log::error('Planning store error: ' . $e->getMessage(), [
                 'data'  => $request->validated(),
@@ -242,14 +264,12 @@ class PlanningController extends Controller
         ]);
 
         try {
-            // Récupérer le NOM depuis l'ID
             $roomName = null;
             if (!empty($validated['room_id'])) {
                 $room     = Room::find($validated['room_id']);
                 $roomName = $room?->name;
             }
 
-            // Stocker le NOM dans la colonne `room`
             Planning::where('employee_id', $validated['employee_id'])
                 ->whereDate('date', '>=', $validated['start'])
                 ->whereDate('date', '<=', $validated['end'])

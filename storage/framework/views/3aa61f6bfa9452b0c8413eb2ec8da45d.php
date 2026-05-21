@@ -1,4 +1,4 @@
-{{-- resources/views/lms/pdf.blade.php --}}
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -20,7 +20,7 @@
     .content { padding: 14px 24px; }
     h2 { font-size: 13px; font-weight: 600; margin-bottom: 10px; color: #111827; }
 
-
+  
 
     /* Main table */
     table.main { width: 100%; border-collapse: collapse; }
@@ -62,10 +62,10 @@
 <div class="header">
     <div>
         <div class="header-logo">LMS — Gestion des Formations</div>
-        <div class="header-sub">Rapport exporté le {{ now()->locale('fr')->translatedFormat('d F Y \à H:i') }}</div>
+        <div class="header-sub">Rapport exporté le <?php echo e(now()->locale('fr')->translatedFormat('d F Y \à H:i')); ?></div>
     </div>
     <div class="header-right">
-        Total : {{ $formations->count() }} formation(s)
+        Total : <?php echo e($formations->count()); ?> formation(s)
     </div>
 </div>
 
@@ -87,8 +87,8 @@
             </tr>
         </thead>
         <tbody>
-            @forelse($formations as $f)
-            @php
+            <?php $__empty_1 = true; $__currentLoopData = $formations; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $f): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+            <?php
                 $emp = $f->employee;
 
                 // Nom complet — adapté à toutes structures de colonnes
@@ -107,24 +107,24 @@
                     'Annulée'   => 'badge-annulee',
                     default     => 'badge-planifiee',
                 };
-            @endphp
+            ?>
             <tr>
-                <td>{{ $nomComplet }}</td>
-                <td>{{ $deptNom }}</td>
-                <td>{{ $f->titre }}</td>
-                <td>{{ $f->formateur }}</td>
-                <td>{{ $f->organisme }}</td>
-                <td style="white-space:nowrap;">{{ $f->date->format('d/m/Y') }}</td>
-                <td style="white-space:nowrap;font-variant-numeric:tabular-nums;">{{ $f->horaire }}</td>
-                <td><span class="badge {{ $badgeClass }}">{{ $f->statut }}</span></td>
+                <td><?php echo e($nomComplet); ?></td>
+                <td><?php echo e($deptNom); ?></td>
+                <td><?php echo e($f->titre); ?></td>
+                <td><?php echo e($f->formateur); ?></td>
+                <td><?php echo e($f->organisme); ?></td>
+                <td style="white-space:nowrap;"><?php echo e($f->date->format('d/m/Y')); ?></td>
+                <td style="white-space:nowrap;font-variant-numeric:tabular-nums;"><?php echo e($f->horaire); ?></td>
+                <td><span class="badge <?php echo e($badgeClass); ?>"><?php echo e($f->statut); ?></span></td>
             </tr>
-            @empty
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
             <tr>
                 <td colspan="8" style="text-align:center;padding:20px;color:#9ca3af;">
                     Aucune formation enregistrée
                 </td>
             </tr>
-            @endforelse
+            <?php endif; ?>
         </tbody>
     </table>
 </div>
@@ -135,3 +135,4 @@
 
 </body>
 </html>
+<?php /**PATH D:\Projects\SIRH-\resources\views/lms/pdf.blade.php ENDPATH**/ ?>

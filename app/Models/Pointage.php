@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use \App\Traits\HasTenantScope;
 
@@ -33,8 +35,6 @@ class Pointage extends Model
 
     protected $casts = [
         'date'          => 'date',
-        'pause_start'   => 'datetime:H:i:s',
-        'pause_end'     => 'datetime:H:i:s',
         'valide'        => 'boolean',
         'ignore_badge'  => 'boolean',
         'total_heures'  => 'decimal:2',
@@ -43,20 +43,9 @@ class Pointage extends Model
         'heures_supplementaires' => 'decimal:2',
     ];
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Boot
-    // ─────────────────────────────────────────────────────────────────────────
-
     public static function boot(): void
     {
         parent::boot();
-
-        static::saving(function ($pointage) {
-            if ($pointage->heure_entree && $pointage->heure_sortie && $pointage->statut !== 'absent') {
-                $should_save = false;
-                $pointage->calculerTotalHeures($should_save);
-            }
-        });
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -80,7 +69,7 @@ class Pointage extends Model
     public function getTotalHeuresFormateAttribute(): string
     {
         if (!$this->total_heures) return '—';
-        return number_format($this->total_heures, 2) . 'h';
+        return number_format((float) $this->total_heures, 2) . 'h';
     }
 
     public function getStatutLabelAttribute(): string
@@ -96,32 +85,39 @@ class Pointage extends Model
 
     public function getPauseFormateeAttribute(): string
     {
-        if (!$this->pause_minutes || $this->pause_minutes === 0) {
-            return '—';
-        }
-        $hours = floor($this->pause_minutes / 60);
-        $mins  = $this->pause_minutes % 60;
+        $minutes = (int) ($this->getRawOriginal('pause_minutes') ?? $this->pause_minutes ?? 0);
+        if ($minutes === 0) return '—';
+        $hours = floor($minutes / 60);
+        $mins  = $minutes % 60;
         return $hours ? "{$hours}h {$mins}m" : "{$mins}m";
     }
 
     public function getPauseDebutAttribute(): ?string
     {
-        return $this->pause_start?->format('H:i') ?? null;
+        $raw = $this->getRawOriginal('pause_start') ?? $this->pause_start;
+        if (!$raw) return null;
+        try { return Carbon::parse($raw)->format('H:i'); } catch (\Exception $e) { return null; }
     }
 
     public function getPauseFinAttribute(): ?string
     {
-        return $this->pause_end?->format('H:i') ?? null;
+        $raw = $this->getRawOriginal('pause_end') ?? $this->pause_end;
+        if (!$raw) return null;
+        try { return Carbon::parse($raw)->format('H:i'); } catch (\Exception $e) { return null; }
     }
 
     public function getDebutShiftAttribute(): ?string
     {
-        return $this->heure_entree?->format('H:i') ?? null;
+        $raw = $this->getRawOriginal('heure_entree') ?? $this->heure_entree;
+        if (!$raw) return null;
+        try { return Carbon::parse($raw)->format('H:i'); } catch (\Exception $e) { return null; }
     }
 
     public function getFinShiftAttribute(): ?string
     {
-        return $this->heure_sortie?->format('H:i') ?? null;
+        $raw = $this->getRawOriginal('heure_sortie') ?? $this->heure_sortie;
+        if (!$raw) return null;
+        try { return Carbon::parse($raw)->format('H:i'); } catch (\Exception $e) { return null; }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -167,20 +163,12 @@ class Pointage extends Model
     // Calcul principal
     // ─────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Calcule et affecte heures_travaillees, heures_supplementaires, total_heures.
-     *
-     * Ordre de priorité pour la pause :
-     *   1. Si des PointageEvent (badge records) sont chargés via ->events,
-     *      on recalcule la pause depuis ces events (même logique que PointageController).
-     *   2. Sinon on utilise pause_start / pause_end déjà stockés sur le modèle.
-     *   3. En dernier recours on utilise pause_minutes déjà stocké.
-     *
-     * @param bool $save  Persiste ou non après le calcul.
-     */
     public function calculerTotalHeures(bool $save = true): void
     {
-        if (!$this->heure_entree || !$this->heure_sortie) {
+        $heureEntreeRaw = $this->getRawOriginal('heure_entree') ?? $this->heure_entree;
+        $heureSortieRaw = $this->getRawOriginal('heure_sortie') ?? $this->heure_sortie;
+
+        if (!$heureEntreeRaw || !$heureSortieRaw) {
             return;
         }
 
@@ -188,59 +176,72 @@ class Pointage extends Model
             ? $this->date->toDateString()
             : Carbon::parse($this->date)->toDateString();
 
-        $entree = Carbon::parse("{$dateStr} {$this->heure_entree}");
-        $sortie = Carbon::parse("{$dateStr} {$this->heure_sortie}");
+        try {
+            $entree = Carbon::parse("{$dateStr} {$heureEntreeRaw}");
+            $sortie = Carbon::parse("{$dateStr} {$heureSortieRaw}");
+        } catch (\Exception $e) {
+            return;
+        }
 
-        // Passage minuit
-        if ($sortie->lessThan($entree)) {
+        if ($sortie->lessThanOrEqualTo($entree)) {
             $sortie->addDay();
         }
 
-        // ── Calcul des minutes de pause ──────────────────────────────────────
         $pauseMinutes = $this->calculerPauseMinutes();
 
-        // Mise à jour de pause_minutes si on a pu le recalculer
-        $this->pause_minutes = $pauseMinutes;
+        $minutesBrutes = $entree->diffInMinutes($sortie);
+        $minutesNettes = max(0, $minutesBrutes - $pauseMinutes);
+        $totalHeures   = round($minutesNettes / 60, 2);
 
-        // ── Calcul du temps travaillé ────────────────────────────────────────
-        $minutesBrutes  = $entree->diffInMinutes($sortie);
-        $minutesNettes  = max(0, $minutesBrutes - $pauseMinutes);
-        $totalHeures    = round($minutesNettes / 60, 2);
+        $heuresTravaillees     = min($totalHeures, 8.0);
+        $heuresSupplementaires = max(0.0, $totalHeures - 8.0);
 
-        // Split normal vs supplémentaires (standard 8h/jour)
-        $this->heures_travaillees       = min($totalHeures, 8.0);
-        $this->heures_supplementaires   = max(0.0, $totalHeures - 8.0);
-        $this->total_heures             = $totalHeures;
+        $this->pause_minutes           = $pauseMinutes;
+        $this->heures_travaillees      = $heuresTravaillees;
+        $this->heures_supplementaires  = $heuresSupplementaires;
+        $this->total_heures            = $totalHeures;
 
-        if ($save) {
-            $this->save();
+        if ($save && $this->id) {
+            DB::table('pointages')
+                ->where('id', $this->id)
+                ->update([
+                    'pause_minutes'          => $pauseMinutes,
+                    'heures_travaillees'     => $heuresTravaillees,
+                    'heures_supplementaires' => $heuresSupplementaires,
+                    'total_heures'           => $totalHeures,
+                    'updated_at'             => now(),
+                ]);
+
+            $this->syncOriginal();
         }
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Calcul pause — utilise badge_records via le controller
+    // La priorité 2 (pause_start/pause_end) est utilisée quand les champs
+    // sont déjà persistés en base après syncPointageFromBadgeRecords
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function calculerPauseMinutes(): int
     {
-        // ── Priorité 1 : events badge (PointageEvent chargés en relation) ────
+        // Priorité 1 : events PointageEvent chargés en relation
         if ($this->relationLoaded('events') && $this->events->isNotEmpty()) {
             return $this->calcPauseDepuisEvents($this->events);
         }
 
-        // ── Priorité 2 : pause_start / pause_end stockés sur le modèle ───────
-        if ($this->pause_start && $this->pause_end) {
-            return $this->calcPauseDepuisStartEnd(
-                $this->pause_start,
-                $this->pause_end
-            );
+        // Priorité 2 : pause_start / pause_end persistés en base
+        $pauseStart = $this->getRawOriginal('pause_start') ?? $this->pause_start;
+        $pauseEnd   = $this->getRawOriginal('pause_end')   ?? $this->pause_end;
+
+        if ($pauseStart && $pauseEnd) {
+            return $this->calcPauseDepuisStartEnd($pauseStart, $pauseEnd);
         }
 
-        // ── Priorité 3 : pause_minutes déjà persisté ─────────────────────────
-        return (int) ($this->pause_minutes ?? 0);
+        // Priorité 3 : pause_minutes déjà persisté (calculé par le controller)
+        $raw = $this->getRawOriginal('pause_minutes') ?? $this->pause_minutes ?? 0;
+        return (int) $raw;
     }
 
-    /**
-     * Calcule les minutes de pause depuis une collection de PointageEvent.
-     * Logique identique à PointageController::calcPauseMinutes().
-     */
     private function calcPauseDepuisEvents(\Illuminate\Support\Collection $events): int
     {
         $pausesStart = $events
@@ -261,11 +262,9 @@ class Pointage extends Model
 
         $total = 0;
         $count = min($pausesStart->count(), $pausesEnd->count());
-
         for ($i = 0; $i < $count; $i++) {
             $start = strtotime($pausesStart[$i]);
             $end   = strtotime($pausesEnd[$i]);
-
             if ($end > $start) {
                 $total += ($end - $start);
             }
@@ -274,35 +273,26 @@ class Pointage extends Model
         return (int) floor($total / 60);
     }
 
-    /**
-     * Calcule les minutes de pause depuis pause_start et pause_end
-     * déjà stockés sur le modèle (un seul créneau de pause).
-     */
     private function calcPauseDepuisStartEnd(mixed $start, mixed $end): int
     {
         $dateStr = $this->date instanceof Carbon
             ? $this->date->toDateString()
             : Carbon::parse($this->date)->toDateString();
 
-        // Les champs sont castés datetime:H:i:s, on les normalise en Carbon
-        $debut = Carbon::parse("{$dateStr} " . (
-            $start instanceof Carbon ? $start->format('H:i:s') : $start
-        ));
-        $fin   = Carbon::parse("{$dateStr} " . (
-            $end instanceof Carbon ? $end->format('H:i:s') : $end
-        ));
+        try {
+            $debut = Carbon::parse("{$dateStr} {$start}");
+            $fin   = Carbon::parse("{$dateStr} {$end}");
+        } catch (\Exception $e) {
+            return 0;
+        }
 
-        // Pause sur passage minuit (rare mais possible)
         if ($fin->lessThan($debut)) {
             $fin->addDay();
         }
 
         $minutes = $debut->diffInMinutes($fin);
-
-        // Sanity check : une pause > 4h est probablement une erreur de saisie
         return $minutes > 240 ? 0 : (int) $minutes;
     }
-
 
     public function recalculerAvecEvents(bool $save = true): void
     {

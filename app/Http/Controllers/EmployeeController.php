@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserRole;
 use App\Http\Requests\StoreEmployeeRequest;
 use App\Http\Requests\UpdateEmployeeRequest;
 use App\Models\Department;
@@ -14,6 +15,8 @@ use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+
 use Exception;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -94,6 +97,34 @@ class EmployeeController extends Controller
         };
     }
 
+    /**
+     * Normalise le rôle reçu du formulaire vers la valeur ENUM valide.
+     * Accepte les valeurs brutes ('admin', 'rh', 'employee')
+     * ou les labels français ('Administrateur', 'Responsable RH', 'Employé').
+     */
+    private function normalizeRole(?string $role): string
+    {
+        if (!$role) return UserRole::Employee->value;
+
+        // Si c'est déjà une valeur valide de l'enum → retourner directement
+        foreach (UserRole::cases() as $case) {
+            if ($case->value === strtolower(trim($role))) {
+                return $case->value;
+            }
+        }
+
+        // Si c'est un label français → mapper vers la valeur
+        foreach (UserRole::cases() as $case) {
+            if (strtolower($case->label()) === strtolower(trim($role))) {
+                return $case->value;
+            }
+        }
+
+        // Fallback sécurisé
+        Log::warning('Role inconnu reçu, fallback employee', ['role' => $role]);
+        return UserRole::Employee->value;
+    }
+
     public function reorder(Request $request)
     {
         try {
@@ -125,6 +156,7 @@ class EmployeeController extends Controller
                 'managers'    => Employee::active()->get(),
                 'users'       => User::whereDoesntHave('employee')->get(),
                 'departments' => $this->getDepartmentsList(),
+                'roles'       => UserRole::cases(),
             ]);
 
         } catch (Exception $e) {
@@ -134,40 +166,73 @@ class EmployeeController extends Controller
     }
 
     public function store(StoreEmployeeRequest $request)
-    {
-        try {
-            DB::transaction(function () use ($request) {
-                // Création de l'employé via le service
-                $employee = $this->employeeService->create($request->validated());
+{
+    try {
+        DB::transaction(function () use ($request) {
 
-                // Création du compte utilisateur (optionnelle)
-                if ($request->boolean('create_account')) {
-    $tenantId = config('app.current_tenant_id') ?? auth()->user()->tenant_id;
+            $validated = $request->validated();
 
-    $user = User::create([
-        'name'      => $employee->first_name . ' ' . $employee->last_name,
-        'email'     => $employee->email,
-        'password'  => Hash::make($request->user_password),
-        'role'      => $request->user_role ?? 'employee',
-        'tenant_id' => $tenantId, //  toujours présent
-    ]);
+            // ── Stocker les pièces jointes PDF ──────────────────────
+            $docFields = ['doc_casier', 'doc_rib', 'doc_diplomes', 'doc_cin', 'doc_contrat'];
+            foreach ($docFields as $field) {
+                if ($request->hasFile($field)) {
+                    $validated[$field . '_path'] = $request->file($field)
+                        ->store('employees/documents', 'public');
+                }
+                unset($validated[$field]);
+            }
 
-    $employee->update(['user_id' => $user->id]);
-}
+            $employee = $this->employeeService->create($validated); // ✅ utiliser $validated avec les paths
 
-            });
+            if ($request->boolean('create_account')) {
+                $tenantId = config('app.current_tenant_id') ?? auth()->user()->tenant_id;
 
-            return redirect()->route('employees.index')
-                ->with('success', 'Employé créé avec succès.');
+                // Normaliser le rôle avant toute création
+                $role = $this->normalizeRole($request->user_role);
 
-        } catch (\RuntimeException $e) {
-            return back()->withErrors(['user' => $e->getMessage()])->withInput();
+                Log::info('Création compte user', [
+                    'email'      => $employee->email,
+                    'role_recu'  => $request->user_role,
+                    'role_final' => $role,
+                ]);
 
-        } catch (Exception $e) {
-            Log::error('Employee store error', ['error' => $e->getMessage()]);
-            return back()->withErrors(['error' => 'Erreur création employé : ' . $e->getMessage()])->withInput();
-        }
+                // ✅ Un seul firstOrCreate — propre, sans doublon
+                $user = User::firstOrCreate(
+                    [
+                        'email'     => $employee->email,
+                        'tenant_id' => $tenantId,
+                    ],
+                    [
+                        'name'           => $employee->first_name . ' ' . $employee->last_name,
+                        'password'       => Hash::make($request->user_password),
+                        'plain_password' => $request->user_password, // ✅ chiffré automatiquement par le setter
+                        'role'           => $role,
+                    ]
+                );
+
+                // ✅ Si le user existait déjà, mettre à jour plain_password quand même
+                if (!$user->wasRecentlyCreated && $request->user_password) {
+                    $user->update([
+                        'password'       => Hash::make($request->user_password),
+                        'plain_password' => $request->user_password, // ✅ chiffré automatiquement
+                    ]);
+                }
+
+                $employee->update(['user_id' => $user->id]);
+            }
+        });
+
+        return redirect()->route('employees.index')
+            ->with('success', 'Employé créé avec succès.');
+
+    } catch (\RuntimeException $e) {
+        return back()->withErrors(['user' => $e->getMessage()])->withInput();
+
+    } catch (Exception $e) {
+        Log::error('Employee store error', ['error' => $e->getMessage()]);
+        return back()->withErrors(['error' => 'Erreur création employé : ' . $e->getMessage()])->withInput();
     }
+}
 
     public function show(Employee $employee)
     {
@@ -207,6 +272,7 @@ class EmployeeController extends Controller
                     ->when($employee->user_id, fn($q) => $q->orWhere('id', $employee->user_id))
                     ->get(),
                 'departments' => $this->getDepartmentsList(),
+                'roles'       => UserRole::cases(),
             ]);
 
         } catch (Exception $e) {
@@ -218,6 +284,24 @@ class EmployeeController extends Controller
     public function update(UpdateEmployeeRequest $request, Employee $employee)
     {
         try {
+            $validated = $request->validated();
+
+            // ── Mettre à jour les pièces jointes PDF si fournies ────────
+            $docFields = ['doc_casier', 'doc_rib', 'doc_diplomes', 'doc_cin', 'doc_contrat'];
+            foreach ($docFields as $field) {
+                if ($request->hasFile($field)) {
+                    // Supprimer l'ancien fichier si existant
+                    $oldPath = $employee->{$field . '_path'};
+                    if ($oldPath && Storage::disk('public')->exists($oldPath)) {
+                        Storage::disk('public')->delete($oldPath);
+                    }
+                    $validated[$field . '_path'] = $request->file($field)
+                        ->store('employees/documents', 'public');
+                }
+                unset($validated[$field]);
+            }
+
+            $this->employeeService->update($employee, $validated);
             $this->employeeService->update($employee, $request->validated());
 
             return redirect()->route('employees.show', $employee)
@@ -232,6 +316,14 @@ class EmployeeController extends Controller
     public function destroy(Employee $employee)
     {
         try {
+             // Supprimer les pièces jointes du stockage
+            $docFields = ['doc_casier_path', 'doc_rib_path', 'doc_diplomes_path', 'doc_cin_path', 'doc_contrat_path'];
+            foreach ($docFields as $field) {
+                if ($employee->$field && Storage::disk('public')->exists($employee->$field)) {
+                    Storage::disk('public')->delete($employee->$field);
+                }
+            }
+
             $employee->delete();
 
             return redirect()->route('employees.index')
@@ -318,6 +410,11 @@ class EmployeeController extends Controller
         }
     }
 
+    public function ajax(Request $request)
+    {
+        return $this->ajaxIndex($request);
+    }
+
     // =========================================================================
     // HELPERS PRIVÉS
     // =========================================================================
@@ -341,7 +438,6 @@ class EmployeeController extends Controller
     private function getDepartmentsList()
     {
         try {
-            // Forcer le tenant_id de l'utilisateur connecté
             $tenantId = auth()->user()->tenant_id;
 
             $departments = Department::where('tenant_id', $tenantId)

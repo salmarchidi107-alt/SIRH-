@@ -44,7 +44,7 @@ unset($__errorArgs, $__bag); ?>
                 </div>
                 <div class="form-group">
                     <label>Nom *</label>
-                    <input type="text" name="last_name" class="form-control" value="<?php echo e(old('last_name')); ?>" >
+                    <input type="text" name="last_name" class="form-control" value="<?php echo e(old('last_name')); ?>">
                     <?php $__errorArgs = ['last_name'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -55,8 +55,8 @@ endif;
 unset($__errorArgs, $__bag); ?>
                 </div>
                 <div class="form-group">
-                    <label>Email </label>
-                    <input type="email" name="email" class="form-control" value="<?php echo e(old('email')); ?>"  autocomplete="new-email">
+                    <label>Email</label>
+                    <input type="email" name="email" class="form-control" value="<?php echo e(old('email')); ?>" autocomplete="new-email">
                     <?php $__errorArgs = ['email'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -68,7 +68,7 @@ unset($__errorArgs, $__bag); ?>
                 </div>
                 <div class="form-group">
                     <label>Téléphone</label>
-                    <input type="text" name="phone" class="form-control" value="<?php echo e(old('phone')); ?>" >
+                    <input type="text" name="phone" class="form-control" value="<?php echo e(old('phone')); ?>">
                 </div>
                 <div class="form-group">
                     <label>Date de naissance</label>
@@ -90,11 +90,11 @@ unset($__errorArgs, $__bag); ?>
                     <label>Situation familiale</label>
                     <select name="family_situation" class="form-control">
                         <option value="">Sélectionner...</option>
-                        <option value="célibataire"           <?php echo e(old('family_situation') == 'célibataire'           ? 'selected' : ''); ?>>Célibataire</option>
-                        <option value="marié(e)"              <?php echo e(old('family_situation') == 'marié(e)'              ? 'selected' : ''); ?>>Marié(e)</option>
-                        <option value="divorcé(e)"            <?php echo e(old('family_situation') == 'divorcé(e)'            ? 'selected' : ''); ?>>Divorcé(e)</option>
-                        <option value="veuf(ve)"              <?php echo e(old('family_situation') == 'veuf(ve)'              ? 'selected' : ''); ?>>Veuf(ve)</option>
-                        <option value="en instance de divorce"<?php echo e(old('family_situation') == 'en instance de divorce'? 'selected' : ''); ?>>En instance de divorce</option>
+                        <option value="célibataire"            <?php echo e(old('family_situation') == 'célibataire'            ? 'selected' : ''); ?>>Célibataire</option>
+                        <option value="marié(e)"               <?php echo e(old('family_situation') == 'marié(e)'               ? 'selected' : ''); ?>>Marié(e)</option>
+                        <option value="divorcé(e)"             <?php echo e(old('family_situation') == 'divorcé(e)'             ? 'selected' : ''); ?>>Divorcé(e)</option>
+                        <option value="veuf(ve)"               <?php echo e(old('family_situation') == 'veuf(ve)'               ? 'selected' : ''); ?>>Veuf(ve)</option>
+                        <option value="en instance de divorce" <?php echo e(old('family_situation') == 'en instance de divorce' ? 'selected' : ''); ?>>En instance de divorce</option>
                     </select>
                 </div>
                 <div class="form-group full">
@@ -116,18 +116,10 @@ unset($__errorArgs, $__bag); ?>
                 <div class="form-group">
                     <label>Code PIN Badge</label>
                     <div class="input-group">
-                        <input type="text"
-                               name="pin"
-                               id="pin_field"
-                               class="form-control"
-                               placeholder="1234AB"
-                               pattern="[0-9]{4}[A-Z]{2}"
-                               maxlength="6"
-                               readonly
-                               value="<?php echo e(old('pin')); ?>">
-                        <button type="button" id="generate_pin" class="btn btn-outline-primary">
-                            Générer
-                        </button>
+                        <input type="text" name="pin" id="pin_field" class="form-control"
+                               placeholder="1234AB" pattern="[0-9]{4}[A-Z]{2}"
+                               maxlength="6" readonly value="<?php echo e(old('pin')); ?>">
+                        <button type="button" id="generate_pin" class="btn btn-outline-primary">Générer</button>
                     </div>
                 </div>
             </div>
@@ -141,21 +133,17 @@ unset($__errorArgs, $__bag); ?>
         </div>
         <div class="card-body">
             <div class="form-grid">
-
-                
                 <div class="form-group">
                     <label>Service / Département *</label>
                     <select name="department" class="form-control" required>
                         <option value="">— Sélectionner un département —</option>
                         <?php $__empty_1 = true; $__currentLoopData = $departments ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dept): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                             <?php $deptName = is_object($dept) ? $dept->name : $dept; ?>
-                            <option value="<?php echo e($deptName); ?>"
-                                <?php echo e(old('department') == $deptName ? 'selected' : ''); ?>>
+                            <option value="<?php echo e($deptName); ?>" <?php echo e(old('department') == $deptName ? 'selected' : ''); ?>>
                                 <?php echo e($deptName); ?>
 
                             </option>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                            
                             <option value="Médecine Générale">Médecine Générale</option>
                             <option value="Chirurgie">Chirurgie</option>
                             <option value="Urgences">Urgences</option>
@@ -178,16 +166,13 @@ unset($__errorArgs, $__bag); ?>
                     <?php if(($departments ?? collect())->isEmpty()): ?>
                     <small style="color:#f59e0b;font-size:0.75rem">
                         ⚠️ Aucun département configuré —
-                        <a href="<?php echo e(route('parametrage.index', ['tab' => 'departments'])); ?>" style="color:#f59e0b">
-                            créez-en un dans Paramétrage
-                        </a>
+                        <a href="<?php echo e(route('parametrage.index', ['tab' => 'departments'])); ?>" style="color:#f59e0b">créez-en un dans Paramétrage</a>
                     </small>
                     <?php endif; ?>
                 </div>
-
                 <div class="form-group">
                     <label>Poste / Fonction *</label>
-                    <input type="text" name="position" class="form-control" value="<?php echo e(old('position')); ?>" required placeholder="">
+                    <input type="text" name="position" class="form-control" value="<?php echo e(old('position')); ?>" required>
                     <?php $__errorArgs = ['position'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -199,7 +184,7 @@ unset($__errorArgs, $__bag); ?>
                 </div>
                 <div class="form-group">
                     <label>Type de diplôme</label>
-                    <input type="text" name="diploma_type" class="form-control" value="<?php echo e(old('diploma_type')); ?>" placeholder="">
+                    <input type="text" name="diploma_type" class="form-control" value="<?php echo e(old('diploma_type')); ?>" placeholder="ex: Bac+5, Doctorat...">
                 </div>
                 <div class="form-group">
                     <label>Site de travail</label>
@@ -253,6 +238,84 @@ unset($__errorArgs, $__bag); ?>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="card-title">Pièces jointes à fournir</div>
+        </div>
+        <div class="card-body">
+
+            <div class="form-grid">
+
+                <div class="form-group">
+                    <label>Casier judiciaire</label>
+                    <input type="file" name="doc_casier" class="form-control" accept="application/pdf">
+                    <?php $__errorArgs = ['doc_casier'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <span style="color:var(--danger);font-size:0.75rem"><?php echo e($message); ?></span> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                </div>
+
+                <div class="form-group">
+                    <label>Relevé bancaire (RIB)</label>
+                    <input type="file" name="doc_rib" class="form-control" accept="application/pdf">
+                    <?php $__errorArgs = ['doc_rib'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <span style="color:var(--danger);font-size:0.75rem"><?php echo e($message); ?></span> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                </div>
+
+                <div class="form-group">
+                    <label>Copies des diplômes</label>
+                    <input type="file" name="doc_diplomes" class="form-control" accept="application/pdf">
+                    <?php $__errorArgs = ['doc_diplomes'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <span style="color:var(--danger);font-size:0.75rem"><?php echo e($message); ?></span> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                </div>
+
+                <div class="form-group">
+                    <label>Copie CIN / Carte d'identité</label>
+                    <input type="file" name="doc_cin" class="form-control" accept="application/pdf">
+                    <?php $__errorArgs = ['doc_cin'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <span style="color:var(--danger);font-size:0.75rem"><?php echo e($message); ?></span> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                </div>
+
+                <div class="form-group full">
+                    <label>Contrat de travail</label>
+                    <input type="file" name="doc_contrat" class="form-control" accept="application/pdf">
+                    <?php $__errorArgs = ['doc_contrat'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <span style="color:var(--danger);font-size:0.75rem"><?php echo e($message); ?></span> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                </div>
+
             </div>
         </div>
     </div>
@@ -323,22 +386,22 @@ unset($__errorArgs, $__bag); ?>
         </div>
     </div>
 
-
-<div class="card mb-4">
-    <div class="card-header">
-        <div class="card-title">Créer un compte utilisateur</div>
-    </div>
-    <div class="card-body">
-        <div class="form-grid">
-            <div class="form-group">
-                <label>Rôle utilisateur</label>
-                <select name="user_role" class="form-control">
-                    <option value="">Sélectionner rôle</option>
-                    <option value="employee" <?php echo e(old('user_role', 'employee') == 'employee' ? 'selected' : ''); ?>>Employé</option>
-                    <option value="rh"       <?php echo e(old('user_role') == 'rh'                  ? 'selected' : ''); ?>>Responsable RH</option>
-                    <option value="admin"    <?php echo e(old('user_role') == 'admin'               ? 'selected' : ''); ?>>Administrateur</option>
-                </select>
-                <?php $__errorArgs = ['user_role'];
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="card-title">Créer un compte utilisateur</div>
+        </div>
+        <div class="card-body">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Rôle utilisateur</label>
+                    <select name="user_role" class="form-control">
+                        <option value="">Sélectionner rôle</option>
+                        <option value="employee" <?php echo e(old('user_role', 'employee') == 'employee' ? 'selected' : ''); ?>>Employé</option>
+                        <option value="rh"       <?php echo e(old('user_role') == 'rh'                  ? 'selected' : ''); ?>>Responsable RH</option>
+                        <option value="admin"    <?php echo e(old('user_role') == 'admin'               ? 'selected' : ''); ?>>Administrateur</option>
+                    </select>
+                    <?php $__errorArgs = ['user_role'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
@@ -346,19 +409,19 @@ $message = $__bag->first($__errorArgs[0]); ?> <span style="color:var(--danger);f
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>
-            </div>
-            <div class="form-group">
-                <label>Mot de passe</label>
-                <div class="password-group">
-                    <input type="password" name="user_password" id="user_password" class="form-control" autocomplete="new-password">
-                    <button type="button" class="toggle-password" data-target="user_password">
-                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" opacity="0.5"/>
-                            <circle cx="12" cy="12" r="3.5"/>
-                        </svg>
-                    </button>
                 </div>
-                <?php $__errorArgs = ['user_password'];
+                <div class="form-group">
+                    <label>Mot de passe</label>
+                    <div class="password-group">
+                        <input type="password" name="user_password" id="user_password" class="form-control" autocomplete="new-password">
+                        <button type="button" class="toggle-password" data-target="user_password">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" opacity="0.5"/>
+                                <circle cx="12" cy="12" r="3.5"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <?php $__errorArgs = ['user_password'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
@@ -366,19 +429,19 @@ $message = $__bag->first($__errorArgs[0]); ?> <span style="color:var(--danger);f
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>
-            </div>
-            <div class="form-group">
-                <label>Confirmer mot de passe</label>
-                <div class="password-group">
-                    <input type="password" name="user_password_confirmation" id="user_password_confirmation" class="form-control">
-                    <button type="button" class="toggle-password" data-target="user_password_confirmation">
-                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" opacity="0.5"/>
-                            <circle cx="12" cy="12" r="3.5"/>
-                        </svg>
-                    </button>
                 </div>
-                <?php $__errorArgs = ['user_password_confirmation'];
+                <div class="form-group">
+                    <label>Confirmer mot de passe</label>
+                    <div class="password-group">
+                        <input type="password" name="user_password_confirmation" id="user_password_confirmation" class="form-control">
+                        <button type="button" class="toggle-password" data-target="user_password_confirmation">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" opacity="0.5"/>
+                                <circle cx="12" cy="12" r="3.5"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <?php $__errorArgs = ['user_password_confirmation'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
@@ -386,20 +449,17 @@ $message = $__bag->first($__errorArgs[0]); ?> <span style="color:var(--danger);f
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>
+                </div>
+            </div>
+            <div class="form-group" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                    <input type="checkbox" name="create_account" value="1" id="create_account" <?php echo e(old('create_account') ? 'checked' : ''); ?>>
+                    <span>Créer un compte utilisateur pour cet employé</span>
+                </label>
             </div>
         </div>
-
-        
-        <div class="form-group" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
-            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-                <input type="checkbox" name="create_account" value="1"
-                       id="create_account"
-                       <?php echo e(old('create_account') ? 'checked' : ''); ?>>
-                <span>Créer un compte utilisateur pour cet employé</span>
-            </label>
-        </div>
     </div>
-</div>
+
     
     <div class="card mb-4">
         <div class="card-header">
@@ -421,8 +481,7 @@ unset($__errorArgs, $__bag); ?>
                 </div>
                 <div class="form-group">
                     <label>Début du contrat</label>
-                    <input type="date" name="contract_start_date" class="form-control"
-                    value="<?php echo e(old('contract_start_date')); ?>" readonly>
+                    <input type="date" name="contract_start_date" class="form-control" value="<?php echo e(old('contract_start_date')); ?>" readonly>
                 </div>
                 <div class="form-group">
                     <label>Date de fin (si CDD)</label>
@@ -440,14 +499,7 @@ unset($__errorArgs, $__bag); ?>
             <div class="form-group full" style="margin-top:16px;">
                 <label style="font-weight:600;margin-bottom:12px;display:block;">Jours de travail habituels</label>
                 <div style="display:flex;gap:12px;flex-wrap:wrap;">
-                    <?php $__currentLoopData = [
-                        'lundi'    => 'Lun',
-                        'mardi'    => 'Mar',
-                        'mercredi' => 'Mer',
-                        'jeudi'    => 'Jeu',
-                        'vendredi' => 'Ven',
-                        'samedi'   => 'Sam',
-                    ]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $val => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <?php $__currentLoopData = ['lundi' => 'Lun', 'mardi' => 'Mar', 'mercredi' => 'Mer', 'jeudi' => 'Jeu', 'vendredi' => 'Ven', 'samedi' => 'Sam']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $val => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 16px;background:#f1f5f9;border-radius:8px;">
                         <input type="checkbox" name="work_days[]" value="<?php echo e($val); ?>"
                             <?php echo e(is_array(old('work_days')) && in_array($val, old('work_days')) ? 'checked' : ''); ?>>
@@ -525,15 +577,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';
         });
     });
+
+    // ── Sync hire_date ↔ contract_start_date ────────────────
     const hireDate  = document.querySelector('[name="hire_date"]');
     const startDate = document.querySelector('[name="contract_start_date"]');
-
-    hireDate.addEventListener('input', function () {
-    startDate.value = this.value;
-});
-    startDate.addEventListener('input', function () {
-    hireDate.value = this.value;
-});
+    hireDate.addEventListener('input',  function () { startDate.value = this.value; });
+    startDate.addEventListener('input', function () { hireDate.value  = this.value; });
 });
 </script>
 <?php $__env->stopSection(); ?>

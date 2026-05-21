@@ -20,7 +20,11 @@ class StoreEmployeeRequest extends FormRequest
             // ── Infos personnelles ─────────────────────────────────────────
             'first_name'       => 'required|string|max:100',
             'last_name'        => 'required|string|max:100',
-            'email'            => 'required|email|unique:employees,email',
+            'email' => [
+                'required',
+                'email',
+                'unique:employees,email',
+            ],
             'phone'            => 'nullable|string|max:20',
             'birth_date'       => 'nullable|date',
             'cin'              => 'nullable|string|max:20',
@@ -83,6 +87,12 @@ class StoreEmployeeRequest extends FormRequest
 
             // ── PIN Badge ─────────────────────────────────────────────────
             'pin' => 'nullable|string|size:6|regex:/^[0-9]{4}[A-Z]{2}$/',
+            // ── Pièces jointes PDF ──
+            'doc_casier'   => 'nullable|file|mimes:pdf|max:2048',
+            'doc_rib'      => 'nullable|file|mimes:pdf|max:2048',
+            'doc_diplomes' => 'nullable|file|mimes:pdf|max:2048',
+            'doc_cin'      => 'nullable|file|mimes:pdf|max:2048',
+            'doc_contrat'  => 'nullable|file|mimes:pdf|max:2048',
         ];
     }
 

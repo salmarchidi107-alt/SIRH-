@@ -92,7 +92,6 @@
                         </div>
                         <div>
                             <div style="font-weight:700;font-size:13px;color:var(--text);"><?php echo e($t->name); ?></div>
-                            <div style="font-size:11px;color:var(--text-muted);font-family:monospace;"><?php echo e($t->domain); ?></div>
                         </div>
                     </div>
                 </td>
@@ -149,4 +148,5 @@ document.querySelectorAll('[data-count]').forEach(el => {
 });
 </script>
 <?php $__env->stopPush(); ?>
+
 <?php echo $__env->make('layouts.superadmin', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\Projects\SIRH-\resources\views/superadmin/dashboard.blade.php ENDPATH**/ ?>

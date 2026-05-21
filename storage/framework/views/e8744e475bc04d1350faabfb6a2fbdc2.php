@@ -1,4 +1,4 @@
-{{-- resources/views/absences/pdf.blade.php --}}
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -30,22 +30,23 @@ hr { border: none; border-top: 0.5px solid #000; margin-bottom: 6mm; }
 <body>
 
 <div class="field">Nom de société</div>
-<div class="field">Numéro de demande : ABS-{{ $absence->start_date->year }}-{{ str_pad($absence->id, 5, '0', STR_PAD_LEFT) }}</div>
+<div class="field">Numéro de demande : ABS-<?php echo e($absence->start_date->year); ?>-<?php echo e(str_pad($absence->id, 5, '0', STR_PAD_LEFT)); ?></div>
 
 <div class="title">DEMANDE D'ABSENCE</div>
 
-<div class="field">Nom de l'employé : {{ $absence->employee->full_name }}</div>
-<div class="field">Type d'absence : {{ \App\Models\Absence::TYPES[$absence->type] ?? $absence->type }}</div>
-<div class="field">Date de début : {{ $absence->start_date->format('d/m/Y') }}</div>
-<div class="field">Date de fin : {{ $absence->end_date->format('d/m/Y') }}</div>
-<div class="field">Motif : {{ $absence->reason ?: 'Non spécifié' }}</div>
-<div class="field">Employé remplaçant : {{ $absence->replacement?->full_name ?? '' }}</div>
+<div class="field">Nom de l'employé : <?php echo e($absence->employee->full_name); ?></div>
+<div class="field">Type d'absence : <?php echo e(\App\Models\Absence::TYPES[$absence->type] ?? $absence->type); ?></div>
+<div class="field">Date de début : <?php echo e($absence->start_date->format('d/m/Y')); ?></div>
+<div class="field">Date de fin : <?php echo e($absence->end_date->format('d/m/Y')); ?></div>
+<div class="field">Motif : <?php echo e($absence->reason ?: 'Non spécifié'); ?></div>
+<div class="field">Employé remplaçant : <?php echo e($absence->replacement?->full_name ?? ''); ?></div>
 
 <div style="margin-bottom: 7mm;">
   Signature de l'employé : <span class="sig-line">&nbsp;</span>
 </div>
 <div class="date-left">
-    Date : {{ now()->format('d/m/Y') }}
+    Date : <?php echo e(now()->format('d/m/Y')); ?>
+
 </div>
 <hr>
 
@@ -65,3 +66,4 @@ hr { border: none; border-top: 0.5px solid #000; margin-bottom: 6mm; }
 
 </body>
 </html>
+<?php /**PATH D:\Projects\SIRH-\resources\views/absences/pdf.blade.php ENDPATH**/ ?>

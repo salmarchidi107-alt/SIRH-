@@ -54,6 +54,12 @@ class Employee extends Model
         'user_id',
         'pin',
         'plain_pin',
+        // ── Pièces jointes ──
+        'doc_casier_path',
+        'doc_rib_path',
+        'doc_diplomes_path',
+        'doc_cin_path',
+        'doc_contrat_path',
     ];
 
     protected $casts = [
@@ -191,6 +197,40 @@ class Employee extends Model
         }
         return $value;
     }
+    public function getDocCasierUrlAttribute(): ?string
+{
+    return $this->doc_casier_path
+        ? asset('storage/' . $this->doc_casier_path)
+        : null;
+}
+
+public function getDocRibUrlAttribute(): ?string
+{
+    return $this->doc_rib_path
+        ? asset('storage/' . $this->doc_rib_path)
+        : null;
+}
+
+public function getDocDiplomesUrlAttribute(): ?string
+{
+    return $this->doc_diplomes_path
+        ? asset('storage/' . $this->doc_diplomes_path)
+        : null;
+}
+
+public function getDocCinUrlAttribute(): ?string
+{
+    return $this->doc_cin_path
+        ? asset('storage/' . $this->doc_cin_path)
+        : null;
+}
+
+public function getDocContratUrlAttribute(): ?string
+{
+    return $this->doc_contrat_path
+        ? asset('storage/' . $this->doc_contrat_path)
+        : null;
+}
 
     // ─── Relations ────────────────────────────────────────────────────────────
 

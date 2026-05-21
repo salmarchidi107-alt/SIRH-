@@ -24,7 +24,9 @@ class SalaryController extends Controller
         $department = $request->get('department');
 
         $query = Employee::with([
-            'salaries' => fn($q) => $q->where('month', $month)->where('year', $year),
+            'salaries' => fn($q) => $q->where('month', $month)
+                                      ->where('year', $year)
+                                      ->with(['createdBy', 'validatedBy', 'paidBy']),
         ]);
 
         if ($status) {
@@ -48,8 +50,8 @@ class SalaryController extends Controller
         }
 
         $employees = $query->orderByRaw("CONCAT(first_name, ' ', last_name) ASC")->paginate(50);
-        $summary   = $this->payrollService->getMonthlySummary($month, $year);
 
+        $summary     = $this->payrollService->getMonthlySummary($month, $year);
         $departments = Department::names();
 
         return view('salary.index', compact(
@@ -65,6 +67,7 @@ class SalaryController extends Controller
         }
 
         $salaries = $employee->salaries()
+            ->with(['createdBy', 'validatedBy', 'paidBy'])
             ->orderByDesc('year')
             ->orderByDesc('month')
             ->get();
@@ -73,7 +76,7 @@ class SalaryController extends Controller
     }
 
     public function create(Employee $employee, Request $request)
-    { 
+    {
         $month = (int) $request->get('month', now()->month);
         $year  = (int) $request->get('year',  now()->year);
 
@@ -87,6 +90,7 @@ class SalaryController extends Controller
             ->where('year',  $year)
             ->get();
 
+        // workingData inclut maintenant garde_hours automatiquement
         $workingData = $this->payrollService->getMonthlyWorkingHours(
             $employee->id, $month, $year
         );
@@ -112,7 +116,7 @@ class SalaryController extends Controller
         $data = $request->validate([
             'month'                    => 'required|integer|min:1|max:12',
             'year'                     => 'required|integer|min:2000',
-            'currency'                 => 'nullable|string|max:10',   // ✅ AJOUTÉ
+            'currency'                 => 'nullable|string|max:10',
             'salary_type'              => 'nullable|in:monthly,hourly',
             'hourly_rate'              => 'nullable|numeric|min:0',
             'working_hours'            => 'nullable|numeric|min:0',
@@ -144,6 +148,7 @@ class SalaryController extends Controller
             'absence_days'             => 'nullable|numeric|min:0',
             'absence_hours'            => 'nullable|numeric|min:0',
             'delay_hours'              => 'nullable|numeric|min:0',
+            'garde_hours'              => 'nullable|numeric|min:0',   // ← NOUVEAU
             'cnss_base'                => 'nullable|numeric|min:0',
             'cnss_deduction'           => 'nullable|numeric|min:0',
             'amo_deduction'            => 'nullable|numeric|min:0',
@@ -158,10 +163,6 @@ class SalaryController extends Controller
             'employer_tfp'             => 'nullable|numeric|min:0',
             'employer_total_cost'      => 'nullable|numeric|min:0',
         ]);
-        \Log::info('Currency reçu', [
-    'raw'       => $request->input('currency'),
-    'validated' => $data['currency'] ?? 'ABSENT',
-]);
 
         $month = (int) $data['month'];
         $year  = (int) $data['year'];
@@ -175,14 +176,19 @@ class SalaryController extends Controller
         if ($salary->exists && in_array($salary->status, ['validated', 'paid'])) {
             return redirect()
                 ->route('salary.show', $employee)
-                ->with('error', 'Ce bulletin est déjà validé ou payé. Impossible de le modifier.');
+                ->with('error', 'Ce bulletin est deja valide ou paye. Impossible de le modifier.');
+        }
+
+        // Enregistrer qui a cree le bulletin (saisie initiale uniquement)
+        if (! $salary->exists) {
+            $salary->created_by = auth()->id();
         }
 
         $salary->fill([
             'employee_id'              => $employee->id,
             'month'                    => $month,
             'year'                     => $year,
-            'currency'                 => $data['currency'] ?? 'MAD',  // ✅ AJOUTÉ
+            'currency'                 => $data['currency'] ?? 'MAD',
             'salary_type'              => $data['salary_type'] ?? 'monthly',
             'hourly_rate'              => $data['hourly_rate'] ?? 0,
             'working_hours'            => $data['working_hours'] ?? 0,
@@ -214,6 +220,7 @@ class SalaryController extends Controller
             'absence_days'             => $data['absence_days'] ?? 0,
             'absence_hours'            => $data['absence_hours'] ?? 0,
             'delay_hours'              => $data['delay_hours'] ?? 0,
+            'garde_hours'              => $data['garde_hours'] ?? 0,   // ← NOUVEAU
             'cnss_base'                => $data['cnss_base'] ?? 0,
             'cnss_deduction'           => $data['cnss_deduction'] ?? 0,
             'amo_deduction'            => $data['amo_deduction'] ?? 0,
@@ -231,38 +238,59 @@ class SalaryController extends Controller
         ]);
 
         $salary->save();
-$salary->save();
-\Log::info('Currency après save', [
-    'id'       => $salary->id,
-    'currency' => $salary->fresh()->currency,
-]);
+
+        $this->payrollService->clearSummaryCache($month, $year);
+
         return redirect()
             ->route('salary.show', $employee)
-            ->with('success', 'Bulletin de paie enregistré avec succès.');
+            ->with('success', 'Bulletin de paie enregistre avec succes.');
     }
 
     public function validateSalary(Salary $salary)
     {
         abort_if(auth()->user()->isEmployee(), 403);
-        abort_if($salary->status !== 'draft', 403, 'Ce bulletin ne peut pas être validé.');
-        $salary->update(['status' => 'validated']);
-        return back()->with('success', 'Bulletin validé.');
+        abort_if($salary->status !== 'draft', 403, 'Ce bulletin ne peut pas etre valide.');
+
+        $salary->update([
+            'status'       => 'validated',
+            'validated_by' => auth()->id(),
+            'validated_at' => now(),
+        ]);
+
+        $this->payrollService->clearSummaryCache($salary->month, $salary->year);
+
+        return back()->with('success', 'Bulletin valide.');
     }
 
     public function markPaid(Salary $salary)
     {
         abort_if(auth()->user()->isEmployee(), 403);
         abort_if($salary->status !== 'validated', 403, "Valider d'abord le bulletin.");
-        $salary->update(['status' => 'paid']);
-        return back()->with('success', 'Bulletin marqué comme payé.');
+
+        $salary->update([
+            'status'  => 'paid',
+            'paid_by' => auth()->id(),
+            'paid_at' => now(),
+        ]);
+
+        $this->payrollService->clearSummaryCache($salary->month, $salary->year);
+
+        return back()->with('success', 'Bulletin marque comme paye.');
     }
 
     public function destroy(Salary $salary)
     {
-        abort_if($salary->status !== 'draft', 403, 'Seuls les bulletins brouillon peuvent être supprimés.');
+        abort_if($salary->status !== 'draft', 403, 'Seuls les bulletins brouillon peuvent etre supprimes.');
+
         $employee = $salary->employee;
+        $month    = $salary->month;
+        $year     = $salary->year;
+
         $salary->delete();
-        return redirect()->route('salary.show', $employee)->with('success', 'Bulletin supprimé.');
+
+        $this->payrollService->clearSummaryCache($month, $year);
+
+        return redirect()->route('salary.show', $employee)->with('success', 'Bulletin supprime.');
     }
 
     public function pdf(Salary $salary)
@@ -293,9 +321,11 @@ $salary->save();
 
         \App\Jobs\GeneratePayrollJob::dispatch($request->month, $request->year);
 
+        $this->payrollService->clearSummaryCache($request->month, $request->year);
+
         return redirect()
             ->route('salary.index', ['month' => $request->month, 'year' => $request->year])
-            ->with('success', 'Génération des paies lancée en arrière-plan.');
+            ->with('success', 'Generation des paies lancee en arriere-plan.');
     }
 
     public function export()

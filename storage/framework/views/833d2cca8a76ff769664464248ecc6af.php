@@ -8,13 +8,13 @@
         <p>Année <?php echo e($year); ?> — Calcul des droits acquis <?php echo e($search ? ' | Recherche: ' . $search : ''); ?> <?php echo e($department ? ' | Service: ' . $department : ''); ?></p>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
-        
-        
-        
+
+
+
         
         <form method="GET" action="<?php echo e(route('absences.counters')); ?>" style="display:flex;gap:12px;align-items:end;flex-wrap:wrap">
             <input type="hidden" name="year" value="<?php echo e($year); ?>">
-            
+
             
             <div class="search-bar" style="position:relative">
                 <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--text-muted)">
@@ -22,7 +22,7 @@
                 </svg>
                 <input type="text" name="search" placeholder="Rechercher employé..." value="<?php echo e($search ?? ''); ?>" style="padding:10px 12px 10px 40px;border:1px solid var(--border);border-radius:8px;min-width:220px">
             </div>
-            
+
             
             <select name="department" style="padding:10px 12px;border:1px solid var(--border);border-radius:8px;min-width:160px">
                 <option value="">Departements</option>
@@ -30,16 +30,16 @@
                     <option value="<?php echo e($dept); ?>" <?php echo e($department == $dept ? 'selected' : ''); ?>><?php echo e($dept); ?></option>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </select>
-            
+
             
             <select name="year" style="padding:10px 12px;border:1px solid var(--border);border-radius:8px">
                 <?php for($y = now()->year + 1; $y >= now()->year - 3; $y--): ?>
                     <option value="<?php echo e($y); ?>" <?php echo e($year == $y ? 'selected' : ''); ?>><?php echo e($y); ?></option>
                 <?php endfor; ?>
             </select>
-            
+
             <button type="submit" class="btn btn-primary" style="padding:10px 24px">Filtrer</button>
-            
+
             <?php if($search || $department): ?>
                 <a href="<?php echo e(route('absences.counters', ['year' => $year])); ?>" class="btn btn-ghost">✕ Réinitialiser</a>
             <?php endif; ?>
@@ -172,18 +172,6 @@
 </div>
 
 
-<div class="card" style="margin-top:24px;background:var(--bg-secondary)">
-    <div style="padding:16px">
-        <div style="font-weight:600;margin-bottom:12px"> Légende</div>
-        <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:0.85rem;color:var(--text-muted)">
-            <div><span style="color:#10b981;font-weight:700">Vert</span> — Solde positif</div>
-            <div><span style="color:#f59e0b;font-weight:700">Orange</span> — Solde faible (<3 jours)</div>
-            <div><span style="color:#dc2626;font-weight:700">Rouge</span> — Solde négatif (dépassement)</div>
-            <div><strong>Pris</strong> = Congés annuels, maladie, sans solde approuvés</div>
-            <div><strong>En attente</strong> = Demandes non encore traitées</div>
-        </div>
-    </div>
-</div>
 <?php $__env->stopSection(); ?>
 
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\Projects\SIRH-\resources\views/absences/counters.blade.php ENDPATH**/ ?>

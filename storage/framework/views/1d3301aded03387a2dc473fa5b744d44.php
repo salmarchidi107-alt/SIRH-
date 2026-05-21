@@ -15,6 +15,93 @@
     <div class="alert alert-success mb-4"><?php echo e(session('success')); ?></div>
 <?php endif; ?>
 
+
+<div id="gardeModal" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.55);overflow-y:auto">
+    <div style="background:white;margin:4% auto 40px;padding:0;border-radius:16px;width:90%;max-width:700px;box-shadow:0 24px 80px rgba(0,0,0,0.3);overflow:hidden">
+
+        
+        <div style="background:linear-gradient(135deg,#0f766e,#2dd4bf);padding:22px 28px;display:flex;justify-content:space-between;align-items:center">
+            <div>
+                <div style="color:white;font-size:1.15rem;font-weight:700;display:flex;align-items:center;gap:8px">
+                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    Planning de Garde
+                </div>
+                <div style="color:rgba(255,255,255,0.8);font-size:0.82rem;margin-top:3px">
+                    <?php echo e($employee->full_name); ?> —
+                    <?php echo e(\Carbon\Carbon::create($year,$month)->locale('fr')->isoFormat('MMMM YYYY')); ?>
+
+                </div>
+            </div>
+            <button onclick="closeGardeModal()"
+                    style="background:rgba(255,255,255,0.2);border:none;color:white;width:34px;height:34px;
+                           border-radius:50%;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
+                           transition:background 0.2s"
+                    onmouseover="this.style.background='rgba(255,255,255,0.35)'"
+                    onmouseout="this.style.background='rgba(255,255,255,0.2)'">×</button>
+        </div>
+
+        
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:#e5e7eb">
+            <div style="background:#f0fdfa;padding:16px 20px;text-align:center">
+                <div style="font-size:0.7rem;color:#0f766e;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Jours de garde</div>
+                <div style="font-size:2.2rem;font-weight:900;color:#0f766e" id="garde-count">0</div>
+                <div style="font-size:0.72rem;color:#14b8a6;margin-top:2px">ce mois</div>
+            </div>
+            <div style="background:#f0fdfa;padding:16px 20px;text-align:center">
+                <div style="font-size:0.7rem;color:#0f766e;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Total heures</div>
+                <div style="font-size:2.2rem;font-weight:900;color:#0f766e" id="garde-total-h">0 h</div>
+                <div style="font-size:0.72rem;color:#14b8a6;margin-top:2px">heures de garde</div>
+            </div>
+            <div style="background:#f0fdfa;padding:16px 20px;text-align:center">
+                <div style="font-size:0.7rem;color:#0f766e;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Indemnité estimée</div>
+                <div style="font-size:1.6rem;font-weight:900;color:#0f766e" id="garde-total-amt">0,00 MAD</div>
+                <div style="font-size:0.72rem;color:#14b8a6;margin-top:2px">taux horaire × heures</div>
+            </div>
+        </div>
+
+        
+        <div style="padding:22px 28px">
+
+            
+            <div style="display:grid;grid-template-columns:130px 1fr 90px 90px 110px;gap:8px;
+                        padding:8px 14px;background:#ccfbf1;border-radius:8px;
+                        font-size:0.71rem;font-weight:700;color:#0f766e;
+                        text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">
+                <div>Date</div>
+                <div>Horaires</div>
+                <div>Durée</div>
+                <div>Salle</div>
+                <div style="text-align:right">Indemnité</div>
+            </div>
+
+            
+            <div id="garde-list" style="display:flex;flex-direction:column;gap:6px">
+                <div style="text-align:center;padding:32px;color:#94a3b8">Chargement...</div>
+            </div>
+
+            
+            <div id="garde-total-row" style="display:none;margin-top:10px">
+                <div style="display:grid;grid-template-columns:130px 1fr 90px 90px 110px;gap:8px;
+                            padding:12px 14px;background:linear-gradient(135deg,#0f766e,#2dd4bf);
+                            border-radius:8px;align-items:center">
+                    <div style="color:white;font-weight:700;font-size:0.85rem;grid-column:1/5">TOTAL DU MOIS</div>
+                    <div style="text-align:right;color:white;font-weight:900;font-size:1.05rem" id="garde-total-final">0,00 MAD</div>
+                </div>
+            </div>
+        </div>
+
+        
+        <div style="padding:14px 28px 20px;border-top:1px solid #ccfbf1;background:#f0fdfa;display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:0.78rem;color:#0f766e;font-style:italic">
+                * Montant calculé sur la base du taux horaire du bulletin en cours
+            </div>
+            <button onclick="closeGardeModal()" class="btn btn-ghost">Fermer</button>
+        </div>
+    </div>
+</div>
+
 <script>
 const EMPLOYEE_DATA = {
     base_salary:      <?php echo e((float) $employee->base_salary); ?>,
@@ -28,6 +115,8 @@ const EMPLOYEE_DATA = {
     ot_weekend:       <?php echo e((float) ($workingData['overtime_weekend'] ?? 0)); ?>,
     absence_hours:    <?php echo e((float) ($workingData['absence_hours'] ?? 0)); ?>,
     delay_hours:      <?php echo e((float) ($workingData['delay_hours'] ?? 0)); ?>,
+    garde_hours:      <?php echo e((float) ($workingData['garde_hours'] ?? 0)); ?>,
+    garde_days:       <?php echo e((int)   ($workingData['garde_days']  ?? 0)); ?>,
 };
 const EXISTING = {
     salary_type:              '<?php echo e($existing?->salary_type ?? 'monthly'); ?>',
@@ -49,6 +138,9 @@ const EXISTING = {
     fp_deduction_manual:      <?php echo e((float) ($existing?->fp_deduction_manual ?? 0)); ?>,
     currency:                 '<?php echo e($existing?->currency ?? 'MAD'); ?>',
 };
+
+// Détail de chaque shift de garde (injecté depuis PHP)
+const GARDE_SHIFTS = <?php echo json_encode($workingData['garde_shifts'] ?? [], 15, 512) ?>;
 </script>
 
 <form action="<?php echo e(route('salary.update', $employee)); ?>" method="POST" id="salaryForm">
@@ -85,6 +177,7 @@ const EXISTING = {
 <input type="hidden" name="working_hours"           id="h_working_hours">
 <input type="hidden" name="absence_hours"           id="h_abs_hours">
 <input type="hidden" name="delay_hours"             id="h_delay_hours">
+<input type="hidden" name="garde_hours"             id="h_garde_hours">
 <input type="hidden" name="hourly_rate"             id="h_hourly_rate">
 <input type="hidden" name="currency"                id="h_currency" value="MAD">
 
@@ -92,37 +185,68 @@ const EXISTING = {
 <div class="card mb-4" style="border-left:4px solid var(--primary)">
     <div class="card-header" style="border:none;padding:16px 20px">
         <div class="card-title" style="font-size:1.05rem;color:#0066cc">
-            ⏱ TEMPS DE TRAVAIL — <?php echo e(\Carbon\Carbon::create($year,$month)->locale('fr')->format('F Y')); ?>
+            TEMPS DE TRAVAIL — <?php echo e(\Carbon\Carbon::create($year,$month)->locale('fr')->translatedFormat('F Y')); ?>
 
         </div>
         <div style="font-size:0.8rem;color:var(--text-muted)">Données extraites automatiquement du pointage</div>
     </div>
     <div class="card-body" style="padding:0">
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border-color)">
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border-color)">
+
             <div style="background:var(--surface,white);padding:14px 16px">
                 <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-bottom:4px">Heures travaillées</div>
                 <div style="font-size:1.6rem;font-weight:700;color:#065f46" id="disp-working"><?php echo e($workingData['working_hours'] ?? 0); ?> h</div>
             </div>
+
             <div style="background:var(--surface,white);padding:14px 16px">
                 <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-bottom:4px">H. supp jour (25%)</div>
                 <div style="font-size:1.6rem;font-weight:700;color:#d97706" id="disp-ot-day"><?php echo e($workingData['overtime_day'] ?? 0); ?> h</div>
             </div>
+
             <div style="background:var(--surface,white);padding:14px 16px">
                 <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-bottom:4px">Heures absence</div>
                 <div style="font-size:1.6rem;font-weight:700;color:#ef4444" id="disp-abs"><?php echo e($workingData['absence_hours'] ?? 0); ?> h</div>
             </div>
+
             <div style="background:var(--surface,white);padding:14px 16px">
                 <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-bottom:4px">Heures retard</div>
                 <div style="font-size:1.6rem;font-weight:700;color:#ec4899" id="disp-delay"><?php echo e($workingData['delay_hours'] ?? 0); ?> h</div>
             </div>
+
+            
+            <div style="background:#f0fdfa;padding:14px 16px;cursor:pointer;transition:background 0.2s;
+                        border-left:3px solid #0f766e;position:relative"
+                 onclick="openGardeModal()"
+                 onmouseover="this.style.background='#f3e8ff'"
+                 onmouseout="this.style.background='#f0fdfa'"
+                 title="Cliquer pour voir le planning de garde">
+                <div style="font-size:0.75rem;color:#0f766e;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:4px">
+                    Jours de garde
+                    <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="#0f766e" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                
+                <div style="font-size:1.6rem;font-weight:700;color:#0f766e" id="disp-garde-days">
+                    <?php echo e($workingData['garde_days'] ?? 0); ?><span style="font-size:1rem;font-weight:500"> j</span>
+                </div>
+                
+                <div style="font-size:0.72rem;color:#2dd4bf;margin-top:3px" id="disp-garde-sub">
+                    <?php echo e($workingData['garde_hours'] ?? 0); ?> h au total
+                </div>
+                <div style="position:absolute;bottom:6px;right:8px;font-size:0.65rem;color:#c084fc;font-weight:600">
+                    Voir détails →
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
 
 
-<div class="card mb-4" style="border-left:4px solid #7c3aed">
+<div class="card mb-4" style="border-left:4px solid #0f766e">
     <div class="card-header" style="border:none;padding:14px 20px">
-        <div class="card-title" style="font-size:1.0rem;color:#7c3aed">SYSTÈME DE PAIE &amp; TYPE DE SALAIRE</div>
+        <div class="card-title" style="font-size:1.0rem;color:#0f766e">SYSTÈME DE PAIE &amp; TYPE DE SALAIRE</div>
     </div>
     <div class="card-body" style="padding:12px 20px">
         <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap">
@@ -167,8 +291,7 @@ const EXISTING = {
              border:1px solid #bfdbfe;border-radius:6px;font-size:0.82rem;color:#1e3a5f">
             <strong>🇲🇦 Système marocain</strong> —
             CNSS sal. <strong>4,48%</strong> (plafond 6 000 MAD) + AMO <strong>2,26%</strong> + FP <strong>20%</strong> max 2 500 MAD |
-            IR DGI barème annuel ÷ 12 |
-            Patronal : CNSS <strong>10,29%</strong> + AMO <strong>2,26%</strong> + TFP <strong>1,60%</strong>
+            IR DGI barème annuel ÷ 12 | Patronal : CNSS <strong>10,29%</strong> + AMO <strong>2,26%</strong> + TFP <strong>1,60%</strong>
         </div>
         <div id="mru-info-banner" style="display:none;margin-top:10px;padding:10px 14px;background:#f0fdf4;
              border:1px solid #86efac;border-radius:6px;font-size:0.82rem;color:#14532d">
@@ -227,14 +350,19 @@ const EXISTING = {
                     </tr>
                     <tr style="border-bottom:1px solid var(--border-color);background:#f9fafb">
                         <td style="padding:9px 14px">
-                            <div style="font-weight:600">Prime d'ancienneté <span class="badge badge-info" style="font-size:0.65rem">Auto</span></div>
-                            <div style="font-size:0.75rem;color:var(--text-muted)"><?php echo e($employee->seniority_years); ?> an(s) → <?php echo e(($employee->seniority_rate * 100)); ?>%</div>
+                            <div style="font-weight:600">Prime d'ancienneté</div>
                         </td>
-                        <td style="padding:9px 14px;text-align:right">
-                            <div class="font-semibold" id="seniority-val">0,00 <span class="cur-label">MAD</span></div>
-                            <div style="font-size:0.72rem;color:var(--text-muted)">Calculé auto.</div>
+                        <td style="padding:9px 14px">
+                            <input type="number" name="seniority_bonus" id="seniority_bonus" class="form-control"
+                                   value="<?php echo e(old('seniority_bonus', $existing?->seniority_bonus ?? 0)); ?>"
+                                   step="0.01" min="0" style="text-align:right" oninput="calculate()">
+                            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">
+                                <?php echo e($employee->seniority_years); ?> an(s) → <?php echo e(($employee->seniority_rate * 100)); ?>%
+                            </div>
                         </td>
                     </tr>
+
+                    
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td colspan="2" style="padding:0">
                             <div style="padding:8px 14px;font-weight:600;font-size:0.82rem;color:#92400e;background:#fffbeb;border-bottom:1px solid #fde68a">
@@ -269,6 +397,32 @@ const EXISTING = {
                             </div>
                         </td>
                     </tr>
+
+                    
+                    <tr style="border-bottom:1px solid var(--border-color);background:#f0fdfa">
+                        <td style="padding:9px 14px">
+                            <div style="font-weight:600;color:#0f766e;display:flex;align-items:center;gap:6px">
+                                Indemnité de garde
+                                <button type="button" onclick="openGardeModal()"
+                                        style="background:#ccfbf1;border:none;color:#0f766e;padding:2px 10px;
+                                               border-radius:20px;font-size:0.68rem;cursor:pointer;font-weight:700;
+                                               transition:background 0.2s"
+                                        onmouseover="this.style.background='#99f6e4'"
+                                        onmouseout="this.style.background='#ccfbf1'">
+                                    📅 <?php echo e($workingData['garde_days'] ?? 0); ?> j — Voir planning
+                                </button>
+                            </div>
+                            <div style="font-size:0.72rem;color:#14b8a6;margin-top:2px">
+                                <?php echo e($workingData['garde_hours'] ?? 0); ?> h × taux horaire
+                            </div>
+                        </td>
+                        <td style="padding:9px 14px;text-align:right">
+                            <div style="font-weight:700;color:#0f766e;font-size:1rem" id="garde-gain-display">
+                                0,00 <span class="cur-label">MAD</span>
+                            </div>
+                        </td>
+                    </tr>
+
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td style="padding:9px 14px"><div style="font-weight:600">Prime de rendement</div></td>
                         <td style="padding:9px 14px">
@@ -345,7 +499,6 @@ const EXISTING = {
 
 <div>
 
-    
     <div class="card mb-4">
         <div class="card-header" style="background:#eff6ff;border-bottom:2px solid #bfdbfe">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
@@ -415,7 +568,6 @@ const EXISTING = {
         </div>
     </div>
 
-    
     <div class="card mb-4">
         <div class="card-header" style="background:#fef3c7;border-bottom:2px solid #fcd34d">
             <div class="card-title" style="color:#78350f" id="ir-title">IR — Impôt sur le Revenu</div>
@@ -439,7 +591,6 @@ const EXISTING = {
         </div>
     </div>
 
-    
     <div class="card mb-4">
         <div class="card-header" style="background:#fff0f0;border-bottom:2px solid #fecaca">
             <div class="card-title" style="color:#991b1b">RETENUES</div>
@@ -519,7 +670,6 @@ const EXISTING = {
         </div>
     </div>
 
-    
     <div class="card mb-4" style="border:2px solid var(--success);background:linear-gradient(135deg,#f0fdf4,#ffffff)">
         <div class="card-body" style="padding:20px;text-align:center">
             <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600">Net à payer</div>
@@ -532,7 +682,6 @@ const EXISTING = {
         </div>
     </div>
 
-    
     <div class="card mb-4">
         <div class="card-header" style="background:#fef3c7;border-bottom:2px solid #fcd34d">
             <div class="card-title" style="color:#78350f" id="emp-title">Charges patronales <span style="font-size:0.72rem;font-weight:400">(informatives)</span></div>
@@ -572,312 +721,288 @@ const EXISTING = {
 var currentSystem = 'MAD';
 
 var SYS = {
-    MAD: {
-        CNSS_SAL: 0.0448, CNSS_PLAFOND: 6000,
-        AMO_SAL: 0.0226, FP_RATE: 0.20, FP_MAX: 2500, HAS_FP: true,
-        CNSS_PAT: 0.1029, AMO_PAT: 0.0226, TFP: 0.016, HAS_TFP: true,
-        HEURES_REF: 191.25,
-        cot_sub: 'Mode automatique = taux legaux marocains',
-        cnss_lbl: 'CNSS salariale',
-        amo_lbl: 'AMO salariale',
-        amo_sub: '2,26% du salaire brut',
-        taxable_lbl: 'Net imposable (NI)',
-        cot_tot_lbl: 'TOTAL COTISATIONS (CNSS+AMO)',
-        ir_title: 'IR - Impot sur le Revenu',
-        ir_sub: 'Bareme progressif annuel DGI 12',
-        ir_ann_lbl: 'IR annuel brut (bareme)',
-        ir_fam_lbl: 'Deductions familiales (360 MAD/pers.)',
-        ir_mon_lbl: 'IR mensuel retenu',
-        emp_cnss_lbl: 'CNSS patronale (10,29%)',
-        emp_amo_lbl: 'AMO patronale (2,26%)',
-        emp_tfp_lbl: 'TFP (1,60%)',
-        hr_lbl: '191,25'
-    },
-    MRU: {
-        CNSS_SAL: 0.01, CNSS_PLAFOND: 15000,
-        AMO_SAL: 0.04, FP_RATE: 0, FP_MAX: 0, HAS_FP: false,
-        CNSS_PAT: 0.13, AMO_PAT: 0.02, TFP: 0, HAS_TFP: false,
-        HEURES_REF: 173.33,
-        cot_sub: 'Mode automatique = taux legaux mauritaniens',
-        cnss_lbl: 'CNSS salariale (Mauritanie)',
-        amo_lbl: 'CNAM salariale (Mauritanie)',
-        amo_sub: '4% du salaire brut - assurance maladie',
-        taxable_lbl: 'Revenu imposable ITS',
-        cot_tot_lbl: 'TOTAL COTISATIONS (CNSS+CNAM)',
-        ir_title: 'ITS - Impot sur Traitements et Salaires',
-        ir_sub: 'Bareme progressif mensuel - Mauritanie',
-        ir_ann_lbl: 'ITS calcule (bareme mensuel)',
-        ir_fam_lbl: 'Abattement',
-        ir_mon_lbl: 'ITS mensuel retenu',
-        emp_cnss_lbl: 'CNSS patronale (13%)',
-        emp_amo_lbl: 'CNAM patronale (2%)',
-        emp_tfp_lbl: '',
-        hr_lbl: '173,33'
-    }
+    MAD:{CNSS_SAL:0.0448,CNSS_PLAFOND:6000,AMO_SAL:0.0226,FP_RATE:0.20,FP_MAX:2500,HAS_FP:true,CNSS_PAT:0.1029,AMO_PAT:0.0226,TFP:0.016,HAS_TFP:true,HEURES_REF:191.25,cot_sub:'Mode automatique = taux legaux marocains',cnss_lbl:'CNSS salariale',amo_lbl:'AMO salariale',amo_sub:'2,26% du salaire brut',taxable_lbl:'Net imposable (NI)',cot_tot_lbl:'TOTAL COTISATIONS (CNSS+AMO)',ir_title:'IR - Impot sur le Revenu',ir_sub:'Bareme progressif annuel DGI / 12',ir_ann_lbl:'IR annuel brut (bareme)',ir_fam_lbl:'Deductions familiales (360 MAD/pers.)',ir_mon_lbl:'IR mensuel retenu',emp_cnss_lbl:'CNSS patronale (10,29%)',emp_amo_lbl:'AMO patronale (2,26%)',emp_tfp_lbl:'TFP (1,60%)',hr_lbl:'191,25'},
+    MRU:{CNSS_SAL:0.01,CNSS_PLAFOND:15000,AMO_SAL:0.04,FP_RATE:0,FP_MAX:0,HAS_FP:false,CNSS_PAT:0.13,AMO_PAT:0.02,TFP:0,HAS_TFP:false,HEURES_REF:173.33,cot_sub:'Mode automatique = taux legaux mauritaniens',cnss_lbl:'CNSS salariale (Mauritanie)',amo_lbl:'CNAM salariale (Mauritanie)',amo_sub:'4% du salaire brut - assurance maladie',taxable_lbl:'Revenu imposable ITS',cot_tot_lbl:'TOTAL COTISATIONS (CNSS+CNAM)',ir_title:'ITS - Impot sur Traitements et Salaires',ir_sub:'Bareme progressif mensuel - Mauritanie',ir_ann_lbl:'ITS calcule (bareme mensuel)',ir_fam_lbl:'Abattement',ir_mon_lbl:'ITS mensuel retenu',emp_cnss_lbl:'CNSS patronale (13%)',emp_amo_lbl:'CNAM patronale (2%)',emp_tfp_lbl:'',hr_lbl:'173,33'}
 };
 
-function calcIR_MAD(annuel) {
-    if (annuel <= 30000) return 0;
-    if (annuel <= 50000) return (annuel - 30000) * 0.10;
-    if (annuel <= 60000) return 2000 + (annuel - 50000) * 0.20;
-    if (annuel <= 80000) return 4000 + (annuel - 60000) * 0.30;
-    if (annuel <= 180000) return 10000 + (annuel - 80000) * 0.34;
-    return 44000 + (annuel - 180000) * 0.38;
+function calcIR_MAD(a){if(a<=30000)return 0;if(a<=50000)return(a-30000)*.10;if(a<=60000)return 2000+(a-50000)*.20;if(a<=80000)return 4000+(a-60000)*.30;if(a<=180000)return 10000+(a-80000)*.34;return 44000+(a-180000)*.38;}
+function calcITS_MRU(m){if(m<=6000)return 0;if(m<=9000)return(m-6000)*.15;if(m<=21000)return 450+(m-9000)*.25;return 3450+(m-21000)*.40;}
+function calcDeductFam_MAD(s,c){var d=0;if(s==='marie'||s==='veuf'||s==='divorce')d+=360;d+=Math.min(c,6)*360;return d;}
+function seniorityRate(y){if(y<2)return 0;if(y<5)return .05;if(y<12)return .10;if(y<20)return .15;if(y<25)return .20;return .25;}
+function fmt(n){return parseFloat(n.toFixed(2)).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function setHTML(id,val){var el=document.getElementById(id);if(el)el.innerHTML=val+' <span class="cur-label">'+currentSystem+'</span>';}
+function setText(id,val){var el=document.getElementById(id);if(el)el.textContent=val;}
+
+// ── Modal Garde ───────────────────────────────────────────────────────────────
+function openGardeModal() {
+    var baseSalary = parseFloat(document.getElementById('base_salary').value) || EMPLOYEE_DATA.base_salary;
+    var S      = SYS[currentSystem];
+    var tauxH  = baseSalary / S.HEURES_REF;
+    var gardeH = EMPLOYEE_DATA.garde_hours;
+    var gardeD = EMPLOYEE_DATA.garde_days;
+    var shifts = GARDE_SHIFTS;
+    var totalAmt = tauxH * gardeH;
+
+    // Résumé
+    document.getElementById('garde-count').textContent     = gardeD + (gardeD > 1 ? ' jours' : ' jour');
+    document.getElementById('garde-total-h').textContent   = fmt(gardeH) + ' h';
+    document.getElementById('garde-total-amt').textContent = fmt(totalAmt) + ' ' + currentSystem;
+
+    var jours = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+    var mois  = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+
+    var html = '';
+    if (shifts.length === 0) {
+        html = '<div style="text-align:center;padding:40px;color:#94a3b8;font-size:0.9rem">Aucune garde planifiée ce mois-ci</div>';
+    } else {
+        shifts.forEach(function(s, i) {
+            var d     = new Date(s.date + 'T00:00:00');
+            var label = jours[d.getDay()] + ' ' + d.getDate() + ' ' + mois[d.getMonth()];
+            var debut = s.shift_start ? s.shift_start.substring(0,5) : '--:--';
+            var fin   = s.shift_end   ? s.shift_end.substring(0,5)   : '--:--';
+            var duree = parseFloat(s.duree_heures || 0);
+            var amt   = tauxH * duree;
+            var salle = s.room || '—';
+            var bg    = i % 2 === 0 ? 'white' : '#f0fdfa';
+
+            html += '<div style="display:grid;grid-template-columns:130px 1fr 90px 90px 110px;gap:8px;'
+                  + 'padding:11px 14px;background:'+bg+';border:1px solid #ccfbf1;border-radius:8px;'
+                  + 'align-items:center;font-size:0.83rem">';
+
+            // Date
+            html += '<div style="font-weight:700;color:#0f766e">' + label + '</div>';
+
+            // Horaires
+            html += '<div style="display:flex;align-items:center;gap:5px">'
+                  + '<span style="background:#0f766e;color:white;padding:3px 9px;border-radius:20px;font-size:0.73rem;font-weight:600">' + debut + '</span>'
+                  + '<span style="color:#2dd4bf;font-size:0.8rem">→</span>'
+                  + '<span style="background:#2dd4bf;color:white;padding:3px 9px;border-radius:20px;font-size:0.73rem;font-weight:600">' + fin + '</span>'
+                  + '</div>';
+
+            // Durée
+            html += '<div style="font-weight:700;color:#0f766e;text-align:center">'
+                  + fmt(duree) + ' h</div>';
+
+            // Salle
+            html += '<div style="color:#64748b;font-size:0.78rem;text-align:center">' + salle + '</div>';
+
+            // Montant
+            html += '<div style="text-align:right;font-weight:700;color:#0f766e">'
+                  + fmt(amt) + ' ' + currentSystem + '</div>';
+
+            html += '</div>';
+        });
+    }
+
+    document.getElementById('garde-list').innerHTML = html;
+
+    // Ligne total
+    if (shifts.length > 0) {
+        document.getElementById('garde-total-row').style.display = 'block';
+        document.getElementById('garde-total-final').textContent = fmt(totalAmt) + ' ' + currentSystem;
+    } else {
+        document.getElementById('garde-total-row').style.display = 'none';
+    }
+
+    document.getElementById('gardeModal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
 }
 
-function calcITS_MRU(mensuel) {
-    if (mensuel <= 6000) return 0;
-    if (mensuel <= 9000) return (mensuel - 6000) * 0.15;
-    if (mensuel <= 21000) return 450 + (mensuel - 9000) * 0.25;
-    return 3450 + (mensuel - 21000) * 0.40;
+function closeGardeModal() {
+    document.getElementById('gardeModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
 }
 
-function calcDeductFam_MAD(status, children) {
-    var d = 0;
-    if (status === 'marie' || status === 'veuf' || status === 'divorce') d += 360;
-    d += Math.min(children, 6) * 360;
-    return d;
-}
+window.addEventListener('click', function(e) {
+    if (e.target === document.getElementById('gardeModal')) closeGardeModal();
+});
 
-function seniorityRate(years) {
-    if (years < 2) return 0;
-    if (years < 5) return 0.05;
-    if (years < 12) return 0.10;
-    if (years < 20) return 0.15;
-    if (years < 25) return 0.20;
-    return 0.25;
-}
-
-function fmt(n) {
-    return parseFloat(n.toFixed(2)).toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2});
-}
-
-function setHTML(id, val) {
-    var el = document.getElementById(id);
-    if (el) el.innerHTML = val + ' <span class="cur-label">' + currentSystem + '</span>';
-}
-
-function setText(id, val) {
-    var el = document.getElementById(id);
-    if (el) el.textContent = val;
-}
-
+// ── setSystem ─────────────────────────────────────────────────────────────────
 function setSystem(sys) {
     currentSystem = sys;
-
-    var hCurrency = document.getElementById('h_currency');
-    if (hCurrency) hCurrency.value = sys;
-
+    document.getElementById('h_currency').value = sys;
     var S = SYS[sys];
-
-    document.getElementById('btn-mad').style.background = sys === 'MAD' ? '#1d4ed8' : '#f9fafb';
-    document.getElementById('btn-mad').style.color      = sys === 'MAD' ? 'white'   : '#6b7280';
-    document.getElementById('btn-mru').style.background = sys === 'MRU' ? '#065f46' : '#f9fafb';
-    document.getElementById('btn-mru').style.color      = sys === 'MRU' ? 'white'   : '#6b7280';
-
+    document.getElementById('btn-mad').style.background = sys==='MAD'?'#1d4ed8':'#f9fafb';
+    document.getElementById('btn-mad').style.color      = sys==='MAD'?'white':'#6b7280';
+    document.getElementById('btn-mru').style.background = sys==='MRU'?'#065f46':'#f9fafb';
+    document.getElementById('btn-mru').style.color      = sys==='MRU'?'white':'#6b7280';
     var badge = document.getElementById('system-badge');
-    badge.textContent       = sys === 'MAD' ? 'Systeme marocain actif' : 'Systeme mauritanien actif';
-    badge.style.background  = sys === 'MAD' ? '#dbeafe' : '#dcfce7';
-    badge.style.color       = sys === 'MAD' ? '#1e40af' : '#14532d';
-    badge.style.borderColor = sys === 'MAD' ? '#bfdbfe' : '#86efac';
-
-    document.getElementById('mad-info-banner').style.display = sys === 'MAD' ? 'block' : 'none';
-    document.getElementById('mru-info-banner').style.display = sys === 'MRU' ? 'block' : 'none';
-
-    document.querySelectorAll('.cur-label').forEach(function(el) { el.textContent = sys; });
-
-    setText('cot-subtitle',    S.cot_sub);
-    setText('cnss-label',      S.cnss_lbl);
-    setText('amo-label',       S.amo_lbl);
-    setText('amo-sub',         S.amo_sub);
-    setText('taxable-label',   S.taxable_lbl);
-    setText('cot-total-label', S.cot_tot_lbl);
-    setText('ir-title',        S.ir_title);
-    setText('ir-subtitle',     S.ir_sub);
-    setText('ir-annual-label', S.ir_ann_lbl);
-    setText('ir-family-label', S.ir_fam_lbl);
-    setText('ir-monthly-label',S.ir_mon_lbl);
-    setText('emp-cnss-label',  S.emp_cnss_lbl);
-    setText('emp-amo-label',   S.emp_amo_lbl);
-    if (S.HAS_TFP) setText('emp-tfp-label', S.emp_tfp_lbl);
-
-    document.getElementById('row-fp').style.display        = S.HAS_FP  ? '' : 'none';
-    document.getElementById('row-tfp').style.display       = S.HAS_TFP ? '' : 'none';
-    document.getElementById('row-ir-family').style.display = sys === 'MAD' ? '' : 'none';
-
-    setText('heures-ref-label', S.hr_lbl);
+    badge.textContent=sys==='MAD'?'Systeme marocain actif':'Systeme mauritanien actif';
+    badge.style.background=sys==='MAD'?'#dbeafe':'#dcfce7';
+    badge.style.color=sys==='MAD'?'#1e40af':'#14532d';
+    badge.style.borderColor=sys==='MAD'?'#bfdbfe':'#86efac';
+    document.getElementById('mad-info-banner').style.display=sys==='MAD'?'block':'none';
+    document.getElementById('mru-info-banner').style.display=sys==='MRU'?'block':'none';
+    document.querySelectorAll('.cur-label').forEach(function(el){el.textContent=sys;});
+    setText('cot-subtitle',S.cot_sub);setText('cnss-label',S.cnss_lbl);setText('amo-label',S.amo_lbl);
+    setText('amo-sub',S.amo_sub);setText('taxable-label',S.taxable_lbl);setText('cot-total-label',S.cot_tot_lbl);
+    setText('ir-title',S.ir_title);setText('ir-subtitle',S.ir_sub);setText('ir-annual-label',S.ir_ann_lbl);
+    setText('ir-family-label',S.ir_fam_lbl);setText('ir-monthly-label',S.ir_mon_lbl);
+    setText('emp-cnss-label',S.emp_cnss_lbl);setText('emp-amo-label',S.emp_amo_lbl);
+    if(S.HAS_TFP)setText('emp-tfp-label',S.emp_tfp_lbl);
+    document.getElementById('row-fp').style.display=S.HAS_FP?'':'none';
+    document.getElementById('row-tfp').style.display=S.HAS_TFP?'':'none';
+    document.getElementById('row-ir-family').style.display=sys==='MAD'?'':'none';
+    setText('heures-ref-label',S.hr_lbl);
     calculate();
 }
 
 function toggleCotisationMode() {
-    var checked = document.querySelector('input[name="mode_cotisation"]:checked');
-    var isManual = checked && checked.value === 'manual';
-    ['cnss','amo','fp'].forEach(function(k) {
-        var a = document.getElementById(k+'-auto');
-        var m = document.getElementById(k+'-manual');
-        if (a) a.style.display = isManual ? 'none'  : 'block';
-        if (m) m.style.display = isManual ? 'block' : 'none';
+    var checked=document.querySelector('input[name="mode_cotisation"]:checked');
+    var isManual=checked&&checked.value==='manual';
+    ['cnss','amo','fp'].forEach(function(k){
+        var a=document.getElementById(k+'-auto');var m=document.getElementById(k+'-manual');
+        if(a)a.style.display=isManual?'none':'block';if(m)m.style.display=isManual?'block':'none';
     });
-    var aL = document.getElementById('autoLabel');
-    var mL = document.getElementById('manuelLabel');
-    if (aL) { aL.style.background = isManual ? 'white' : '#e0f2fe'; aL.style.color = isManual ? '' : '#0369a1'; }
-    if (mL) { mL.style.background = isManual ? '#fef08a' : 'white'; mL.style.color = isManual ? '#78350f' : ''; }
+    var aL=document.getElementById('autoLabel');var mL=document.getElementById('manuelLabel');
+    if(aL){aL.style.background=isManual?'white':'#e0f2fe';aL.style.color=isManual?'':'#0369a1';}
+    if(mL){mL.style.background=isManual?'#fef08a':'white';mL.style.color=isManual?'#78350f':'';}
     calculate();
 }
 
 function onTypeChange() {
-    var isHourly = document.getElementById('type_hourly').checked;
-    document.getElementById('hourly_rate').disabled = !isHourly;
-    document.getElementById('base_salary').readOnly = isHourly;
-    setText('base-sub', isHourly ? 'Calcule : taux horaire x heures travaillees' : 'Remuneration mensuelle contractuelle');
+    var isHourly=document.getElementById('type_hourly').checked;
+    document.getElementById('hourly_rate').disabled=!isHourly;
+    document.getElementById('base_salary').readOnly=isHourly;
+    setText('base-sub',isHourly?'Calcule : taux horaire x heures travaillees':'Remuneration mensuelle contractuelle');
     calculate();
 }
 
+// ── calculate ─────────────────────────────────────────────────────────────────
 function calculate() {
-    var S = SYS[currentSystem];
+    var S      = SYS[currentSystem];
+    var workH  = EMPLOYEE_DATA.working_hours;
+    var otDayH = EMPLOYEE_DATA.ot_day;
+    var absH   = EMPLOYEE_DATA.absence_hours;
+    var delayH = EMPLOYEE_DATA.delay_hours;
+    var gardeH = EMPLOYEE_DATA.garde_hours;
+    var gardeD = EMPLOYEE_DATA.garde_days;
+    var otNightH = parseFloat(document.getElementById('ot_night_h').value)||0;
+    var otWkndH  = parseFloat(document.getElementById('ot_wknd_h').value)||0;
 
-    var workH    = EMPLOYEE_DATA.working_hours;
-    var otDayH   = EMPLOYEE_DATA.ot_day;
-    var absH     = EMPLOYEE_DATA.absence_hours;
-    var delayH   = EMPLOYEE_DATA.delay_hours;
-    var otNightH = parseFloat(document.getElementById('ot_night_h').value) || 0;
-    var otWkndH  = parseFloat(document.getElementById('ot_wknd_h').value)  || 0;
+    setText('disp-working',    workH+' h');
+    setText('disp-ot-day',     otDayH+' h');
+    setText('disp-abs',        absH+' h');
+    setText('disp-delay',      delayH+' h');
+    // Bandeau garde : jours en grand, heures en sous-titre
+    document.getElementById('disp-garde-days').innerHTML =
+        gardeD + '<span style="font-size:1rem;font-weight:500"> j</span>';
+    setText('disp-garde-sub', fmt(gardeH) + ' h au total');
 
-    setText('disp-working',    workH    + ' h');
-    setText('disp-ot-day',     otDayH   + ' h');
-    setText('disp-abs',        absH     + ' h');
-    setText('disp-delay',      delayH   + ' h');
-    setText('ot-day-h-disp',   otDayH   + ' h');
-    setText('ot-night-h-disp', otNightH + ' h');
-    setText('ot-wknd-h-disp',  otWkndH  + ' h');
+    setText('ot-day-h-disp',   otDayH+' h');
+    setText('ot-night-h-disp', otNightH+' h');
+    setText('ot-wknd-h-disp',  otWkndH+' h');
 
     var isHourly   = document.getElementById('type_hourly').checked;
-    var hourlyRate = parseFloat(document.getElementById('hourly_rate').value) || 0;
+    var hourlyRate = parseFloat(document.getElementById('hourly_rate').value)||0;
     var baseSalary;
-    if (isHourly) {
-        baseSalary = hourlyRate * workH;
-        document.getElementById('base_salary').value = baseSalary.toFixed(2);
-    } else {
-        baseSalary = parseFloat(document.getElementById('base_salary').value) || 0;
-    }
-    var tauxH = isHourly ? hourlyRate : (baseSalary / S.HEURES_REF);
+    if(isHourly){baseSalary=hourlyRate*workH;document.getElementById('base_salary').value=baseSalary.toFixed(2);}
+    else{baseSalary=parseFloat(document.getElementById('base_salary').value)||0;}
+    var tauxH = isHourly ? hourlyRate : (baseSalary/S.HEURES_REF);
 
-    var seniority = baseSalary * seniorityRate(EMPLOYEE_DATA.seniority_years);
-    setHTML('seniority-val', fmt(seniority));
+    var seniority = baseSalary*seniorityRate(EMPLOYEE_DATA.seniority_years);
+    setHTML('seniority-val',fmt(seniority));
 
-    var otDayAmt   = tauxH * otDayH   * 1.25;
-    var otNightAmt = tauxH * otNightH * 1.50;
-    var otWkndAmt  = tauxH * otWkndH  * 2.00;
-    var totalOT    = otDayAmt + otNightAmt + otWkndAmt;
+    var otDayAmt   = tauxH*otDayH*1.25;
+    var otNightAmt = tauxH*otNightH*1.50;
+    var otWkndAmt  = tauxH*otWkndH*2.00;
+    var totalOT    = otDayAmt+otNightAmt+otWkndAmt;
+    setHTML('ot-day-amt-disp',  '= '+fmt(otDayAmt));
+    setHTML('ot-night-amt-disp','= '+fmt(otNightAmt));
+    setHTML('ot-wknd-amt-disp', '= '+fmt(otWkndAmt));
+    setHTML('ot-total-disp',    fmt(totalOT));
 
-    setHTML('ot-day-amt-disp',   '= ' + fmt(otDayAmt));
-    setHTML('ot-night-amt-disp', '= ' + fmt(otNightAmt));
-    setHTML('ot-wknd-amt-disp',  '= ' + fmt(otWkndAmt));
-    setHTML('ot-total-disp',     fmt(totalOT));
+    // Garde
+    var gardeAmt = tauxH * gardeH;
+    document.getElementById('garde-gain-display').innerHTML =
+        fmt(gardeAmt)+' <span class="cur-label">'+currentSystem+'</span>';
 
-    var perfBonus      = parseFloat(document.getElementById('performance_bonus').value)        || 0;
-    var transport      = parseFloat(document.getElementById('transport_allowance').value)      || 0;
-    var meal           = parseFloat(document.getElementById('meal_allowance').value)           || 0;
-    var housing        = parseFloat(document.getElementById('housing_allowance').value)        || 0;
-    var responsibility = parseFloat(document.getElementById('responsibility_allowance').value) || 0;
-    var otherGains     = parseFloat(document.getElementById('other_gains').value)              || 0;
+    var perfBonus      = parseFloat(document.getElementById('performance_bonus').value)||0;
+    var transport      = parseFloat(document.getElementById('transport_allowance').value)||0;
+    var meal           = parseFloat(document.getElementById('meal_allowance').value)||0;
+    var housing        = parseFloat(document.getElementById('housing_allowance').value)||0;
+    var responsibility = parseFloat(document.getElementById('responsibility_allowance').value)||0;
+    var otherGains     = parseFloat(document.getElementById('other_gains').value)||0;
 
-    var absDeduction = tauxH * absH;
-    setHTML('absence-auto', fmt(absDeduction));
-    document.getElementById('absence-sub').innerHTML =
-        '(' + fmt(baseSalary) + ' / <span id="heures-ref-label">' + S.hr_lbl + '</span> h) x '
-        + absH + ' h = ' + fmt(absDeduction) + ' ' + currentSystem;
+    var absDeduction = tauxH*absH;
+    setHTML('absence-auto',fmt(absDeduction));
+    document.getElementById('absence-sub').innerHTML=
+        '('+fmt(baseSalary)+' / <span id="heures-ref-label">'+S.hr_lbl+'</span> h) x '
+        +absH+' h = '+fmt(absDeduction)+' '+currentSystem;
 
     var grossSalary = Math.max(0,
-        baseSalary + seniority + totalOT
-        + perfBonus + transport + meal + housing + responsibility + otherGains
-        - absDeduction
+        baseSalary+seniority+totalOT+gardeAmt
+        +perfBonus+transport+meal+housing+responsibility+otherGains
+        -absDeduction
     );
-    setText('gross-display', fmt(grossSalary));
+    setText('gross-display',fmt(grossSalary));
 
-    if (currentSystem === 'MAD') {
-        setText('cnss-sub', '4,48% x min(' + fmt(grossSalary) + ', 6 000) = ' + fmt(Math.min(grossSalary,6000)*0.0448) + ' MAD');
-    } else {
-        setText('cnss-sub', '1% x min(' + fmt(grossSalary) + ', 15 000) = ' + fmt(Math.min(grossSalary,15000)*0.01) + ' MRU');
+    if(currentSystem==='MAD'){setText('cnss-sub','4,48% x min('+fmt(grossSalary)+', 6 000) = '+fmt(Math.min(grossSalary,6000)*0.0448)+' MAD');}
+    else{setText('cnss-sub','1% x min('+fmt(grossSalary)+', 15 000) = '+fmt(Math.min(grossSalary,15000)*0.01)+' MRU');}
+
+    var checked2=document.querySelector('input[name="mode_cotisation"]:checked');
+    var isManual=checked2&&checked2.value==='manual';
+    var cnss,amo,fp;
+    if(isManual){
+        cnss=parseFloat(document.getElementById('cnss-manual').value)||0;
+        amo=parseFloat(document.getElementById('amo-manual').value)||0;
+        fp=S.HAS_FP?(parseFloat(document.getElementById('fp-manual').value)||0):0;
+    }else{
+        var base=Math.min(grossSalary,S.CNSS_PLAFOND);
+        cnss=base*S.CNSS_SAL;amo=grossSalary*S.AMO_SAL;
+        fp=S.HAS_FP?Math.min(grossSalary*S.FP_RATE,S.FP_MAX):0;
+        setHTML('cnss-auto',fmt(cnss));setHTML('amo-auto',fmt(amo));setHTML('fp-auto',fmt(fp));
     }
+    var totalCot=cnss+amo;
+    var taxableIncome=Math.max(0,grossSalary-cnss-amo-fp);
+    setHTML('taxable-display',fmt(taxableIncome));setHTML('cot-total-display',fmt(totalCot));
 
-    var checked2 = document.querySelector('input[name="mode_cotisation"]:checked');
-    var isManual = checked2 && checked2.value === 'manual';
-    var cnss, amo, fp;
-    if (isManual) {
-        cnss = parseFloat(document.getElementById('cnss-manual').value) || 0;
-        amo  = parseFloat(document.getElementById('amo-manual').value)  || 0;
-        fp   = S.HAS_FP ? (parseFloat(document.getElementById('fp-manual').value) || 0) : 0;
-    } else {
-        var base = Math.min(grossSalary, S.CNSS_PLAFOND);
-        cnss = base        * S.CNSS_SAL;
-        amo  = grossSalary * S.AMO_SAL;
-        fp   = S.HAS_FP ? Math.min(grossSalary * S.FP_RATE, S.FP_MAX) : 0;
-        setHTML('cnss-auto', fmt(cnss));
-        setHTML('amo-auto',  fmt(amo));
-        setHTML('fp-auto',   fmt(fp));
+    var irAnnuelBrut,deductFam,irMensuel;
+    if(currentSystem==='MAD'){
+        irAnnuelBrut=calcIR_MAD(taxableIncome*12);
+        deductFam=calcDeductFam_MAD(EMPLOYEE_DATA.family_status,EMPLOYEE_DATA.children_count);
+        irMensuel=Math.max(0,irAnnuelBrut-deductFam)/12;
+        setHTML('ir-annual',fmt(irAnnuelBrut));
+        document.getElementById('ir-family').innerHTML='-'+fmt(deductFam)+' <span class="cur-label">MAD</span>';
+    }else{
+        irAnnuelBrut=calcITS_MRU(taxableIncome);deductFam=0;irMensuel=irAnnuelBrut;
+        setHTML('ir-annual',fmt(irAnnuelBrut));
+        document.getElementById('ir-family').innerHTML='-0,00 <span class="cur-label">MRU</span>';
     }
-    var totalCot = cnss + amo;
+    setHTML('ir-monthly',fmt(irMensuel));
 
-    var taxableIncome = Math.max(0, grossSalary - cnss - amo - fp);
-    setHTML('taxable-display',   fmt(taxableIncome));
-    setHTML('cot-total-display', fmt(totalCot));
+    var advance=parseFloat(document.getElementById('advance_deduction').value)||0;
+    var loan=parseFloat(document.getElementById('loan_deduction').value)||0;
+    var garnishment=parseFloat(document.getElementById('garnishment_deduction').value)||0;
+    var otherDed=parseFloat(document.getElementById('other_deductions').value)||0;
+    var totalRet=advance+loan+garnishment+otherDed;
+    setHTML('ret-total-display',fmt(totalRet));
 
-    var irAnnuelBrut, deductFam, irMensuel;
-    if (currentSystem === 'MAD') {
-        irAnnuelBrut = calcIR_MAD(taxableIncome * 12);
-        deductFam    = calcDeductFam_MAD(EMPLOYEE_DATA.family_status, EMPLOYEE_DATA.children_count);
-        irMensuel    = Math.max(0, irAnnuelBrut - deductFam) / 12;
-        setHTML('ir-annual', fmt(irAnnuelBrut));
-        document.getElementById('ir-family').innerHTML = '-' + fmt(deductFam) + ' <span class="cur-label">MAD</span>';
-    } else {
-        irAnnuelBrut = calcITS_MRU(taxableIncome);
-        deductFam    = 0;
-        irMensuel    = irAnnuelBrut;
-        setHTML('ir-annual', fmt(irAnnuelBrut));
-        document.getElementById('ir-family').innerHTML = '-0,00 <span class="cur-label">MRU</span>';
-    }
-    setHTML('ir-monthly', fmt(irMensuel));
-
-    var advance     = parseFloat(document.getElementById('advance_deduction').value)     || 0;
-    var loan        = parseFloat(document.getElementById('loan_deduction').value)        || 0;
-    var garnishment = parseFloat(document.getElementById('garnishment_deduction').value) || 0;
-    var otherDed    = parseFloat(document.getElementById('other_deductions').value)      || 0;
-    var totalRet    = advance + loan + garnishment + otherDed;
-    setHTML('ret-total-display', fmt(totalRet));
-
-    var netSalary = Math.max(0, grossSalary - totalCot - fp - irMensuel - totalRet);
-    setText('net-display', fmt(netSalary));
-    var tax_label = currentSystem === 'MAD' ? 'IR' : 'ITS';
+    var netSalary=Math.max(0,grossSalary-totalCot-fp-irMensuel-totalRet);
+    setText('net-display',fmt(netSalary));
+    var tax_label=currentSystem==='MAD'?'IR':'ITS';
     setText('net-detail',
-        'Brut ' + fmt(grossSalary) +
-        ' - Cotis. ' + fmt(totalCot) +
-        (fp > 0 ? ' - FP ' + fmt(fp) : '') +
-        ' - ' + tax_label + ' ' + fmt(irMensuel) +
-        ' - Retenues ' + fmt(totalRet) +
-        ' (' + currentSystem + ')'
+        'Brut '+fmt(grossSalary)+' - Cotis. '+fmt(totalCot)+
+        (fp>0?' - FP '+fmt(fp):'')+' - '+tax_label+' '+fmt(irMensuel)+
+        ' - Retenues '+fmt(totalRet)+' ('+currentSystem+')'
     );
 
-    var empBase  = Math.min(grossSalary, S.CNSS_PLAFOND);
-    var empCnss  = empBase       * S.CNSS_PAT;
-    var empAmo   = grossSalary   * S.AMO_PAT;
-    var empTfp   = S.HAS_TFP ? grossSalary * S.TFP : 0;
-    var empTotal = netSalary + totalCot + fp + irMensuel + empCnss + empAmo + empTfp;
-
-    setText('emp-cnss', fmt(empCnss));
-    setText('emp-amo',  fmt(empAmo));
-    setText('emp-tfp',  fmt(empTfp));
-    setHTML('emp-total', fmt(empTotal));
+    var empBase=Math.min(grossSalary,S.CNSS_PLAFOND);
+    var empCnss=empBase*S.CNSS_PAT;var empAmo=grossSalary*S.AMO_PAT;
+    var empTfp=S.HAS_TFP?grossSalary*S.TFP:0;
+    var empTotal=netSalary+totalCot+fp+irMensuel+empCnss+empAmo+empTfp;
+    setText('emp-cnss',fmt(empCnss));setText('emp-amo',fmt(empAmo));
+    setText('emp-tfp',fmt(empTfp));setHTML('emp-total',fmt(empTotal));
 
     document.getElementById('h_gross_salary').value        = grossSalary.toFixed(2);
     document.getElementById('h_seniority_bonus').value     = seniority.toFixed(2);
     document.getElementById('h_ot_day_amount').value       = otDayAmt.toFixed(2);
     document.getElementById('h_ot_night_amount').value     = otNightAmt.toFixed(2);
     document.getElementById('h_ot_wknd_amount').value      = otWkndAmt.toFixed(2);
-    document.getElementById('h_overtime_hours').value      = (otDayH + otNightH + otWkndH).toFixed(2);
+    document.getElementById('h_overtime_hours').value      = (otDayH+otNightH+otWkndH).toFixed(2);
     document.getElementById('h_absence_deduction').value   = absDeduction.toFixed(2);
-    document.getElementById('h_absence_days').value        = (absH / 8).toFixed(2);
-    document.getElementById('h_cnss_base').value           = Math.min(grossSalary, S.CNSS_PLAFOND).toFixed(2);
+    document.getElementById('h_absence_days').value        = (absH/8).toFixed(2);
+    document.getElementById('h_cnss_base').value           = Math.min(grossSalary,S.CNSS_PLAFOND).toFixed(2);
     document.getElementById('h_cnss_deduction').value      = cnss.toFixed(2);
     document.getElementById('h_amo_deduction').value       = amo.toFixed(2);
     document.getElementById('h_fp_deduction').value        = fp.toFixed(2);
@@ -896,23 +1021,20 @@ function calculate() {
     document.getElementById('h_working_hours').value       = workH.toFixed(2);
     document.getElementById('h_abs_hours').value           = absH.toFixed(2);
     document.getElementById('h_delay_hours').value         = delayH.toFixed(2);
-    document.getElementById('h_hourly_rate').value         = (isHourly ? hourlyRate : 0).toFixed(2);
+    document.getElementById('h_garde_hours').value         = gardeH.toFixed(2);
+    document.getElementById('h_hourly_rate').value         = (isHourly?hourlyRate:0).toFixed(2);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    if (EXISTING.salary_type === 'hourly') {
-        document.getElementById('type_hourly').checked  = true;
-        document.getElementById('hourly_rate').disabled = false;
-        document.getElementById('hourly_rate').value    = EXISTING.hourly_rate;
-        document.getElementById('base_salary').readOnly = true;
-    } else {
-        document.getElementById('type_monthly').checked = true;
-    }
-    var modeInput = document.querySelector('input[name="mode_cotisation"][value="' + EXISTING.mode_cotisation + '"]');
-    if (modeInput) modeInput.checked = true;
-
-    var savedCurrency = EXISTING.currency || 'MAD';
-    setSystem(savedCurrency);
+    if(EXISTING.salary_type==='hourly'){
+        document.getElementById('type_hourly').checked=true;
+        document.getElementById('hourly_rate').disabled=false;
+        document.getElementById('hourly_rate').value=EXISTING.hourly_rate;
+        document.getElementById('base_salary').readOnly=true;
+    }else{document.getElementById('type_monthly').checked=true;}
+    var modeInput=document.querySelector('input[name="mode_cotisation"][value="'+EXISTING.mode_cotisation+'"]');
+    if(modeInput)modeInput.checked=true;
+    setSystem(EXISTING.currency||'MAD');
     toggleCotisationMode();
 });
 </script>

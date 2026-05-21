@@ -16,14 +16,10 @@ class FormationController extends Controller
      |  HELPERS
      ══════════════════════════════════════════════════════════════════ */
 
-    /**
-     * Détecte la colonne de tri de la table employees.
-     */
     private function empSortCol(): string
     {
         static $col = null;
         if ($col) return $col;
-
         $cols = Schema::getColumnListing('employees');
         foreach (['prenom', 'first_name', 'nom', 'last_name', 'name'] as $try) {
             if (in_array($try, $cols)) { $col = $try; return $col; }
@@ -31,74 +27,58 @@ class FormationController extends Controller
         return $col = ($cols[0] ?? 'id');
     }
 
-    /**
-     * Détecte la relation "département" sur le modèle Employee.
-     * Essaie : department, departement, service, dept.
-     */
+    private function empSearchCols(): array
+    {
+        static $searchCols = null;
+        if ($searchCols !== null) return $searchCols;
+        $available  = Schema::getColumnListing('employees');
+        $candidates = ['first_name', 'last_name', 'nom', 'prenom', 'name'];
+        $searchCols = array_values(array_filter(
+            $candidates,
+            fn($c) => in_array($c, $available, true)
+        ));
+        return $searchCols;
+    }
+
     private function empDeptRelation(): ?string
     {
         static $rel = null;
         if ($rel !== null) return $rel ?: null;
-
         $emp = new Employee();
         foreach (['department', 'departement', 'service', 'dept'] as $r) {
-            if (method_exists($emp, $r)) {
-                $rel = $r;
-                return $rel;
-            }
+            if (method_exists($emp, $r)) { $rel = $r; return $rel; }
         }
         $rel = '';
         return null;
     }
 
-    /**
-     * Résout le nom de département depuis un employé.
-     * Cherche d'abord la colonne directe, puis la relation.
-     */
     private function resolveDeptName(Employee $emp): string
     {
-        // 1. Colonne directe department_name ou dept_name sur l'employé
         foreach (['department_name','dept_name','departement_name','service_name'] as $col) {
             if (isset($emp->$col) && $emp->$col) return $emp->$col;
         }
-
-        // 2. Via la relation chargée
         $rel = $this->empDeptRelation();
         if ($rel && $emp->relationLoaded($rel)) {
             $dept = $emp->$rel;
-            if ($dept) {
-                return $dept->name ?? $dept->nom ?? $dept->libelle ?? '—';
-            }
+            if ($dept) return $dept->name ?? $dept->nom ?? $dept->libelle ?? '—';
         }
-
-        // 3. Via department_id → charger manuellement depuis getDepartments
         if ($emp->department_id) {
             $depts = $this->getDepartments();
             $found = $depts->firstWhere('id', $emp->department_id);
-            if ($found) {
-                return $found->name ?? $found->nom ?? '—';
-            }
+            if ($found) return $found->name ?? $found->nom ?? '—';
         }
-
         return '—';
     }
 
-    /**
-     * Charge les employés avec la relation département si disponible.
-     */
     private function employeesQuery(): \Illuminate\Database\Eloquent\Builder
     {
         $rel     = $this->empDeptRelation();
         $sortCol = $this->empSortCol();
-
         return $rel
             ? Employee::with($rel)->orderBy($sortCol)
             : Employee::orderBy($sortCol);
     }
 
-    /**
-     * Résout les champs "libre" (Autre).
-     */
     private function resolveLibre(array $data, Request $request): array
     {
         if (empty($data['titre'])     && $request->filled('titre_libre'))
@@ -121,9 +101,20 @@ class FormationController extends Controller
 
         $query = Formation::with($withs);
 
-        if ($request->filled('departement_id')) {
-            $query->parDepartement($request->departement_id);
+        // ✅ Employé : ne voit que ses propres formations
+        $authUser = auth()->user();
+        if ($authUser->isEmployee()) {
+            $employee = Employee::where('user_id', $authUser->id)->first();
+            if ($employee) {
+                $query->where('employee_id', $employee->id);
+            }
+        } else {
+            // Admin/RH : filtres complets
+            if ($request->filled('departement_id')) {
+                $query->parDepartement($request->departement_id);
+            }
         }
+
         if ($request->filled('formation')) {
             $query->parFormation($request->formation);
         }
@@ -131,24 +122,30 @@ class FormationController extends Controller
             $query->parStatut($request->statut);
         }
         if ($request->filled('search')) {
-            $s = $request->search;
-            $query->where(function ($q) use ($s) {
-                $q->where('titre',      'like', "%$s%")
-                  ->orWhere('formateur','like', "%$s%")
-                  ->orWhere('organisme','like', "%$s%")
-                  ->orWhereHas('employee', fn($eq) =>
-                        $eq->where('nom',     'like', "%$s%")
-                           ->orWhere('prenom', 'like', "%$s%")
-                           ->orWhere('name',   'like', "%$s%")
-                  );
+            $s          = $request->search;
+            $searchCols = $this->empSearchCols();
+
+            $query->where(function ($q) use ($s, $searchCols) {
+                $q->where('titre',       'like', "%$s%")
+                  ->orWhere('formateur', 'like', "%$s%")
+                  ->orWhere('organisme', 'like', "%$s%");
+
+                if (!empty($searchCols)) {
+                    $q->orWhereHas('employee', function ($eq) use ($s, $searchCols) {
+                        $eq->where(function ($sub) use ($s, $searchCols) {
+                            foreach ($searchCols as $col) {
+                                $sub->orWhere($col, 'like', "%$s%");
+                            }
+                        });
+                    });
+                }
             });
         }
 
-        $formations  = $query->orderBy('date', 'desc')->paginate(15)->withQueryString();
+        $formations  = $query->orderBy('date', 'desc')->paginate(100)->withQueryString();
         $departments = $this->getDepartments();
         $stats       = $this->getStats();
 
-        // Injecte dept_name via setAttribute (persiste sur les modèles Eloquent)
         $formations->getCollection()->each(function ($f) {
             if ($f->employee) {
                 $f->employee->setAttribute('dept_name', $this->resolveDeptName($f->employee));
@@ -169,7 +166,6 @@ class FormationController extends Controller
         $debutSem = Carbon::now()->setISODate($annee, $semaine)->startOfWeek();
         $finSem   = $debutSem->copy()->endOfWeek();
 
-        // Formations de la semaine
         $formQuery = Formation::with('employee')
             ->parSemaine($debutSem->toDateString(), $finSem->toDateString());
 
@@ -179,45 +175,39 @@ class FormationController extends Controller
 
         $formationsSemaine = $formQuery->get();
 
-        // Employés
-        $employeesQuery = $this->employeesQuery();
+        // ✅ Filtre selon le rôle
+        $authUser = auth()->user();
 
-        if ($request->filled('presence')) {
-            $empIds = $formationsSemaine->pluck('employee_id')->unique();
-            if ($request->presence === 'present') {
-                $employeesQuery->whereIn('id', $empIds);
-            } else {
-                $employeesQuery->whereNotIn('id', $empIds);
+        if ($authUser->isEmployee()) {
+            // L'employé ne voit que lui-même
+            $employeesQuery = Employee::where('user_id', $authUser->id);
+        } else {
+            $employeesQuery = $this->employeesQuery();
+
+            if ($request->filled('presence')) {
+                $empIds = $formationsSemaine->pluck('employee_id')->unique();
+                if ($request->presence === 'present') {
+                    $employeesQuery->whereIn('id', $empIds);
+                } else {
+                    $employeesQuery->whereNotIn('id', $empIds);
+                }
             }
         }
 
         $employees   = $employeesQuery->get();
         $departments = $this->getDepartments();
 
-        // Injecte dept_name via setAttribute sur chaque employé
-        // Utilise setAttribute pour que l'attribut soit accessible dans la vue
         $employees->each(function ($emp) use ($departments) {
-            // Méthode 1 : via la relation chargée
             $rel = $this->empDeptRelation();
             if ($rel && $emp->relationLoaded($rel)) {
                 $dept    = $emp->$rel;
                 $deptNom = $dept ? ($dept->name ?? $dept->nom ?? $dept->libelle ?? null) : null;
-                if ($deptNom) {
-                    $emp->setAttribute('dept_name', $deptNom);
-                    return;
-                }
+                if ($deptNom) { $emp->setAttribute('dept_name', $deptNom); return; }
             }
-
-            // Méthode 2 : via department_id dans la liste déjà chargée
             if ($emp->department_id) {
                 $found = $departments->firstWhere('id', $emp->department_id);
-                if ($found) {
-                    $emp->setAttribute('dept_name', $found->name ?? $found->nom ?? '—');
-                    return;
-                }
+                if ($found) { $emp->setAttribute('dept_name', $found->name ?? $found->nom ?? '—'); return; }
             }
-
-            // Fallback
             $emp->setAttribute('dept_name', '—');
         });
 
@@ -284,14 +274,14 @@ class FormationController extends Controller
 
     public function exportPdf(Request $request)
     {
-        $rel        = $this->empDeptRelation();
-        $withs      = $rel ? ["employee.{$rel}"] : ['employee'];
-        $formations = Formation::with($withs)->orderBy('date', 'desc')->get();
+        $rel         = $this->empDeptRelation();
+        $withs       = $rel ? ["employee.{$rel}"] : ['employee'];
+        $formations  = Formation::with($withs)->orderBy('date', 'desc')->get();
         $departments = $this->getDepartments();
 
         $formations->each(function ($f) use ($departments) {
             if ($f->employee) {
-                $rel = $this->empDeptRelation();
+                $rel     = $this->empDeptRelation();
                 $deptNom = null;
                 if ($rel && $f->employee->relationLoaded($rel)) {
                     $dept    = $f->employee->$rel;

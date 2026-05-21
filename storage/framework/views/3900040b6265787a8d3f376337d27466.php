@@ -130,12 +130,12 @@
     <h1>Planning Hebdomadaire</h1>
 
     <div class="meta">
-        {{-- Infos de base --}}
-        <span>Semaine {{ $week }} / {{ $year }}</span>
-        <span>{{ $startOfWeek->format('d/m/Y') }} — {{ $endOfWeek->format('d/m/Y') }}</span>
+        
+        <span>Semaine <?php echo e($week); ?> / <?php echo e($year); ?></span>
+        <span><?php echo e($startOfWeek->format('d/m/Y')); ?> — <?php echo e($endOfWeek->format('d/m/Y')); ?></span>
 
-        {{-- Filtres actifs affichés comme badges --}}
-        @php
+        
+        <?php
             $shiftLabelsDisplay = [
                 'matin'      => 'Matin',
                 'apres_midi' => 'Après-midi',
@@ -143,27 +143,27 @@
                 'journee'    => 'Journée',
             ];
             $hasFilter = !empty($department) || !empty($search) || !empty($shift_type) || !empty($roomName);
-        @endphp
+        ?>
 
-        @if($hasFilter)
+        <?php if($hasFilter): ?>
             <div class="filters">
-                @if(!empty($department))
-                    <span class="filter-badge">Service : {{ $department }}</span>
-                @endif
-                @if(!empty($search))
-                    <span class="filter-badge">Recherche : {{ $search }}</span>
-                @endif
-                @if(!empty($shift_type))
-                    <span class="filter-badge">Shift : {{ $shiftLabelsDisplay[$shift_type] ?? $shift_type }}</span>
-                @endif
-                @if(!empty($roomName))
-                    <span class="filter-badge">Salle : {{ $roomName }}</span>
-                @endif
+                <?php if(!empty($department)): ?>
+                    <span class="filter-badge">Service : <?php echo e($department); ?></span>
+                <?php endif; ?>
+                <?php if(!empty($search)): ?>
+                    <span class="filter-badge">Recherche : <?php echo e($search); ?></span>
+                <?php endif; ?>
+                <?php if(!empty($shift_type)): ?>
+                    <span class="filter-badge">Shift : <?php echo e($shiftLabelsDisplay[$shift_type] ?? $shift_type); ?></span>
+                <?php endif; ?>
+                <?php if(!empty($roomName)): ?>
+                    <span class="filter-badge">Salle : <?php echo e($roomName); ?></span>
+                <?php endif; ?>
             </div>
-        @endif
+        <?php endif; ?>
     </div>
 
-    @php
+    <?php
         $days = [];
         for ($i = 0; $i < 7; $i++) {
             $days[] = $startOfWeek->copy()->addDays($i);
@@ -184,65 +184,68 @@
             'garde'      => 'Garde',
             'journee'    => 'Journée',
         ];
-    @endphp
+    ?>
 
     <table>
         <thead>
             <tr>
                 <th style="width:15%;">EMPLOYÉ</th>
                 <th style="width:10%;">DÉPARTEMENT</th>
-                @foreach($days as $i => $day)
+                <?php $__currentLoopData = $days; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $i => $day): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <th style="width:10.7%;">
-                        {{ $dayLabels[$i] }}<br>
-                        <span style="font-weight:normal; text-transform:none;">{{ $day->format('d M') }}</span>
+                        <?php echo e($dayLabels[$i]); ?><br>
+                        <span style="font-weight:normal; text-transform:none;"><?php echo e($day->format('d M')); ?></span>
                     </th>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </tr>
         </thead>
         <tbody>
-            @forelse($employees as $employee)
-                @php
+            <?php $__empty_1 = true; $__currentLoopData = $employees; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $employee): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                <?php
                     $employeePlannings = $plannings->get($employee->id, collect());
                     $byDate = $employeePlannings->groupBy(fn($p) => $p->date?->format('Y-m-d'));
-                @endphp
+                ?>
                 <tr>
-                    <td class="emp-name">{{ $employee->full_name }}</td>
-                    <td class="emp-dept">{{ $employee->department }}</td>
+                    <td class="emp-name"><?php echo e($employee->full_name); ?></td>
+                    <td class="emp-dept"><?php echo e($employee->department); ?></td>
 
-                    @foreach($days as $day)
-                        @php $dayShifts = $byDate->get($day->format('Y-m-d'), collect()); @endphp
+                    <?php $__currentLoopData = $days; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $day): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <?php $dayShifts = $byDate->get($day->format('Y-m-d'), collect()); ?>
                         <td class="shift-cell">
-                            @forelse($dayShifts as $planning)
-                                @php
+                            <?php $__empty_2 = true; $__currentLoopData = $dayShifts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $planning): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_2 = false; ?>
+                                <?php
                                     $badgeClass = $shiftClasses[$planning->shift_type] ?? 'shift-default';
                                     $label = $shiftLabels[$planning->shift_type] ?? ucfirst(str_replace('_', ' ', $planning->shift_type));
-                                @endphp
-                                <div class="shift-block {{ $badgeClass }}">
-                                    {{ $label }}
-                                    <div class="shift-time">{{ $planning->shift_start }} – {{ $planning->shift_end }}</div>
-                                    @if($planning->room)
-                                        <div class="shift-room">{{ $planning->room }}</div>
-                                    @endif
+                                ?>
+                                <div class="shift-block <?php echo e($badgeClass); ?>">
+                                    <?php echo e($label); ?>
+
+                                    <div class="shift-time"><?php echo e($planning->shift_start); ?> – <?php echo e($planning->shift_end); ?></div>
+                                    <?php if($planning->room): ?>
+                                        <div class="shift-room"><?php echo e($planning->room); ?></div>
+                                    <?php endif; ?>
                                 </div>
-                            @empty
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_2): ?>
                                 <span class="no-shift">—</span>
-                            @endforelse
+                            <?php endif; ?>
                         </td>
-                    @endforeach
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </tr>
-            @empty
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                 <tr>
                     <td colspan="9" style="text-align:center; padding:16px; color:#888;">
                         Aucun employé trouvé pour cette sélection.
                     </td>
                 </tr>
-            @endforelse
+            <?php endif; ?>
         </tbody>
     </table>
 
     <div class="footer">
-        Généré le {{ now()->format('d/m/Y à H:i') }}
+        Généré le <?php echo e(now()->format('d/m/Y à H:i')); ?>
+
     </div>
 
 </body>
 </html>
+<?php /**PATH D:\Projects\SIRH-\resources\views/planning/weekly_pdf.blade.php ENDPATH**/ ?>

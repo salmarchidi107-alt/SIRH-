@@ -1,6 +1,10 @@
 <?php $__env->startSection('title', 'LMS — Gestion des Formations'); ?>
 <?php $__env->startSection('page-title', 'Gestion des Formations'); ?>
 
+<?php
+    $isEmployee = auth()->user()->isEmployee();
+?>
+
 <?php $__env->startPush('styles'); ?>
 <style>
 :root {
@@ -35,7 +39,6 @@
 .btn-lms-ghost:hover { background:#f9fafb; color:#374151; }
 .btn-lms-main  { background:#14B8A6; border-color:#14B8A6; color:#fff; font-weight:500; }
 .btn-lms-main:hover { background:#0F9F90; }
-
 
 /* Toolbar */
 .lms-toolbar { background:#fff; border:0.5px solid #e5e7eb; border-radius:12px; padding:12px 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
@@ -99,10 +102,6 @@
 .fdiv { border:none; border-top:0.5px solid #f3f4f6; margin:18px 0; }
 .fsec { font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:#9ca3af; margin-bottom:12px; }
 
-/* Spinner dans select */
-.sel-wrap { position:relative; }
-.sel-spin { position:absolute; right:30px; top:50%; transform:translateY(-50%); font-size:12px; color:#9ca3af; display:none; }
-
 @media(max-width:580px) { .fr2,.fr3{grid-template-columns:1fr} .lms-page{padding:16px} }
 </style>
 <?php $__env->stopPush(); ?>
@@ -110,7 +109,6 @@
 <?php $__env->startSection('content'); ?>
 <div class="lms-page">
 
-   
     <?php if(session('error')): ?>
     <div style="display:flex;align-items:center;gap:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;font-size:13px;color:#991b1b;margin-bottom:16px;">
         <i class="fas fa-exclamation-circle"></i> <?php echo e(session('error')); ?>
@@ -121,29 +119,31 @@
     
     <div class="lms-header">
         <div>
-            <div class="lms-title">Gestion des Formations</div>
+            <div class="lms-title">
+                <?php if($isEmployee): ?> Mes Formations <?php else: ?> Gestion des Formations <?php endif; ?>
+            </div>
             <div class="lms-sub">Vue mensuelle — <?php echo e(now()->locale('fr')->translatedFormat('F Y')); ?></div>
         </div>
         <div class="lms-actions">
+            
             <div class="lms-toggle">
                 <a href="<?php echo e(route('lms.index')); ?>" class="active">Liste</a>
                 <a href="<?php echo e(route('lms.planning')); ?>">Planning</a>
             </div>
-            <a href="<?php echo e(route('referentiel.index')); ?>" class="btn-lms btn-lms-ghost">
-                Référentiel
-            </a>
-            <a href="<?php echo e(route('lms.exportPdf')); ?>" class="btn-lms btn-lms-ghost">
-                Exporter PDF
-            </a>
-            <button class="btn-lms btn-lms-main" onclick="openModal()">
-                <i class="fas fa-plus"></i> Ajouter formation
-            </button>
+
+            
+            <?php if(!$isEmployee): ?>
+                <a href="<?php echo e(route('referentiel.index')); ?>" class="btn-lms btn-lms-ghost">Référentiel</a>
+                <a href="<?php echo e(route('lms.exportPdf')); ?>" class="btn-lms btn-lms-ghost">Exporter PDF</a>
+                <button class="btn-lms btn-lms-main" onclick="openModal()">
+                    <i class="fas fa-plus"></i> Ajouter formation
+                </button>
+            <?php endif; ?>
         </div>
     </div>
 
     
-
-    
+    <?php if(!$isEmployee): ?>
     <form method="GET" action="<?php echo e(route('lms.index')); ?>" class="lms-toolbar">
         <div class="lms-search">
             <i class="fas fa-search"></i>
@@ -172,8 +172,12 @@
                 <i class="fas fa-times"></i>
             </a>
         <?php endif; ?>
-        <button type="submit" class="btn-lms btn-lms-main" style="padding:8px 14px;"><i class="fas fa-search"></i></button>
+        <button type="submit" class="btn-lms btn-lms-main" style="padding:8px 14px;">
+            <i class="fas fa-search"></i>
+        </button>
     </form>
+    <?php endif; ?>
+    
 
     
     <div class="lms-card">
@@ -187,7 +191,10 @@
                     <th>Date</th>
                     <th>Horaire</th>
                     <th>Statut</th>
+                    
+                    <?php if(!$isEmployee): ?>
                     <th style="width:80px;"></th>
+                    <?php endif; ?>
                 </tr>
             </thead>
             <tbody>
@@ -208,7 +215,10 @@
                     $ini    = strtoupper(mb_substr($prenom ?: $nom, 0, 1) . mb_substr($nom, 0, 1));
                     $dept   = $f->employee?->getAttribute('dept_name') ?? $f->dept_name ?? '—';
                     $bc     = match($f->statut) {
-                        'Planifiee'=>'b-plan','En cours'=>'b-cours','Terminee'=>'b-term',default=>'b-annul'
+                        'Planifiee' => 'b-plan',
+                        'En cours'  => 'b-cours',
+                        'Terminee'  => 'b-term',
+                        default     => 'b-annul'
                     };
                 ?>
                 <tr>
@@ -227,6 +237,9 @@
                     <td style="color:#6b7280;white-space:nowrap;"><?php echo e($f->date->format('d/m/Y')); ?></td>
                     <td style="color:#6b7280;white-space:nowrap;"><?php echo e($f->horaire); ?></td>
                     <td><span class="lms-badge <?php echo e($bc); ?>"><?php echo e($f->statut); ?></span></td>
+
+                    
+                    <?php if(!$isEmployee): ?>
                     <td>
                         <div style="display:flex;gap:6px;">
                             <button class="lms-act" title="Modifier"
@@ -242,14 +255,17 @@
                             </form>
                         </div>
                     </td>
+                    <?php endif; ?>
                 </tr>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                <tr><td colspan="8">
-                    <div class="lms-empty">
-                        <i class="fas fa-inbox"></i>
-                        <p>Aucune formation enregistree</p>
-                    </div>
-                </td></tr>
+                <tr>
+                    <td colspan="<?php echo e($isEmployee ? 7 : 8); ?>">
+                        <div class="lms-empty">
+                            <i class="fas fa-inbox"></i>
+                            <p>Aucune formation enregistree</p>
+                        </div>
+                    </td>
+                </tr>
             <?php endif; ?>
             </tbody>
         </table>
@@ -265,6 +281,7 @@
 </div>
 
 
+<?php if(!$isEmployee): ?>
 <div class="lms-ov" id="lmsOv" onclick="backdropClose(event)">
 <div class="lms-modal" id="lmsModal">
 
@@ -374,10 +391,12 @@
 
 </div>
 </div>
+<?php endif; ?>
 
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startPush('scripts'); ?>
+<?php if(!auth()->user()->isEmployee()): ?>
 <script>
 /* ─── Modal open/close ─── */
 function openModal()  { resetModal(); document.getElementById('lmsOv').classList.add('open'); document.body.style.overflow='hidden'; }
@@ -397,16 +416,12 @@ function resetModal() {
     document.getElementById('fDate').value  = new Date().toISOString().slice(0,10);
     document.getElementById('fDebut').value = '08:00';
     document.getElementById('fFin').value   = '17:00';
-    // Recharger les listes depuis le referentiel
     loadReferentiel();
 }
 
 function editFormation(f) {
-    // Ouvrir d'abord le modal
     document.getElementById('lmsOv').classList.add('open');
     document.body.style.overflow = 'hidden';
-
-    // Remplir les champs simples
     document.getElementById('lmsForm').reset();
     document.getElementById('lmsForm').action = `/lms/${f.id}`;
     document.getElementById('fMethod').value  = 'PUT';
@@ -417,7 +432,6 @@ function editFormation(f) {
     document.getElementById('fFin').value     = (f.heure_fin   || '').slice(0, 5);
     document.getElementById('fStatut').value  = f.statut || 'Planifiée';
 
-    // Réinitialiser champs libres
     ['fTitreLib','fFormateurLib','fOrganismeLib'].forEach(id => {
         const el = document.getElementById(id);
         el.classList.add('hidden'); el.required = false; el.value = '';
@@ -426,18 +440,15 @@ function editFormation(f) {
         document.getElementById(id).name = ['titre','formateur','organisme'][i];
     });
 
-    // Réinitialiser employé
     document.getElementById('fEmp').innerHTML = '<option value="">Chargement...</option>';
     document.getElementById('fEmp').disabled = true;
 
-    // Charger le referentiel PUIS remplir les selects (garantit que les options existent)
     loadReferentiel().then(() => {
         setSelectOrFree('fTitre',    'fTitreLib',    'titre',     f.titre);
         setSelectOrFree('fFormateur','fFormateurLib','formateur', f.formateur);
         setSelectOrFree('fOrganisme','fOrganismeLib','organisme', f.organisme);
     });
 
-    // Charger les employés du département
     const deptId = f.employee?.department_id ?? '';
     if (deptId) {
         document.getElementById('fDept').value = deptId;
@@ -445,67 +456,44 @@ function editFormation(f) {
     }
 }
 
-/* ─── Referentiel : charger depuis la DB ─── */
+/* ─── Referentiel ─── */
 const rfCache = { formations: null, formateurs: null, organismes: null };
 
 function loadReferentiel() {
     return Promise.all([
-        loadSelect('fTitre',    '<?php echo e(route('referentiel.api.formations')); ?>', 'titre',    rfCache, 'formations',
-                   'fTitreLib', 'titre',    'Selectionner une formation'),
-        loadSelect('fFormateur','<?php echo e(route('referentiel.api.formateurs')); ?>', 'label',    rfCache, 'formateurs',
-                   'fFormateurLib','formateur','Selectionner'),
-        loadSelect('fOrganisme','<?php echo e(route('referentiel.api.organismes')); ?>', 'nom',      rfCache, 'organismes',
-                   'fOrganismeLib','organisme','Selectionner'),
+        loadSelect('fTitre',    '<?php echo e(route('referentiel.api.formations')); ?>', 'titre', rfCache, 'formations', 'fTitreLib',    'titre',    'Selectionner une formation'),
+        loadSelect('fFormateur','<?php echo e(route('referentiel.api.formateurs')); ?>', 'label', rfCache, 'formateurs', 'fFormateurLib','formateur','Selectionner'),
+        loadSelect('fOrganisme','<?php echo e(route('referentiel.api.organismes')); ?>', 'nom',   rfCache, 'organismes', 'fOrganismeLib','organisme','Selectionner'),
     ]);
 }
 
 function loadSelect(selId, url, labelKey, cache, cacheKey, freeInputId, fieldName, placeholder) {
     const sel = document.getElementById(selId);
     if (!sel) return Promise.resolve();
-
-    // Utiliser le cache si disponible
-    if (cache[cacheKey]) {
-        buildOptions(sel, cache[cacheKey], labelKey, placeholder, freeInputId, fieldName);
-        return Promise.resolve();
-    }
-
+    if (cache[cacheKey]) { buildOptions(sel, cache[cacheKey], labelKey, placeholder, freeInputId, fieldName); return Promise.resolve(); }
     sel.innerHTML = `<option value="">Chargement...</option>`;
     sel.disabled  = true;
-
     return fetch(url)
         .then(r => r.json())
-        .then(data => {
-            cache[cacheKey] = data;
-            buildOptions(sel, data, labelKey, placeholder, freeInputId, fieldName);
-            sel.disabled = false;
-        })
-        .catch(() => {
-            // Fallback : options statiques du modele Formation
-            sel.disabled = false;
-            sel.innerHTML = `<option value="">${placeholder}</option><option value="__autre__">— Saisie libre —</option>`;
-        });
+        .then(data => { cache[cacheKey] = data; buildOptions(sel, data, labelKey, placeholder, freeInputId, fieldName); sel.disabled = false; })
+        .catch(() => { sel.disabled = false; sel.innerHTML = `<option value="">${placeholder}</option><option value="__autre__">— Saisie libre —</option>`; });
 }
 
 function buildOptions(sel, data, labelKey, placeholder, freeInputId, fieldName) {
     sel.innerHTML = `<option value="">${placeholder}</option>`;
     data.forEach(item => {
-        const val   = item[labelKey] ?? item.titre ?? item.nom ?? item.label ?? '';
-        const opt   = document.createElement('option');
-        opt.value   = val;
-        opt.textContent = val;
+        const val = item[labelKey] ?? item.titre ?? item.nom ?? item.label ?? '';
+        const opt = document.createElement('option');
+        opt.value = opt.textContent = val;
         sel.appendChild(opt);
     });
     const autre = document.createElement('option');
-    autre.value = '__autre__';
-    autre.textContent = '— Autre (saisie libre) —';
+    autre.value = '__autre__'; autre.textContent = '— Autre (saisie libre) —';
     sel.appendChild(autre);
     sel.name = fieldName;
-
-    // Reecouter l'event "autre"
-    sel.onchange = () => toggleAutre(selId, freeInputId, fieldName);
+    sel.onchange = () => toggleAutre(sel.id, freeInputId, fieldName);
 }
 
-/* ─── Toggle champ libre "Autre" ─── */
 function toggleAutre(selId, inputId, fieldName) {
     const sel = document.getElementById(selId);
     const inp = document.getElementById(inputId);
@@ -523,20 +511,13 @@ function setSelectOrFree(selId, inputId, fieldName, val) {
     const sel = document.getElementById(selId);
     const inp = document.getElementById(inputId);
     if (!sel || !inp || !val) return;
-
     const found = Array.from(sel.options).some(o => o.value === val && o.value !== '' && o.value !== '__autre__');
     if (found) {
-        sel.value    = val;
-        sel.name     = fieldName;
-        inp.classList.add('hidden');
-        inp.required = false;
-        inp.value    = '';
+        sel.value = val; sel.name = fieldName;
+        inp.classList.add('hidden'); inp.required = false; inp.value = '';
     } else {
-        sel.value    = '__autre__';
-        sel.removeAttribute('name');
-        inp.classList.remove('hidden');
-        inp.required = true;
-        inp.value    = val;
+        sel.value = '__autre__'; sel.removeAttribute('name');
+        inp.classList.remove('hidden'); inp.required = true; inp.value = val;
     }
 }
 
@@ -560,9 +541,9 @@ function loadEmployees(deptId, selectedId = null) {
         .catch(() => { empSel.innerHTML = '<option value="">Erreur</option>'; });
 }
 
-// Charger le referentiel au chargement de la page (mise en cache)
 document.addEventListener('DOMContentLoaded', () => loadReferentiel());
 </script>
+<?php endif; ?>
 <?php $__env->stopPush(); ?>
 
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\Projects\SIRH-\resources\views/lms/index.blade.php ENDPATH**/ ?>

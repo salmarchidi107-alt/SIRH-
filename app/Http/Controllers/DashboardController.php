@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Scopes\TenantScope;
+use App\Models\CompteurTemps;
+use App\Models\DroitAbsence;
 
 class DashboardController extends Controller
 {
@@ -22,96 +24,89 @@ class DashboardController extends Controller
 
     public function index()
     {
-        $user        = Auth::user();
-        $tenantId    = $user?->tenant_id;
-        $isAdminOrRH = $user && ($user->isAdmin() || $user->isRh());
 
-        // ── Helper : filtre tenant sur n'importe quel modèle ──────────────
-        // Tous les modèles ont TenantScope via HasTenantScope trait,
-        // mais on s'assure du filtre explicitement pour éviter les bugs.
-        $tenantFilter = fn($q) => $tenantId
-            ? $q->where('tenant_id', $tenantId)
-            : $q;
+// $holidays = app(HolidayService::class)->getCurrentYearHolidays(); // Missing service
 
-        // ── Stats ─────────────────────────────────────────────────────────
+
+$user = Auth::user();
+$isAdminOrRH = $user && ($user->isAdmin() || $user->isRh());
+
         $stats = [
-            'total_employees'  => Employee::where('tenant_id', $tenantId)->count(),
-            'active_employees' => Employee::where('tenant_id', $tenantId)->where('status', 'active')->count(),
-            'today_present'    => Planning::where('tenant_id', $tenantId)->whereDate('date', today())->count(),
+            'total_employees' => Employee::count(),
+            'active_employees' => Employee::where('status', 'active')->count(),
+            'today_present' => Planning::whereDate('date', today())->count(),
         ];
 
+
         $recent_absences = collect();
-        $contract_types  = collect();
+        $contract_types = collect();
 
-        if ($isAdminOrRH) {
-            $stats['pending_absences'] = Absence::where('tenant_id', $tenantId)
-                ->where('status', 'pending')
-                ->count();
-
-            $recent_absences = Absence::with(['employee' => fn($q) => $q->withoutGlobalScopes()])
-                ->where('tenant_id', $tenantId)
+if ($isAdminOrRH) {
+            $stats['pending_absences'] = Absence::where('status', 'pending')->count();
+            $recent_absences = Absence::with(['employee' => function ($query) {
+                    $query->withoutGlobalScopes();
+                }])
                 ->where('status', 'pending')
                 ->latest()
                 ->take(5)
                 ->get();
-
-            $contract_types = Employee::where('tenant_id', $tenantId)
-                ->groupBy('contract_type')
+            $contract_types = Employee::groupBy('contract_type')
                 ->selectRaw('contract_type, count(*) as total')
                 ->pluck('total', 'contract_type');
         }
 
-        // ── Départements ──────────────────────────────────────────────────
-        $departments = Employee::where('tenant_id', $tenantId)
-            ->groupBy('department')
+
+        $departments = Employee::groupBy('department')
             ->selectRaw('department, count(*) as total')
             ->pluck('total', 'department');
 
-        // ── Planning aujourd'hui ──────────────────────────────────────────
-        $today_planning = Planning::with(['employee' => fn($q) => $q->withoutGlobalScopes()])
-            ->where('tenant_id', $tenantId)
+
+$today_planning = Planning::with(['employee' => function ($query) {
+                $query->withoutGlobalScopes();
+            }])
             ->whereDate('date', today())
             ->get();
 
-        // ── Absences mensuelles (6 derniers mois) ─────────────────────────
-        $monthly_absences_raw = Absence::where('tenant_id', $tenantId)
-            ->selectRaw('YEAR(start_date) year, MONTH(start_date) month_num, COUNT(*) count')
-            ->where('start_date', '>=', now()->subMonths(6))
-            ->groupBy('year', 'month_num')
-            ->orderBy('year', 'desc')
-            ->orderBy('month_num', 'desc')
-            ->get();
 
-        $monthly_absences = $monthly_absences_raw->map(function ($row) {
+$monthly_absences_raw = Absence::selectRaw('
+            YEAR(start_date) year,
+            MONTH(start_date) month_num,
+            COUNT(*) count
+        ')
+        ->where('start_date', '>=', now()->subMonths(6))
+        ->groupBy('year', 'month_num')
+        ->orderBy('year', 'desc')
+        ->orderBy('month_num', 'desc')
+        ->get();
+
+$monthly_absences = $monthly_absences_raw->map(function ($row) {
             $month = Carbon::create($row->year, $row->month_num, 1);
             return [
                 'month' => $month->format('M Y'),
-                'count' => (int) $row->count,
+                'count' => (int) $row->count
             ];
         })->values()->toArray();
 
-        // ── Anniversaires du mois ─────────────────────────────────────────
-        $currentMonth = now()->month;
-        $currentYear  = now()->year;
 
-        $birthdays = Employee::with('user')
-            ->where('tenant_id', $tenantId)
-            ->whereNotNull('birth_date')
+        $currentMonth = now()->month;
+        $currentYear = now()->year;
+
+$birthdays = Employee::with('user')->whereNotNull('birth_date')
             ->whereMonth('birth_date', $currentMonth)
             ->where('status', 'active')
             ->get()
             ->map(function ($employee) use ($currentYear) {
-                $employee->birthday_this_year = Carbon::createFromDate(
-                    $currentYear,
-                    $employee->birth_date->month,
-                    $employee->birth_date->day
-                );
+                $employee->birthday_this_year = Carbon::createFromDate($currentYear, $employee->birth_date->month, $employee->birth_date->day);
                 return $employee;
             })
             ->sortBy('birthday_this_year');
 
-        // ── Actualités ───────────────────────────────────────────────────
-        $upcomingNews = News::active()->upcoming()->take(5)->get();
+
+        $upcomingNews = News::active()
+            ->upcoming()
+            ->take(5)
+            ->get();
+
 
         $recentNews = News::active()
             ->where('event_date', '>=', now()->subDays(7))
@@ -119,96 +114,112 @@ class DashboardController extends Controller
             ->take(3)
             ->get();
 
-        // ── Conflits d'absences ───────────────────────────────────────────
-        $approvedAbsences = Absence::with(['employee' => fn($q) => $q->withoutGlobalScopes()])
-            ->where('tenant_id', $tenantId)
+
+$approvedAbsences = Absence::with(['employee' => function ($query) {
+                $query->withoutGlobalScopes();
+            }])
             ->where('status', 'approved')
             ->orderBy('employee_id')
             ->orderBy('start_date')
             ->get();
 
-        $conflicts         = [];
+        $conflicts = [];
         $currentEmployeeId = null;
-        $employeeAbsences  = collect();
+        $employeeAbsences = collect();
 
-        $processConflicts = function ($employeeAbsences, $currentEmployeeId) use (&$conflicts) {
-            $sorted = $employeeAbsences->sortBy('start_date');
-            for ($i = 0; $i < $sorted->count() - 1; $i++) {
-                $a         = $sorted[$i];
-                $nextIndex = $i + 1;
-                while ($nextIndex < $sorted->count()) {
-                    $b = $sorted[$nextIndex];
-                    if ($a->end_date < $b->start_date) break;
-                    $overlapStart = max($a->start_date, $b->start_date);
-                    $overlapEnd   = min($a->end_date, $b->end_date);
-                    if ($overlapStart <= $overlapEnd) {
-                        $conflicts[] = [
-                            'employee_id' => $currentEmployeeId,
-                            'a_id'        => $a->id,
-                            'b_id'        => $b->id,
-                            'employee'    => $a->employee->full_name,
-                            'absence1'    => \App\Models\Absence::TYPES[$a->type] ?? $a->type,
-                            'absence2'    => \App\Models\Absence::TYPES[$b->type] ?? $b->type,
-                            'start'       => $overlapStart->format('d/m'),
-                            'end'         => $overlapEnd->format('d/m/Y'),
-                        ];
-                    }
-                    $nextIndex++;
-                }
+foreach ($approvedAbsences as $absence) {
+            if (!$absence->employee) {
+                continue; // Skip if employee not found
             }
-        };
-
-        foreach ($approvedAbsences as $absence) {
-            if (!$absence->employee) continue;
-
             if ($absence->employee_id !== $currentEmployeeId) {
-                if ($currentEmployeeId) {
-                    $processConflicts($employeeAbsences, $currentEmployeeId);
+                // Process previous employee
+                $sorted = $employeeAbsences->sortBy('start_date');
+                for ($i = 0; $i < $sorted->count() - 1; $i++) {
+                    $a = $sorted[$i];
+                    $nextIndex = $i + 1;
+                    while ($nextIndex < $sorted->count()) {
+                        $b = $sorted[$nextIndex];
+                        if ($a->end_date < $b->start_date) break; // No more overlaps
+                        $overlapStart = max($a->start_date, $b->start_date);
+                        $overlapEnd = min($a->end_date, $b->end_date);
+                        if ($overlapStart <= $overlapEnd) {
+                            $conflicts[] = [
+                                'employee_id' => $currentEmployeeId,
+                                'a_id' => $a->id,
+                                'b_id' => $b->id,
+                                'employee' => $a->employee->full_name,
+                                'absence1' => \App\Models\Absence::TYPES[$a->type] ?? $a->type,
+                                'absence2' => \App\Models\Absence::TYPES[$b->type] ?? $b->type,
+                                'start' => $overlapStart->format('d/m'),
+                                'end' => $overlapEnd->format('d/m/Y'),
+                            ];
+                        }
+                        $nextIndex++;
+                    }
                 }
+                // Start new employee
                 $currentEmployeeId = $absence->employee_id;
-                $employeeAbsences  = collect([$absence]);
+                $employeeAbsences = collect([$absence]);
             } else {
                 $employeeAbsences->push($absence);
             }
         }
 
+        // Process last employee
         if ($currentEmployeeId) {
-            $processConflicts($employeeAbsences, $currentEmployeeId);
+            $sorted = $employeeAbsences->sortBy('start_date');
+            for ($i = 0; $i < $sorted->count() - 1; $i++) {
+                $a = $sorted[$i];
+                $nextIndex = $i + 1;
+                while ($nextIndex < $sorted->count()) {
+                    $b = $sorted[$nextIndex];
+                    if ($a->end_date < $b->start_date) break;
+                    $overlapStart = max($a->start_date, $b->start_date);
+                    $overlapEnd = min($a->end_date, $b->end_date);
+                    if ($overlapStart <= $overlapEnd) {
+                        $conflicts[] = [
+                            'employee_id' => $currentEmployeeId,
+                            'a_id' => $a->id,
+                            'b_id' => $b->id,
+                            'employee' => $a->employee->full_name,
+                            'absence1' => \App\Models\Absence::TYPES[$a->type] ?? $a->type,
+                            'absence2' => \App\Models\Absence::TYPES[$b->type] ?? $b->type,
+                            'start' => $overlapStart->format('d/m'),
+                            'end' => $overlapEnd->format('d/m/Y'),
+                        ];
+                    }
+                    $nextIndex++;
+                }
+            }
         }
 
-        // ── Employé connecté ──────────────────────────────────────────────
+
+
+        $currentMonth = now()->month;
+
         $employee = null;
 
         if ($user) {
-            $employee = Employee::with('user')
-                ->where('tenant_id', $tenantId)
-                ->where('user_id', $user->id)
-                ->first();
 
+            $employee = Employee::with('user')->where('user_id', $user->id)->first();
             if (!$employee) {
-                $employee = Employee::with('user')
-                    ->where('tenant_id', $tenantId)
-                    ->where('email', $user->email)
-                    ->first();
+                $employee = Employee::with('user')->where('email', $user->email)->first();
             }
 
             if (!$employee && $user->employee_id) {
-                $employee = Employee::with('user')
-                    ->where('tenant_id', $tenantId)
-                    ->find($user->employee_id);
+                $employee = Employee::with('user')->find($user->employee_id);
             }
         }
 
-        // ── Widgets temps & droits ────────────────────────────────────────
-        $tempsWidget  = null;
+        $tempsWidget = null;
         $droitsWidget = null;
 
         if ($employee && $employee->id) {
-            $tempsWidget  = \App\Models\CompteurTemps::getOuCreeParMois($employee->id, $currentYear, $currentMonth);
-            $droitsWidget = \App\Models\DroitAbsence::getOuCreeParAnnee($employee->id, $currentYear);
+            $tempsWidget = CompteurTemps::getOuCreeParMois($employee->id, $currentYear, $currentMonth);
+            $droitsWidget = DroitAbsence::getOuCreeParAnnee($employee->id, $currentYear);
         }
 
-        $holidays = [];
+        $holidays = []; // Fallback for missing HolidayService
 
         return view('dashboard.index', compact(
             'stats',
@@ -227,24 +238,22 @@ class DashboardController extends Controller
             'recent_absences',
             'contract_types'
         ));
+
     }
 
     public function stats()
     {
         try {
-            $tenantId = Auth::user()?->tenant_id;
-
             return response()->json([
-                'total_employees' => Employee::where('tenant_id', $tenantId)->count(),
-                'active'          => Employee::where('tenant_id', $tenantId)->where('status', 'active')->count(),
-                'on_leave'        => Absence::where('tenant_id', $tenantId)
-                    ->where('status', 'approved')
+                'total_employees' => Employee::count(),
+                'active' => Employee::active()->count(),
+                'on_leave' => Absence::where('status', 'approved')
                     ->whereDate('start_date', '<=', today())
                     ->whereDate('end_date', '>=', today())
                     ->count(),
             ]);
         } catch (\Exception $e) {
-            Log::error('Dashboard stats error: ' . $e->getMessage());
+            Log::error('Dashboard stats error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return response()->json(['error' => 'Erreur stats'], 500);
         }
     }
@@ -257,8 +266,9 @@ class DashboardController extends Controller
             Log::warning('Dashboard data not found: ' . $e->getMessage());
             return response()->json(['error' => 'Données non trouvées'], 404);
         } catch (\Exception $e) {
-            Log::error('Dashboard data error: ' . $e->getMessage());
+            Log::error('Dashboard data error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return response()->json(['error' => 'Erreur chargement données'], 500);
         }
     }
 }
+

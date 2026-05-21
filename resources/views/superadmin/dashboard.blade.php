@@ -92,7 +92,6 @@
                         </div>
                         <div>
                             <div style="font-weight:700;font-size:13px;color:var(--text);">{{ $t->name }}</div>
-                            <div style="font-size:11px;color:var(--text-muted);font-family:monospace;">{{ $t->domain }}</div>
                         </div>
                     </div>
                 </td>

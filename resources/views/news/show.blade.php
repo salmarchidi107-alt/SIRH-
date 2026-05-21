@@ -10,7 +10,7 @@
         <img src="{{ asset($news->image) }}" alt="{{ $news->title }}">
     </div>
     @endif
-    
+
     <div class="card">
         <div class="card-header">
             <div class="card-title">📰 {{ $news->title }}</div>
@@ -27,10 +27,6 @@
                 <span class="badge bg-{{ $news->is_active ? 'success' : 'secondary' }}">
                     {{ $news->is_active ? 'Actif' : 'Inactif' }}
                 </span>
-            </div>
-
-            <div style="margin-bottom:16px;color:var(--text-muted)">
-                <strong>Date:</strong> {{ $news->event_date->format('d/m/Y') }}
             </div>
 
             <div style="margin-bottom:16px;color:var(--text-muted)">

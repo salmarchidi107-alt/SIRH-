@@ -556,6 +556,12 @@
                 <i class="fa-solid fa-bars" aria-hidden="true"></i>
             </button>
             <div class="topbar-title">@yield('page-title', 'Tableau de bord')</div>
+             {{-- Logo medstaff centré ou à gauche du titre --}}
+    <div style="flex:1; display:flex; justify-content:flex-end; align-items:center; margin-right:12px;">
+        <img src="{{ asset('images/medstaff-logo.jpeg') }}"
+             alt="medstaff HR Solutions"
+             style="height:50px; object-fit:contain;">
+    </div>
             <div class="topbar-actions">
 
                 {{-- Notifications --}}

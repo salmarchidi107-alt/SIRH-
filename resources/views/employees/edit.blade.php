@@ -72,48 +72,30 @@
 
     <!-- Informations professionnelles -->
     <div class="card mb-4">
-        <div class="card-header"><div class="card-title"> Informations Professionnelles</div></div>
+        <div class="card-header"><div class="card-title">Informations Professionnelles</div></div>
         <div class="card-body">
             <div class="form-grid">
                 <div class="form-group">
-                   {{-- ── Département — menu déroulant depuis la BDD ── --}}
-<div class="form-group">
-    <label>Service / Département *</label>
-
-    <select name="department" class="form-control" required>
-        <option value="">— Sélectionner un département —</option>
-
-        @forelse($departments ?? [] as $dept)
-            @php
-                $deptName = is_object($dept) ? $dept->name : $dept;
-            @endphp
-
-            <option value="{{ $deptName }}"
-                {{ old('department', $employee->department) == $deptName ? 'selected' : '' }}>
-                {{ $deptName }}
-            </option>
-
-        @empty
-            <option disabled>Aucun département disponible</option>
-        @endforelse
-    </select>
-
-    @error('department')
-        <span style="color:var(--danger);font-size:0.75rem">
-            {{ $message }}
-        </span>
-    @enderror
-
-    @if(empty($departments) || count($departments) === 0)
-        <small style="color:#f59e0b;font-size:0.75rem">
-            ⚠️ Aucun département configuré —
-            <a href="{{ route('parametrage.index', ['tab' => 'departments']) }}"
-               style="color:#f59e0b">
-                créez-en un dans Paramétrage
-            </a>
-        </small>
-    @endif
-</div>
+                    <label>Service / Département *</label>
+                    <select name="department" class="form-control" required>
+                        <option value="">— Sélectionner un département —</option>
+                        @forelse($departments ?? [] as $dept)
+                            @php $deptName = is_object($dept) ? $dept->name : $dept; @endphp
+                            <option value="{{ $deptName }}"
+                                {{ old('department', $employee->department) == $deptName ? 'selected' : '' }}>
+                                {{ $deptName }}
+                            </option>
+                        @empty
+                            <option disabled>Aucun département disponible</option>
+                        @endforelse
+                    </select>
+                    @error('department') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+                    @if(empty($departments) || count($departments) === 0)
+                        <small style="color:#f59e0b;font-size:0.75rem">
+                            ⚠️ Aucun département configuré —
+                            <a href="{{ route('parametrage.index', ['tab' => 'departments']) }}" style="color:#f59e0b">créez-en un dans Paramétrage</a>
+                        </small>
+                    @endif
                 </div>
                 <div class="form-group">
                     <label>Poste *</label>
@@ -121,20 +103,18 @@
                 </div>
                 <div class="form-group">
                     <label>Type de diplôme</label>
-                   <input type="text" name="diploma_type" class="form-control"
-       value="{{ old('diploma_type', $employee->diploma_type) }}"
-       placeholder="">
+                    <input type="text" name="diploma_type" class="form-control"
+                           value="{{ old('diploma_type', $employee->diploma_type) }}" placeholder="ex: Bac+5, Doctorat...">
                 </div>
                 <div class="form-group">
                     <label>Site de travail</label>
-                    <input type="text" name="work_site" class="form-control" value="{{ old('work_site', $employee->work_site) }}" placeholder="ex: Hôpital Central, Clinique Sud">
+                    <input type="text" name="work_site" class="form-control" value="{{ old('work_site', $employee->work_site) }}" placeholder="ex: Hôpital Central">
                     @error('work_site') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group">
                     <label>Compétences</label>
                     <input type="text" name="skills" class="form-control"
-       value="{{ old('skills', $employee->skills) }}"
-       placeholder="">
+                           value="{{ old('skills', $employee->skills) }}" placeholder="">
                 </div>
                 <div class="form-group">
                     <label>Contrat *</label>
@@ -148,9 +128,9 @@
                 <div class="form-group">
                     <label>Statut</label>
                     <select name="status" class="form-control">
-                        <option value="active" {{ old('status', $employee->status) == 'active' ? 'selected' : '' }}>Actif</option>
-                        <option value="inactive" {{ old('status', $employee->status) == 'inactive' ? 'selected' : '' }}>Inactif</option>
-                        <option value="leave" {{ old('status', $employee->status) == 'leave' ? 'selected' : '' }}>En congé</option>
+                        <option value="active"    {{ old('status', $employee->status) == 'active'   ? 'selected' : '' }}>Actif</option>
+                        <option value="inactive"  {{ old('status', $employee->status) == 'inactive' ? 'selected' : '' }}>Inactif</option>
+                        <option value="leave"     {{ old('status', $employee->status) == 'leave'    ? 'selected' : '' }}>En congé</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -170,8 +150,8 @@
                     <select name="payment_method" class="form-control">
                         <option value="">Sélectionner...</option>
                         <option value="virement" {{ old('payment_method', $employee->payment_method) == 'virement' ? 'selected' : '' }}>Virement</option>
-                        <option value="cash" {{ old('payment_method', $employee->payment_method) == 'cash' ? 'selected' : '' }}>Espèces</option>
-                        <option value="chèque" {{ old('payment_method', $employee->payment_method) == 'chèque' ? 'selected' : '' }}>Chèque</option>
+                        <option value="cash"     {{ old('payment_method', $employee->payment_method) == 'cash'     ? 'selected' : '' }}>Espèces</option>
+                        <option value="chèque"   {{ old('payment_method', $employee->payment_method) == 'chèque'   ? 'selected' : '' }}>Chèque</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -179,15 +159,15 @@
                     <select name="bank" class="form-control">
                         <option value="">Sélectionner une banque...</option>
                         <optgroup label="Banques principales">
-                            <option value="Attijariwafa Bank" {{ old('bank', $employee->bank) == 'Attijariwafa Bank' ? 'selected' : '' }}>Attijariwafa Bank</option>
-                            <option value="Banque Populaire" {{ old('bank', $employee->bank) == 'Banque Populaire' ? 'selected' : '' }}>Banque Populaire (BCP)</option>
-                            <option value="Bank of Africa" {{ old('bank', $employee->bank) == 'Bank of Africa' ? 'selected' : '' }}>Bank of Africa (BOA)</option>
-                            <option value="CIH Bank" {{ old('bank', $employee->bank) == 'CIH Bank' ? 'selected' : '' }}>CIH Bank</option>
+                            <option value="Attijariwafa Bank"        {{ old('bank', $employee->bank) == 'Attijariwafa Bank'        ? 'selected' : '' }}>Attijariwafa Bank</option>
+                            <option value="Banque Populaire"         {{ old('bank', $employee->bank) == 'Banque Populaire'         ? 'selected' : '' }}>Banque Populaire (BCP)</option>
+                            <option value="Bank of Africa"           {{ old('bank', $employee->bank) == 'Bank of Africa'           ? 'selected' : '' }}>Bank of Africa (BOA)</option>
+                            <option value="CIH Bank"                 {{ old('bank', $employee->bank) == 'CIH Bank'                 ? 'selected' : '' }}>CIH Bank</option>
                             <option value="Crédit Agricole du Maroc" {{ old('bank', $employee->bank) == 'Crédit Agricole du Maroc' ? 'selected' : '' }}>Crédit Agricole du Maroc</option>
-                            <option value="BMCE Bank" {{ old('bank', $employee->bank) == 'BMCE Bank' ? 'selected' : '' }}>BMCE Bank</option>
-                            <option value="CFG Bank" {{ old('bank', $employee->bank) == 'CFG Bank' ? 'selected' : '' }}>CFG Bank</option>
-                            <option value="Société Générale Maroc" {{ old('bank', $employee->bank) == 'Société Générale Maroc' ? 'selected' : '' }}>Société Générale Maroc</option>
-                            <option value="Al Barid Bank" {{ old('bank', $employee->bank) == 'Al Barid Bank' ? 'selected' : '' }}>Al Barid Bank</option>
+                            <option value="BMCE Bank"                {{ old('bank', $employee->bank) == 'BMCE Bank'                ? 'selected' : '' }}>BMCE Bank</option>
+                            <option value="CFG Bank"                 {{ old('bank', $employee->bank) == 'CFG Bank'                 ? 'selected' : '' }}>CFG Bank</option>
+                            <option value="Société Générale Maroc"   {{ old('bank', $employee->bank) == 'Société Générale Maroc'   ? 'selected' : '' }}>Société Générale Maroc</option>
+                            <option value="Al Barid Bank"            {{ old('bank', $employee->bank) == 'Al Barid Bank'            ? 'selected' : '' }}>Al Barid Bank</option>
                         </optgroup>
                         <option value="Autre">Autre...</option>
                     </select>
@@ -212,10 +192,117 @@
         </div>
     </div>
 
+    {{-- ══════════════════════════════════════
+         Pièces jointes
+    ══════════════════════════════════════ --}}
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="card-title">Pièces jointes</div>
+        </div>
+        <div class="card-body">
+
+            <div class="form-grid">
+
+                {{-- Casier judiciaire --}}
+                <div class="form-group">
+                    <label>
+                        Casier judiciaire
+                        @if($employee->doc_casier_path)
+                            <a href="{{ asset('storage/' . $employee->doc_casier_path) }}" target="_blank"
+                               style="margin-left:6px;font-size:0.72rem;color:#16a34a;text-decoration:none;font-weight:400;">↗ voir</a>
+                        @endif
+                    </label>
+                    <input type="file" name="doc_casier" class="form-control doc-file-input {{ $employee->doc_casier_path ? 'has-doc' : '' }}" accept="application/pdf">
+                    @error('doc_casier') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+                </div>
+
+                {{-- Relevé bancaire --}}
+                <div class="form-group">
+                    <label>
+                        Relevé bancaire (RIB)
+                        @if($employee->doc_rib_path)
+                            <a href="{{ asset('storage/' . $employee->doc_rib_path) }}" target="_blank"
+                               style="margin-left:6px;font-size:0.72rem;color:#16a34a;text-decoration:none;font-weight:400;">↗ voir</a>
+                        @endif
+                    </label>
+                    <input type="file" name="doc_rib" class="form-control doc-file-input {{ $employee->doc_rib_path ? 'has-doc' : '' }}" accept="application/pdf">
+                    @error('doc_rib') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+                </div>
+
+                {{-- Copies des diplômes --}}
+                <div class="form-group">
+                    <label>
+                        Copies des diplômes
+                        @if($employee->doc_diplomes_path)
+                            <a href="{{ asset('storage/' . $employee->doc_diplomes_path) }}" target="_blank"
+                               style="margin-left:6px;font-size:0.72rem;color:#16a34a;text-decoration:none;font-weight:400;">↗ voir</a>
+                        @endif
+                    </label>
+                    <input type="file" name="doc_diplomes" class="form-control doc-file-input {{ $employee->doc_diplomes_path ? 'has-doc' : '' }}" accept="application/pdf">
+                    @error('doc_diplomes') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+                </div>
+
+                {{-- Copie CIN --}}
+                <div class="form-group">
+                    <label>
+                        Copie CIN / Carte d'identité
+                        @if($employee->doc_cin_path)
+                            <a href="{{ asset('storage/' . $employee->doc_cin_path) }}" target="_blank"
+                               style="margin-left:6px;font-size:0.72rem;color:#16a34a;text-decoration:none;font-weight:400;">↗ voir</a>
+                        @endif
+                    </label>
+                    <input type="file" name="doc_cin" class="form-control doc-file-input {{ $employee->doc_cin_path ? 'has-doc' : '' }}" accept="application/pdf">
+                    @error('doc_cin') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+                </div>
+
+                {{-- Contrat de travail --}}
+                <div class="form-group full">
+                    <label>
+                        Contrat de travail
+                        @if($employee->doc_contrat_path)
+                            <a href="{{ asset('storage/' . $employee->doc_contrat_path) }}" target="_blank"
+                               style="margin-left:6px;font-size:0.72rem;color:#16a34a;text-decoration:none;font-weight:400;">↗ voir</a>
+                        @endif
+                    </label>
+                    <input type="file" name="doc_contrat" class="form-control doc-file-input {{ $employee->doc_contrat_path ? 'has-doc' : '' }}" accept="application/pdf">
+                    @error('doc_contrat') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <style>
+    /* Input file vert si document déjà uploadé */
+    .doc-file-input.has-doc {
+        border-color: #16a34a;
+        background-color: #f0fdf4;
+        color: #15803d;
+    }
+    .doc-file-input.has-doc::-webkit-file-upload-button {
+        background: #16a34a;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.82rem;
+    }
+    .doc-file-input.has-doc::file-selector-button {
+        background: #16a34a;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.82rem;
+    }
+    </style>
+
     <!-- Contrat de Travail -->
     <div class="card mb-4">
         <div class="card-header">
-            <div class="card-title"> Détails du Contrat de Travail</div>
+            <div class="card-title">Détails du Contrat de Travail</div>
         </div>
         <div class="card-body">
             <div class="form-grid">
@@ -226,8 +313,9 @@
                 </div>
                 <div class="form-group">
                     <label>Début du contrat</label>
-<input type="date" name="contract_start_date" class="form-control"
-                    value="{{ old('contract_start_date', $employee->contract_start_date?->format('Y-m-d')) }}" readonly                </div>                </div>
+                    <input type="date" name="contract_start_date" class="form-control"
+                           value="{{ old('contract_start_date', $employee->contract_start_date?->format('Y-m-d')) }}" readonly>
+                </div>
                 <div class="form-group">
                     <label>Date de fin (si CDD)</label>
                     <input type="date" name="contract_end_date" class="form-control" value="{{ old('contract_end_date', $employee->contract_end_date?->format('Y-m-d')) }}">
@@ -247,32 +335,16 @@
                     $employeeWorkDays = is_array($employee->work_days) ? $employee->work_days : json_decode($employee->work_days ?? '[]', true) ?? [];
                 @endphp
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #f1f5f9; border-radius: 8px;">
-                        <input type="checkbox" name="work_days[]" value="lundi" {{ in_array('lundi', old('work_days', $employeeWorkDays)) ? 'checked' : '' }}>
-                        Lun
+                    @foreach(['lundi' => 'Lun', 'mardi' => 'Mar', 'mercredi' => 'Mer', 'jeudi' => 'Jeu', 'vendredi' => 'Ven', 'samedi' => 'Sam'] as $val => $label)
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 16px;background:#f1f5f9;border-radius:8px;">
+                        <input type="checkbox" name="work_days[]" value="{{ $val }}"
+                            {{ in_array($val, old('work_days', $employeeWorkDays)) ? 'checked' : '' }}>
+                        {{ $label }}
                     </label>
-                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #f1f5f9; border-radius: 8px;">
-                        <input type="checkbox" name="work_days[]" value="mardi" {{ in_array('mardi', old('work_days', $employeeWorkDays)) ? 'checked' : '' }}>
-                        Mar
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #f1f5f9; border-radius: 8px;">
-                        <input type="checkbox" name="work_days[]" value="mercredi" {{ in_array('mercredi', old('work_days', $employeeWorkDays)) ? 'checked' : '' }}>
-                        Mer
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #f1f5f9; border-radius: 8px;">
-                        <input type="checkbox" name="work_days[]" value="jeudi" {{ in_array('jeudi', old('work_days', $employeeWorkDays)) ? 'checked' : '' }}>
-                        Jeu
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #f1f5f9; border-radius: 8px;">
-                        <input type="checkbox" name="work_days[]" value="vendredi" {{ in_array('vendredi', old('work_days', $employeeWorkDays)) ? 'checked' : '' }}>
-                        Ven
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #f1f5f9; border-radius: 8px;">
-                        <input type="checkbox" name="work_days[]" value="samedi" {{ in_array('samedi', old('work_days', $employeeWorkDays)) ? 'checked' : '' }}>
-                        Sam
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 16px; background: #fee2e2; border-radius: 8px;">
-                        <input type="checkbox" name="work_days[]" value="dimanche" {{ in_array('dimanche', old('work_days', $employeeWorkDays)) ? 'checked' : '' }}>
+                    @endforeach
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 16px;background:#fee2e2;border-radius:8px;">
+                        <input type="checkbox" name="work_days[]" value="dimanche"
+                            {{ in_array('dimanche', old('work_days', $employeeWorkDays)) ? 'checked' : '' }}>
                         Dim (Day Off)
                     </label>
                 </div>
@@ -282,13 +354,13 @@
 
     <div style="display:flex;gap:12px;justify-content:flex-end">
         <a href="{{ route('employees.show', $employee) }}" class="btn btn-ghost">Annuler</a>
-        <button type="submit" class="btn btn-primary"> Enregistrer les modifications</button>
+        <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
     </div>
 
     <!-- Liaison compte utilisateur -->
     <div class="card mb-4" style="margin-top: 20px;">
         <div class="card-header">
-            <div class="card-title"> Liaison Compte Utilisateur</div>
+            <div class="card-title">Liaison Compte Utilisateur</div>
         </div>
         <div class="card-body">
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
@@ -301,15 +373,15 @@
                         $linkedUser = \App\Models\User::find(old('user_id', $employee->user_id));
                     @endphp
                     @if($linkedUser)
-                        <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--border);">
-                            <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600;">
+                        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border);">
+                            <div style="width:40px;height:40px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:600;">
                                 {{ strtoupper(substr($linkedUser->name, 0, 1)) }}
                             </div>
                             <div>
-                                <div style="font-weight: 600;">{{ $linkedUser->name }}</div>
-                                <div style="font-size: 0.8rem; color: var(--text-muted);">{{ $linkedUser->email }}</div>
+                                <div style="font-weight:600;">{{ $linkedUser->name }}</div>
+                                <div style="font-size:0.8rem;color:var(--text-muted);">{{ $linkedUser->email }}</div>
                             </div>
-                            <a href="{{ route('employees.edit', [$employee, 'remove_user' => true]) }}" class="btn btn-danger btn-sm" style="margin-left: auto;">Délier</a>
+                            <a href="{{ route('employees.edit', [$employee, 'remove_user' => true]) }}" class="btn btn-danger btn-sm" style="margin-left:auto;">Délier</a>
                         </div>
                     @else
                         <select name="user_id" class="form-control">
@@ -326,17 +398,13 @@
         </div>
     </div>
 </form>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const hireDate  = document.querySelector('[name="hire_date"]');
     const startDate = document.querySelector('[name="contract_start_date"]');
-
-    hireDate.addEventListener('input', function () {
-        startDate.value = this.value;
-    });
-    startDate.addEventListener('input', function () {
-        hireDate.value = this.value;
-    });
+    hireDate.addEventListener('input',  function () { startDate.value = this.value; });
+    startDate.addEventListener('input', function () { hireDate.value  = this.value; });
 });
 </script>
 @endsection

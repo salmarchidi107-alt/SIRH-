@@ -556,6 +556,12 @@
                 <i class="fa-solid fa-bars" aria-hidden="true"></i>
             </button>
             <div class="topbar-title"><?php echo $__env->yieldContent('page-title', 'Tableau de bord'); ?></div>
+             
+    <div style="flex:1; display:flex; justify-content:flex-end; align-items:center; margin-right:12px;">
+        <img src="<?php echo e(asset('images/medstaff-logo.jpeg')); ?>"
+             alt="medstaff HR Solutions"
+             style="height:50px; object-fit:contain;">
+    </div>
             <div class="topbar-actions">
 
                 

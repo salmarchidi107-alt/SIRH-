@@ -11,20 +11,19 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use App\Models\Employee;
 use App\Ai\Agents\AssistantRH;
+
 class AuthController extends Controller
 {
+    public function ask(Request $request)
+    {
+        $agent    = app(AssistantRH::class);
+        $response = $agent->prompt($request->message);
 
+        return response()->json([
+            'reply' => $response->text
+        ]);
+    }
 
-public function ask(Request $request)
-{
-    $agent = app(AssistantRH::class);
-
-    $response = $agent->prompt($request->message);
-
-    return response()->json([
-        'reply' => $response->text
-    ]);
-}
     public function showLoginForm()
     {
         try {
@@ -47,7 +46,6 @@ public function ask(Request $request)
             return view('auth.login', compact('tenantData'));
 
         } catch (\Throwable $e) {
-            // Ne jamais crasher la page de login
             return view('auth.login', ['tenantData' => null]);
         }
     }
@@ -59,7 +57,7 @@ public function ask(Request $request)
      *  1. Valider les credentials
      *  2. Auth::attempt() sur le landlord (connexion centrale)
      *  3. Superadmin → redirect direct, pas de tenancy
-     *  4. Admin / Employee → résoudre tenant, initialiser tenancy, redirect par rôle
+     *  4. Admin / RH / Employee → résoudre tenant, initialiser tenancy, redirect par rôle
      */
     public function login(Request $request)
     {
@@ -72,13 +70,13 @@ public function ask(Request $request)
             $request->session()->regenerate();
             $user = auth()->user();
 
-            // Handle missing role
+            // Rôle manquant → fallback employee
             if (!$user->role) {
                 $user->role = User::ROLE_EMPLOYEE;
                 $user->save();
             }
 
-            // Handle missing employee_id
+            // Lier l'employee si pas encore fait
             if (!$user->employee_id) {
                 $employee = Employee::where('email', $user->email)->first();
                 if ($employee) {
@@ -89,17 +87,17 @@ public function ask(Request $request)
                 }
             }
 
-            // ── Réinitialiser toute tenancy active ────────────────────────────────
+            // Réinitialiser toute tenancy active
             if (tenancy()->initialized) {
                 tenancy()->end();
             }
 
-            // ── Superadmin : pas de tenant, redirect direct ───────────────────────
+            // Superadmin : pas de tenant, redirect direct
             if ($user->role === User::ROLE_SUPERADMIN) {
                 return redirect()->route('superadmin.dashboard');
             }
 
-            // ── Vérifier que l'user a bien un tenant assigné ──────────────────────
+            // Vérifier que l'user a bien un tenant assigné
             if (! $user->tenant_id) {
                 Auth::logout();
                 Log::warning('Login sans tenant_id', [
@@ -112,7 +110,7 @@ public function ask(Request $request)
                 ]);
             }
 
-            // ── Résoudre le tenant ────────────────────────────────────────────────
+            // Résoudre le tenant
             $tenant = Tenant::find($user->tenant_id);
 
             if (! $tenant) {
@@ -126,16 +124,18 @@ public function ask(Request $request)
                 ]);
             }
 
-            // ── Initialiser la tenancy via service ───────────────────────────────
+            // Initialiser la tenancy
             app(\App\Services\Auth\PostLoginService::class)->initialize($tenant);
 
-            // ── Redirect par rôle ─────────────────────────────────────────────────
+            // Redirect par rôle
+            // Admin et RH → même dashboard d'administration
             return match ($user->role) {
-                User::ROLE_ADMIN    => redirect()->route('admin.dashboard')
+                User::ROLE_ADMIN,
+                User::ROLE_RH       => redirect()->route('admin.dashboard')
                                     ->with('success', 'Bienvenue, ' . $user->name . ' !'),
                 User::ROLE_EMPLOYEE => redirect()->route('employee.dashboard')
                                     ->with('success', 'Bienvenue, ' . $user->name . ' !'),
-                default => $this->invalidRole(),
+                default             => $this->invalidRole(),
             };
         }
 

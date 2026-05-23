@@ -8,8 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class Planning extends Model
 {
     use HasFactory;
+    // ⚠️ PAS de HasTenantScope ici — on gère manuellement dans le controller
 
     protected $fillable = [
+        'tenant_id',
         'employee_id',
         'date',
         'shift_start',
@@ -24,16 +26,16 @@ class Planning extends Model
     ];
 
     const SHIFT_TYPES = [
-        'matin' => 'Matin',
+        'matin'      => 'Matin',
         'apres_midi' => 'Après-midi',
-        'nuit' => 'Nuit',
-        'journee' => 'Journée',
-        'garde' => 'Garde',
+        'nuit'       => 'Nuit',
+        'journee'    => 'Journée',
+        'garde'      => 'Garde',
     ];
 
     public function employee()
     {
-        return $this->belongsTo(Employee::class);
+        return $this->belongsTo(Employee::class)->withoutGlobalScopes();
     }
 
     public function room()
@@ -46,7 +48,6 @@ class Planning extends Model
         if ($this->relationLoaded('room') && $this->getRelation('room')) {
             return $this->getRelation('room')->name;
         }
-
         return $value;
     }
 }

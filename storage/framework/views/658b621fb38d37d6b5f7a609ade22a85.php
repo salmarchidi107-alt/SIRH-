@@ -14,7 +14,6 @@
 
 <?php $__env->startSection('content'); ?>
 
-
 <?php if($errors->any()): ?>
     <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:14px 18px;margin-bottom:18px;">
         <div style="font-weight:600;color:#dc2626;margin-bottom:6px;">Veuillez corriger les erreurs suivantes :</div>

@@ -94,10 +94,11 @@ class BadgePointageController extends Controller
 
     public function result(Request $request)
     {
-        $employee = $this->getAuthEmployee();
-        $shift    = $this->getTodayShift($employee);
-        $type     = $request->session()->get('last_type', 'entree');
-        $geoData  = $request->session()->get('last_geo', []);
+        $employee  = $this->getAuthEmployee();
+        $shift     = $this->getTodayShift($employee);
+        $type      = $request->session()->get('last_type', 'entree');
+        $geoData   = $request->session()->get('last_geo', []);
+        $shiftType = $request->session()->get('last_shift_type', 'normal');
 
         $pauseRecords  = $shift->where('type', 'pause')->values();
         $retourRecords = $shift->where('type', 'retour_pause')->values();
@@ -108,20 +109,27 @@ class BadgePointageController extends Controller
                 'pause_start'       => $pauseRecords->first()?->created_at?->setTimezone(self::TZ)->format('H:i'),
                 'pause_end'         => $retourRecords->first()?->created_at?->setTimezone(self::TZ)->format('H:i'),
                 'total_pause_human' => $this->calcTotalPause($pauseRecords, $retourRecords),
+                'shift_type'        => $shiftType,
             ]
         );
 
-        return view('badge.result', compact('employee', 'todayShift', 'type', 'geoData'));
+        return view('badge.result', compact('employee', 'todayShift', 'type', 'geoData', 'shiftType'));
     }
 
     // ─── Actions AJAX (dashboard blade) ──────────────────────────────────
 
     public function handleAction(Request $request)
     {
-        $request->validate(['action' => 'required|string']);
+        $request->validate([
+            'action'     => 'required|string',
+            'shift_type' => 'nullable|string|in:normal,garde',
+        ]);
 
-        $employee = $this->getAuthEmployee();
-        $realType = $this->resolveType($request->action);
+        $employee  = $this->getAuthEmployee();
+        $realType  = $this->resolveType($request->action);
+        $shiftType = in_array($request->input('shift_type'), ['normal', 'garde'])
+            ? $request->input('shift_type')
+            : 'normal';
 
         $geoData = [
             'latitude'  => $request->filled('geo_latitude')  ? (float) $request->input('geo_latitude')  : null,
@@ -131,11 +139,11 @@ class BadgePointageController extends Controller
             'denied'    => $request->boolean('geo_denied'),
         ];
 
-        // Pas de photo faciale dans le dashboard AJAX (flux rapide)
-        $this->recordAction($realType, $employee, $geoData);
+        $this->recordAction($realType, $employee, $geoData, [], $shiftType);
 
-        $request->session()->put('last_type', $realType);
-        $request->session()->put('last_geo',  $geoData);
+        $request->session()->put('last_type',       $realType);
+        $request->session()->put('last_geo',        $geoData);
+        $request->session()->put('last_shift_type', $shiftType);
 
         return response()->json([
             'success'  => true,
@@ -148,27 +156,30 @@ class BadgePointageController extends Controller
     /**
      * Enregistre un BadgeRecord + synchronise le Pointage RH.
      *
-     * @param  string   $type      entree | pause | retour_pause | sortie
+     * @param  string   $type       entree | pause | retour_pause | sortie
      * @param  Employee $employee
-     * @param  array    $geoData   latitude, longitude, accuracy, address, denied
-     * @param  array    $photoData face_photo_path, face_photo_disk, face_photo_base64,
-     *                             face_photo_size, face_photo_mime  ← NOUVEAU
+     * @param  array    $geoData    latitude, longitude, accuracy, address, denied
+     * @param  array    $photoData  face_photo_path, face_photo_disk, face_photo_base64,
+     *                              face_photo_size, face_photo_mime
+     * @param  string   $shiftType  normal | garde
      */
     public function recordAction(
         string   $type,
         Employee $employee,
         array    $geoData   = [],
-        array    $photoData = []   // ← NOUVEAU paramètre
+        array    $photoData = [],
+        string   $shiftType = 'normal'
     ): void {
         $now     = $this->nowCasa();
         $today   = $now->format('Y-m-d');
         $nowTime = $now->format('H:i:s');
 
-        // ── 1. BadgeRecord avec géolocalisation + photo ──────────────────
+        // ── 1. BadgeRecord avec géolocalisation + photo + shift_type ────
         BadgeRecord::create(array_merge(
             [
                 'employee_id'        => $employee->id,
                 'type'               => $type,
+                'shift_type'         => $shiftType,         // ← normal ou garde
                 // Géolocalisation
                 'latitude'           => $geoData['latitude']  ?? null,
                 'longitude'          => $geoData['longitude'] ?? null,
@@ -178,7 +189,7 @@ class BadgePointageController extends Controller
                                             : null,
                 'geolocation_denied' => $geoData['denied']    ?? false,
             ],
-            // Photo faciale (merge si fournie, sinon valeurs nulles par défaut)
+            // Photo faciale
             $photoData ?: [
                 'face_photo_path'   => null,
                 'face_photo_disk'   => 'public',
@@ -192,12 +203,18 @@ class BadgePointageController extends Controller
         $pointage = Pointage::firstOrCreate(
             ['employee_id' => $employee->id, 'date' => $today],
             [
-                'statut'    => 'present',
-                'valide'    => false,
-                'source'    => 'badge',
-                'tenant_id' => $this->resolveTenantId($employee),
+                'statut'     => 'present',
+                'valide'     => false,
+                'source'     => 'badge',
+                'shift_type' => $shiftType,                 // ← enregistré aussi dans Pointage
+                'tenant_id'  => $this->resolveTenantId($employee),
             ]
         );
+
+        // Mettre à jour shift_type si le pointage existait déjà
+        if (! $pointage->wasRecentlyCreated && $pointage->shift_type !== $shiftType) {
+            $pointage->shift_type = $shiftType;
+        }
 
         match ($type) {
             'entree'       => $pointage->heure_entree === null && ($pointage->heure_entree = $nowTime),
@@ -246,6 +263,7 @@ class BadgePointageController extends Controller
             'last_sortie'   => $sorties->last()?->created_at?->setTimezone(self::TZ)->format('H:i'),
             'pause_display' => $pauses->count() ? $pauses->count() . ' pause(s)' : null,
             'total_human'   => $this->calcTotalTime($entrees, $sorties),
+            'shift_type'    => $shift->last()?->shift_type ?? 'normal',
         ];
     }
 

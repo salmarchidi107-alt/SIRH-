@@ -1,3 +1,4 @@
+{{-- resources/views/pointage/index.blade.php --}}
 @extends('layouts.app')
 
 @section('title', 'Pointage — Badgeuse')
@@ -26,11 +27,24 @@
         --p-green:       #16a34a;
         --p-green-bg:    #f0fdf4;
         --p-gray-bg:     #f8fafc;
+
+        /* ── Couleurs shift ── */
+        --shift-normal-bg:     #f0fdf4;
+        --shift-normal-border: #bbf7d0;
+        --shift-normal-text:   #15803d;
+        --shift-normal-dot:    #22c55e;
+        --shift-normal-row:    #f7fef9;
+
+        --shift-garde-bg:      #faf5ff;
+        --shift-garde-border:  #e9d5ff;
+        --shift-garde-text:    #7c3aed;
+        --shift-garde-dot:     #a855f7;
+        --shift-garde-row:     #fdf8ff;
     }
 
     .pointage-wrap { display:flex; flex-direction:column; height:calc(100vh - 64px); background:var(--p-bg); }
 
-    /* Topbar */
+    /* ── Topbar ── */
     .pt-topbar {
         background:var(--p-surface); border-bottom:1px solid var(--p-border);
         padding:0 1.5rem; height:52px;
@@ -55,7 +69,7 @@
     }
     .pt-btn-validate:hover { background:#0f766e; }
 
-    /* Week nav */
+    /* ── Week nav ── */
     .pt-weeknav {
         background:var(--p-surface); border-bottom:1px solid var(--p-border);
         padding:.75rem 1.5rem; display:flex; align-items:center; gap:.75rem; flex-shrink:0;
@@ -73,10 +87,54 @@
         font-size:11px; font-weight:600; padding:2px 10px; border-radius:20px;
     }
 
-    /* Body */
+    /* ══════════════════════════════════════════════════════
+       BARRE LÉGENDE + FILTRE SHIFT
+    ══════════════════════════════════════════════════════ */
+    .shift-legend-bar {
+        background: var(--p-surface);
+        border-bottom: 1px solid var(--p-border);
+        padding: .55rem 1.5rem;
+        display: flex; align-items: center; gap: 1.25rem; flex-shrink: 0;
+    }
+    .shift-legend-title {
+        font-size: 11px; font-weight: 600; color: var(--p-text-muted);
+        text-transform: uppercase; letter-spacing: .06em; white-space: nowrap;
+    }
+    .shift-legend-item {
+        display: flex; align-items: center; gap: 6px;
+        font-size: 12px; font-weight: 500;
+    }
+    .shift-legend-dot {
+        width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+    .shift-legend-item.normal { color: var(--shift-normal-text); }
+    .shift-legend-item.garde  { color: var(--shift-garde-text); }
+    .shift-legend-item.normal .shift-legend-dot { background: var(--shift-normal-dot); }
+    .shift-legend-item.garde  .shift-legend-dot { background: var(--shift-garde-dot); }
+
+    /* Filtre rapide pills */
+    .shift-filter-pills { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+    .shift-filter-pill {
+        padding: 4px 14px; border-radius: 99px;
+        font-size: 11px; font-weight: 600; cursor: pointer;
+        border: 1px solid transparent; transition: all .15s; text-decoration: none;
+        white-space: nowrap;
+    }
+    .shift-filter-pill.all {
+        background: var(--p-bg); border-color: var(--p-border); color: var(--p-text-muted);
+    }
+    .shift-filter-pill.normal {
+        background: var(--shift-normal-bg); border-color: var(--shift-normal-border); color: var(--shift-normal-text);
+    }
+    .shift-filter-pill.garde {
+        background: var(--shift-garde-bg); border-color: var(--shift-garde-border); color: var(--shift-garde-text);
+    }
+    .shift-filter-pill.active { box-shadow: 0 0 0 2px currentColor; font-weight: 700; }
+
+    /* ── Body ── */
     .pt-body { display:flex; flex:1; overflow:hidden; }
 
-    /* Day sidebar */
+    /* ── Day sidebar ── */
     .pt-days {
         width:165px; flex-shrink:0; background:var(--p-surface);
         border-right:1px solid var(--p-border); overflow-y:auto;
@@ -90,27 +148,21 @@
     .pt-day.active { background:var(--p-teal-bg); border-left-color:var(--p-teal); }
     .pt-day-name { font-size:12px; font-weight:600; color:var(--p-text); }
     .pt-day-date { font-size:11px; color:var(--p-text-muted); margin-top:1px; }
-
-    /* ── Info validation sous le jour ── */
     .pt-day-validator {
         font-size:10px; color:var(--p-teal); margin-top:4px;
         display:flex; align-items:center; gap:2px; font-weight:500;
     }
-    .pt-day-validator-time {
-        font-size:9px; color:var(--p-text-light); margin-top:1px;
-    }
-
+    .pt-day-validator-time { font-size:9px; color:var(--p-text-light); margin-top:1px; }
     .pt-day-check {
         width:20px; height:20px; border-radius:50%; flex-shrink:0;
-        display:flex; align-items:center; justify-content:center; font-size:10px;
-        margin-top:1px;
+        display:flex; align-items:center; justify-content:center; font-size:10px; margin-top:1px;
     }
     .pt-day-check.ok      { background:var(--p-teal); color:#fff; }
     .pt-day-check.pending { border:1.5px solid var(--p-border); color:var(--p-text-light); }
 
-    /* Table */
+    /* ── Table ── */
     .pt-table-wrap { flex:1; overflow:auto; }
-    .pt-table { width:100%; border-collapse:collapse; min-width:980px; }
+    .pt-table { width:100%; border-collapse:collapse; min-width:1060px; }
     .pt-table thead th {
         position:sticky; top:0; z-index:2;
         background:var(--p-gray-bg); border-bottom:1px solid var(--p-border);
@@ -118,14 +170,62 @@
         font-size:11px; font-weight:600; text-transform:uppercase;
         letter-spacing:.05em; color:var(--p-text-muted);
     }
-    .pt-table td { padding:10px 12px; border-bottom:1px solid var(--p-border-soft); vertical-align:middle; }
-    .pt-table tbody tr:hover td { background:var(--p-teal-bg); }
+    .pt-table td {
+        padding:10px 12px; border-bottom:1px solid var(--p-border-soft); vertical-align:middle;
+    }
 
+    /* ══════════════════════════════════════════════════════
+       COULEUR PAR TYPE DE SHIFT
+    ══════════════════════════════════════════════════════ */
+    /* Shift normal — fond vert très clair + barre latérale verte */
+    .pt-table tbody tr.row-shift-normal td {
+        background: var(--shift-normal-row);
+    }
+    .pt-table tbody tr.row-shift-normal td:first-child {
+        border-left: 3px solid var(--shift-normal-dot);
+        padding-left: 10px;
+    }
+    /* Garde — fond mauve très clair + barre latérale mauve */
+    .pt-table tbody tr.row-shift-garde td {
+        background: var(--shift-garde-row);
+    }
+    .pt-table tbody tr.row-shift-garde td:first-child {
+        border-left: 3px solid var(--shift-garde-dot);
+        padding-left: 10px;
+    }
+    /* Hover */
+    .pt-table tbody tr.row-shift-normal:hover td { filter: brightness(.97); }
+    .pt-table tbody tr.row-shift-garde:hover td  { filter: brightness(.97); }
+
+    /* ── Badge shift type inline dans colonne Employé ── */
+    .shift-type-pill {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 2px 8px; border-radius: 99px;
+        font-size: 10px; font-weight: 700; letter-spacing: .03em;
+        margin-top: 3px; white-space: nowrap; line-height: 1.6;
+    }
+    .shift-type-pill.normal {
+        background: var(--shift-normal-bg);
+        border: 1px solid var(--shift-normal-border);
+        color: var(--shift-normal-text);
+    }
+    .shift-type-pill.garde {
+        background: var(--shift-garde-bg);
+        border: 1px solid var(--shift-garde-border);
+        color: var(--shift-garde-text);
+    }
+    .shift-type-pill .pill-dot {
+        width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0;
+    }
+    .shift-type-pill.normal .pill-dot { background: var(--shift-normal-dot); }
+    .shift-type-pill.garde  .pill-dot { background: var(--shift-garde-dot); }
+
+    /* ── Time pills ── */
     .pt-time-pill {
         display:inline-block; padding:3px 9px; border-radius:6px;
         font-size:12px; font-weight:700; letter-spacing:.02em;
     }
-    .pt-pill-start    { background:var(--p-blue-bg);  color:var(--p-blue); }
+    .pt-pill-start    { background:var(--p-blue-bg);   color:var(--p-blue); }
     .pt-pill-end      { background:var(--p-purple-bg); color:var(--p-purple); }
     .pt-pill-midnight { background:#ede9fe; color:#6d28d9; }
     .pt-time-sep { color:var(--p-text-light); font-size:12px; margin:0 2px; }
@@ -157,7 +257,16 @@
     .pt-action-btn:hover { border-color:var(--p-teal); color:var(--p-teal); }
     .pt-action-btn.keep { background:var(--p-teal-bg); border-color:var(--p-teal); color:var(--p-teal); }
 
-    /* Status bar */
+    /* ── Avatar ── */
+    .pt-avatar {
+        width:30px; height:30px; border-radius:50%; flex-shrink:0;
+        display:flex; align-items:center; justify-content:center;
+        font-size:11px; font-weight:700;
+    }
+    .pt-avatar.normal { background:var(--p-teal-light); color:var(--p-teal); }
+    .pt-avatar.garde  { background:#f3e8ff; color:#7c3aed; }
+
+    /* ── Status bar ── */
     .pt-statusbar {
         background:var(--p-surface); border-top:1px solid var(--p-border);
         padding:.5rem 1.5rem; display:flex; align-items:center;
@@ -167,18 +276,11 @@
     .pt-stat-dot { width:8px; height:8px; border-radius:50%; }
     .pt-stat strong { font-weight:600; }
 
-    .pt-avatar {
-        width:30px; height:30px; border-radius:50%; flex-shrink:0;
-        display:flex; align-items:center; justify-content:center;
-        font-size:11px; font-weight:700;
-        background:var(--p-teal-light); color:var(--p-teal);
-    }
-
     .pt-row-dimmed td { opacity:.55; }
     .absent-checkbox          { accent-color:var(--p-red); width:15px; height:15px; cursor:pointer; }
     .absent-checkbox:disabled { opacity:.5; cursor:wait; }
 
-    /* Géolocalisation */
+    /* ── Géoloc tooltip ── */
     .geo-tooltip-wrap { position: relative; display: inline-block; }
     .geo-tooltip {
         display: none; position: absolute; bottom: calc(100% + 8px); left: 50%;
@@ -187,8 +289,7 @@
         border-radius: 10px; padding: 12px 16px;
         font-size: 12px; line-height: 1.5;
         white-space: nowrap; z-index: 999;
-        box-shadow: 0 8px 24px rgba(0,0,0,.3);
-        min-width: 200px;
+        box-shadow: 0 8px 24px rgba(0,0,0,.3); min-width: 200px;
     }
     .geo-tooltip::after {
         content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
@@ -210,21 +311,21 @@
 @section('content')
 <div class="pointage-wrap">
 
-    {{-- Topbar --}}
+    {{-- ── Topbar ── --}}
     <div class="pt-topbar">
         <div class="pt-topbar-left">
             <span class="pt-title">Pointage — Badgeuse</span>
             <div class="pt-tabs">
-                <a href="{{ route('pointage.index', array_merge(request()->only(['search','department']), ['date' => $currentDate->toDateString(), 'vue' => 'tous'])) }}"
+                <a href="{{ route('pointage.index', array_merge(request()->only(['search','department','shift']), ['date' => $currentDate->toDateString(), 'vue' => 'tous'])) }}"
                    class="pt-tab {{ ($vue ?? 'tous') === 'tous' ? 'active' : '' }}">Tous</a>
-                <a href="{{ route('pointage.index', array_merge(request()->only(['search','department']), ['date' => $currentDate->toDateString(), 'vue' => 'pointe'])) }}"
+                <a href="{{ route('pointage.index', array_merge(request()->only(['search','department','shift']), ['date' => $currentDate->toDateString(), 'vue' => 'pointe'])) }}"
                    class="pt-tab {{ ($vue ?? '') === 'pointe' ? 'active' : '' }}">Pointé</a>
-                <a href="{{ route('pointage.index', array_merge(request()->only(['search','department']), ['date' => $currentDate->toDateString(), 'vue' => 'non_pointe'])) }}"
+                <a href="{{ route('pointage.index', array_merge(request()->only(['search','department','shift']), ['date' => $currentDate->toDateString(), 'vue' => 'non_pointe'])) }}"
                    class="pt-tab {{ ($vue ?? '') === 'non_pointe' ? 'active' : '' }}">Non pointé</a>
             </div>
         </div>
         <div class="pt-topbar-right">
-            <a href="{{ route('pointage.pdf', request()->only(['date','department','search','vue'])) }}"
+            <a href="{{ route('pointage.pdf', request()->only(['date','department','search','vue','shift'])) }}"
                style="background:#e2e8f0;color:#0f172a;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid var(--p-border);">
                 PDF
             </a>
@@ -245,12 +346,13 @@
         </div>
     </div>
 
-    {{-- Filters bar --}}
+    {{-- ── Filtres ── --}}
     <div style="background:var(--p-surface);border-bottom:1px solid var(--p-border);padding:.75rem 1.5rem;display:flex;gap:.75rem;align-items:center;font-size:13px;">
         <strong>Filtrer :</strong>
         <form method="GET" action="{{ route('pointage.index') }}" style="display:flex;gap:.5rem;align-items:center;flex:1;">
-            <input type="hidden" name="date" value="{{ $currentDate->toDateString() }}">
-            <input type="hidden" name="vue"  value="{{ $vue ?? 'tous' }}">
+            <input type="hidden" name="date"  value="{{ $currentDate->toDateString() }}">
+            <input type="hidden" name="vue"   value="{{ $vue ?? 'tous' }}">
+            <input type="hidden" name="shift" value="{{ request('shift') }}">
             <input type="text" name="search" placeholder="Nom employé…"
                    value="{{ request('search') }}" onchange="this.form.submit()"
                    style="flex:1;padding:.5rem;border:1px solid var(--p-border);border-radius:6px;">
@@ -262,7 +364,7 @@
                 @endforeach
             </select>
             @if(request()->hasAny(['search','department']))
-            <a href="{{ route('pointage.index', ['date' => $currentDate->toDateString(), 'vue' => request('vue')]) }}"
+            <a href="{{ route('pointage.index', ['date' => $currentDate->toDateString(), 'vue' => request('vue'), 'shift' => request('shift')]) }}"
                style="padding:.5rem 1rem;background:var(--p-red-bg);color:var(--p-red);border-radius:6px;text-decoration:none;font-weight:500;">
                 ✕ Reset
             </a>
@@ -270,12 +372,51 @@
         </form>
     </div>
 
-    {{-- Week nav --}}
+    {{-- ════════════════════════════════════════════════════
+         LÉGENDE + FILTRE RAPIDE SHIFT TYPE
+    ════════════════════════════════════════════════════ --}}
+    <div class="shift-legend-bar">
+        <span class="shift-legend-title">Shift :</span>
+
+        <div class="shift-legend-item normal">
+            <div class="shift-legend-dot"></div>
+            Shift normal
+            @if(($stats['shift_normal'] ?? 0) > 0)
+                <strong style="margin-left:2px;">({{ $stats['shift_normal'] }})</strong>
+            @endif
+        </div>
+
+        <div class="shift-legend-item garde">
+            <div class="shift-legend-dot"></div>
+            Garde
+            @if(($stats['shift_garde'] ?? 0) > 0)
+                <strong style="margin-left:2px;">({{ $stats['shift_garde'] }})</strong>
+            @endif
+        </div>
+
+        {{-- Filtre pills à droite --}}
+        <div class="shift-filter-pills">
+            <a href="{{ route('pointage.index', array_merge(request()->except('shift'), ['date' => $currentDate->toDateString()])) }}"
+               class="shift-filter-pill all {{ !request('shift') ? 'active' : '' }}">
+               Tous
+            </a>
+            <a href="{{ route('pointage.index', array_merge(request()->except('shift'), ['date' => $currentDate->toDateString(), 'shift' => 'normal'])) }}"
+               class="shift-filter-pill normal {{ request('shift') === 'normal' ? 'active' : '' }}">
+               ● Shift normal
+            </a>
+            <a href="{{ route('pointage.index', array_merge(request()->except('shift'), ['date' => $currentDate->toDateString(), 'shift' => 'garde'])) }}"
+               class="shift-filter-pill garde {{ request('shift') === 'garde' ? 'active' : '' }}">
+               ● Garde
+            </a>
+        </div>
+    </div>
+
+    {{-- ── Week nav ── --}}
     <div class="pt-weeknav">
         @php
             $prevDate     = $currentDate->copy()->subWeek();
             $nextDate     = $currentDate->copy()->addWeek();
-            $filterParams = request()->only(['search','department']);
+            $filterParams = request()->only(['search','department','shift']);
         @endphp
         <a href="{{ route('pointage.index', array_merge($filterParams, ['date' => $prevDate->toDateString()])) }}" class="pt-weeknav-btn">&#8249;</a>
         <span class="pt-week-label">{{ $startOfWeek->translatedFormat('d M') }} – {{ $endOfWeek->translatedFormat('d M Y') }}</span>
@@ -285,10 +426,10 @@
            class="pt-weeknav-btn" style="font-size:11px;width:auto;padding:0 10px;">Aujourd'hui</a>
     </div>
 
-    {{-- Body --}}
+    {{-- ── Body ── --}}
     <div class="pt-body">
 
-        {{-- ── Day sidebar avec validation ── --}}
+        {{-- Day sidebar --}}
         <div class="pt-days">
             @foreach($weekDays as $day)
             <a href="{{ route('pointage.index', array_merge($filterParams, ['date' => $day['date']->toDateString()])) }}"
@@ -296,11 +437,8 @@
                 <div style="flex:1;min-width:0;">
                     <div class="pt-day-name">{{ $day['label'] }}</div>
                     <div class="pt-day-date">{{ $day['short'] }}</div>
-                    {{-- ✅ Qui a validé + quand --}}
                     @if($day['valide'] && $day['validated_by'])
-                        <div class="pt-day-validator">
-                            ✓ {{ $day['validated_by'] }}
-                        </div>
+                        <div class="pt-day-validator">✓ {{ $day['validated_by'] }}</div>
                         @if($day['validated_at'])
                         <div class="pt-day-validator-time">{{ $day['validated_at'] }}</div>
                         @endif
@@ -321,9 +459,9 @@
                 <thead>
                     <tr>
                         <th style="width:44px">Validé</th>
-                        <th style="width:32px" title="Géolocalisation GPS">GÉOLOC</th>
+                        <th style="width:32px" title="Géolocalisation GPS">GPS</th>
                         <th>Employé</th>
-                        <th>Absence</th>
+                        <th style="width:80px">Absence</th>
                         <th>Début / Fin shift</th>
                         <th>Pause total</th>
                         <th>Pause début / fin</th>
@@ -344,8 +482,14 @@
                     $geo        = $emp['geo'] ?? null;
                     $hasGeo     = $geo && !($geo['denied'] ?? true) && isset($geo['latitude'], $geo['longitude']);
                     $mapsUrl    = $hasGeo ? 'https://www.google.com/maps?q='.$geo['latitude'].','.$geo['longitude'] : null;
+
+                    // Shift type résolu
+                    $shiftType  = $emp['shift_type'] ?? 'normal';
+                    $isGarde    = $shiftType === 'garde';
+                    $rowClass   = $isGarde ? 'row-shift-garde' : 'row-shift-normal';
                 @endphp
-                <tr class="{{ $isDimmed ? 'pt-row-dimmed' : '' }}" id="row-emp-{{ $emp['id'] }}">
+                <tr class="{{ $isDimmed ? 'pt-row-dimmed' : '' }} {{ $rowClass }}"
+                    id="row-emp-{{ $emp['id'] }}">
 
                     {{-- Validé --}}
                     <td>
@@ -406,11 +550,21 @@
                         @endif
                     </td>
 
-                    {{-- Employé --}}
+                    {{-- Employé + badge shift type --}}
                     <td>
                         <div style="display:flex;align-items:center;gap:8px;">
-                            <div class="pt-avatar">{{ $emp['avatar'] }}</div>
-                            <span style="font-size:13px;font-weight:500;color:var(--p-text);">{{ $emp['nom'] }}</span>
+                            <div class="pt-avatar {{ $isGarde ? 'garde' : 'normal' }}">
+                                {{ $emp['avatar'] }}
+                            </div>
+                            <div>
+                                <div style="font-size:13px;font-weight:500;color:var(--p-text);">
+                                    {{ $emp['nom'] }}
+                                </div>
+                                <div class="shift-type-pill {{ $isGarde ? 'garde' : 'normal' }}">
+                                    <span class="pill-dot"></span>
+                                    {{ $isGarde ? 'Garde' : 'Shift normal' }}
+                                </div>
+                            </div>
                         </div>
                     </td>
 
@@ -514,9 +668,9 @@
         </div>
     </div>
 
-    {{-- Status bar --}}
+    {{-- ── Status bar ── --}}
     <div class="pt-statusbar">
-        <div style="display:flex;gap:1.5rem;">
+        <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center;">
             <div class="pt-stat">
                 <div class="pt-stat-dot" style="background:var(--p-teal)"></div>
                 Validés : <strong style="color:var(--p-teal)">{{ $stats['valides'] }}</strong>
@@ -529,12 +683,20 @@
                 <div class="pt-stat-dot" style="background:var(--p-red)"></div>
                 Absents : <strong style="color:var(--p-red)">{{ $stats['absents'] }}</strong>
             </div>
-            <div class="pt-stat" style="margin-left:1rem;">
-                Total : <strong>{{ $stats['total'] }}</strong>
-            </div>
+            <div class="pt-stat">Total : <strong>{{ $stats['total'] }}</strong></div>
             <div class="pt-stat">
                 <div class="pt-stat-dot" style="background:var(--p-teal)"></div>
                 GPS actifs : <strong style="color:var(--p-teal)">{{ $stats['geo_ok'] ?? 0 }}</strong>
+            </div>
+
+            {{-- Compteurs shift --}}
+            <div class="pt-stat" style="border-left:1px solid var(--p-border);padding-left:1.5rem;margin-left:.5rem;">
+                <div class="pt-stat-dot" style="background:var(--shift-normal-dot)"></div>
+                Shift : <strong style="color:var(--shift-normal-text)">{{ $stats['shift_normal'] ?? 0 }}</strong>
+            </div>
+            <div class="pt-stat">
+                <div class="pt-stat-dot" style="background:var(--shift-garde-dot)"></div>
+                Garde : <strong style="color:var(--shift-garde-text)">{{ $stats['shift_garde'] ?? 0 }}</strong>
             </div>
         </div>
     </div>
@@ -549,8 +711,7 @@ const CSRF = document.querySelector('meta[name="csrf-token"]').content;
 // ── Valider la journée complète ──────────────────────────────────────────────
 document.getElementById('btn-validate').addEventListener('click', async function () {
     const btn = this;
-    btn.disabled = true;
-    btn.textContent = '…';
+    btn.disabled = true; btn.textContent = '…';
     try {
         const res  = await fetch(btn.dataset.url, {
             method: 'POST',
@@ -561,74 +722,39 @@ document.getElementById('btn-validate').addEventListener('click', async function
         if (data.success) {
             btn.textContent = '✓ ' + data.message;
             btn.style.background = '#0f766e';
-
-            // Mettre à jour la sidebar du jour courant sans recharger
             updateDaySidebarValidation(data.validator, data.validated_at);
-
-            setTimeout(() => {
-                btn.textContent = '✓ Valider la journée';
-                btn.style.background = '';
-                btn.disabled = false;
-            }, 3000);
+            setTimeout(() => { btn.textContent = '✓ Valider la journée'; btn.style.background = ''; btn.disabled = false; }, 3000);
         } else {
-            btn.textContent = 'Erreur !';
-            btn.style.background = '#dc2626';
-            btn.disabled = false;
+            btn.textContent = 'Erreur !'; btn.style.background = '#dc2626'; btn.disabled = false;
         }
     } catch(e) {
-        btn.textContent = 'Erreur !';
-        btn.style.background = '#dc2626';
-        btn.disabled = false;
+        btn.textContent = 'Erreur !'; btn.style.background = '#dc2626'; btn.disabled = false;
     }
 });
 
-// Met à jour visuellement le jour actif dans la sidebar
 function updateDaySidebarValidation(validatorName, validatedAt) {
     const activeDay = document.querySelector('.pt-day.active');
     if (!activeDay) return;
-
-    // Changer le cercle en vert
     const check = activeDay.querySelector('.pt-day-check');
-    if (check) {
-        check.className = 'pt-day-check ok';
-        check.textContent = '✓';
-    }
-
-    // Ajouter ou mettre à jour le nom du validateur
+    if (check) { check.className = 'pt-day-check ok'; check.textContent = '✓'; }
     const dayInfo = activeDay.querySelector('div[style]') ?? activeDay.querySelector('div');
     if (dayInfo) {
-        let validatorEl = dayInfo.querySelector('.pt-day-validator');
-        if (!validatorEl) {
-            validatorEl = document.createElement('div');
-            validatorEl.className = 'pt-day-validator';
-            dayInfo.appendChild(validatorEl);
-        }
-        validatorEl.textContent = '✓ ' + (validatorName || '');
-
-        let timeEl = dayInfo.querySelector('.pt-day-validator-time');
-        if (!timeEl && validatedAt) {
-            timeEl = document.createElement('div');
-            timeEl.className = 'pt-day-validator-time';
-            dayInfo.appendChild(timeEl);
-        }
-        if (timeEl && validatedAt) timeEl.textContent = validatedAt;
-
-        // Enlever le "Non validé"
-        const nonValide = dayInfo.querySelector('div[style*="italic"]');
-        if (nonValide) nonValide.remove();
+        let el = dayInfo.querySelector('.pt-day-validator');
+        if (!el) { el = document.createElement('div'); el.className = 'pt-day-validator'; dayInfo.appendChild(el); }
+        el.textContent = '✓ ' + (validatorName || '');
+        let tel = dayInfo.querySelector('.pt-day-validator-time');
+        if (!tel && validatedAt) { tel = document.createElement('div'); tel.className = 'pt-day-validator-time'; dayInfo.appendChild(tel); }
+        if (tel && validatedAt) tel.textContent = validatedAt;
+        const nv = dayInfo.querySelector('div[style*="italic"]');
+        if (nv) nv.remove();
     }
-
-    // Changer le border gauche
     activeDay.style.borderLeftColor = '#0d9488';
 }
 
-// ── Toggle valider un pointage individuel ────────────────────────────────────
+// ── Toggle valider ───────────────────────────────────────────────────────────
 async function toggleValider(btn) {
     try {
-        const res  = await fetch(btn.dataset.url, {
-            method: 'POST',
-            headers: {'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json'},
-        });
+        const res  = await fetch(btn.dataset.url, { method: 'POST', headers: {'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json'} });
         const data = await res.json();
         btn.classList.toggle('ok', data.valide);
         btn.classList.toggle('pending', !data.valide);
@@ -636,13 +762,10 @@ async function toggleValider(btn) {
     } catch(e) { console.error(e); }
 }
 
-// ── Toggle ignore badge ──────────────────────────────────────────────────────
+// ── Toggle ignore ────────────────────────────────────────────────────────────
 async function toggleIgnore(btn) {
     try {
-        const res  = await fetch(btn.dataset.url, {
-            method: 'POST',
-            headers: {'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json'},
-        });
+        const res  = await fetch(btn.dataset.url, { method: 'POST', headers: {'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json'} });
         const data = await res.json();
         btn.classList.toggle('keep', !data.ignore_badge);
         btn.textContent = data.ignore_badge ? '⊘ Ignorer' : '👁 Garder';
@@ -651,11 +774,9 @@ async function toggleIgnore(btn) {
 
 // ── Toggle absence ───────────────────────────────────────────────────────────
 async function toggleAbsence(checkbox) {
-    const empId    = checkbox.dataset.employee;
-    const date     = checkbox.dataset.date;
-    const url      = checkbox.dataset.url;
-    const isAbsent = checkbox.checked;
-    const badge    = document.getElementById('badge-absent-' + empId);
+    const empId = checkbox.dataset.employee, date = checkbox.dataset.date;
+    const url = checkbox.dataset.url, isAbsent = checkbox.checked;
+    const badge = document.getElementById('badge-absent-' + empId);
     checkbox.disabled = true;
     try {
         const res = await fetch(url, {
@@ -671,8 +792,7 @@ async function toggleAbsence(checkbox) {
             checkbox.checked = !isAbsent;
         }
     } catch(e) {
-        console.error(e);
-        checkbox.checked = !isAbsent;
+        console.error(e); checkbox.checked = !isAbsent;
     } finally {
         checkbox.disabled = false;
     }

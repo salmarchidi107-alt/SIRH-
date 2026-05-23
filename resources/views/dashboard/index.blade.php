@@ -150,7 +150,7 @@
     <!-- Absences Chart -->
     <div class="card">
         <div class="card-header">
-            <div class="card-title">📊 Absences — 6 derniers mois</div>
+<div class="card-title"> Absences — Année {{ now()->year }}</div>
         </div>
         <div class="card-body">
             <div class="chart-wrapper">
@@ -162,7 +162,7 @@
     <!-- Departments Chart -->
     <div class="card">
         <div class="card-header">
-            <div class="card-title">🏥 Personnel/Departement</div>
+            <div class="card-title"> Personnel/Departement</div>
         </div>
         <div class="card-body">
             <div class="chart-wrapper">
@@ -182,7 +182,6 @@
         <div class="card-body" style="padding:0">
             @if($recent_absences->isEmpty())
                 <div style="padding:32px;text-align:center;color:var(--text-muted)">
-                    <div style="font-size:2rem;margin-bottom:8px">✅</div>
                     <div>Aucune demande en attente</div>
                 </div>
             @else
@@ -230,9 +229,8 @@
         <div class="card-body" style="padding:0">
             @if($today_planning->isEmpty())
                 <div style="padding:32px;text-align:center;color:var(--text-muted)">
-                    <div style="font-size:2rem;margin-bottom:8px">📅</div>
                     <div>Aucun planning aujourd'hui</div>
-                </div>
+                    </div>
             @else
 <ul class="activity-list" style="padding:0 24px">
                     @foreach($today_planning->take(6) as $plan)
@@ -241,7 +239,7 @@
                         <div class="activity-dot" style="background:#3b82f6"></div>
                         <div>
                             <div class="activity-text">
-                                <strong>{{ optional($plan->employee)->full_name }}</strong> 
+                                <strong>{{ optional($plan->employee)->full_name }}</strong>
                                 <span class="shift-pill shift-{{ $plan->shift_type }}" style="margin-left:8px;font-size:0.8rem">
                                     {{ \App\Models\Planning::SHIFT_TYPES[$plan->shift_type] }}
                                 </span>

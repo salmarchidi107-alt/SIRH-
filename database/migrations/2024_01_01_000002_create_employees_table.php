@@ -33,7 +33,7 @@ return new class extends Migration
                 $table->string('emergency_contact')->nullable();
                 $table->string('emergency_phone')->nullable();
                 $table->timestamps();
-    
+
                 $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
             });
         }

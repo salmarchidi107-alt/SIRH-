@@ -34,7 +34,8 @@ class BadgeAuthController extends Controller
         $request->validate([
             'pin'        => 'required|string|size:6|regex:/^[0-9]{4}[A-Z]{2}$/',
             'signature'  => 'required|string',
-            'face_photo' => 'nullable|string', // data-URL base64 depuis la caméra
+            'face_photo' => 'nullable|string',
+            'shift_type' => 'nullable|string|in:normal,garde',
         ]);
 
         // ── 1. Vérifier le PIN ──────────────────────────────────────────
@@ -77,7 +78,12 @@ class BadgeAuthController extends Controller
         // ── 4. Session badge ────────────────────────────────────────────
         $request->session()->put('badge_user_id', $user->id);
 
-        // ── 5. Résoudre le type d'action ────────────────────────────────
+        // ── 5. Résoudre le type de shift (normal / garde) ───────────────
+        $shiftType = in_array($request->input('shift_type'), ['normal', 'garde'])
+            ? $request->input('shift_type')
+            : 'normal';
+
+        // ── 6. Résoudre le type d'action ────────────────────────────────
         $subaction  = $request->input('action_sub', $action);
         $recordType = match ($subaction) {
             'debut'        => 'entree',
@@ -87,10 +93,10 @@ class BadgeAuthController extends Controller
             default        => $action === 'entree' ? 'entree' : 'sortie',
         };
 
-        // ── 6. Construire les données géo ───────────────────────────────
+        // ── 7. Construire les données géo ───────────────────────────────
         $geoData = $this->buildGeoData($request);
 
-        // ── 7. Reverse geocoding côté serveur (fallback) ────────────────
+        // ── 8. Reverse geocoding côté serveur (fallback) ────────────────
         if (! $geoData['denied']
             && $geoData['latitude'] !== null
             && $geoData['longitude'] !== null
@@ -109,19 +115,20 @@ class BadgeAuthController extends Controller
             'address'   => $geoData['address'],
         ]);
 
-        // ── 8. Traiter la photo faciale ─────────────────────────────────
+        // ── 9. Traiter la photo faciale ─────────────────────────────────
         $photoData = $this->buildPhotoData(
             $request->input('face_photo'),
             $employee->id
         );
 
-        // ── 9. Enregistrer le pointage ──────────────────────────────────
+        // ── 10. Enregistrer le pointage ─────────────────────────────────
         try {
             app(BadgePointageController::class)->recordAction(
                 $recordType,
                 $employee,
                 $geoData,
-                $photoData   // ← NOUVEAU : données photo passées au controller
+                $photoData,
+                $shiftType   // ← type de shift transmis
             );
         } catch (\Exception $e) {
             Log::error('Badge pointage error', [
@@ -130,9 +137,10 @@ class BadgeAuthController extends Controller
             ]);
         }
 
-        // ── 10. Stocker en session et rediriger ─────────────────────────
-        $request->session()->put('last_type', $recordType);
-        $request->session()->put('last_geo',  $geoData);
+        // ── 11. Stocker en session et rediriger ─────────────────────────
+        $request->session()->put('last_type',       $recordType);
+        $request->session()->put('last_geo',        $geoData);
+        $request->session()->put('last_shift_type', $shiftType);
         $request->session()->save();
 
         return redirect()->route('badge.result');
@@ -141,7 +149,7 @@ class BadgeAuthController extends Controller
     // ── Déconnexion ──────────────────────────────────────────────────────
     public function logout(Request $request)
     {
-        $request->session()->forget(['badge_user_id', 'last_type', 'last_geo']);
+        $request->session()->forget(['badge_user_id', 'last_type', 'last_geo', 'last_shift_type']);
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect()->route('badge.pointage');
@@ -152,7 +160,6 @@ class BadgeAuthController extends Controller
     /**
      * Traite le data-URL base64 de la photo faciale.
      * Sauvegarde le fichier sur disque ET conserve le base64 brut.
-     * Retourne un tableau prêt à merger dans BadgeRecord::create().
      */
     private function buildPhotoData(?string $dataUrl, int $employeeId): array
     {
@@ -161,7 +168,6 @@ class BadgeAuthController extends Controller
         }
 
         try {
-            // Format attendu : data:image/jpeg;base64,/9j/4AAQ…
             if (! preg_match('/^data:([a-z\/]+);base64,(.+)$/s', $dataUrl, $m)) {
                 Log::warning('Badge photo : format data-URL invalide');
                 return $this->emptyPhotoData();
@@ -267,9 +273,16 @@ class BadgeAuthController extends Controller
     {
         try {
             $response = Http::timeout(6)
-                ->withHeaders(['User-Agent' => 'HospitalRH-Badge/1.0 contact@hospitalrh.ma', 'Accept-Language' => 'fr'])
+                ->withHeaders([
+                    'User-Agent'      => 'HospitalRH-Badge/1.0 contact@hospitalrh.ma',
+                    'Accept-Language' => 'fr',
+                ])
                 ->get('https://nominatim.openstreetmap.org/reverse', [
-                    'lat' => $lat, 'lon' => $lng, 'format' => 'json', 'zoom' => 18, 'accept-language' => 'fr',
+                    'lat'             => $lat,
+                    'lon'             => $lng,
+                    'format'          => 'json',
+                    'zoom'            => 18,
+                    'accept-language' => 'fr',
                 ]);
 
             if ($response->successful()) {

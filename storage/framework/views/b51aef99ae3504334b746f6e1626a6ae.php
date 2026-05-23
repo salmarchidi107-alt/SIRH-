@@ -78,7 +78,7 @@
                         <div class="detail-value">
                             <?php if($employee->plain_pin): ?>
                                 <span id="pin-<?php echo e($employee->id); ?>" class="text-muted font-mono font-bold text-lg" style="letter-spacing: 2px;"><?php echo e($employee->plain_pin); ?></span>
-                                
+
                                 <button onclick="regeneratePin(<?php echo e($employee->id); ?>)" class="btn btn-sm btn-warning ml-1">🔄 Regénérer</button>
                             <?php else: ?>
                                 <button onclick="generatePin(<?php echo e($employee->id); ?>)" class="btn btn-sm btn-primary">Générer PIN</button>
@@ -90,6 +90,24 @@
                         <div class="detail-label"> Situation familiale</div>
                         <div class="detail-value"><?php echo e($employee->family_situation ?: '—'); ?></div>
                     </div>
+                    <div class="detail-item">
+    <div class="detail-item">
+    <div class="detail-label"> Genre</div>
+    <div class="detail-value">
+        <?php if($employee->genre === 'homme'): ?>
+            <span style="display:inline-flex;align-items:center;gap:6px;">
+                Homme
+            </span>
+        <?php elseif($employee->genre === 'femme'): ?>
+            <span style="display:inline-flex;align-items:center;gap:6px;">
+                Femme
+            </span>
+        <?php else: ?>
+            —
+        <?php endif; ?>
+    </div>
+</div>
+</div>
                     <?php if($employee->address): ?>
                     <div class="detail-item" style="grid-column:1/-1">
                         <div class="detail-label"> Adresse</div>

@@ -45,7 +45,7 @@
                     @error('last_name') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group">
-                    <label>Email</label>
+                    <label>Email *</label>
                     <input type="email" name="email" class="form-control" value="{{ old('email') }}" autocomplete="new-email">
                     @error('email') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
@@ -57,6 +57,15 @@
                     <label>Date de naissance</label>
                     <input type="date" name="birth_date" class="form-control" value="{{ old('birth_date') }}">
                 </div>
+                <div class="form-group">
+    <label>Genre</label>
+    <select name="genre" class="form-control">
+        <option value="">Sélectionner...</option>
+        <option value="homme"  {{ old('genre') == 'homme'  ? 'selected' : '' }}>Homme</option>
+        <option value="femme"  {{ old('genre') == 'femme'  ? 'selected' : '' }}>Femme</option>
+    </select>
+    @error('genre') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+</div>
                 <div class="form-group">
                     <label>CIN</label>
                     <input type="text" name="cin" class="form-control" value="{{ old('cin') }}" placeholder="AB123456">
@@ -153,8 +162,13 @@
                 </div>
                 <div class="form-group">
                     <label>Type de contrat *</label>
-                    <input type="text" name="contract_type" class="form-control" value="{{ old('contract_type') }}" required placeholder="ex: CDI, CDD, Freelance">
-                    @error('contract_type') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+<select name="contract_type" class="form-control" required>
+    <option value="">— Sélectionner —</option>
+    <option value="CDI"     {{ old('contract_type') == 'CDI'     ? 'selected' : '' }}>CDI</option>
+    <option value="CDD"     {{ old('contract_type') == 'CDD'     ? 'selected' : '' }}>CDD</option>
+    <option value="Interim" {{ old('contract_type') == 'Interim' ? 'selected' : '' }}>Intérim</option>
+    <option value="Stage"   {{ old('contract_type') == 'Stage'   ? 'selected' : '' }}>Stage</option>
+</select>                    @error('contract_type') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group">
                     <label>Date d'embauche *</label>

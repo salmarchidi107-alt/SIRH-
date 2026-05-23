@@ -1,5 +1,3 @@
-{{-- resources/views/referentiel/index.blade.php --}}
-
 @extends('layouts.app')
 @section('title', 'Référentiel Formations')
 @section('page-title', 'Référentiel Formations')
@@ -50,6 +48,68 @@
 .rf-panel { display:none; }
 .rf-panel.active { display:block; }
 
+/* ── Filter bar (formations) ── */
+.rf-filter-bar {
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    margin-bottom:12px;
+}
+.search-wrap { position:relative; }
+.search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#9ca3af; pointer-events:none; }
+.fi-search {
+    width:220px; padding:8px 12px 8px 34px;
+    border:0.5px solid var(--bd); border-radius:8px;
+    font-size:13px; color:#111827; background:#fff;
+    outline:none; font-family:inherit; transition:border-color .12s;
+}
+.fi-search:focus { border-color:var(--teal); box-shadow:0 0 0 3px rgba(29,158,117,.08); }
+.btn-search {
+    padding:8px 14px; background:var(--teal); color:#fff; border:none;
+    border-radius:8px; font-size:13px; cursor:pointer; font-family:inherit;
+    display:flex; align-items:center; gap:5px; transition:background .12s;
+}
+.btn-search:hover { background:var(--teal-d); }
+
+/* ── Dropdown catégorie ── */
+.rf-cat-wrap { position:relative; }
+.rf-cat-btn {
+    display:flex; align-items:center; gap:8px;
+    padding:8px 14px; background:#fff; border:0.5px solid var(--bd);
+    border-radius:8px; font-size:13px; color:#374151; cursor:pointer;
+    font-family:inherit; transition:border-color .12s; white-space:nowrap;
+    min-width:160px; justify-content:space-between;
+}
+.rf-cat-btn:hover { border-color:#9ca3af; }
+.rf-cat-btn.open { border-color:var(--teal); box-shadow:0 0 0 3px rgba(29,158,117,.08); }
+.rf-cat-btn svg { transition:transform .15s; flex-shrink:0; }
+.rf-cat-btn.open svg { transform:rotate(180deg); }
+.rf-cat-btn-label { flex:1; text-align:left; overflow:hidden; text-overflow:ellipsis; }
+.rf-cat-active-dot {
+    width:7px; height:7px; border-radius:50%; background:var(--teal);
+    display:none; flex-shrink:0;
+}
+.rf-cat-active-dot.visible { display:block; }
+
+.rf-cat-dropdown {
+    display:none; position:absolute; top:calc(100% + 6px); left:0;
+    background:#fff; border:0.5px solid var(--bd); border-radius:10px;
+    box-shadow:0 8px 24px rgba(0,0,0,.10); min-width:100%; z-index:200;
+    overflow:hidden; animation:dropIn .12s ease;
+}
+.rf-cat-dropdown.open { display:block; }
+@keyframes dropIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+
+.rf-cat-option {
+    padding:9px 14px; font-size:13px; color:#374151; cursor:pointer;
+    display:flex; align-items:center; gap:8px; transition:background .1s;
+    border-bottom:0.5px solid #f3f4f6;
+}
+.rf-cat-option:last-child { border-bottom:none; }
+.rf-cat-option:hover { background:#f9fafb; }
+.rf-cat-option.selected { color:var(--teal); font-weight:500; background:var(--teal-l); }
+.rf-cat-option-check { width:14px; height:14px; flex-shrink:0; color:var(--teal); }
+
+.rf-filter-count { font-size:12px; color:#9ca3af; margin-left:auto; white-space:nowrap; }
+
 /* ── Table card ── */
 .rf-card { background:#fff; border:0.5px solid var(--bd); border-radius:12px; overflow:hidden; }
 .rf-tbl  { width:100%; border-collapse:collapse; }
@@ -57,6 +117,41 @@
 .rf-tbl tbody td { padding:13px 16px; font-size:13px; color:#374151; border-bottom:0.5px solid #f3f4f6; vertical-align:middle; }
 .rf-tbl tbody tr:last-child td { border-bottom:none; }
 .rf-tbl tbody tr:hover td { background:#fafafa; }
+.rf-tbl tbody tr.hidden-row { display:none; }
+
+/* ── Description expandable ── */
+.desc-cell { max-width:300px; width:300px; }
+.desc-title { font-weight:500; color:#111827; }
+.desc-preview-wrap { margin-top:4px; }
+.desc-text-preview {
+    font-size:11px; color:#9ca3af; line-height:1.45;
+    overflow:hidden; display:-webkit-box;
+    -webkit-line-clamp:1; -webkit-box-orient:vertical;
+    word-break:break-word;
+}
+.desc-text-full {
+    font-size:12px; color:#6b7280; margin-top:6px; line-height:1.6;
+    padding:10px 12px; background:#f9fafb; border-radius:8px;
+    border:0.5px solid var(--bd); display:none;
+    word-break:break-word; white-space:pre-wrap;
+    max-height:200px; overflow-y:auto;
+}
+.desc-toggle {
+    display:inline-flex; align-items:center; gap:3px;
+    font-size:11px; color:var(--teal); cursor:pointer; background:none;
+    border:none; padding:2px 0 0; margin-top:2px; font-family:inherit;
+}
+.desc-toggle:hover { color:var(--teal-d); }
+.desc-toggle svg { transition:transform .2s; }
+.desc-toggle.open svg { transform:rotate(180deg); }
+
+/* ── Empty ── */
+.rf-empty { text-align:center; padding:52px 20px; color:#9ca3af; }
+.rf-empty i { font-size:36px; display:block; margin-bottom:10px; }
+.rf-empty p { font-size:13px; margin:0; }
+.rf-empty-filter { text-align:center; padding:36px 20px; color:#9ca3af; display:none; }
+.rf-empty-filter i { font-size:28px; display:block; margin-bottom:8px; }
+.rf-empty-filter p { font-size:13px; margin:0; }
 
 /* ── Badges ── */
 .rf-badge { display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px; font-size:12px; white-space:nowrap; }
@@ -85,11 +180,6 @@
 .rf-act { width:30px; height:30px; border-radius:7px; border:0.5px solid var(--bd); background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#6b7280; transition:all .12s; }
 .rf-act:hover { background:#f3f4f6; color:#111827; }
 
-/* ── Empty ── */
-.rf-empty { text-align:center; padding:52px 20px; color:#9ca3af; }
-.rf-empty i { font-size:36px; display:block; margin-bottom:10px; }
-.rf-empty p { font-size:13px; margin:0; }
-
 /* ── Durée chip ── */
 .dur-chip { background:var(--purple-l); color:var(--purple); font-size:12px; padding:2px 9px; border-radius:20px; font-weight:500; white-space:nowrap; }
 
@@ -113,11 +203,16 @@
 .fg .req  { color:var(--red); margin-left:2px; }
 .fi { width:100%; padding:9px 12px; border:0.5px solid #d1d5db; border-radius:8px; background:#fff; color:#111827; font-size:13px; outline:none; font-family:inherit; transition:border-color .12s; }
 .fi:focus { border-color:var(--teal); box-shadow:0 0 0 3px rgba(29,158,117,.08); }
+/* Description textarea — plus grande par défaut */
+textarea.fi { min-height:100px; resize:vertical; line-height:1.6; }
 .frow2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .fsec  { font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:#9ca3af; margin-bottom:12px; }
 .fdiv  { border:none; border-top:0.5px solid #f3f4f6; margin:16px 0; }
 .fi-check { display:flex; align-items:center; gap:8px; }
 .fi-check input[type=checkbox] { width:16px; height:16px; accent-color:var(--teal); }
+
+/* compteur de caractères */
+.desc-counter { font-size:11px; color:#9ca3af; text-align:right; margin-top:4px; }
 
 @media(max-width:580px) { .frow2{grid-template-columns:1fr} .rf{padding:16px} }
 </style>
@@ -125,8 +220,6 @@
 
 @section('content')
 <div class="rf">
-
-    
 
     {{-- Header --}}
     <div class="rf-header">
@@ -143,8 +236,6 @@
             </button>
         </div>
     </div>
-
-   
 
     {{-- Onglets --}}
     <div class="rf-tabs">
@@ -227,11 +318,67 @@
 
     {{-- ══════════ PANEL FORMATIONS CATALOGUE ══════════ --}}
     <div class="rf-panel {{ $onglet==='formations'?'active':'' }}" id="panel-formations">
+
+        {{-- ── Barre de filtre catégorie ── --}}
+        @php
+            $categories = $formations->pluck('categorie')->filter()->unique()->sort()->values();
+        @endphp
+
+        <div class="rf-filter-bar">
+
+            {{-- Recherche texte (déclenche sur Entrée ou clic bouton) --}}
+            <div class="search-wrap">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/>
+                </svg>
+                <input type="text" class="fi-search" id="cfSearch"
+                       placeholder="Rechercher une formation…"
+                       onkeydown="if(event.key==='Enter') filterFormations()">
+            </div>
+            <button class="btn-search" onclick="filterFormations()">
+                <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/>
+                </svg>
+                Rechercher
+            </button>
+
+            {{-- Dropdown catégorie --}}
+            @if($categories->isNotEmpty())
+            <div class="rf-cat-wrap" id="catWrap">
+                <button class="rf-cat-btn" id="catBtn" onclick="toggleCatDropdown()" type="button">
+                    <span class="rf-cat-active-dot" id="catDot"></span>
+                    <span class="rf-cat-btn-label" id="catBtnLabel">Toutes les catégories</span>
+                    <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+                <div class="rf-cat-dropdown" id="catDropdown">
+                    <div class="rf-cat-option selected" data-cat="" onclick="selectCat(this, '', 'Toutes les catégories')">
+                        <svg class="rf-cat-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Toutes les catégories
+                    </div>
+                    @foreach($categories as $cat)
+                    <div class="rf-cat-option" data-cat="{{ $cat }}" onclick="selectCat(this, '{{ addslashes($cat) }}', '{{ addslashes($cat) }}')">
+                        <svg class="rf-cat-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:0">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        {{ $cat }}
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
+            <span class="rf-filter-count" id="cfCount"></span>
+        </div>
+
         <div class="rf-card">
-            <table class="rf-tbl">
+            <table class="rf-tbl" id="tableFormations">
                 <thead>
                     <tr>
-                        <th>Titre</th>
+                        <th>Titre &amp; description</th>
                         <th>Catégorie</th>
                         <th>Durée</th>
                         <th>Type</th>
@@ -240,17 +387,38 @@
                         <th style="width:80px;"></th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tbodyFormations">
                 @forelse($formations as $f)
                     @php $tb = $f->type_badge; @endphp
-                    <tr>
-                        <td>
-                            <div style="font-weight:500;">{{ $f->titre }}</div>
+                    <tr data-cat="{{ $f->categorie }}" data-titre="{{ strtolower($f->titre) }}">
+                        <td class="desc-cell">
+                            <div class="desc-title">{{ $f->titre }}</div>
                             @if($f->description)
-                                <div style="font-size:11px;color:#9ca3af;margin-top:2px;">{{ Str::limit($f->description,60) }}</div>
+                                @php $long = strlen($f->description) > 80; @endphp
+                                <div class="desc-preview-wrap">
+                                    <div class="desc-text-preview" id="desc-prev-{{ $f->id }}">{{ $f->description }}</div>
+                                    @if($long)
+                                        <div class="desc-text-full" id="desc-full-{{ $f->id }}">{{ $f->description }}</div>
+                                        <button class="desc-toggle" id="desc-btn-{{ $f->id }}"
+                                                onclick="toggleDesc({{ $f->id }})" title="Voir la description complète">
+                                            <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                                            </svg>
+                                            Voir plus
+                                        </button>
+                                    @endif
+                                </div>
                             @endif
                         </td>
-                        <td style="color:#6b7280;">{{ $f->categorie ?: '—' }}</td>
+                        <td>
+                            @if($f->categorie)
+                                <span class="rf-badge" style="background:#f3f4f6;color:#374151;font-size:11px;">
+                                    {{ $f->categorie }}
+                                </span>
+                            @else
+                                <span style="color:#9ca3af;">—</span>
+                            @endif
+                        </td>
                         <td><span class="dur-chip">{{ $f->duree_libelle }}</span></td>
                         <td>
                             <span class="rf-badge" style="background:{{ $tb[1] }};color:{{ $tb[2] }};">
@@ -282,7 +450,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="7">
+                    <tr id="rowEmpty"><td colspan="7">
                         <div class="rf-empty">
                             <i class="fas fa-book-open"></i>
                             <p>Aucune formation dans le catalogue</p>
@@ -291,6 +459,11 @@
                 @endforelse
                 </tbody>
             </table>
+            {{-- Message aucun résultat après filtre --}}
+            <div class="rf-empty-filter" id="cfEmptyFilter">
+                <i class="fas fa-filter"></i>
+                <p>Aucune formation ne correspond à ce filtre.</p>
+            </div>
         </div>
     </div>
 
@@ -456,12 +629,23 @@
             </div>
             <div class="fg">
                 <label>Description</label>
-                <textarea name="description" id="cfDesc" class="fi" rows="2" placeholder="Objectifs, contenu…" style="resize:vertical;"></textarea>
+                <textarea name="description" id="cfDesc" class="fi" rows="4"
+                          placeholder="Objectifs, contenu, prérequis…"
+                          oninput="updateDescCounter()"></textarea>
+                <div class="desc-counter" id="descCounter">0 caractère</div>
             </div>
             <div class="frow2">
                 <div class="fg">
                     <label>Catégorie</label>
-                    <input type="text" name="categorie" id="cfCat" class="fi" placeholder="Ex: Sécurité, RH, Technique…">
+                    <input type="text" name="categorie" id="cfCat" class="fi"
+                           placeholder="Ex: Sécurité, RH, Technique…"
+                           list="cfCatList">
+                    {{-- datalist pour auto-complétion des catégories existantes --}}
+                    <datalist id="cfCatList">
+                        @foreach($categories ?? $formations->pluck('categorie')->filter()->unique()->sort() as $cat)
+                            <option value="{{ $cat }}">
+                        @endforeach
+                    </datalist>
                 </div>
                 <div class="fg">
                     <label>Durée (heures) <span class="req">*</span></label>
@@ -569,7 +753,6 @@ function switchTab(tab) {
     document.querySelectorAll('.rf-tab').forEach(t => t.classList.remove('active'));
     document.getElementById('panel-' + tab).classList.add('active');
     document.querySelectorAll('.rf-tab')[['formateurs','formations','organismes'].indexOf(tab)].classList.add('active');
-    // Mettre à jour le bouton "Ajouter"
     const labels = { formateurs:'Ajouter un formateur', formations:'Ajouter une formation', organismes:'Ajouter un organisme' };
     document.getElementById('btnAjouterLabel').textContent = labels[tab];
 }
@@ -583,10 +766,129 @@ function openAddModal() {
 function openModal(id)  { document.getElementById(id).classList.add('open'); document.body.style.overflow='hidden'; }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; }
 document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-        ['ovFormateur','ovFormation','ovOrganisme'].forEach(id => closeModal(id));
-    }
+    if (e.key === 'Escape') ['ovFormateur','ovFormation','ovOrganisme'].forEach(id => closeModal(id));
 });
+
+/* ══════════════════════════════════════
+   FILTRE FORMATIONS — dropdown catégorie + recherche sur Entrée
+══════════════════════════════════════ */
+let activeCat = '';
+
+/* ── Dropdown catégorie ── */
+function toggleCatDropdown() {
+    const btn      = document.getElementById('catBtn');
+    const dropdown = document.getElementById('catDropdown');
+    if (!btn || !dropdown) return;
+    const isOpen = dropdown.classList.contains('open');
+    if (isOpen) {
+        closeCatDropdown();
+    } else {
+        dropdown.classList.add('open');
+        btn.classList.add('open');
+    }
+}
+
+function closeCatDropdown() {
+    document.getElementById('catBtn')?.classList.remove('open');
+    document.getElementById('catDropdown')?.classList.remove('open');
+}
+
+function selectCat(el, cat, label) {
+    activeCat = cat;
+
+    // Mettre à jour visuellement les options
+    document.querySelectorAll('.rf-cat-option').forEach(o => {
+        o.classList.remove('selected');
+        const check = o.querySelector('.rf-cat-option-check');
+        if (check) check.style.opacity = '0';
+    });
+    el.classList.add('selected');
+    const check = el.querySelector('.rf-cat-option-check');
+    if (check) check.style.opacity = '1';
+
+    // Mettre à jour le bouton
+    const btnLabel = document.getElementById('catBtnLabel');
+    if (btnLabel) btnLabel.textContent = label;
+    const dot = document.getElementById('catDot');
+    if (dot) dot.classList.toggle('visible', cat !== '');
+
+    closeCatDropdown();
+    filterFormations();
+}
+
+// Fermer le dropdown en cliquant ailleurs
+document.addEventListener('click', e => {
+    const wrap = document.getElementById('catWrap');
+    if (wrap && !wrap.contains(e.target)) closeCatDropdown();
+});
+
+/* ── Filtrage principal ── */
+function filterFormations() {
+    const search = (document.getElementById('cfSearch')?.value || '').toLowerCase().trim();
+    const tbody  = document.getElementById('tbodyFormations');
+    if (!tbody) return;
+
+    const rows = tbody.querySelectorAll('tr[data-titre]');
+    let visible = 0;
+
+    rows.forEach(row => {
+        const rowCat   = (row.dataset.cat   || '').toLowerCase();
+        const rowTitre = (row.dataset.titre || '').toLowerCase();
+
+        const catMatch    = !activeCat || rowCat === activeCat.toLowerCase();
+        const searchMatch = !search    || rowTitre.includes(search);
+
+        if (catMatch && searchMatch) {
+            row.classList.remove('hidden-row');
+            visible++;
+        } else {
+            row.classList.add('hidden-row');
+        }
+    });
+
+    const counter = document.getElementById('cfCount');
+    if (counter) counter.textContent = visible + ' formation' + (visible > 1 ? 's' : '');
+
+    const emptyFilter = document.getElementById('cfEmptyFilter');
+    if (emptyFilter) emptyFilter.style.display = (visible === 0 && rows.length > 0) ? 'block' : 'none';
+}
+
+document.addEventListener('DOMContentLoaded', () => filterFormations());
+
+/* ══════════════════════════════════════
+   DESCRIPTION EXPANDABLE
+══════════════════════════════════════ */
+function toggleDesc(id) {
+    const full = document.getElementById('desc-full-' + id);
+    const btn  = document.getElementById('desc-btn-'  + id);
+    const prev = document.getElementById('desc-prev-' + id);
+    if (!full || !btn) return;
+
+    const isOpen = full.style.display === 'block';
+    if (isOpen) {
+        full.style.display = 'none';
+        if (prev) prev.style.display = '';
+        btn.classList.remove('open');
+        btn.innerHTML = `<svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg> Voir plus`;
+    } else {
+        full.style.display = 'block';
+        if (prev) prev.style.display = 'none';
+        btn.classList.add('open');
+        btn.innerHTML = `<svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg> Réduire`;
+    }
+}
+
+/* ══════════════════════════════════════
+   COMPTEUR CARACTÈRES — description modal
+══════════════════════════════════════ */
+function updateDescCounter() {
+    const ta  = document.getElementById('cfDesc');
+    const ctr = document.getElementById('descCounter');
+    if (!ta || !ctr) return;
+    const n = ta.value.length;
+    ctr.textContent = n + ' caractère' + (n > 1 ? 's' : '');
+    ctr.style.color = n > 800 ? '#E24B4A' : '#9ca3af';
+}
 
 /* ══════════ FORMATEUR ══════════ */
 function openAddFormateur() {
@@ -620,6 +922,7 @@ function openAddFormation() {
     document.getElementById('titleFormation').textContent  = 'Ajouter une formation au catalogue';
     document.getElementById('submitFormation').textContent = 'Enregistrer';
     document.getElementById('cfDate').value = new Date().toISOString().slice(0,10);
+    updateDescCounter();
     openModal('ovFormation');
 }
 
@@ -634,6 +937,7 @@ function editFormation(f) {
     document.getElementById('cfDuree').value  = f.duree_heures  || '';
     document.getElementById('cfType').value   = f.type          || 'presentiel';
     document.getElementById('cfDate').value   = (f.date_creation || '').slice(0,10);
+    updateDescCounter();
     openModal('ovFormation');
 }
 

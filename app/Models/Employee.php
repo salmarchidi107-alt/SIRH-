@@ -31,6 +31,7 @@ class Employee extends Model
         'contract_type',
         'hire_date',
         'birth_date',
+        'genre',
         'status',
         'base_salary',
         'manager_id',

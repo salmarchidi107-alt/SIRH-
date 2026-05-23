@@ -21,7 +21,7 @@ class PointageController extends Controller
     private const TZ = 'Africa/Casablanca';
 
     // =========================================================================
-    // Helper : récupère le tenant_id courant (UUID safe, pas de cast int)
+    // Helper : récupère le tenant_id courant
     // =========================================================================
     private function getCurrentTenantId(): mixed
     {
@@ -30,6 +30,33 @@ class PointageController extends Controller
             $tenantId = auth()->user()->tenant_id;
         }
         return filled($tenantId) ? $tenantId : null;
+    }
+
+    // =========================================================================
+    // Helper : résout le shift_type depuis une collection de BadgeRecords
+    // Retourne 'garde' dès qu'un record le dit, sinon 'normal'
+    // =========================================================================
+    private function resolveShiftType(Collection $shift, ?Pointage $pointage = null): string
+    {
+        // 1. Le record d'entrée a toujours la priorité
+        $entree = $shift->where('type', 'entree')->first();
+        if ($entree && (string) $entree->shift_type === 'garde') {
+            return 'garde';
+        }
+
+        // 2. N'importe quel record du shift
+        foreach ($shift as $record) {
+            if ((string) $record->shift_type === 'garde') {
+                return 'garde';
+            }
+        }
+
+        // 3. Depuis le pointage en base
+        if ($pointage && (string) $pointage->shift_type === 'garde') {
+            return 'garde';
+        }
+
+        return 'normal';
     }
 
     // =========================================================================
@@ -69,13 +96,14 @@ class PointageController extends Controller
     }
 
     // =========================================================================
-    // index — avec infos validation (qui + quand)
+    // index — avec shift_type filtrage + stats
     // =========================================================================
     public function index(Request $request): View
     {
         $date        = $request->get('date', today()->toDateString());
         $currentDate = Carbon::parse($date);
         $tenantId    = $this->getCurrentTenantId();
+        $shiftFilter = $request->get('shift'); // null | 'normal' | 'garde'
 
         Carbon::setLocale('fr');
         $startOfWeek = $currentDate->copy()->startOfWeek(Carbon::MONDAY);
@@ -91,10 +119,7 @@ class PointageController extends Controller
                 ->where('pointages.tenant_id', $tenantId)
                 ->where('pointages.valide', true)
                 ->whereNotNull('pointages.validated_by')
-                ->select(
-                    'users.name as validator_name',
-                    'pointages.validated_at'
-                )
+                ->select('users.name as validator_name', 'pointages.validated_at')
                 ->orderByDesc('pointages.validated_at')
                 ->first();
 
@@ -125,10 +150,19 @@ class PointageController extends Controller
         $departments = \App\Models\Department::names();
         $vue         = $request->get('vue', 'tous');
 
+        // ── Badge records du jour — chargés en une seule requête ──────────
         $allBadgeRecords = BadgeRecord::whereDate('created_at', $currentDate->toDateString())
             ->orderBy('created_at')
             ->get()
             ->groupBy('employee_id');
+
+        // ── Log de débogage shift_type ────────────────────────────────────
+        Log::debug('BadgeRecords shift_type debug', [
+            'date'    => $currentDate->toDateString(),
+            'records' => BadgeRecord::whereDate('created_at', $currentDate->toDateString())
+                ->get(['id', 'employee_id', 'type', 'shift_type'])
+                ->toArray(),
+        ]);
 
         $employeesQuery = Employee::active()
             ->with(['pointages' => function ($q) use ($currentDate, $tenantId) {
@@ -146,16 +180,19 @@ class PointageController extends Controller
                 $pointage = $emp->pointages->first();
                 $shift    = $allBadgeRecords->get($emp->id, collect());
 
+                // ── Cas absent : on lit le shift_type du pointage ─────────
                 if ($pointage && in_array($pointage->statut, ['absent', 'absence_injustifiee'])) {
                     return [
-                        'id'       => $emp->id,
-                        'nom'      => $emp->first_name . ' ' . $emp->last_name,
-                        'avatar'   => strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1)),
-                        'pointage' => $pointage,
-                        'geo'      => null,
+                        'id'         => $emp->id,
+                        'nom'        => $emp->first_name . ' ' . $emp->last_name,
+                        'avatar'     => strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1)),
+                        'pointage'   => $pointage,
+                        'geo'        => null,
+                        'shift_type' => $this->resolveShiftType($shift, $pointage),
                     ];
                 }
 
+                // ── Sync depuis badge records ─────────────────────────────
                 if (! $pointage || ! $pointage->ignore_badge) {
                     if ($shift->isNotEmpty()) {
                         $pointage = $this->syncPointageFromBadgeRecords(
@@ -164,17 +201,20 @@ class PointageController extends Controller
                     }
                 }
 
-                $geoData = $this->extractGeoFromBadgeRecords($shift);
+                $geoData       = $this->extractGeoFromBadgeRecords($shift);
+                $shiftResolved = $this->resolveShiftType($shift, $pointage);
 
                 return [
-                    'id'       => $emp->id,
-                    'nom'      => $emp->first_name . ' ' . $emp->last_name,
-                    'avatar'   => strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1)),
-                    'pointage' => $pointage,
-                    'geo'      => $geoData,
+                    'id'         => $emp->id,
+                    'nom'        => $emp->first_name . ' ' . $emp->last_name,
+                    'avatar'     => strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1)),
+                    'pointage'   => $pointage,
+                    'geo'        => $geoData,
+                    'shift_type' => $shiftResolved,
                 ];
             });
 
+        // ── Filtres vue ───────────────────────────────────────────────────
         if ($vue === 'pointe') {
             $employees = $employees->filter(fn($e) =>
                 $e['pointage']?->heure_entree && ! in_array($e['pointage']->statut ?? '', ['absent'])
@@ -185,25 +225,33 @@ class PointageController extends Controller
             );
         }
 
+        // ── Filtre shift type ─────────────────────────────────────────────
+        if (in_array($shiftFilter, ['normal', 'garde'])) {
+            $employees = $employees->filter(fn($e) => $e['shift_type'] === $shiftFilter);
+        }
+
+        // ── Stats ─────────────────────────────────────────────────────────
         $stats = [
-            'valides'    => $employees->filter(fn($e) => $e['pointage']?->valide)->count(),
-            'presents'   => $employees->filter(fn($e) => $e['pointage']?->statut === 'present')->count(),
-            'absents'    => $employees->filter(fn($e) => in_array($e['pointage']?->statut, ['absent', 'absence_injustifiee']))->count(),
-            'en_attente' => $employees->filter(fn($e) => ! $e['pointage'] || $e['pointage']?->statut === 'pas_de_badge')->count(),
-            'total'      => $employees->count(),
-            'geo_ok'     => $employees->filter(fn($e) => isset($e['geo']) && !($e['geo']['denied'] ?? true))->count(),
+            'valides'      => $employees->filter(fn($e) => $e['pointage']?->valide)->count(),
+            'presents'     => $employees->filter(fn($e) => $e['pointage']?->statut === 'present')->count(),
+            'absents'      => $employees->filter(fn($e) => in_array($e['pointage']?->statut, ['absent', 'absence_injustifiee']))->count(),
+            'en_attente'   => $employees->filter(fn($e) => ! $e['pointage'] || $e['pointage']?->statut === 'pas_de_badge')->count(),
+            'total'        => $employees->count(),
+            'geo_ok'       => $employees->filter(fn($e) => isset($e['geo']) && !($e['geo']['denied'] ?? true))->count(),
+            'shift_normal' => $employees->filter(fn($e) => $e['shift_type'] === 'normal')->count(),
+            'shift_garde'  => $employees->filter(fn($e) => $e['shift_type'] === 'garde')->count(),
         ];
 
         return view('pointage.index', compact(
             'employees', 'departments', 'weekDays', 'currentDate',
-            'startOfWeek', 'endOfWeek', 'stats', 'vue'
+            'startOfWeek', 'endOfWeek', 'stats', 'vue', 'shiftFilter'
         ));
     }
 
     // =========================================================================
     // extractGeoFromBadgeRecords
     // =========================================================================
-    private function extractGeoFromBadgeRecords(\Illuminate\Support\Collection $shift): ?array
+    private function extractGeoFromBadgeRecords(Collection $shift): ?array
     {
         if ($shift->isEmpty()) return null;
 
@@ -221,19 +269,16 @@ class PointageController extends Controller
         }
 
         if (! $record) {
-            if ($shift->isNotEmpty()) {
-                $firstBadge = $shift->first();
-                return [
-                    'denied'      => true,
-                    'latitude'    => null,
-                    'longitude'   => null,
-                    'accuracy'    => null,
-                    'address'     => null,
-                    'reason'      => $firstBadge->geolocation_denied ? 'denied_by_user' : 'no_coords',
-                    'recorded_at' => null,
-                ];
-            }
-            return null;
+            $firstBadge = $shift->first();
+            return [
+                'denied'      => true,
+                'latitude'    => null,
+                'longitude'   => null,
+                'accuracy'    => null,
+                'address'     => null,
+                'reason'      => $firstBadge->geolocation_denied ? 'denied_by_user' : 'no_coords',
+                'recorded_at' => null,
+            ];
         }
 
         return [
@@ -250,7 +295,7 @@ class PointageController extends Controller
     }
 
     // =========================================================================
-    // validerJournee — stocke validated_by + validated_at via DB::table
+    // validerJournee
     // =========================================================================
     public function validerJournee(Request $request): JsonResponse
     {
@@ -280,7 +325,7 @@ class PointageController extends Controller
     }
 
     // =========================================================================
-    // toggleValider — bypass Eloquent pour éviter le bug UUID
+    // toggleValider
     // =========================================================================
     public function toggleValider(Pointage $pointage): JsonResponse
     {
@@ -296,9 +341,9 @@ class PointageController extends Controller
             ]);
 
         return response()->json([
-            'success'   => true,
-            'valide'    => $newValide,
-            'validator' => $newValide ? auth()->user()->name : null,
+            'success'      => true,
+            'valide'       => $newValide,
+            'validator'    => $newValide ? auth()->user()->name : null,
             'validated_at' => $newValide
                 ? now()->setTimezone(self::TZ)->format('H\hi')
                 : null,
@@ -394,16 +439,12 @@ class PointageController extends Controller
                 'date'        => $date,
                 'tenant_id'   => $tenantId,
             ]);
-
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
 
     // =========================================================================
     // syncPointageFromBadgeRecords
-    // FIX: utilise DB::table()->update() avec colonnes explicites pour ne jamais
-    //      écraser valide / validated_by / validated_at sur un pointage déjà validé
-    // FIX2: calculerTotalHeures(true) pour persister total_heures / pause_minutes
     // =========================================================================
     private function syncPointageFromBadgeRecords(
         int $employeeId,
@@ -411,10 +452,33 @@ class PointageController extends Controller
         Collection $shift,
         mixed $tenantId = null
     ): Pointage {
+
+        // ── Résoudre le shift_type AVANT le firstOrCreate ─────────────────
+        $shiftType = $this->resolveShiftType($shift);
+
+        Log::debug('syncPointage shift_type', [
+            'employee_id'   => $employeeId,
+            'shift_type'    => $shiftType,
+            'badge_records' => $shift->map(fn($r) => [
+                'type'       => $r->type,
+                'shift_type' => $r->shift_type,
+            ])->toArray(),
+        ]);
+
         $pointage = Pointage::withoutGlobalScope(TenantScope::class)
             ->firstOrCreate(
-                ['employee_id' => $employeeId, 'date' => $date->toDateString(), 'tenant_id' => $tenantId],
-                ['statut' => 'present', 'valide' => false, 'source' => 'badge', 'tenant_id' => $tenantId]
+                [
+                    'employee_id' => $employeeId,
+                    'date'        => $date->toDateString(),
+                    'tenant_id'   => $tenantId,
+                ],
+                [
+                    'statut'     => 'present',
+                    'valide'     => false,
+                    'source'     => 'badge',
+                    'shift_type' => $shiftType,    // ← passé dès la création
+                    'tenant_id'  => $tenantId,
+                ]
             );
 
         if (in_array($pointage->statut, ['absent', 'absence_injustifiee'])) {
@@ -426,9 +490,10 @@ class PointageController extends Controller
         $firstPause  = $shift->where('type', 'pause')->first()?->created_at;
         $firstRetour = $shift->where('type', 'retour_pause')->first()?->created_at;
 
-        // On n'inclut JAMAIS valide / validated_by / validated_at ici
+        // Ne jamais écraser valide / validated_by / validated_at
         $updateData = [
             'statut'     => 'present',
+            'shift_type' => $shiftType,   // ← toujours mis à jour
             'updated_at' => now(),
         ];
 
@@ -444,28 +509,21 @@ class PointageController extends Controller
         if ($firstRetour) {
             $updateData['pause_end'] = Carbon::parse($firstRetour)->setTimezone(self::TZ)->format('H:i:s');
         }
-
-        // FIX: ordre correct debut → fin pour diffInMinutes
         if ($firstPause && $firstRetour) {
             $diff = Carbon::parse($firstPause)->diffInMinutes(Carbon::parse($firstRetour));
             $updateData['pause_minutes'] = $diff > 0 ? $diff : 0;
         }
 
-        // Mise à jour ciblée — ne touche jamais à valide / validated_by / validated_at
         DB::table('pointages')
             ->where('id', $pointage->id)
             ->update($updateData);
 
-        // Recharger depuis la base avec les nouvelles heures/pause persistées
         $pointage = $pointage->fresh();
 
-        // FIX PRINCIPAL : true pour sauvegarder total_heures, heures_travaillees,
-        // heures_supplementaires et pause_minutes directement en base
         if (method_exists($pointage, 'calculerTotalHeures')) {
             $pointage->calculerTotalHeures(true);
         }
 
-        // Recharger une dernière fois avec toutes les valeurs calculées
         return $pointage->fresh();
     }
 
@@ -479,6 +537,12 @@ class PointageController extends Controller
             $currentDate = Carbon::parse($date);
             $tenantId    = $this->getCurrentTenantId();
             $vue         = $request->get('vue', 'tous');
+            $shiftFilter = $request->get('shift');
+
+            $allBadgeRecords = BadgeRecord::whereDate('created_at', $currentDate->toDateString())
+                ->orderBy('created_at')
+                ->get()
+                ->groupBy('employee_id');
 
             $employees = Employee::active()
                 ->with(['pointages' => function ($q) use ($currentDate, $tenantId) {
@@ -490,29 +554,55 @@ class PointageController extends Controller
                 ->when($request->filled('department'), fn($q) => $q->department($request->department))
                 ->defaultOrder()
                 ->get()
-                ->map(function ($emp) use ($currentDate, $tenantId) {
+                ->map(function ($emp) use ($currentDate, $tenantId, $allBadgeRecords) {
                     $pointage = $emp->pointages->first();
+                    $shift    = $allBadgeRecords->get($emp->id, collect());
+
                     if ($pointage && in_array($pointage->statut, ['absent', 'absence_injustifiee'])) {
-                        return ['id' => $emp->id, 'nom' => $emp->first_name.' '.$emp->last_name, 'department' => $emp->department, 'pointage' => $pointage];
+                        return [
+                            'id'         => $emp->id,
+                            'nom'        => $emp->first_name . ' ' . $emp->last_name,
+                            'department' => $emp->department,
+                            'pointage'   => $pointage,
+                            'shift_type' => $this->resolveShiftType($shift, $pointage),
+                        ];
                     }
                     if (! $pointage || ! $pointage->ignore_badge) {
-                        $shift = BadgeRecord::where('employee_id', $emp->id)->whereDate('created_at', $currentDate->toDateString())->orderBy('created_at')->get();
-                        if ($shift->isNotEmpty()) $pointage = $this->syncPointageFromBadgeRecords($emp->id, $currentDate, $shift, $tenantId);
+                        if ($shift->isNotEmpty()) {
+                            $pointage = $this->syncPointageFromBadgeRecords($emp->id, $currentDate, $shift, $tenantId);
+                        }
                     }
-                    return ['id' => $emp->id, 'nom' => $emp->first_name.' '.$emp->last_name, 'department' => $emp->department, 'pointage' => $pointage];
+                    return [
+                        'id'         => $emp->id,
+                        'nom'        => $emp->first_name . ' ' . $emp->last_name,
+                        'department' => $emp->department,
+                        'pointage'   => $pointage,
+                        'shift_type' => $this->resolveShiftType($shift, $pointage),
+                    ];
                 });
 
-            if ($vue === 'pointe')         $employees = $employees->filter(fn($e) => $e['pointage']?->heure_entree && ! in_array($e['pointage']->statut ?? '', ['absent']));
-            elseif ($vue === 'non_pointe') $employees = $employees->filter(fn($e) => ! $e['pointage']?->heure_entree || in_array($e['pointage']?->statut ?? '', ['absent', 'pas_de_badge']));
+            if ($vue === 'pointe') {
+                $employees = $employees->filter(fn($e) =>
+                    $e['pointage']?->heure_entree && ! in_array($e['pointage']->statut ?? '', ['absent'])
+                );
+            } elseif ($vue === 'non_pointe') {
+                $employees = $employees->filter(fn($e) =>
+                    ! $e['pointage']?->heure_entree || in_array($e['pointage']?->statut ?? '', ['absent', 'pas_de_badge'])
+                );
+            }
+
+            if (in_array($shiftFilter, ['normal', 'garde'])) {
+                $employees = $employees->filter(fn($e) => $e['shift_type'] === $shiftFilter);
+            }
 
             if ($employees->isEmpty()) return back()->with('error', 'Aucun résultat avec ces filtres.');
 
             $stats       = ['valides' => $employees->filter(fn($e) => $e['pointage']?->valide)->count(), 'total' => $employees->count()];
             $dateStr     = $currentDate->format('d/m/Y');
             $dept        = $request->get('department', 'Tous');
-            $filterInfo  = 'Département: '.$dept.' | Vue: '.ucfirst($vue);
+            $filterInfo  = 'Département: ' . $dept . ' | Vue: ' . ucfirst($vue) . ($shiftFilter ? ' | Shift: ' . $shiftFilter : '');
             $generatedAt = now()->format('d/m/Y H:i');
-            $filename    = 'pointage_'.$currentDate->format('Y-m-d').'_'.\Illuminate\Support\Str::slug($dept).'_'.$vue.'.pdf';
+            $filename    = 'pointage_' . $currentDate->format('Y-m-d') . '_' . \Illuminate\Support\Str::slug($dept) . '_' . $vue . '.pdf';
 
             return Pdf::loadView('pdf.pointage', compact('employees', 'stats', 'dateStr', 'filterInfo', 'generatedAt'))
                 ->setPaper('a4', 'portrait')
@@ -521,7 +611,7 @@ class PointageController extends Controller
 
         } catch (Exception $e) {
             Log::error('Pointage PDF error', ['error' => $e->getMessage()]);
-            return back()->with('error', 'Erreur PDF: '.$e->getMessage());
+            return back()->with('error', 'Erreur PDF: ' . $e->getMessage());
         }
     }
 

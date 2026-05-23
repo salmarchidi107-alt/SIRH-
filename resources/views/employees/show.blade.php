@@ -80,7 +80,7 @@
                         <div class="detail-value">
                             @if($employee->plain_pin)
                                 <span id="pin-{{ $employee->id }}" class="text-muted font-mono font-bold text-lg" style="letter-spacing: 2px;">{{ $employee->plain_pin }}</span>
-                                
+
                                 <button onclick="regeneratePin({{ $employee->id }})" class="btn btn-sm btn-warning ml-1">🔄 Regénérer</button>
                             @else
                                 <button onclick="generatePin({{ $employee->id }})" class="btn btn-sm btn-primary">Générer PIN</button>
@@ -92,6 +92,24 @@
                         <div class="detail-label"> Situation familiale</div>
                         <div class="detail-value">{{ $employee->family_situation ?: '—' }}</div>
                     </div>
+                    <div class="detail-item">
+    <div class="detail-item">
+    <div class="detail-label"> Genre</div>
+    <div class="detail-value">
+        @if($employee->genre === 'homme')
+            <span style="display:inline-flex;align-items:center;gap:6px;">
+                Homme
+            </span>
+        @elseif($employee->genre === 'femme')
+            <span style="display:inline-flex;align-items:center;gap:6px;">
+                Femme
+            </span>
+        @else
+            —
+        @endif
+    </div>
+</div>
+</div>
                     @if($employee->address)
                     <div class="detail-item" style="grid-column:1/-1">
                         <div class="detail-label"> Adresse</div>

@@ -1,3 +1,4 @@
+{{-- resources/views/badge/login.blade.php --}}
 @extends('layouts.badge')
 @section('title', 'Authentification — Pointage')
 
@@ -57,6 +58,52 @@
   display: block; font-size: 11px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .08em; color: rgba(255,255,255,.45); margin-bottom: 10px;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   SÉLECTEUR TYPE DE SHIFT (style radio pills compact)
+══════════════════════════════════════════════════════════════ */
+.shift-type-wrap {
+  margin-bottom: 24px;
+}
+.shift-type-group {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 99px; padding: 4px 5px;
+}
+.shift-radio-opt {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 16px; border-radius: 99px;
+  cursor: pointer; transition: all .2s;
+  font-size: 13px; font-weight: 600;
+  color: rgba(255,255,255,.45);
+  user-select: none;
+}
+.shift-radio-opt input[type=radio] { display: none; }
+.shift-dot {
+  width: 15px; height: 15px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.25);
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s; flex-shrink: 0;
+}
+.shift-dot::after {
+  content: ''; width: 6px; height: 6px;
+  border-radius: 50%; background: white;
+  opacity: 0; transition: opacity .15s;
+}
+.shift-radio-opt.active {
+  background: rgba(255,255,255,.10);
+  color: rgba(255,255,255,.92);
+}
+.shift-radio-opt.active .shift-dot {
+  border-color: var(--teal2);
+  background: var(--teal);
+}
+.shift-radio-opt.active .shift-dot::after { opacity: 1; }
+
+/* ══════════════════════════════════════════════════════════════
+   RADIO ACTION (Début shift / Retour pause / etc.)
+══════════════════════════════════════════════════════════════ */
 .radio-group { margin-bottom: 24px; }
 .radio-opt {
   display: flex; align-items: center; gap: 12px;
@@ -64,13 +111,16 @@
   border: 1px solid rgba(255,255,255,.08);
   margin-bottom: 8px; cursor: pointer; transition: background .15s, border-color .15s;
 }
-.radio-opt:has(input:checked)           { border-color: var(--teal);  background: rgba(13,148,136,.08); }
-.radio-opt:has(input:checked).sortie-opt{ border-color: var(--amber); background: rgba(245,158,11,.08); }
-.radio-opt input[type=radio]            { accent-color: var(--teal);  width:16px; height:16px; flex-shrink:0; }
-.sortie-opt input[type=radio]           { accent-color: var(--amber); }
+.radio-opt:has(input:checked)            { border-color: var(--teal);  background: rgba(13,148,136,.08); }
+.radio-opt:has(input:checked).sortie-opt { border-color: var(--amber); background: rgba(245,158,11,.08); }
+.radio-opt input[type=radio]             { accent-color: var(--teal);  width:16px; height:16px; flex-shrink:0; }
+.sortie-opt input[type=radio]            { accent-color: var(--amber); }
 .radio-lbl { font-size: 14px; font-weight: 600; }
 .radio-sub { font-size: 12px; color: rgba(255,255,255,.4); margin-top: 2px; }
 
+/* ══════════════════════════════════════════════════════════════
+   CHAMPS
+══════════════════════════════════════════════════════════════ */
 .field { margin-bottom: 18px; }
 .form-input {
   width: 100%;
@@ -85,6 +135,9 @@
 .form-input:focus { border-color: var(--teal); background: rgba(13,148,136,.10); box-shadow: 0 0 0 3px rgba(13,148,136,.18); }
 .form-input.error { border-color: var(--red); }
 
+/* ══════════════════════════════════════════════════════════════
+   SIGNATURE
+══════════════════════════════════════════════════════════════ */
 .sig-canvas {
   width: 100%; height: 140px; display: block;
   background: rgba(255,255,255,.04);
@@ -95,7 +148,7 @@
 .sig-hint { font-size: 11px; color: rgba(255,255,255,.3); margin-top: 6px; margin-bottom: 4px; }
 
 /* ══════════════════════════════════════════════════════════════
-   GRILLE GÉOLOC + CAMÉRA (deux carrés côte à côte)
+   GRILLE GÉOLOC + CAMÉRA
 ══════════════════════════════════════════════════════════════ */
 .geo-cam-grid {
   display: grid;
@@ -106,22 +159,16 @@
 
 /* ── Carré Géolocalisation ── */
 .geo-square {
-  border-radius: 16px;
-  padding: 14px 14px 12px;
-  min-height: 90px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 6px;
-  transition: all .35s ease;
-  position: relative;
-  overflow: hidden;
+  border-radius: 16px; padding: 14px 14px 12px;
+  min-height: 90px; display: flex; flex-direction: column;
+  justify-content: center; gap: 6px;
+  transition: all .35s ease; position: relative; overflow: hidden;
 }
 .geo-square.loading { background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.2); }
 .geo-square.ok      { background: rgba(13,148,136,.08); border: 1px solid rgba(13,148,136,.2); }
 .geo-square.denied  { background: rgba(239,68,68,.07);  border: 1px solid rgba(239,68,68,.18); }
 
-.geo-square-icon { font-size: 20px; line-height: 1; }
+.geo-square-icon  { font-size: 20px; line-height: 1; }
 .geo-square-title {
   font-size: 11px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .07em; line-height: 1.2;
@@ -139,7 +186,6 @@
 .geo-square.ok      .geo-square-sub { color: var(--teal2); }
 .geo-square.denied  .geo-square-sub { color: #fca5a5; }
 
-/* Point animé géo */
 .geo-dot {
   position: absolute; top: 12px; right: 12px;
   width: 7px; height: 7px; border-radius: 50%;
@@ -153,48 +199,35 @@
 
 /* ── Carré Caméra ── */
 .cam-square {
-  border-radius: 16px;
-  padding: 14px 14px 12px;
-  min-height: 90px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 6px;
-  cursor: pointer;
-  transition: all .25s;
+  border-radius: 16px; padding: 14px 14px 12px;
+  min-height: 90px; display: flex; flex-direction: column;
+  justify-content: center; align-items: flex-start;
+  gap: 6px; cursor: pointer; transition: all .25s;
   border: 1px dashed rgba(255,255,255,.2);
   background: rgba(255,255,255,.04);
-  position: relative;
-  overflow: hidden;
+  position: relative; overflow: hidden;
 }
 .cam-square:hover {
   background: rgba(13,148,136,.12);
-  border-color: var(--teal);
-  border-style: solid;
+  border-color: var(--teal); border-style: solid;
 }
 .cam-square.has-photo {
   background: rgba(13,148,136,.08);
-  border: 1px solid rgba(13,148,136,.3);
-  border-style: solid;
+  border: 1px solid rgba(13,148,136,.3); border-style: solid;
 }
-.cam-square-icon { font-size: 20px; line-height: 1; }
+.cam-square-icon  { font-size: 20px; line-height: 1; }
 .cam-square-title {
   font-size: 11px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .07em; color: rgba(255,255,255,.6); line-height: 1.2;
 }
 .cam-square.has-photo .cam-square-title { color: var(--teal2); }
-.cam-square-sub {
-  font-size: 10px; color: rgba(255,255,255,.35); line-height: 1.3;
-}
+.cam-square-sub { font-size: 10px; color: rgba(255,255,255,.35); line-height: 1.3; }
 .cam-square.has-photo .cam-square-sub { color: rgba(94,234,212,.65); }
 
-/* Miniature photo dans le carré caméra */
 .cam-thumb {
   position: absolute; inset: 0;
   object-fit: cover; border-radius: 15px;
-  opacity: .22; pointer-events: none;
-  transform: scaleX(-1);
+  opacity: .22; pointer-events: none; transform: scaleX(-1);
 }
 .cam-check {
   position: absolute; top: 10px; right: 10px;
@@ -221,16 +254,13 @@
 .btn-submit.ready:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(13,148,136,.5); }
 
 /* ══════════════════════════════════════════════════════════════
-   MODALE CAMÉRA (reprise du 2e fichier)
+   MODALE CAMÉRA
 ══════════════════════════════════════════════════════════════ */
 .camera-overlay {
   position: fixed; inset: 0; z-index: 9999;
-  background: rgba(0,0,0,.85);
-  backdrop-filter: blur(12px);
-  display: flex; align-items: center; justify-content: center;
-  padding: 24px;
-  opacity: 0; pointer-events: none;
-  transition: opacity .3s ease;
+  background: rgba(0,0,0,.85); backdrop-filter: blur(12px);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+  opacity: 0; pointer-events: none; transition: opacity .3s ease;
 }
 .camera-overlay.active { opacity: 1; pointer-events: all; }
 .camera-modal {
@@ -262,10 +292,7 @@
   background: #000; aspect-ratio: 4/3;
   border: 2px solid rgba(255,255,255,.1);
 }
-#cameraVideo {
-  width: 100%; height: 100%; object-fit: cover; display: block;
-  transform: scaleX(-1);
-}
+#cameraVideo { width: 100%; height: 100%; object-fit: cover; display: block; transform: scaleX(-1); }
 #cameraCanvas { display: none; }
 .scan-overlay {
   position: absolute; inset: 0; pointer-events: none;
@@ -294,13 +321,35 @@
 .progress-bar-inner { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--teal), var(--teal2)); width: 100%; transition: width 1s linear; }
 .photo-taken-wrap { display: none; flex-direction: column; align-items: center; gap: 16px; }
 .photo-taken-wrap img { width: 100%; border-radius: 14px; border: 2px solid var(--teal); transform: scaleX(-1); }
-.photo-taken-badge { display: flex; align-items: center; gap: 8px; background: rgba(13,148,136,.2); border: 1px solid rgba(13,148,136,.4); border-radius: 99px; padding: 8px 18px; font-size: 13px; color: #5eead4; font-weight: 600; }
+.photo-taken-badge {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(13,148,136,.2); border: 1px solid rgba(13,148,136,.4);
+  border-radius: 99px; padding: 8px 18px;
+  font-size: 13px; color: #5eead4; font-weight: 600;
+}
 .camera-actions { display: flex; gap: 10px; margin-top: 16px; }
-.btn-retake { flex: 1; padding: 12px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.15); border-radius: 12px; color: rgba(255,255,255,.7); font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all .2s; }
+.btn-retake {
+  flex: 1; padding: 12px;
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.15);
+  border-radius: 12px; color: rgba(255,255,255,.7);
+  font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+  cursor: pointer; transition: all .2s;
+}
 .btn-retake:hover { background: rgba(255,255,255,.12); color: white; }
-.btn-validate-photo { flex: 2; padding: 12px; background: linear-gradient(135deg, var(--teal), var(--teal2)); border: none; border-radius: 12px; color: white; font-size: 14px; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all .2s; box-shadow: 0 4px 16px rgba(13,148,136,.35); }
+.btn-validate-photo {
+  flex: 2; padding: 12px;
+  background: linear-gradient(135deg, var(--teal), var(--teal2));
+  border: none; border-radius: 12px; color: white;
+  font-size: 14px; font-weight: 700; font-family: 'DM Sans', sans-serif;
+  cursor: pointer; transition: all .2s; box-shadow: 0 4px 16px rgba(13,148,136,.35);
+}
 .btn-validate-photo:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(13,148,136,.5); }
-.camera-error { display: none; padding: 16px; background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); border-radius: 12px; text-align: center; color: #fca5a5; font-size: 13px; line-height: 1.6; }
+.camera-error {
+  display: none; padding: 16px;
+  background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3);
+  border-radius: 12px; text-align: center; color: #fca5a5;
+  font-size: 13px; line-height: 1.6;
+}
 
 .bg-clock {
   position: fixed; bottom: 36px; right: 36px; z-index: 0;
@@ -336,6 +385,7 @@
       @csrf
       <input type="hidden" name="action"       value="{{ $action }}">
       <input type="hidden" name="face_photo"   id="facePhotoData">
+      <input type="hidden" name="shift_type"   id="shiftTypeInput" value="normal">
 
       {{-- Géolocalisation (inputs cachés) --}}
       <input type="hidden" name="geo_latitude"  id="geo_latitude"  value="">
@@ -344,7 +394,26 @@
       <input type="hidden" name="geo_address"   id="geo_address"   value="">
       <input type="hidden" name="geo_denied"    id="geo_denied"    value="1">
 
-      {{-- Choix action_sub --}}
+      {{-- ════════════════════════════════════════════════════
+           TYPE DE SHIFT — sélecteur radio pills compact
+      ════════════════════════════════════════════════════ --}}
+      <div class="shift-type-wrap">
+        <span class="field-label">Type de shift</span>
+        <div class="shift-type-group">
+          <label class="shift-radio-opt active" data-value="normal">
+            <input type="radio" name="_shift_display" value="normal" checked>
+            <span class="shift-dot"></span> Shift
+          </label>
+          <label class="shift-radio-opt" data-value="garde">
+            <input type="radio" name="_shift_display" value="garde">
+            <span class="shift-dot"></span> Garde
+          </label>
+        </div>
+      </div>
+
+      {{-- ════════════════════════════════════════════════════
+           CHOIX ACTION (Début shift / Retour pause / etc.)
+      ════════════════════════════════════════════════════ --}}
       <div class="radio-group">
         <span class="field-label">Votre action</span>
         @if($intent === 'entree')
@@ -425,7 +494,7 @@
 <div class="camera-overlay" id="cameraOverlay">
   <div class="camera-modal">
     <div class="camera-header">
-      <h3> Capture faciale <span>Badgeuse</span></h3>
+      <h3>📸 Capture faciale <span>Badgeuse</span></h3>
       <button class="btn-close-camera" id="btnCloseCamera" title="Fermer">✕</button>
     </div>
 
@@ -476,8 +545,24 @@
 /* ── Horloge ─────────────────────────────────────────────── */
 (function(){
   const el = document.getElementById('bgClock');
-  const tick = () => { if(el) el.textContent = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Casablanca'}); };
+  const tick = () => {
+    if (el) el.textContent = new Date().toLocaleTimeString('fr-FR', {
+      hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Casablanca'
+    });
+  };
   tick(); setInterval(tick, 1000);
+})();
+
+/* ── Sélecteur type de shift ─────────────────────────────── */
+(function(){
+  const inp = document.getElementById('shiftTypeInput');
+  document.querySelectorAll('.shift-radio-opt').forEach(el => {
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.shift-radio-opt').forEach(o => o.classList.remove('active'));
+      el.classList.add('active');
+      inp.value = el.dataset.value;
+    });
+  });
 })();
 
 /* ── Signature ──────────────────────────────────────────── */
@@ -497,28 +582,31 @@
   resize();
   new ResizeObserver(resize).observe(canvas);
 
-  const p = e => { const r=canvas.getBoundingClientRect(),s=e.touches?e.touches[0]:e; return{x:s.clientX-r.left,y:s.clientY-r.top}; };
-  const start = e => { e.preventDefault(); dr=true; const {x,y}=p(e); ctx.beginPath(); ctx.moveTo(x,y); };
-  const move  = e => { e.preventDefault(); if(!dr)return; const {x,y}=p(e); ctx.lineTo(x,y); ctx.stroke(); inp.value=canvas.toDataURL(); canvas.classList.add('has-sig'); checkReady(); };
-  const stop  = e => { e.preventDefault(); dr=false; };
+  const p = e => {
+    const r = canvas.getBoundingClientRect(), s = e.touches ? e.touches[0] : e;
+    return { x: s.clientX - r.left, y: s.clientY - r.top };
+  };
+  const start = e => { e.preventDefault(); dr = true; const {x,y} = p(e); ctx.beginPath(); ctx.moveTo(x, y); };
+  const move  = e => { e.preventDefault(); if (!dr) return; const {x,y} = p(e); ctx.lineTo(x, y); ctx.stroke(); inp.value = canvas.toDataURL(); canvas.classList.add('has-sig'); checkReady(); };
+  const stop  = e => { e.preventDefault(); dr = false; };
 
   canvas.addEventListener('mousedown',  start);
   canvas.addEventListener('mousemove',  move);
   canvas.addEventListener('mouseup',    stop);
   canvas.addEventListener('mouseleave', stop);
-  canvas.addEventListener('touchstart', start, {passive:false});
-  canvas.addEventListener('touchmove',  move,  {passive:false});
-  canvas.addEventListener('touchend',   stop,  {passive:false});
+  canvas.addEventListener('touchstart', start, {passive: false});
+  canvas.addEventListener('touchmove',  move,  {passive: false});
+  canvas.addEventListener('touchend',   stop,  {passive: false});
   canvas.addEventListener('dblclick', () => {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    inp.value=''; canvas.classList.remove('has-sig'); checkReady();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    inp.value = ''; canvas.classList.remove('has-sig'); checkReady();
   });
 })();
 
-/* ── Vérification bouton ───────────────────────────────── */
+/* ── Vérification bouton ────────────────────────────────── */
 function checkReady(){
-  const ok = document.getElementById('pin').value.length===6
-          && document.getElementById('signatureData').value.length>0;
+  const ok = document.getElementById('pin').value.length === 6
+          && document.getElementById('signatureData').value.length > 0;
   const btn = document.getElementById('submitBtn');
   btn.disabled = !ok;
   btn.classList.toggle('ready', ok);
@@ -556,60 +644,63 @@ function resolveGeo(ok, lat, lng, acc, addr, title, sub){
     fillGeoInputs(lat, lng, acc, addr);
     setGeoSquare('ok', title, sub);
   } else {
-    fillGeoInputs(null,null,null,null);
+    fillGeoInputs(null, null, null, null);
     setGeoSquare('denied', title, sub || 'Pointage autorisé sans GPS');
   }
 
   if (pendingSubmit) document.getElementById('authForm').submit();
 }
 
-function reverseGeocode(lat, lng) {
+function reverseGeocode(lat, lng){
   return fetch(
-    'https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lng+'&format=json&zoom=18&accept-language=fr',
-    { headers: { 'Accept-Language':'fr', 'User-Agent':'HospitalRH-Badge/1.0' } }
+    'https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lng + '&format=json&zoom=18&accept-language=fr',
+    { headers: { 'Accept-Language': 'fr', 'User-Agent': 'HospitalRH-Badge/1.0' } }
   )
   .then(r => r.ok ? r.json() : null)
   .then(data => {
     if (!data) return null;
-    const a = data.address || {};
+    const a       = data.address || {};
     const road    = a.road || a.pedestrian || a.footway || null;
     const num     = a.house_number || null;
     const quarter = a.quarter || a.neighbourhood || a.suburb || null;
     const city    = a.city || a.town || a.village || null;
     const state   = a.state || a.region || null;
     const country = a.country || null;
-    let street = road ? (num ? num+' '+road : road) : null;
-    const parts = [street, quarter, city, state, country].filter(Boolean);
+    const street  = road ? (num ? num + ' ' + road : road) : null;
+    const parts   = [street, quarter, city, state, country].filter(Boolean);
     return parts.length ? parts.join(', ') : (data.display_name || null);
   })
   .catch(() => null);
 }
 
-const isSecure = location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1'||location.hostname.endsWith('.local');
+const isSecure = location.protocol === 'https:'
+              || location.hostname === 'localhost'
+              || location.hostname === '127.0.0.1'
+              || location.hostname.endsWith('.local');
 
 if (!isSecure) {
-  resolveGeo(false,null,null,null,null,'⚠ HTTPS requis','Activez HTTPS pour le GPS');
+  resolveGeo(false, null, null, null, null, '⚠ HTTPS requis', 'Activez HTTPS pour le GPS');
 } else if (!('geolocation' in navigator)) {
-  resolveGeo(false,null,null,null,null,'Non supporté','');
+  resolveGeo(false, null, null, null, null, 'Non supporté', '');
 } else {
   geoTimer = setTimeout(() => {
-    resolveGeo(false,null,null,null,null,'Délai dépassé','Sans coordonnées GPS');
+    resolveGeo(false, null, null, null, null, 'Délai dépassé', 'Sans coordonnées GPS');
   }, 15000);
 
   navigator.geolocation.getCurrentPosition(
     function(pos){
       const lat = pos.coords.latitude, lng = pos.coords.longitude, acc = Math.round(pos.coords.accuracy);
-      setGeoSquare('loading','Adresse en cours…', lat.toFixed(4)+'° · '+Math.abs(lng).toFixed(4)+'°');
-      reverseGeocode(lat,lng).then(addr => {
-        const sub = addr || (lat.toFixed(5)+'° · '+Math.abs(lng).toFixed(5)+'° · ±'+acc+'m');
-        resolveGeo(true,lat,lng,acc,addr,'Position enregistrée',sub);
+      setGeoSquare('loading', 'Adresse en cours…', lat.toFixed(4) + '° · ' + Math.abs(lng).toFixed(4) + '°');
+      reverseGeocode(lat, lng).then(addr => {
+        const sub = addr || (lat.toFixed(5) + '° · ' + Math.abs(lng).toFixed(5) + '° · ±' + acc + 'm');
+        resolveGeo(true, lat, lng, acc, addr, 'Position enregistrée', sub);
       });
     },
     function(err){
-      const msgs={1:'Géoloc refusée',2:'Position indisponible',3:'Délai dépassé'};
-      resolveGeo(false,null,null,null,null,msgs[err.code]||'Localisation impossible','');
+      const msgs = {1: 'Géoloc refusée', 2: 'Position indisponible', 3: 'Délai dépassé'};
+      resolveGeo(false, null, null, null, null, msgs[err.code] || 'Localisation impossible', '');
     },
-    { enableHighAccuracy:true, timeout:13000, maximumAge:0 }
+    { enableHighAccuracy: true, timeout: 13000, maximumAge: 0 }
   );
 }
 
@@ -619,7 +710,7 @@ document.getElementById('authForm').addEventListener('submit', function(e){
     e.preventDefault();
     pendingSubmit = true;
     const btn = document.getElementById('submitBtn');
-    btn.textContent = '⏳ Localisation…'; btn.style.opacity='.75'; btn.style.cursor='wait';
+    btn.textContent = '⏳ Localisation…'; btn.style.opacity = '.75'; btn.style.cursor = 'wait';
   }
 });
 
@@ -645,10 +736,9 @@ let countdownTimer  = null;
 let secondsLeft     = 5;
 let capturedDataUrl = null;
 
-/* Ouvrir via le carré caméra */
 const camSquare = document.getElementById('camSquare');
 camSquare.addEventListener('click', openCamera);
-camSquare.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' ') openCamera(); });
+camSquare.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openCamera(); });
 
 document.getElementById('btnCloseCamera').addEventListener('click', closeCamera);
 document.getElementById('btnRetake').addEventListener('click', retakePhoto);
@@ -668,7 +758,10 @@ async function openCamera(){
   cameraOverlay.classList.add('active');
 
   try {
-    mediaStream = await navigator.mediaDevices.getUserMedia({ video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}, audio:false });
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+      audio: false
+    });
     cameraVideo.srcObject = mediaStream;
     await cameraVideo.play();
     startCountdown();
@@ -684,7 +777,7 @@ function startCountdown(){
   secondsLeft = 5; updateCountdownUI();
   countdownTimer = setInterval(() => {
     secondsLeft--; updateCountdownUI();
-    if(secondsLeft<=0){ clearInterval(countdownTimer); takePhoto(); }
+    if (secondsLeft <= 0) { clearInterval(countdownTimer); takePhoto(); }
   }, 1000);
 }
 
@@ -693,62 +786,66 @@ function updateCountdownUI(){
   cameraCountdown.classList.remove('pulse');
   void cameraCountdown.offsetWidth;
   cameraCountdown.classList.add('pulse');
-  progressBarInner.style.width = ((secondsLeft/5)*100)+'%';
-  cameraStatusText.textContent = secondsLeft<=3&&secondsLeft>0
-    ? ' Souriez ! Capture dans '+secondsLeft+'…'
+  progressBarInner.style.width = ((secondsLeft / 5) * 100) + '%';
+  cameraStatusText.textContent = secondsLeft <= 3 && secondsLeft > 0
+    ? '😊 Souriez ! Capture dans ' + secondsLeft + '…'
     : 'Positionnez votre visage dans le cadre…';
 }
 
 function takePhoto(){
-  if(!mediaStream) return;
-  const vw=cameraVideo.videoWidth||640, vh=cameraVideo.videoHeight||480;
-  cameraCanvas.width=vw; cameraCanvas.height=vh;
-  const cctx=cameraCanvas.getContext('2d');
-  cctx.translate(vw,0); cctx.scale(-1,1);
-  cctx.drawImage(cameraVideo,0,0,vw,vh);
-  capturedDataUrl = cameraCanvas.toDataURL('image/jpeg',.85);
+  if (!mediaStream) return;
+  const vw = cameraVideo.videoWidth || 640, vh = cameraVideo.videoHeight || 480;
+  cameraCanvas.width = vw; cameraCanvas.height = vh;
+  const cctx = cameraCanvas.getContext('2d');
+  cctx.translate(vw, 0); cctx.scale(-1, 1);
+  cctx.drawImage(cameraVideo, 0, 0, vw, vh);
+  capturedDataUrl = cameraCanvas.toDataURL('image/jpeg', .85);
 
-  const flash=document.createElement('div');
-  flash.style.cssText='position:absolute;inset:0;background:white;border-radius:14px;z-index:10;opacity:1;transition:opacity .4s';
+  const flash = document.createElement('div');
+  flash.style.cssText = 'position:absolute;inset:0;background:white;border-radius:14px;z-index:10;opacity:1;transition:opacity .4s';
   cameraViewfinder.appendChild(flash);
-  setTimeout(()=>{ flash.style.opacity='0'; setTimeout(()=>flash.remove(),400); },50);
+  setTimeout(() => { flash.style.opacity = '0'; setTimeout(() => flash.remove(), 400); }, 50);
 
-  scanLine.style.display='none';
-  setTimeout(()=>{
+  scanLine.style.display = 'none';
+  setTimeout(() => {
     capturedPreview.src            = capturedDataUrl;
     cameraStatus.style.display     = 'none';
     cameraViewfinder.style.display = 'none';
     photoTakenWrap.style.display   = 'flex';
-  },300);
+  }, 300);
   stopStream();
 }
 
 function retakePhoto(){
-  capturedDataUrl=null;
+  capturedDataUrl = null;
   photoTakenWrap.style.display   = 'none';
   cameraError.style.display      = 'none';
   cameraStatus.style.display     = 'block';
   cameraViewfinder.style.display = 'block';
   scanLine.style.display         = 'block';
-  secondsLeft=5; cameraCountdown.textContent='5';
-  progressBarInner.style.width='100%';
-  cameraStatusText.textContent='Positionnez votre visage dans le cadre…';
-  navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:false})
-    .then(stream=>{ mediaStream=stream; cameraVideo.srcObject=stream; cameraVideo.play(); startCountdown(); })
-    .catch(()=>{ cameraError.style.display='block'; cameraViewfinder.style.display='none'; cameraStatus.style.display='none'; });
+  secondsLeft = 5; cameraCountdown.textContent = '5';
+  progressBarInner.style.width   = '100%';
+  cameraStatusText.textContent   = 'Positionnez votre visage dans le cadre…';
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+    audio: false
+  })
+  .then(stream => { mediaStream = stream; cameraVideo.srcObject = stream; cameraVideo.play(); startCountdown(); })
+  .catch(() => {
+    cameraError.style.display      = 'block';
+    cameraViewfinder.style.display = 'none';
+    cameraStatus.style.display     = 'none';
+  });
 }
 
 function validatePhoto(){
-  if(!capturedDataUrl) return;
+  if (!capturedDataUrl) return;
   facePhotoDataEl.value = capturedDataUrl;
-
-  /* Mettre à jour le carré caméra */
   const sq = document.getElementById('camSquare');
   sq.classList.add('has-photo');
-  document.getElementById('camThumb').src        = capturedDataUrl;
+  document.getElementById('camThumb').src              = capturedDataUrl;
   document.getElementById('camSquareTitle').textContent = 'Photo enregistrée';
   document.getElementById('camSquareSub').textContent   = 'Cliquez pour reprendre';
-
   closeCamera();
 }
 
@@ -758,10 +855,12 @@ function closeCamera(){
   cameraOverlay.classList.remove('active');
 }
 function stopStream(){
-  if(mediaStream){ mediaStream.getTracks().forEach(t=>t.stop()); mediaStream=null; }
+  if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
 }
 
-cameraOverlay.addEventListener('click', e=>{ if(e.target===cameraOverlay) closeCamera(); });
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'&&cameraOverlay.classList.contains('active')) closeCamera(); });
+cameraOverlay.addEventListener('click', e => { if (e.target === cameraOverlay) closeCamera(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && cameraOverlay.classList.contains('active')) closeCamera();
+});
 </script>
 @endpush

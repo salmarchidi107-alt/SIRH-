@@ -101,17 +101,25 @@ class PlanningService
      *                           Ne pas passer l'ID, la colonne stocke le nom.
      */
     public function getPlanningsBetween(
-        Carbon  $start,
-        Carbon  $end,
-        ?string $roomName = null
-    ): Collection {
-        return Planning::with(['employee', 'room'])
-            ->whereDate('date', '>=', $start)
-            ->whereDate('date', '<=', $end)
-            ->when($roomName, fn($q) => $q->where('room', $roomName))
-            ->get()
-            ->groupBy('employee_id');
-    }
+    Carbon  $start,
+    Carbon  $end,
+    ?string $roomName = null
+): Collection {
+    $tenantId = auth()->user()?->tenant_id;
+
+    return Planning::with(['employee', 'room'])
+        ->when($tenantId, function ($q) use ($tenantId) {
+            $q->where(function ($query) use ($tenantId) {
+                $query->where('tenant_id', $tenantId)
+                      ->orWhereNull('tenant_id');
+            });
+        })
+        ->whereDate('date', '>=', $start)
+        ->whereDate('date', '<=', $end)
+        ->when($roomName, fn($q) => $q->where('room', $roomName))
+        ->get()
+        ->groupBy('employee_id');
+}
 
     // =========================================================================
     // GET EMPLOYEE PLANNING FOR RANGE

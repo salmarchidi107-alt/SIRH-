@@ -14,6 +14,7 @@ class BadgeRecord extends Model
     protected $fillable = [
         'employee_id',
         'type',
+        'shift_type',          // ← AJOUTÉ : 'normal' | 'garde'
 
         // Géolocalisation
         'latitude',
@@ -22,7 +23,7 @@ class BadgeRecord extends Model
         'location_address',
         'geolocation_denied',
 
-        // Photo faciale ← AJOUTÉ
+        // Photo faciale
         'face_photo_path',
         'face_photo_disk',
         'face_photo_base64',
@@ -40,6 +41,7 @@ class BadgeRecord extends Model
         'accuracy'           => 'float',
         'geolocation_denied' => 'boolean',
         'face_photo_size'    => 'integer',
+        'shift_type'         => 'string',  // ← AJOUTÉ
     ];
 
     // ── Relations ─────────────────────────────────────────────────────────
@@ -47,6 +49,20 @@ class BadgeRecord extends Model
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
+    }
+
+    // ── Accessors shift ───────────────────────────────────────────────────
+
+    /** true si c'est une garde de nuit. */
+    public function isGarde(): bool
+    {
+        return $this->shift_type === 'garde';
+    }
+
+    /** Libellé lisible du type de shift. */
+    public function getShiftTypeLabelAttribute(): string
+    {
+        return $this->shift_type === 'garde' ? 'Garde' : 'Shift normal';
     }
 
     // ── Accessors photo ───────────────────────────────────────────────────
@@ -123,5 +139,23 @@ class BadgeRecord extends Model
     public function scopeWithPhoto($query)
     {
         return $query->whereNotNull('face_photo_path');
+    }
+
+    /** Scope : filtrer par type de shift. */
+    public function scopeOfShift($query, string $shiftType)
+    {
+        return $query->where('shift_type', $shiftType);
+    }
+
+    /** Scope : uniquement les gardes. */
+    public function scopeGarde($query)
+    {
+        return $query->where('shift_type', 'garde');
+    }
+
+    /** Scope : uniquement les shifts normaux. */
+    public function scopeNormal($query)
+    {
+        return $query->where('shift_type', 'normal');
     }
 }

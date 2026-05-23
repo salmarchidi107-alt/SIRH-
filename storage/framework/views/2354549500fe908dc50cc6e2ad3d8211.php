@@ -196,6 +196,7 @@
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
                 </svg>
+
                 <span>Mon Profil</span>
             </a>
             <?php endif; ?>
@@ -516,6 +517,17 @@
                 </svg>
                 <span>Paramétrage</span>
             </a>
+            <div class="nav-section-label">Rapport</div>
+
+<a href="<?php echo e(route('reporting.index')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('reporting.*') ? 'active' : ''); ?>">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586
+                 a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+    </svg>
+    <span>Rapport </span>
+</a>
             <?php endif; ?>
 
         </nav>
@@ -600,12 +612,13 @@
                         <div style="padding: 12px 16px; border-bottom: 1px solid #eee; font-weight: 600; color: var(--primary);"><i class="fa-solid fa-chart-column" aria-hidden="true"></i> Fichier Excel Imprimable</div>
                         <a href="<?php echo e(route('employees.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Liste du Personnel</a>
                         <a href="<?php echo e(route('trombinoscope.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Trombinoscope</a>
-                        <a href="/salary/export" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Bulletins de Paie</a>
                         <a href="<?php echo e(route('absences.droits.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Droits d'Absences</a>
                         <a href="<?php echo e(route('absences.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Demandes d'Absences</a>
                         <a href="<?php echo e(route('absences.counters.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Compteurs Absences</a>
                         <a href="<?php echo e(route('planning.monthly.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Planning Mensuel</a>
                         <a href="<?php echo e(route('planning.weekly.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Planning Hebdomadaire</a>
+                        <a href="<?php echo e(route('pointage.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Pointages</a>
+                        <a href="<?php echo e(route('salary.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Salaires</a>
                         
                         <a href="<?php echo e(route('lms.exportPdf')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Formations (LMS)</a>
                     </div>

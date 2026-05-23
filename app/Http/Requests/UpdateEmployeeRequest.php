@@ -32,6 +32,7 @@ class UpdateEmployeeRequest extends FormRequest
             'contract_type' => ['required', Rule::in(['CDI','CDD','Interim','Stage'])],
             'hire_date' => 'required|date',
             'birth_date' => 'nullable|date',
+            'genre' => 'nullable|in:homme,femme',
             'base_salary' => 'nullable|numeric|min:0',
             'status' => ['required', Rule::in(['active','inactive','leave'])],
             'cin' => 'nullable|string|max:20',

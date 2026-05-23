@@ -6,15 +6,20 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Salary;
 use App\Services\PayrollService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Exports\SalariesExport;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Str;
 
 class SalaryController extends Controller
 {
     public function __construct(private PayrollService $payrollService) {}
 
+    // =========================================================================
+    // INDEX
+    // =========================================================================
     public function index(Request $request)
     {
         $month      = (int) $request->get('month', now()->month);
@@ -23,17 +28,69 @@ class SalaryController extends Controller
         $search     = $request->get('search');
         $department = $request->get('department');
 
+        // ── Filtre de période custom ─────────────────────────────────────
+        $dateDebut = $request->get('date_debut');
+        $dateFin   = $request->get('date_fin');
+
+        // Valider et normaliser les dates
+        if ($dateDebut && $dateFin) {
+            try {
+                $debutCarbon = Carbon::parse($dateDebut)->startOfDay();
+                $finCarbon   = Carbon::parse($dateFin)->endOfDay();
+
+                if ($debutCarbon->gt($finCarbon)) {
+                    [$debutCarbon, $finCarbon] = [$finCarbon, $debutCarbon];
+                    $dateDebut = $debutCarbon->format('Y-m-d');
+                    $dateFin   = $finCarbon->format('Y-m-d');
+                }
+            } catch (\Exception $e) {
+                $dateDebut   = null;
+                $dateFin     = null;
+                $debutCarbon = Carbon::create($year, $month, 1)->startOfMonth();
+                $finCarbon   = Carbon::create($year, $month, 1)->endOfMonth();
+            }
+        } else {
+            $dateDebut   = null;
+            $dateFin     = null;
+            $debutCarbon = Carbon::create($year, $month, 1)->startOfMonth();
+            $finCarbon   = Carbon::create($year, $month, 1)->endOfMonth();
+        }
+
+        // ── Couples (mois, année) couverts par la plage ──────────────────
+        $periodesMois = $this->getPeriodesMois($debutCarbon, $finCarbon);
+
+        // ── Requête employés avec leurs bulletins ────────────────────────
         $query = Employee::with([
-            'salaries' => fn($q) => $q->where('month', $month)
-                                      ->where('year', $year)
-                                      ->with(['createdBy', 'validatedBy', 'paidBy']),
+            'salaries' => function ($q) use ($periodesMois, $status) {
+                $q->where(function ($sub) use ($periodesMois) {
+                    foreach ($periodesMois as $pm) {
+                        $sub->orWhere(function ($inner) use ($pm) {
+                            $inner->where('month', $pm['month'])
+                                  ->where('year',  $pm['year']);
+                        });
+                    }
+                })
+                ->with(['createdBy', 'validatedBy', 'paidBy'])
+                ->orderBy('year')
+                ->orderBy('month');
+
+                if ($status) {
+                    $q->where('status', $status);
+                }
+            },
         ]);
 
         if ($status) {
-            $query->whereHas('salaries', function ($q) use ($status, $month, $year) {
+            $query->whereHas('salaries', function ($q) use ($periodesMois, $status) {
                 $q->where('status', $status)
-                  ->where('month', $month)
-                  ->where('year', $year);
+                  ->where(function ($sub) use ($periodesMois) {
+                      foreach ($periodesMois as $pm) {
+                          $sub->orWhere(function ($inner) use ($pm) {
+                              $inner->where('month', $pm['month'])
+                                    ->where('year',  $pm['year']);
+                          });
+                      }
+                  });
             });
         }
 
@@ -51,15 +108,202 @@ class SalaryController extends Controller
 
         $employees = $query->orderByRaw("CONCAT(first_name, ' ', last_name) ASC")->paginate(50);
 
-        $summary     = $this->payrollService->getMonthlySummary($month, $year);
+        // ── Summary ──────────────────────────────────────────────────────
+        $summary = $this->getSummaryPeriode($periodesMois, $status);
+
         $departments = Department::names();
 
         return view('salary.index', compact(
             'employees', 'month', 'year', 'summary',
-            'status', 'search', 'department', 'departments'
+            'status', 'search', 'department', 'departments',
+            'dateDebut', 'dateFin', 'periodesMois'
         ));
     }
 
+    // =========================================================================
+    // EXPORT PDF — Récapitulatif paie (mêmes filtres que l'index)
+    // =========================================================================
+    public function exportPdf(Request $request)
+    {
+        $month      = (int) $request->get('month', now()->month);
+        $year       = (int) $request->get('year',  now()->year);
+        $status     = $request->get('status');
+        $department = $request->get('department');
+        $dateDebut  = $request->get('date_debut');
+        $dateFin    = $request->get('date_fin');
+
+        // ── Normaliser les dates (même logique que index) ─────────────────
+        if ($dateDebut && $dateFin) {
+            try {
+                $debutCarbon = Carbon::parse($dateDebut)->startOfDay();
+                $finCarbon   = Carbon::parse($dateFin)->endOfDay();
+                if ($debutCarbon->gt($finCarbon)) {
+                    [$debutCarbon, $finCarbon] = [$finCarbon, $debutCarbon];
+                    $dateDebut = $debutCarbon->format('Y-m-d');
+                    $dateFin   = $finCarbon->format('Y-m-d');
+                }
+            } catch (\Exception $e) {
+                $dateDebut   = null;
+                $dateFin     = null;
+                $debutCarbon = Carbon::create($year, $month, 1)->startOfMonth();
+                $finCarbon   = Carbon::create($year, $month, 1)->endOfMonth();
+            }
+        } else {
+            $dateDebut   = null;
+            $dateFin     = null;
+            $debutCarbon = Carbon::create($year, $month, 1)->startOfMonth();
+            $finCarbon   = Carbon::create($year, $month, 1)->endOfMonth();
+        }
+
+        $periodesMois = $this->getPeriodesMois($debutCarbon, $finCarbon);
+
+        // ── Charger TOUS les employés sans pagination ─────────────────────
+        $query = Employee::with([
+            'salaries' => function ($q) use ($periodesMois, $status) {
+                $q->where(function ($sub) use ($periodesMois) {
+                    foreach ($periodesMois as $pm) {
+                        $sub->orWhere(function ($inner) use ($pm) {
+                            $inner->where('month', $pm['month'])
+                                  ->where('year',  $pm['year']);
+                        });
+                    }
+                })
+                ->with(['createdBy', 'validatedBy', 'paidBy'])
+                ->orderBy('year')
+                ->orderBy('month');
+
+                if ($status) {
+                    $q->where('status', $status);
+                }
+            },
+        ]);
+
+        if ($status) {
+            $query->whereHas('salaries', function ($q) use ($periodesMois, $status) {
+                $q->where('status', $status)
+                  ->where(function ($sub) use ($periodesMois) {
+                      foreach ($periodesMois as $pm) {
+                          $sub->orWhere(function ($inner) use ($pm) {
+                              $inner->where('month', $pm['month'])
+                                    ->where('year',  $pm['year']);
+                          });
+                      }
+                  });
+            });
+        }
+
+        if ($department) {
+            $query->where('department', $department);
+        }
+
+        $allEmployees = $query->orderByRaw("CONCAT(first_name, ' ', last_name) ASC")->get();
+
+        // ── Summary ───────────────────────────────────────────────────────
+        $summary = $this->getSummaryPeriode($periodesMois, $status);
+
+        // ── Label de période ──────────────────────────────────────────────
+        if ($dateDebut && $dateFin) {
+            $periodLabel = Carbon::parse($dateDebut)->locale('fr')->isoFormat('D MMM YYYY')
+                . ' → '
+                . Carbon::parse($dateFin)->locale('fr')->isoFormat('D MMM YYYY');
+        } else {
+            $periodLabel = ucfirst(
+                Carbon::create($year, $month)->locale('fr')->isoFormat('MMMM YYYY')
+            );
+        }
+
+        // ── Générer le PDF ────────────────────────────────────────────────
+        $data = [
+            'allEmployees' => $allEmployees,
+            'summary'      => $summary,
+            'periodLabel'  => $periodLabel,
+            'month'        => $month,
+            'year'         => $year,
+            'department'   => $department,
+            'status'       => $status,
+            'dateDebut'    => $dateDebut,
+            'dateFin'      => $dateFin,
+            'tenant'       => auth()->user()?->tenant,
+        ];
+
+        $pdf = Pdf::loadView('salary.export_pdf', $data)
+            ->setPaper('a4', 'landscape')
+            ->setOptions([
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled'      => false,
+                'defaultFont'          => 'DejaVu Sans',
+                'dpi'                  => 150,
+            ]);
+
+        $filename = 'paie-' . Str::slug($periodLabel) . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    // =========================================================================
+    // Calcule les couples (mois, année) couverts entre deux dates
+    // =========================================================================
+    private function getPeriodesMois(Carbon $debut, Carbon $fin): array
+    {
+        $periodes    = [];
+        $courant     = $debut->copy()->startOfMonth();
+        $dernierMois = $fin->copy()->startOfMonth();
+
+        while ($courant->lte($dernierMois)) {
+            $periodes[] = [
+                'month' => $courant->month,
+                'year'  => $courant->year,
+            ];
+            $courant->addMonth();
+        }
+
+        return $periodes;
+    }
+
+    // =========================================================================
+    // Summary agrégé sur plusieurs mois
+    // =========================================================================
+    private function getSummaryPeriode(array $periodesMois, ?string $status = null): array
+    {
+        if (count($periodesMois) === 1) {
+            return $this->payrollService->getMonthlySummary(
+                $periodesMois[0]['month'],
+                $periodesMois[0]['year']
+            );
+        }
+
+        $query = Salary::where(function ($q) use ($periodesMois) {
+            foreach ($periodesMois as $pm) {
+                $q->orWhere(function ($inner) use ($pm) {
+                    $inner->where('month', $pm['month'])
+                          ->where('year',  $pm['year']);
+                });
+            }
+        });
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        $salaries = $query->get();
+
+        return [
+            'total_gross'        => $salaries->sum('gross_salary'),
+            'total_net'          => $salaries->sum('net_salary'),
+            'total_cnss_sal'     => $salaries->sum('cnss_deduction'),
+            'total_amo_sal'      => $salaries->sum('amo_deduction'),
+            'total_ir'           => $salaries->sum('ir_deduction'),
+            'total_employer_cost'=> $salaries->sum('employer_total_cost'),
+            'count'              => $salaries->count(),
+            'count_draft'        => $salaries->where('status', 'draft')->count(),
+            'count_validated'    => $salaries->where('status', 'validated')->count(),
+            'count_paid'         => $salaries->where('status', 'paid')->count(),
+        ];
+    }
+
+    // =========================================================================
+    // SHOW
+    // =========================================================================
     public function show(Employee $employee)
     {
         if (auth()->user()->isEmployee() && auth()->user()->employee_id !== $employee->id) {
@@ -75,6 +319,9 @@ class SalaryController extends Controller
         return view('salary.show', compact('employee', 'salaries'));
     }
 
+    // =========================================================================
+    // CREATE
+    // =========================================================================
     public function create(Employee $employee, Request $request)
     {
         $month = (int) $request->get('month', now()->month);
@@ -90,7 +337,6 @@ class SalaryController extends Controller
             ->where('year',  $year)
             ->get();
 
-        // workingData inclut maintenant garde_hours automatiquement
         $workingData = $this->payrollService->getMonthlyWorkingHours(
             $employee->id, $month, $year
         );
@@ -101,6 +347,9 @@ class SalaryController extends Controller
         ));
     }
 
+    // =========================================================================
+    // STORE / UPDATE
+    // =========================================================================
     public function store(Request $request, Employee $employee)
     {
         return $this->_upsert($request, $employee);
@@ -148,7 +397,7 @@ class SalaryController extends Controller
             'absence_days'             => 'nullable|numeric|min:0',
             'absence_hours'            => 'nullable|numeric|min:0',
             'delay_hours'              => 'nullable|numeric|min:0',
-            'garde_hours'              => 'nullable|numeric|min:0',   // ← NOUVEAU
+            'garde_hours'              => 'nullable|numeric|min:0',
             'cnss_base'                => 'nullable|numeric|min:0',
             'cnss_deduction'           => 'nullable|numeric|min:0',
             'amo_deduction'            => 'nullable|numeric|min:0',
@@ -179,7 +428,6 @@ class SalaryController extends Controller
                 ->with('error', 'Ce bulletin est deja valide ou paye. Impossible de le modifier.');
         }
 
-        // Enregistrer qui a cree le bulletin (saisie initiale uniquement)
         if (! $salary->exists) {
             $salary->created_by = auth()->id();
         }
@@ -220,7 +468,7 @@ class SalaryController extends Controller
             'absence_days'             => $data['absence_days'] ?? 0,
             'absence_hours'            => $data['absence_hours'] ?? 0,
             'delay_hours'              => $data['delay_hours'] ?? 0,
-            'garde_hours'              => $data['garde_hours'] ?? 0,   // ← NOUVEAU
+            'garde_hours'              => $data['garde_hours'] ?? 0,
             'cnss_base'                => $data['cnss_base'] ?? 0,
             'cnss_deduction'           => $data['cnss_deduction'] ?? 0,
             'amo_deduction'            => $data['amo_deduction'] ?? 0,
@@ -246,6 +494,9 @@ class SalaryController extends Controller
             ->with('success', 'Bulletin de paie enregistre avec succes.');
     }
 
+    // =========================================================================
+    // VALIDATE
+    // =========================================================================
     public function validateSalary(Salary $salary)
     {
         abort_if(auth()->user()->isEmployee(), 403);
@@ -262,6 +513,9 @@ class SalaryController extends Controller
         return back()->with('success', 'Bulletin valide.');
     }
 
+    // =========================================================================
+    // MARK PAID
+    // =========================================================================
     public function markPaid(Salary $salary)
     {
         abort_if(auth()->user()->isEmployee(), 403);
@@ -278,6 +532,9 @@ class SalaryController extends Controller
         return back()->with('success', 'Bulletin marque comme paye.');
     }
 
+    // =========================================================================
+    // DESTROY
+    // =========================================================================
     public function destroy(Salary $salary)
     {
         abort_if($salary->status !== 'draft', 403, 'Seuls les bulletins brouillon peuvent etre supprimes.');
@@ -293,6 +550,9 @@ class SalaryController extends Controller
         return redirect()->route('salary.show', $employee)->with('success', 'Bulletin supprime.');
     }
 
+    // =========================================================================
+    // PDF BULLETIN INDIVIDUEL
+    // =========================================================================
     public function pdf(Salary $salary)
     {
         if (auth()->user()->isEmployee() && auth()->user()->employee_id !== $salary->employee_id) {
@@ -312,6 +572,9 @@ class SalaryController extends Controller
         return $pdf->download($filename);
     }
 
+    // =========================================================================
+    // GENERATE ALL
+    // =========================================================================
     public function generateAll(Request $request)
     {
         $request->validate([
@@ -328,6 +591,9 @@ class SalaryController extends Controller
             ->with('success', 'Generation des paies lancee en arriere-plan.');
     }
 
+    // =========================================================================
+    // EXPORT EXCEL
+    // =========================================================================
     public function export()
     {
         return Excel::download(new SalariesExport, 'salaires.xlsx');

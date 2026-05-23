@@ -55,7 +55,7 @@ endif;
 unset($__errorArgs, $__bag); ?>
                 </div>
                 <div class="form-group">
-                    <label>Email</label>
+                    <label>Email *</label>
                     <input type="email" name="email" class="form-control" value="<?php echo e(old('email')); ?>" autocomplete="new-email">
                     <?php $__errorArgs = ['email'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
@@ -74,6 +74,22 @@ unset($__errorArgs, $__bag); ?>
                     <label>Date de naissance</label>
                     <input type="date" name="birth_date" class="form-control" value="<?php echo e(old('birth_date')); ?>">
                 </div>
+                <div class="form-group">
+    <label>Genre</label>
+    <select name="genre" class="form-control">
+        <option value="">Sélectionner...</option>
+        <option value="homme"  <?php echo e(old('genre') == 'homme'  ? 'selected' : ''); ?>>Homme</option>
+        <option value="femme"  <?php echo e(old('genre') == 'femme'  ? 'selected' : ''); ?>>Femme</option>
+    </select>
+    <?php $__errorArgs = ['genre'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <span style="color:var(--danger);font-size:0.75rem"><?php echo e($message); ?></span> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+</div>
                 <div class="form-group">
                     <label>CIN</label>
                     <input type="text" name="cin" class="form-control" value="<?php echo e(old('cin')); ?>" placeholder="AB123456">
@@ -204,8 +220,13 @@ unset($__errorArgs, $__bag); ?>
                 </div>
                 <div class="form-group">
                     <label>Type de contrat *</label>
-                    <input type="text" name="contract_type" class="form-control" value="<?php echo e(old('contract_type')); ?>" required placeholder="ex: CDI, CDD, Freelance">
-                    <?php $__errorArgs = ['contract_type'];
+<select name="contract_type" class="form-control" required>
+    <option value="">— Sélectionner —</option>
+    <option value="CDI"     <?php echo e(old('contract_type') == 'CDI'     ? 'selected' : ''); ?>>CDI</option>
+    <option value="CDD"     <?php echo e(old('contract_type') == 'CDD'     ? 'selected' : ''); ?>>CDD</option>
+    <option value="Interim" <?php echo e(old('contract_type') == 'Interim' ? 'selected' : ''); ?>>Intérim</option>
+    <option value="Stage"   <?php echo e(old('contract_type') == 'Stage'   ? 'selected' : ''); ?>>Stage</option>
+</select>                    <?php $__errorArgs = ['contract_type'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }

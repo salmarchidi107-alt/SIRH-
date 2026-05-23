@@ -27,6 +27,7 @@ class StoreEmployeeRequest extends FormRequest
             ],
             'phone'            => 'nullable|string|max:20',
             'birth_date'       => 'nullable|date',
+            'genre' => 'nullable|in:homme,femme',
             'cin'              => 'nullable|string|max:20',
             'address'          => 'nullable|string',
             'family_situation' => 'nullable|string|max:50',

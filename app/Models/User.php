@@ -3,13 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Crypt;
+use App\Traits\HasModulePermissions;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasModulePermissions;
 
     protected $fillable = [
         'name',
@@ -77,6 +79,11 @@ class User extends Authenticatable
         return $this->hasOne(Employee::class, 'user_id');
     }
 
+    public function modulePermissions()
+    {
+        return $this->hasMany(\App\Models\UserPermission::class, 'user_id');
+    }
+
     public function getEmployeeByLegacyKeyAttribute()
     {
         return Employee::where('user_id', $this->id)->first();
@@ -115,6 +122,11 @@ class User extends Authenticatable
         return $this->role === self::ROLE_EMPLOYEE;
     }
 
+    public function isFullAccessRole(): bool
+    {
+        return in_array($this->role, [self::ROLE_ADMIN, self::ROLE_SUPERADMIN]);
+    }
+
     public function getRoleDisplayName(): string
     {
         return match($this->role) {
@@ -124,6 +136,12 @@ class User extends Authenticatable
             self::ROLE_EMPLOYEE   => 'Employé',
             default               => 'Employé',
         };
+    }
+
+    public function clearPermCache(): void
+    {
+        // Vider le cache de permissions si nécessaire
+        // Laisser vide si pas de cache explicite utilisé
     }
 
     // ─── Permissions ──────────────────────────────────────────────────────────

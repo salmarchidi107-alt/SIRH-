@@ -57,7 +57,16 @@ class UpdateEmployeeRequest extends FormRequest
             ],
             'pin' => 'nullable|string|size:6|regex:/^[0-9]{4}[A-Z]{2}$/',
             'signature' => 'nullable|string',
+            'change_password' => 'nullable|boolean',
+            'new_password'    => 'nullable|string|min:8|confirmed|required_if:change_password,1',
         ];
     }
+    protected function prepareForValidation(): void
+{
+    // Normalise le checkbox change_password en booléen
+    $this->merge([
+        'change_password' => $this->boolean('change_password'),
+    ]);
+}
 }
 

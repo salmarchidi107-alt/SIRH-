@@ -12,10 +12,10 @@ use Illuminate\Support\Facades\Storage;
 class BadgeRecord extends Model
 {
     protected $fillable = [
+        'tenant_id',
         'employee_id',
         'type',
-        'shift_type',          // ← AJOUTÉ : 'normal' | 'garde'
-
+        'shift_type',
         // Géolocalisation
         'latitude',
         'longitude',

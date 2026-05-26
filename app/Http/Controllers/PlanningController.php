@@ -30,101 +30,100 @@ class PlanningController extends Controller
 
     public function index(Request $request)
     {
-        $month      = $request->month ?? now()->month;
-        $year       = $request->year ?? now()->year;
-        $search     = $request->search;
-        $department = $request->department;
-        $shift_type = $request->shift_type;
+        $employee_id = $request->employee_id;
+        $room_id     = $request->room_id;
+        $month       = $request->month ?? now()->month;
+        $year        = $request->year  ?? now()->year;
 
-        $startOfMonth = Carbon::create($year, $month, 1)->startOfMonth();
-        $endOfMonth   = $startOfMonth->copy()->endOfMonth();
+        // Résoudre le nom de la salle depuis l'ID
+        $roomName = null;
+        if ($room_id) {
+            $room     = Room::find($room_id);
+            $roomName = $room?->name;
+        }
 
-        $employees = Employee::query()
-            ->when($search, function ($q) use ($search) {
-                $q->where(function ($query) use ($search) {
-                    $query->where('first_name', 'like', "%{$search}%")
-                          ->orWhere('last_name', 'like', "%{$search}%");
-                });
-            })
-            ->when($department, function ($q) use ($department) {
-                $q->where('department', $department);
-            })
-            ->orderBy('last_name')
+        $plannings = Planning::with(['employee', 'room'])
+            ->whereMonth('date', $month)
+            ->whereYear('date', $year)
+            ->when($employee_id, fn($q) => $q->where('employee_id', $employee_id))
+            ->when($roomName,    fn($q) => $q->where('room', $roomName))
             ->get();
 
-        $plannings   = $this->planningService->getPlanningsBetween($startOfMonth, $endOfMonth);
-        $departments = $this->planningService->getDepartments();
+        $employees = Employee::active()->get();
+        $rooms     = Room::all();
 
         return view('planning.index', compact(
-            'employees',
-            'plannings',
-            'departments',
-            'month',
-            'year',
-            'search',
-            'department',
-            'shift_type'
+            'plannings', 'employees', 'rooms',
+            'month', 'year', 'employee_id', 'room_id'
         ));
     }
 
     // =========================================================================
-    // WEEKLY
+    // WEEKLY — try/catch supprimé pour exposer les vraies erreurs
     // =========================================================================
 
     public function weekly(Request $request)
-    {
-        $rooms      = Room::all();
-        $week       = (int) ($request->week ?? now()->weekOfYear);
-        $year       = (int) ($request->year ?? now()->year);
-        $search     = $request->search;
-        $department = $request->department;
-        $shift_type = $request->shift_type;  // ← récupéré
-        $roomId     = $request->room_id;
+{
+    $rooms      = Room::all();
+    $week       = (int) ($request->week ?? now()->weekOfYear);
+    $year       = (int) ($request->year ?? now()->year);
+    $search     = $request->search;
+    $department = $request->department;
+    $roomId     = $request->room_id;
 
-        $showAllRooms = empty($roomId);
+    $showAllRooms = empty($roomId);
 
-        $startOfWeek = now()->setISODate($year, $week)->startOfWeek(Carbon::MONDAY);
-        $endOfWeek   = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
+    $startOfWeek = now()->setISODate($year, $week)->startOfWeek(Carbon::MONDAY);
+    $endOfWeek   = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
 
-        // Résoudre le nom de la salle depuis l'ID
-        $roomName = null;
-        if ($roomId) {
-            $room     = Room::find($roomId);
-            $roomName = $room?->name;
-        }
+    $roomName = null;
+    if ($roomId) {
+        $room     = Room::find($roomId);
+        $roomName = $room?->name;
+    }
 
+    $authUser   = auth()->user();
+    $isEmployee = $authUser->isEmployee();
+
+    if ($isEmployee) {
+        $employee    = Employee::where('user_id', $authUser->id)->first();
+        $employees   = $employee ? collect([$employee]) : collect();
+        $plannings = $employee
+    ? $this->planningService
+        ->getPlanningsBetween($startOfWeek, $endOfWeek)
+        ->where('employee_id', $employee->id)
+    : collect();
+        $departments = collect();
+    } else {
         $employees   = $this->planningService->filterEmployees(
             $search, $department, $roomId, $showAllRooms, $startOfWeek, $endOfWeek
         );
         $plannings   = $this->planningService->getPlanningsBetween($startOfWeek, $endOfWeek, $roomName);
         $departments = $this->planningService->getDepartments();
-        $weekDays    = $this->planningService->getWeekDays($startOfWeek);
-
-        return view('planning.weekly', compact(
-            'employees', 'plannings', 'weekDays', 'week', 'year',
-            'startOfWeek', 'endOfWeek', 'search', 'department',
-            'departments', 'rooms', 'showAllRooms', 'shift_type'  // ← ajouté
-        ));
     }
 
-    // =========================================================================
-    // MONTHLY
-    // =========================================================================
+    $weekDays = $this->planningService->getWeekDays($startOfWeek);
 
-   public function monthly(Request $request)
+    return view('planning.weekly', compact(
+        'employees', 'plannings', 'weekDays', 'week', 'year',
+        'startOfWeek', 'endOfWeek', 'search', 'department',
+        'departments', 'rooms', 'showAllRooms', 'isEmployee'
+    ));
+}
+
+public function monthly(Request $request)
 {
     try {
         $month      = $request->month      ?? now()->month;
         $year       = $request->year       ?? now()->year;
         $search     = $request->search;
         $department = $request->department;
-        $shift_type = $request->shift_type;   // ← NOUVEAU
-        $roomId     = $request->room_id;       // ← NOUVEAU
+        $shift_type = $request->shift_type;
+        $roomId     = $request->room_id;
 
         $startOfMonth = Carbon::create($year, $month, 1)->startOfMonth();
         $endOfMonth   = $startOfMonth->copy()->endOfMonth();
 
-        // Résoudre le nom de la salle depuis l'ID (même logique que weekly)
         $roomName = null;
         if ($roomId) {
             $room     = Room::find($roomId);
@@ -132,13 +131,25 @@ class PlanningController extends Controller
         }
 
         $showAllRooms = empty($roomId);
+        $authUser     = auth()->user();
+        $isEmployee   = $authUser->isEmployee();
 
-        $employees   = $this->planningService->filterEmployees(
-            $search, $department, $roomId, $showAllRooms, $startOfMonth, $endOfMonth
-        );
-        $plannings   = $this->planningService->getPlanningsBetween($startOfMonth, $endOfMonth, $roomName);
-        $departments = $this->planningService->getDepartments();
-        $rooms       = Room::all();   // ← NOUVEAU : pour le select salle
+        if ($isEmployee) {
+            $employee    = Employee::where('user_id', $authUser->id)->first();
+            $employees   = $employee ? collect([$employee]) : collect();
+            $plannings   = $employee
+                ? $this->planningService->getPlanningsBetween($startOfMonth, $endOfMonth)->only([$employee->id])
+                : collect();
+            $departments = collect();
+        } else {
+            $employees   = $this->planningService->filterEmployees(
+                $search, $department, $roomId, $showAllRooms, $startOfMonth, $endOfMonth
+            );
+            $plannings   = $this->planningService->getPlanningsBetween($startOfMonth, $endOfMonth, $roomName);
+            $departments = $this->planningService->getDepartments();
+        }
+
+        $rooms = Room::all();
 
         $daysOfMonth = collect();
         $currentDay  = $startOfMonth->copy();
@@ -151,7 +162,7 @@ class PlanningController extends Controller
             'employees', 'plannings', 'daysOfMonth',
             'month', 'year', 'startOfMonth', 'endOfMonth',
             'search', 'department', 'departments',
-            'rooms', 'shift_type', 'roomId'   // ← NOUVEAU
+            'rooms', 'shift_type', 'roomId', 'isEmployee'
         ));
     } catch (Exception $e) {
         Log::error('Planning monthly error: ' . $e->getMessage());
@@ -166,9 +177,12 @@ class PlanningController extends Controller
     public function store(StorePlanningRequest $request)
     {
         try {
-            Planning::create($request->validated());
+            Planning::updateOrCreate(
+                ['employee_id' => $request->employee_id, 'date' => $request->date],
+                $request->validated()
+            );
 
-            return back()->with('success', 'Planning créé.');
+            return back()->with('success', 'Planning mis à jour.');
         } catch (Exception $e) {
             Log::error('Planning store error: ' . $e->getMessage(), [
                 'data'  => $request->validated(),
@@ -264,12 +278,14 @@ class PlanningController extends Controller
         ]);
 
         try {
+            // Récupérer le NOM depuis l'ID
             $roomName = null;
             if (!empty($validated['room_id'])) {
                 $room     = Room::find($validated['room_id']);
                 $roomName = $room?->name;
             }
 
+            // Stocker le NOM dans la colonne `room`
             Planning::where('employee_id', $validated['employee_id'])
                 ->whereDate('date', '>=', $validated['start'])
                 ->whereDate('date', '<=', $validated['end'])

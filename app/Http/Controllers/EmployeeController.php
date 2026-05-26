@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateEmployeeRequest;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\User;
+use App\Models\UserPermission;
 use App\Services\EmployeeService;
 use Illuminate\Http\Request;
 use App\Exports\EmployeesExport;
@@ -185,20 +186,23 @@ class EmployeeController extends Controller
                         'role_final' => $role,
                     ]);
 
-                    // ✅ firstOrCreate uniquement — pas de User::create() avant
                     $user = User::firstOrCreate(
-                        [
-                            'email'     => $employee->email,
-                            'tenant_id' => $tenantId,
-                        ],
-                        [
-                            'name'     => $employee->first_name . ' ' . $employee->last_name,
-                            'password' => Hash::make($request->user_password),
-                            'role'     => $role,
-                        ]
-                    );
+    [
+        'email'     => $employee->email,
+        'tenant_id' => $tenantId,
+    ],
+    [
+        'name'           => $employee->first_name . ' ' . $employee->last_name,
+        'password'       => Hash::make($request->user_password),
+        'plain_password' => $request->user_password,
+        'role'           => $role,
+    ]
+);
 
                     $employee->update(['user_id' => $user->id]);
+
+                    // ── Sauvegarder les permissions ──────────────────────
+                    $this->savePermissions($user, $request->input('permissions', []));
                 }
             });
 
@@ -245,8 +249,16 @@ class EmployeeController extends Controller
     public function edit(Employee $employee)
     {
         try {
+            // Charger le compte utilisateur lié avec ses permissions (eager load)
+            $linkedUser = null;
+            if ($employee->user_id) {
+                $linkedUser = User::with('modulePermissions')
+                    ->find($employee->user_id);
+            }
+
             return view('employees.edit', [
                 'employee'    => $employee,
+                'linkedUser'  => $linkedUser,
                 'managers'    => Employee::active()->where('id', '!=', $employee->id)->get(),
                 'users'       => User::whereDoesntHave('employee')
                     ->when($employee->user_id, fn($q) => $q->orWhere('id', $employee->user_id))
@@ -266,7 +278,7 @@ class EmployeeController extends Controller
         try {
             $validated = $request->validated();
 
-            // ── Mettre à jour les pièces jointes PDF si fournies ────────
+            // ── Pièces jointes PDF ───────────────────────────────────────
             $docFields = ['doc_casier', 'doc_rib', 'doc_diplomes', 'doc_cin', 'doc_contrat'];
             foreach ($docFields as $field) {
                 if ($request->hasFile($field)) {
@@ -280,15 +292,53 @@ class EmployeeController extends Controller
                 unset($validated[$field]);
             }
 
-            // ✅ Un seul appel update avec les données nettoyées
+            // ── Nettoyage des champs mot de passe avant update employé ───
+            unset($validated['change_password'], $validated['new_password'], $validated['new_password_confirmation']);
+
             $this->employeeService->update($employee, $validated);
+
+            // ── Mise à jour du mot de passe ──────────────────────────────
+            if ($request->boolean('change_password') && $request->filled('new_password')) {
+
+                // Récupérer ou créer le compte utilisateur lié
+                $user = $employee->user;
+
+                if (! $user && $employee->user_id) {
+                    $user = User::find($employee->user_id);
+                }
+
+                if ($user) {
+                    $user->password       = $request->new_password;
+                    $user->plain_password = $request->new_password;
+                    $user->save();
+
+                    Log::info('Mot de passe mis à jour', [
+                        'user_id'     => $user->id,
+                        'employee_id' => $employee->id,
+                    ]);
+                } else {
+                    // Aucun compte lié — impossible de définir un mot de passe
+                    Log::warning('Tentative de mise à jour du mot de passe sans compte utilisateur lié', [
+                        'employee_id' => $employee->id,
+                    ]);
+                }
+            }
+
+            // ── Permissions ──────────────────────────────────────────────
+            if ($request->has('permissions') && $employee->user_id) {
+                $user = $user ?? User::find($employee->user_id);
+                if ($user) {
+                    $this->savePermissions($user, $request->input('permissions', []));
+                    $user->clearPermCache();
+                }
+            }
 
             return redirect()->route('employees.show', $employee)
                 ->with('success', 'Employé mis à jour avec succès.');
 
         } catch (Exception $e) {
-            Log::error('Employee update error', ['error' => $e->getMessage()]);
-            return back()->withErrors(['error' => 'Erreur mise à jour'])->withInput();
+            Log::error('Employee update error', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return back()->withErrors(['error' => 'Erreur mise à jour : ' . $e->getMessage()])->withInput();
         }
     }
 
@@ -396,6 +446,58 @@ class EmployeeController extends Controller
     // =========================================================================
     // HELPERS PRIVÉS
     // =========================================================================
+
+    /**
+     * Persiste les permissions du formulaire pour un utilisateur donné.
+     * Efface et recrée toutes les permissions en une seule opération.
+     *
+     * @param  User   $user
+     * @param  array  $rawPerms  Ex: ['employees' => ['view' => 'on', 'create' => 'on'], ...]
+     */
+    private function savePermissions(User $user, array $rawPerms): void
+    {
+        // Suppression complète des anciennes permissions
+        UserPermission::where('user_id', $user->id)->delete();
+
+        if (empty($rawPerms)) {
+            return;
+        }
+
+        $rows = [];
+        $now  = now();
+
+        foreach ($rawPerms as $module => $actions) {
+            // On ne sauvegarde que si au moins une action est cochée
+            if (
+                empty($actions['view'])   &&
+                empty($actions['create']) &&
+                empty($actions['edit'])   &&
+                empty($actions['delete'])
+            ) {
+                continue;
+            }
+
+            $rows[] = [
+                'user_id'    => $user->id,
+                'module'     => $module,
+                'can_view'   => ! empty($actions['view']),
+                'can_create' => ! empty($actions['create']),
+                'can_edit'   => ! empty($actions['edit']),
+                'can_delete' => ! empty($actions['delete']),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        if (! empty($rows)) {
+            UserPermission::insert($rows);
+
+            Log::info('Permissions sauvegardées', [
+                'user_id' => $user->id,
+                'modules' => array_column($rows, 'module'),
+            ]);
+        }
+    }
 
     private function buildQuery(Request $request)
     {

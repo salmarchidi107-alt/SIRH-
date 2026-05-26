@@ -1,14 +1,154 @@
 <?php $__env->startSection('title', 'Modifier - '.$employee->full_name); ?>
 <?php $__env->startSection('page-title', 'Modifier un Employé'); ?>
 
+<?php $__env->startPush('styles'); ?>
+<style>
+/* ══════════════════════════════════════════════
+   Permissions
+══════════════════════════════════════════════ */
+.perm-col-labels {
+    display: grid;
+    grid-template-columns: 220px repeat(4, 1fr);
+    padding: 8px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-secondary, #f8fafc);
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+.perm-col-labels div:first-child { text-align: left; }
+.perm-col-labels div:not(:first-child) { text-align: center; }
+
+.perm-group-label {
+    padding: 6px 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    color: #94a3b8;
+    text-transform: uppercase;
+    background: #f1f5f9;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.perm-row {
+    display: grid;
+    grid-template-columns: 220px repeat(4, 1fr);
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+    transition: background .15s;
+}
+.perm-row:last-child { border-bottom: none; }
+.perm-row:hover { background: var(--bg-secondary, #f8fafc); }
+.perm-row--sub { background: #fafbfc; }
+.perm-row--sub:hover { background: #f1f5f9; }
+
+.perm-mod-name {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 13px;
+    color: var(--text-primary, #1e293b);
+}
+.perm-row--sub .perm-mod-name {
+    padding-left: 24px;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.perm-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.perm-cell input[type=checkbox] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #14b8a6;
+    border-radius: 3px;
+}
+.perm-na {
+    color: #e2e8f0;
+    font-size: 14px;
+    font-weight: 500;
+    user-select: none;
+}
+
+.perm-toolbar {
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-secondary, #f8fafc);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.perm-toolbar-label {
+    font-size: 12px;
+    color: #64748b;
+    margin-right: 4px;
+}
+.perm-quick-btn {
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border, #e2e8f0);
+    background: #fff;
+    color: #475569;
+    cursor: pointer;
+    transition: all .15s;
+    font-weight: 500;
+}
+.perm-quick-btn:hover {
+    background: #0d9488;
+    color: #fff;
+    border-color: #0d9488;
+}
+.perm-footer-note {
+    padding: 10px 20px;
+    font-size: 12px;
+    color: #94a3b8;
+    border-top: 1px solid var(--border);
+    background: var(--bg-secondary, #f8fafc);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Pièces jointes */
+.doc-file-input.has-doc {
+    border-color: #16a34a;
+    background-color: #f0fdf4;
+    color: #15803d;
+}
+.doc-file-input.has-doc::-webkit-file-upload-button,
+.doc-file-input.has-doc::file-selector-button {
+    background: #16a34a;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.82rem;
+}
+
+/* Mot de passe */
+.password-group { position: relative; }
+.password-group .form-control { padding-right: 42px; }
+.toggle-password {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; padding: 4px;
+    opacity: 0.5; transition: opacity .2s; color: var(--text-primary);
+}
+.toggle-password:hover { opacity: 1; }
+</style>
+<?php $__env->stopPush(); ?>
+
 <?php $__env->startSection('content'); ?>
-<div class="page-header">
-    <div class="page-header-left">
-        <h1>Modifier : <?php echo e($employee->full_name); ?></h1>
-        <p>Matricule : <?php echo e($employee->matricule); ?></p>
-    </div>
-    <a href="<?php echo e(route('employees.show', $employee)); ?>" class="btn btn-ghost">← Retour</a>
-</div>
 
 <?php if($errors->any()): ?>
     <div class="alert alert-danger" style="margin-bottom:16px;">
@@ -20,8 +160,17 @@
     </div>
 <?php endif; ?>
 
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Modifier : <?php echo e($employee->full_name); ?></h1>
+        <p>Matricule : <?php echo e($employee->matricule); ?></p>
+    </div>
+    <a href="<?php echo e(route('employees.show', $employee)); ?>" class="btn btn-ghost">← Retour</a>
+</div>
+
 <form action="<?php echo e(route('employees.update', $employee)); ?>" method="POST" enctype="multipart/form-data">
-    <?php echo csrf_field(); ?> <?php echo method_field('PUT'); ?>
+    <?php echo csrf_field(); ?>
+    <?php echo method_field('PUT'); ?>
 
     
     <div class="card mb-4">
@@ -77,14 +226,15 @@ unset($__errorArgs, $__bag); ?>
                     <input type="date" name="birth_date" class="form-control"
                            value="<?php echo e(old('birth_date', $employee->birth_date?->format('Y-m-d'))); ?>">
                 </div>
+                
                 <div class="form-group">
-    <label>Genre</label>
-    <select name="genre" class="form-control">
-        <option value="">Sélectionner...</option>
-        <option value="homme" <?php echo e(old('genre', $employee->genre) == 'homme' ? 'selected' : ''); ?>>Homme</option>
-        <option value="femme" <?php echo e(old('genre', $employee->genre) == 'femme' ? 'selected' : ''); ?>>Femme</option>
-    </select>
-    <?php $__errorArgs = ['genre'];
+                    <label>Genre</label>
+                    <select name="genre" class="form-control">
+                        <option value="">Sélectionner...</option>
+                        <option value="homme" <?php echo e(old('genre', $employee->genre) == 'homme' ? 'selected' : ''); ?>>Homme</option>
+                        <option value="femme" <?php echo e(old('genre', $employee->genre) == 'femme' ? 'selected' : ''); ?>>Femme</option>
+                    </select>
+                    <?php $__errorArgs = ['genre'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
@@ -92,7 +242,7 @@ $message = $__bag->first($__errorArgs[0]); ?> <span style="color:var(--danger);f
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>
-</div>
+                </div>
                 <div class="form-group">
                     <label>CIN</label>
                     <input type="text" name="cin" class="form-control"
@@ -195,15 +345,16 @@ unset($__errorArgs, $__bag); ?>
                     <input type="text" name="skills" class="form-control"
                            value="<?php echo e(old('skills', $employee->skills)); ?>">
                 </div>
+                
                 <div class="form-group">
                     <label>Contrat *</label>
-<select name="contract_type" class="form-control" required>
-    <option value="">— Sélectionner —</option>
-    <option value="CDI"     <?php echo e(old('contract_type', $employee->contract_type) == 'CDI'     ? 'selected' : ''); ?>>CDI</option>
-    <option value="CDD"     <?php echo e(old('contract_type', $employee->contract_type) == 'CDD'     ? 'selected' : ''); ?>>CDD</option>
-    <option value="Interim" <?php echo e(old('contract_type', $employee->contract_type) == 'Interim' ? 'selected' : ''); ?>>Intérim</option>
-    <option value="Stage"   <?php echo e(old('contract_type', $employee->contract_type) == 'Stage'   ? 'selected' : ''); ?>>Stage</option>
-</select>
+                    <select name="contract_type" class="form-control" required>
+                        <option value="">— Sélectionner —</option>
+                        <option value="CDI"     <?php echo e(old('contract_type', $employee->contract_type) == 'CDI'     ? 'selected' : ''); ?>>CDI</option>
+                        <option value="CDD"     <?php echo e(old('contract_type', $employee->contract_type) == 'CDD'     ? 'selected' : ''); ?>>CDD</option>
+                        <option value="Interim" <?php echo e(old('contract_type', $employee->contract_type) == 'Interim' ? 'selected' : ''); ?>>Intérim</option>
+                        <option value="Stage"   <?php echo e(old('contract_type', $employee->contract_type) == 'Stage'   ? 'selected' : ''); ?>>Stage</option>
+                    </select>
                     <?php $__errorArgs = ['contract_type'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -226,6 +377,85 @@ unset($__errorArgs, $__bag); ?>
                         <option value="leave"    <?php echo e(old('status', $employee->status) == 'leave'    ? 'selected' : ''); ?>>En congé</option>
                     </select>
                 </div>
+                
+                <div class="form-group">
+                    <label>Responsable direct</label>
+                    <select name="manager_id" class="form-control">
+                        <option value="">Aucun</option>
+                        <?php $__currentLoopData = $managers; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $mgr): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($mgr->id); ?>"
+                                <?php echo e(old('manager_id', $employee->manager_id) == $mgr->id ? 'selected' : ''); ?>>
+                                <?php echo e($mgr->full_name); ?> — <?php echo e($mgr->position); ?>
+
+                            </option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="card mb-4">
+        <div class="card-header"><div class="card-title">Pièces jointes</div></div>
+        <div class="card-body">
+            <div class="form-grid">
+                <?php $__currentLoopData = [
+                    'doc_casier'   => 'Casier judiciaire',
+                    'doc_rib'      => 'Relevé bancaire (RIB)',
+                    'doc_diplomes' => 'Copies des diplômes',
+                    'doc_cin'      => 'Copie CIN / Carte d\'identité',
+                ]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $field => $docLabel): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <div class="form-group">
+                        <label>
+                            <?php echo e($docLabel); ?>
+
+                            <?php if($employee->{$field.'_path'}): ?>
+                                <a href="<?php echo e(asset('storage/'.$employee->{$field.'_path'})); ?>" target="_blank"
+                                   style="margin-left:6px;font-size:0.72rem;color:#16a34a;text-decoration:none;font-weight:400;">↗ voir</a>
+                            <?php endif; ?>
+                        </label>
+                        <input type="file" name="<?php echo e($field); ?>" accept="application/pdf"
+                               class="form-control doc-file-input <?php echo e($employee->{$field.'_path'} ? 'has-doc' : ''); ?>">
+                        <?php $__errorArgs = [$field];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <span style="color:var(--danger);font-size:0.75rem"><?php echo e($message); ?></span> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                    </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+
+                <div class="form-group full">
+                    <label>
+                        Contrat de travail
+                        <?php if($employee->doc_contrat_path): ?>
+                            <a href="<?php echo e(asset('storage/'.$employee->doc_contrat_path)); ?>" target="_blank"
+                               style="margin-left:6px;font-size:0.72rem;color:#16a34a;text-decoration:none;font-weight:400;">↗ voir</a>
+                        <?php endif; ?>
+                    </label>
+                    <input type="file" name="doc_contrat" accept="application/pdf"
+                           class="form-control doc-file-input <?php echo e($employee->doc_contrat_path ? 'has-doc' : ''); ?>">
+                    <?php $__errorArgs = ['doc_contrat'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <span style="color:var(--danger);font-size:0.75rem"><?php echo e($message); ?></span> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="card mb-4">
+        <div class="card-header"><div class="card-title">Rémunération &amp; Informations Sociales</div></div>
+        <div class="card-body">
+            <div class="form-grid">
                 <div class="form-group">
                     <label>Salaire de base (MAD)</label>
                     <input type="number" name="base_salary" class="form-control"
@@ -291,62 +521,6 @@ unset($__errorArgs, $__bag); ?>
                     <label>Téléphone urgence</label>
                     <input type="text" name="emergency_phone" class="form-control"
                            value="<?php echo e(old('emergency_phone', $employee->emergency_phone)); ?>">
-                </div>
-            </div>
-        </div>
-    </div>
-
-    
-    <div class="card mb-4">
-        <div class="card-header"><div class="card-title">Pièces jointes</div></div>
-        <div class="card-body">
-            <div class="form-grid">
-                <?php $__currentLoopData = [
-                    'doc_casier'   => 'Casier judiciaire',
-                    'doc_rib'      => 'Relevé bancaire (RIB)',
-                    'doc_diplomes' => 'Copies des diplômes',
-                    'doc_cin'      => 'Copie CIN / Carte d\'identité',
-                ]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $field => $docLabel): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                    <div class="form-group">
-                        <label>
-                            <?php echo e($docLabel); ?>
-
-                            <?php if($employee->{$field.'_path'}): ?>
-                                <a href="<?php echo e(asset('storage/'.$employee->{$field.'_path'})); ?>" target="_blank"
-                                   style="margin-left:6px;font-size:0.72rem;color:#16a34a;text-decoration:none;font-weight:400;">↗ voir</a>
-                            <?php endif; ?>
-                        </label>
-                        <input type="file" name="<?php echo e($field); ?>" accept="application/pdf"
-                               class="form-control doc-file-input <?php echo e($employee->{$field.'_path'} ? 'has-doc' : ''); ?>">
-                        <?php $__errorArgs = [$field];
-$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
-if ($__bag->has($__errorArgs[0])) :
-if (isset($message)) { $__messageOriginal = $message; }
-$message = $__bag->first($__errorArgs[0]); ?> <span style="color:var(--danger);font-size:0.75rem"><?php echo e($message); ?></span> <?php unset($message);
-if (isset($__messageOriginal)) { $message = $__messageOriginal; }
-endif;
-unset($__errorArgs, $__bag); ?>
-                    </div>
-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-
-                <div class="form-group full">
-                    <label>
-                        Contrat de travail
-                        <?php if($employee->doc_contrat_path): ?>
-                            <a href="<?php echo e(asset('storage/'.$employee->doc_contrat_path)); ?>" target="_blank"
-                               style="margin-left:6px;font-size:0.72rem;color:#16a34a;text-decoration:none;font-weight:400;">↗ voir</a>
-                        <?php endif; ?>
-                    </label>
-                    <input type="file" name="doc_contrat" accept="application/pdf"
-                           class="form-control doc-file-input <?php echo e($employee->doc_contrat_path ? 'has-doc' : ''); ?>">
-                    <?php $__errorArgs = ['doc_contrat'];
-$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
-if ($__bag->has($__errorArgs[0])) :
-if (isset($message)) { $__messageOriginal = $message; }
-$message = $__bag->first($__errorArgs[0]); ?> <span style="color:var(--danger);font-size:0.75rem"><?php echo e($message); ?></span> <?php unset($message);
-if (isset($__messageOriginal)) { $message = $__messageOriginal; }
-endif;
-unset($__errorArgs, $__bag); ?>
                 </div>
             </div>
         </div>
@@ -426,24 +600,30 @@ unset($__errorArgs, $__bag); ?>
             <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;">
                 Liez ce profil employé à un compte utilisateur pour permettre l'accès au tableau de bord.
             </p>
-            <?php $linkedUser = \App\Models\User::find(old('user_id', $employee->user_id)); ?>
-            <?php if($linkedUser): ?>
-                <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border);">
-                    <div style="width:40px;height:40px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:600;">
-                        <?php echo e(strtoupper(substr($linkedUser->name, 0, 1))); ?>
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label>Compte utilisateur lié</label>
+                    <?php if($linkedUser): ?>
+                        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border);">
+                            <div style="width:40px;height:40px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:600;">
+                                <?php echo e(strtoupper(substr($linkedUser->name, 0, 1))); ?>
 
-                    </div>
-                    <div>
-                        <div style="font-weight:600;"><?php echo e($linkedUser->name); ?></div>
-                        <div style="font-size:0.8rem;color:var(--text-muted);"><?php echo e($linkedUser->email); ?></div>
-                    </div>
-                    <a href="<?php echo e(route('employees.edit', [$employee, 'remove_user' => true])); ?>"
-                       class="btn btn-danger btn-sm" style="margin-left:auto;">Délier</a>
-                </div>
-            <?php else: ?>
-                <div class="form-grid">
-                    <div class="form-group full">
-                        <label>Compte utilisateur lié</label>
+                            </div>
+                            <div>
+                                <div style="font-weight:600;"><?php echo e($linkedUser->name); ?></div>
+                                <div style="font-size:0.8rem;color:var(--text-muted);">
+                                    <?php echo e($linkedUser->email); ?>
+
+                                    <span style="margin-left:8px;padding:2px 8px;background:#e0f2fe;color:#0369a1;border-radius:12px;font-size:0.7rem;font-weight:600;">
+                                        <?php echo e(strtoupper($linkedUser->role ?? 'employee')); ?>
+
+                                    </span>
+                                </div>
+                            </div>
+                            <a href="<?php echo e(route('employees.edit', [$employee, 'remove_user' => true])); ?>"
+                               class="btn btn-danger btn-sm" style="margin-left:auto;">Délier</a>
+                        </div>
+                    <?php else: ?>
                         <select name="user_id" class="form-control">
                             <option value="">Sélectionner un compte utilisateur...</option>
                             <?php $__currentLoopData = $users; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $user): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
@@ -453,11 +633,310 @@ unset($__errorArgs, $__bag); ?>
                                 </option>
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
-                    </div>
+                    <?php endif; ?>
                 </div>
-            <?php endif; ?>
+            </div>
         </div>
     </div>
+
+    
+    <?php if($linkedUser): ?>
+    <?php
+        $currentPerms = [];
+        foreach ($linkedUser->modulePermissions as $perm) {
+            $currentPerms[$perm->module] = [
+                'view'   => (bool) $perm->can_view,
+                'create' => (bool) $perm->can_create,
+                'edit'   => (bool) $perm->can_edit,
+                'delete' => (bool) $perm->can_delete,
+            ];
+        }
+
+        $checked = function(string $module, string $action) use ($currentPerms): bool {
+            if (request()->hasSession() && request()->session()->hasOldInput('permissions')) {
+                $oldPerms = old('permissions', []);
+                return isset($oldPerms[$module][$action]);
+            }
+            return $currentPerms[$module][$action] ?? false;
+        };
+    ?>
+
+    <div class="card mb-4" id="perm-card">
+        <div class="card-header" style="display:flex;align-items:center;gap:10px;">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24"
+                 stroke="currentColor" stroke-width="2" style="color:#14b8a6;flex-shrink:0">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6
+                         11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623
+                         5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152
+                         c-3.196 0-6.1-1.248-8.25-3.285z"/>
+            </svg>
+            <div class="card-title" style="margin:0;">Gestion des permissions</div>
+            <span style="font-size:11px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;border-radius:20px;padding:2px 10px;">
+                <?php echo e($linkedUser->name); ?> — <strong><?php echo e(strtoupper($linkedUser->role ?? 'employee')); ?></strong>
+            </span>
+            <?php if($linkedUser->isFullAccessRole()): ?>
+            <span style="font-size:11px;background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0;border-radius:20px;padding:2px 10px;">
+                ✓ Accès total (rôle Admin)
+            </span>
+            <?php endif; ?>
+        </div>
+
+        <?php if($linkedUser->isFullAccessRole()): ?>
+        <div style="padding:20px;color:#64748b;font-size:0.875rem;background:#f8fafc;">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                 style="display:inline;margin-right:6px;color:#14b8a6;">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            Les utilisateurs avec le rôle <strong>Admin</strong> ont automatiquement accès à toutes les fonctionnalités.
+            Les permissions granulaires ne s'appliquent qu'aux rôles <strong>RH</strong> et <strong>Employé</strong>.
+        </div>
+        <?php else: ?>
+
+        <div class="perm-toolbar">
+            <span class="perm-toolbar-label">Sélection rapide :</span>
+            <button type="button" class="perm-quick-btn" onclick="Perms.selectAll()">Tout cocher</button>
+            <button type="button" class="perm-quick-btn" onclick="Perms.deselectAll()">Tout décocher</button>
+            <button type="button" class="perm-quick-btn" onclick="Perms.selectView()">Lecture seule</button>
+            <button type="button" class="perm-quick-btn" onclick="Perms.selectRH()">Profil RH</button>
+            <button type="button" class="perm-quick-btn" onclick="Perms.selectEmployee()">Profil Employé</button>
+        </div>
+
+        <div class="perm-col-labels">
+            <div>Module</div>
+            <div>Voir</div>
+            <div>Créer</div>
+            <div>Modifier</div>
+            <div>Supprimer</div>
+        </div>
+
+        <div id="perm-table">
+
+            <div class="perm-group-label">Principal</div>
+
+            <div class="perm-row">
+                <div class="perm-mod-name">Tableau de bord</div>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[dashboard][view]"
+                           <?php echo e($checked('dashboard','view') ? 'checked' : ''); ?>>
+                </div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+            </div>
+
+            <div class="perm-group-label">Personnel</div>
+
+            <div class="perm-row">
+                <div class="perm-mod-name">Employés</div>
+                <?php $__currentLoopData = ['view','create','edit','delete']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[employees][<?php echo e($a); ?>]"
+                           <?php echo e($checked('employees',$a) ? 'checked' : ''); ?>>
+                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">Trombinoscope</div>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[trombinoscope][view]"
+                           <?php echo e($checked('trombinoscope','view') ? 'checked' : ''); ?>>
+                </div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">Actualités</div>
+                <?php $__currentLoopData = ['view','create','edit','delete']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[news][<?php echo e($a); ?>]"
+                           <?php echo e($checked('news',$a) ? 'checked' : ''); ?>>
+                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
+
+            <div class="perm-group-label">Temps &amp; Présence</div>
+
+            <div class="perm-row">
+                <div class="perm-mod-name">Planning</div>
+                <?php $__currentLoopData = ['view','create','edit','delete']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[planning][<?php echo e($a); ?>]"
+                           <?php echo e($checked('planning',$a) ? 'checked' : ''); ?>>
+                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">Vue d'ensemble</div>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[temps_vue][view]"
+                           <?php echo e($checked('temps_vue','view') ? 'checked' : ''); ?>>
+                </div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">Pointage</div>
+                <?php $__currentLoopData = ['view','create','edit','delete']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[pointage][<?php echo e($a); ?>]"
+                           <?php echo e($checked('pointage',$a) ? 'checked' : ''); ?>>
+                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
+
+            <div class="perm-group-label">Absences &amp; Congés</div>
+
+            <div class="perm-row">
+                <div class="perm-mod-name">Demandes d'absences</div>
+                <?php $__currentLoopData = ['view','create','edit','delete']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[absences][<?php echo e($a); ?>]"
+                           <?php echo e($checked('absences',$a) ? 'checked' : ''); ?>>
+                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">État visuel absences</div>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[absences_calendar][view]"
+                           <?php echo e($checked('absences_calendar','view') ? 'checked' : ''); ?>>
+                </div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">Compteurs &amp; droits</div>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[absences_counters][view]"
+                           <?php echo e($checked('absences_counters','view') ? 'checked' : ''); ?>>
+                </div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[absences_counters][edit]"
+                           <?php echo e($checked('absences_counters','edit') ? 'checked' : ''); ?>>
+                </div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+            </div>
+
+            <div class="perm-group-label">Formations (LMS)</div>
+
+            <div class="perm-row">
+                <div class="perm-mod-name">Formations</div>
+                <?php $__currentLoopData = ['view','create','edit','delete']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[lms][<?php echo e($a); ?>]"
+                           <?php echo e($checked('lms',$a) ? 'checked' : ''); ?>>
+                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">Référentiel formations</div>
+                <?php $__currentLoopData = ['view','create','edit','delete']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[referentiel][<?php echo e($a); ?>]"
+                           <?php echo e($checked('referentiel',$a) ? 'checked' : ''); ?>>
+                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">Planning formations</div>
+                <?php $__currentLoopData = ['view','create','edit','delete']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[lms_planning][<?php echo e($a); ?>]"
+                           <?php echo e($checked('lms_planning',$a) ? 'checked' : ''); ?>>
+                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
+
+            <div class="perm-group-label">Paie</div>
+
+            <div class="perm-row">
+                <div class="perm-mod-name">Salaires</div>
+                <?php $__currentLoopData = ['view','create','edit','delete']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[salary][<?php echo e($a); ?>]"
+                           <?php echo e($checked('salary',$a) ? 'checked' : ''); ?>>
+                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
+
+            <div class="perm-group-label">GED</div>
+
+            <div class="perm-row">
+                <div class="perm-mod-name">Documents</div>
+                <?php $__currentLoopData = ['view','create','edit','delete']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[ged][<?php echo e($a); ?>]"
+                           <?php echo e($checked('ged',$a) ? 'checked' : ''); ?>>
+                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">Modèles</div>
+                <?php $__currentLoopData = ['view','create','edit','delete']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[ged_modeles][<?php echo e($a); ?>]"
+                           <?php echo e($checked('ged_modeles',$a) ? 'checked' : ''); ?>>
+                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">Entêtes</div>
+                <?php $__currentLoopData = ['view','create','edit','delete']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[ged_entete][<?php echo e($a); ?>]"
+                           <?php echo e($checked('ged_entete',$a) ? 'checked' : ''); ?>>
+                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
+
+            <div class="perm-group-label">Paramétrage &amp; Rapports</div>
+
+            <div class="perm-row">
+                <div class="perm-mod-name">Paramétrage</div>
+                <?php $__currentLoopData = ['view','create','edit','delete']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[parametrage][<?php echo e($a); ?>]"
+                           <?php echo e($checked('parametrage',$a) ? 'checked' : ''); ?>>
+                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">Rapport RH</div>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[reporting][view]"
+                           <?php echo e($checked('reporting','view') ? 'checked' : ''); ?>>
+                </div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+            </div>
+
+        </div>
+
+        <div class="perm-footer-note">
+            Les colonnes grisées (—) indiquent qu'une action n'est pas applicable pour ce module.
+        </div>
+        <?php endif; ?> 
+    </div>
+    <?php endif; ?> 
 
     
     <?php if($employee->user): ?>
@@ -471,7 +950,6 @@ unset($__errorArgs, $__bag); ?>
             </div>
         </div>
         <div class="card-body">
-
             
             <div style="display:flex;align-items:center;gap:12px;cursor:pointer;" id="toggle-pwd-label">
                 <div style="position:relative;width:44px;height:24px;flex-shrink:0;">
@@ -516,8 +994,6 @@ $message = $__bag->first($__errorArgs[0]); ?> <span style="color:var(--danger);f
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>
-
-                        
                         <div style="margin-top:8px;">
                             <div style="display:flex;gap:4px;margin-bottom:4px;">
                                 <div class="pwd-bar" style="height:4px;flex:1;border-radius:2px;background:var(--border);transition:background .3s;"></div>
@@ -528,7 +1004,6 @@ unset($__errorArgs, $__bag); ?>
                             <span id="pwd-strength-label" style="font-size:0.72rem;color:var(--text-muted);"></span>
                         </div>
                     </div>
-
                     <div class="form-group">
                         <label>Confirmer le mot de passe *</label>
                         <div class="password-group">
@@ -541,7 +1016,6 @@ unset($__errorArgs, $__bag); ?>
                                 </svg>
                             </button>
                         </div>
-                        
                         <span id="pwd-match-label" style="font-size:0.72rem;margin-top:4px;display:none;"></span>
                     </div>
                 </div>
@@ -553,30 +1027,20 @@ unset($__errorArgs, $__bag); ?>
     
     <div style="display:flex;gap:12px;justify-content:flex-end;margin-bottom:32px;">
         <a href="<?php echo e(route('employees.show', $employee)); ?>" class="btn btn-ghost">Annuler</a>
-        <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+        <button type="submit" class="btn btn-primary">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"
+                 stroke="currentColor" stroke-width="2.5">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            Enregistrer les modifications
+        </button>
     </div>
 
 </form>
 
-<style>
-.doc-file-input.has-doc {
-    border-color:#16a34a;background-color:#f0fdf4;color:#15803d;
-}
-.doc-file-input.has-doc::-webkit-file-upload-button,
-.doc-file-input.has-doc::file-selector-button {
-    background:#16a34a;color:white;border:none;
-    padding:6px 12px;border-radius:4px;cursor:pointer;font-size:0.82rem;
-}
-.password-group { position:relative; }
-.password-group .form-control { padding-right:42px; }
-.toggle-password {
-    position:absolute;right:10px;top:50%;transform:translateY(-50%);
-    background:none;border:none;cursor:pointer;padding:4px;
-    opacity:0.5;transition:opacity .2s;color:var(--text-primary);
-}
-.toggle-password:hover { opacity:1; }
-</style>
-
+<?php $__env->startPush('scripts'); ?>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -618,7 +1082,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // ── Toggle visibilité ────────────────────────────────────
+    // ── Toggle visibilité mot de passe ───────────────────────
     document.querySelectorAll('.toggle-password').forEach(btn => {
         btn.addEventListener('click', function () {
             const input = document.getElementById(this.dataset.target);
@@ -633,6 +1097,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const bars          = document.querySelectorAll('.pwd-bar');
     const strengthLabel = document.getElementById('pwd-strength-label');
     const matchLabel    = document.getElementById('pwd-match-label');
+
+    if (!pwdInput) return;
 
     const levels = [
         { color:'#ef4444', label:'Très faible' },
@@ -657,7 +1123,6 @@ document.addEventListener('DOMContentLoaded', function () {
         checkMatch();
     });
 
-    // ── Indicateur correspondance ────────────────────────────
     confirmInput.addEventListener('input', checkMatch);
 
     function checkMatch() {
@@ -666,15 +1131,78 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!confirm) { matchLabel.style.display = 'none'; return; }
         matchLabel.style.display = 'inline';
         if (pwd === confirm) {
-            matchLabel.textContent  = '✓ Les mots de passe correspondent';
-            matchLabel.style.color  = '#16a34a';
+            matchLabel.textContent = '✓ Les mots de passe correspondent';
+            matchLabel.style.color = '#16a34a';
         } else {
-            matchLabel.textContent  = '✗ Les mots de passe ne correspondent pas';
-            matchLabel.style.color  = '#ef4444';
+            matchLabel.textContent = '✗ Les mots de passe ne correspondent pas';
+            matchLabel.style.color = '#ef4444';
         }
     }
 });
+
+/* ═══════════════════════════════════════════════════════
+   Gestionnaire de permissions
+═══════════════════════════════════════════════════════ */
+const Perms = {
+
+    all() {
+        return document.querySelectorAll('#perm-table input[type=checkbox]:not([disabled])');
+    },
+
+    byAction(action) {
+        return document.querySelectorAll(
+            `#perm-table input[name*="[${action}]"]:not([disabled])`
+        );
+    },
+
+    byModule(keys, actions = ['view','create','edit','delete']) {
+        keys.forEach(key => {
+            actions.forEach(action => {
+                const cb = document.querySelector(
+                    `#perm-table input[name="permissions[${key}][${action}]"]`
+                );
+                if (cb) cb.checked = true;
+            });
+        });
+    },
+
+    selectAll()   { this.all().forEach(c => c.checked = true);  },
+    deselectAll() { this.all().forEach(c => c.checked = false); },
+
+    selectView() {
+        this.deselectAll();
+        this.byAction('view').forEach(c => c.checked = true);
+    },
+
+    selectEmployee() {
+        this.deselectAll();
+        this.byModule(
+            ['dashboard','trombinoscope','absences','lms','salary'],
+            ['view']
+        );
+        const abCreate = document.querySelector(
+            '#perm-table input[name="permissions[absences][create]"]'
+        );
+        if (abCreate) abCreate.checked = true;
+    },
+
+    selectRH() {
+        this.deselectAll();
+        this.byModule(
+            [
+                'dashboard','employees','trombinoscope','news',
+                'planning','temps_vue','pointage',
+                'absences','absences_calendar','absences_counters',
+                'lms','referentiel','lms_planning',
+                'salary','ged','ged_modeles','ged_entete',
+                'reporting'
+            ],
+            ['view','create','edit']
+        );
+    },
+};
 </script>
+<?php $__env->stopPush(); ?>
 <?php $__env->stopSection(); ?>
 
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\Projects\SIRH-\resources\views/employees/edit.blade.php ENDPATH**/ ?>

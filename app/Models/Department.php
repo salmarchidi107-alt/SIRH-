@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Department extends Model
 {
-    use HasTenantScope; // ✅
+    use HasTenantScope;
 
     protected $fillable = [
         'name',
@@ -15,7 +15,7 @@ class Department extends Model
         'color',
         'chef',
         'description',
-        'tenant_id', // ✅
+        'tenant_id',
     ];
 
     // =========================================================================

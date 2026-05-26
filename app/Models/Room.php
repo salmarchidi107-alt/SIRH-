@@ -7,14 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class Room extends Model
 {
-    use HasTenantScope; // ✅
+    use HasTenantScope;
 
     protected $fillable = [
         'name',
         'department_id',
         'capacity',
         'description',
-        'tenant_id', // 
+        'tenant_id',
     ];
 
     public function department()

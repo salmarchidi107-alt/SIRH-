@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'badge.auth'      => \App\Http\Middleware\BadgeGuard::class,
             'role'            => \App\Http\Middleware\CheckRole::class,
             'ensure.absence.employee' => \App\Http\Middleware\EnsureAbsenceEmployeeId::class,
+            'permission' => \App\Http\Middleware\CheckModulePermission::class,
         ]);
 
     })

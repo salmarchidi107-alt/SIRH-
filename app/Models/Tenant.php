@@ -18,7 +18,6 @@ class Tenant extends BaseTenant
     protected $fillable = [
         'id',
         'name',
-        'slug',
         'sector',
         'region',
         'address',
@@ -37,7 +36,6 @@ class Tenant extends BaseTenant
         return [
             'id',
             'name',
-            'slug',
             'sector',
             'region',
             'address',
@@ -66,11 +64,6 @@ class Tenant extends BaseTenant
 
 
 // ─── Accessors ────────────────────────────────────────────────────────────
-
-    public function getDomainAttribute(): string
-    {
-        return ($this->slug ?? '') . '.sirh.test';
-    }
 
     public function getInitialsAttribute(): string
     {

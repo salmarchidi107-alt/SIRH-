@@ -40,6 +40,7 @@ class WeekTemplate extends Model
         'sunday_start',
         'sunday_end',
         'sunday_room',
+        'tenant_id',
     ];
 
     public function plannings()
@@ -60,7 +61,7 @@ class WeekTemplate extends Model
         ];
 
         $date = $startDate->copy()->startOfWeek(Carbon::MONDAY);
-        
+
         foreach ($days as $dayName => $shift) {
             if ($shift['shift_type'] && $shift['start'] && $shift['end']) {
                 Planning::updateOrCreate(

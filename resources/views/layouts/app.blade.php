@@ -162,7 +162,9 @@
 
         <nav class="sidebar-nav">
 
-            {{-- ── SuperAdmin ── --}}
+            {{-- ══════════════════════════════════════════════════════════
+                 SUPERADMIN
+            ══════════════════════════════════════════════════════════ --}}
             @if(Auth::check() && Auth::user()->role === 'superadmin')
             <a href="{{ route('superadmin.dashboard') }}"
                class="nav-item {{ request()->routeIs('superadmin.dashboard') ? 'active' : '' }}">
@@ -173,7 +175,9 @@
             </a>
             @endif
 
-            {{-- ── Principal ── --}}
+            {{-- ══════════════════════════════════════════════════════════
+                 PRINCIPAL (tous)
+            ══════════════════════════════════════════════════════════ --}}
             <div class="nav-section-label">Principal</div>
 
             <a href="{{ $dashboardHref }}"
@@ -187,22 +191,30 @@
                 <span>Tableau de bord</span>
             </a>
 
-            {{-- ── Profil (employee) ── --}}
+            {{-- Mon Profil (employee uniquement) --}}
             @if(Auth::check() && Auth::user()->role === 'employee')
             <a href="{{ route('profile') }}" class="nav-item {{ request()->routeIs('profile') ? 'active' : '' }}">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
                 </svg>
-
                 <span>Mon Profil</span>
             </a>
             @endif
 
-            {{-- ── Personnel (admin / rh) ── --}}
+            {{-- ══════════════════════════════════════════════════════════
+                 ADMIN / RH — PERSONNEL
+                 Admin : accès total
+                 RH    : vérifie les permissions en base
+            ══════════════════════════════════════════════════════════ --}}
             @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
-            <div class="nav-section-label">Personnel</div>
+            @php $navUser = Auth::user(); @endphp
 
+            @if($navUser->canView('employees') || $navUser->canView('trombinoscope') || $navUser->canView('news'))
+            <div class="nav-section-label">Personnel</div>
+            @endif
+
+            @if($navUser->canView('employees'))
             <a href="{{ route('employees.index') }}"
                class="nav-item {{ request()->routeIs('employees.*') ? 'active' : '' }}">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -212,7 +224,9 @@
                 </svg>
                 <span>Liste du Personnel</span>
             </a>
+            @endif
 
+            @if($navUser->canView('trombinoscope'))
             <a href="{{ route('trombinoscope') }}"
                class="nav-item {{ request()->routeIs('trombinoscope') ? 'active' : '' }}">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -222,7 +236,9 @@
                 </svg>
                 <span>Trombinoscope</span>
             </a>
+            @endif
 
+            @if($navUser->canView('news'))
             <a href="{{ route('news.index') }}"
                class="nav-item {{ request()->routeIs('news.*') ? 'active' : '' }}">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -232,11 +248,19 @@
                 <span>Actualités</span>
             </a>
             @endif
+            @endif
 
-            {{-- ── Mon Espace (employee) ── --}}
+            {{-- ══════════════════════════════════════════════════════════
+                 EMPLOYEE — sections conditionnelles selon permissions
+            ══════════════════════════════════════════════════════════ --}}
             @if(Auth::check() && Auth::user()->role === 'employee')
-            <div class="nav-section-label">Mon Espace</div>
+            @php $u = Auth::user(); @endphp
 
+            {{-- ── Trombinoscope / Actualités ── --}}
+            @if($u->canView('trombinoscope') || $u->canView('news'))
+            <div class="nav-section-label">Personnel</div>
+
+            @if($u->canView('trombinoscope'))
             <a href="{{ route('trombinoscope') }}"
                class="nav-item {{ request()->routeIs('trombinoscope') ? 'active' : '' }}">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -246,8 +270,26 @@
                 </svg>
                 <span>Trombinoscope</span>
             </a>
+            @endif
 
-            <a href="{{ route('planning.show', ['employee' => Auth::user()->employee_id ?? 0]) }}"
+            @if($u->canView('news'))
+            <a href="{{ route('news.index') }}"
+               class="nav-item {{ request()->routeIs('news.*') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+                <span>Actualités</span>
+            </a>
+            @endif
+            @endif
+
+            {{-- ── Temps & Présence ── --}}
+            @if($u->canView('planning') || $u->canView('temps_vue') || $u->canView('pointage'))
+            <div class="nav-section-label">Temps &amp; Présence</div>
+
+            @if($u->canView('planning'))
+            <a href="{{ route('planning.show', ['employee' => $u->employee_id ?? 0]) }}"
                class="nav-item {{ request()->routeIs('planning.show') ? 'active' : '' }}">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
@@ -259,10 +301,224 @@
             </a>
             @endif
 
-            {{-- ── Temps & Présence (admin / rh) ── --}}
-            @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
-            <div class="nav-section-label">Temps & Présence</div>
+            @if($u->canView('temps_vue'))
+            <a href="{{ route('temps.vue-ensemble') }}"
+               class="nav-item {{ request()->routeIs('temps.vue-ensemble') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <span>Vue d'ensemble</span>
+            </a>
+            @endif
 
+            @if($u->canView('pointage'))
+            <a href="{{ route('pointage.index') }}"
+               class="nav-item {{ request()->routeIs('pointage.*') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="8" height="18" rx="1.5"/>
+                    <rect x="13" y="3" width="8" height="8" rx="1.5"/>
+                    <rect x="13" y="13" width="8" height="8" rx="1.5"/>
+                </svg>
+                <span>Pointage</span>
+            </a>
+            @endif
+            @endif
+
+            {{-- ── Absences & Congés ── --}}
+            @if($u->canView('absences') || $u->canCreate('absences') || $u->canView('absences_calendar') || $u->canView('absences_counters'))
+            <div class="nav-section-label">Absences &amp; Congés</div>
+
+            @if($u->canView('absences') || $u->canCreate('absences'))
+            <a href="{{ route('absences.index') }}"
+               class="nav-item {{ request()->routeIs('absences.index') || request()->routeIs('absences.show') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path d="M9 11l3 3L22 4"/>
+                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                </svg>
+                <span>Mes demandes</span>
+            </a>
+            @endif
+
+            @if($u->canView('absences_calendar'))
+            <a href="{{ route('absences.calendar') }}"
+               class="nav-item {{ request()->routeIs('absences.calendar') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <span>État visuel absences</span>
+            </a>
+            @endif
+
+            @if($u->canView('absences_counters'))
+            <a href="{{ route('absences.counters') }}"
+               class="nav-item {{ request()->routeIs('absences.counters') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"/>
+                    <line x1="12" y1="20" x2="12" y2="4"/>
+                    <line x1="6"  y1="20" x2="6"  y2="14"/>
+                </svg>
+                <span>Compteurs &amp; droits</span>
+            </a>
+            @endif
+            @endif
+
+            {{-- ── Formations ── --}}
+            @if($u->canView('lms') || $u->canView('referentiel') || $u->canView('lms_planning'))
+            <div class="nav-section-label">Formations</div>
+
+            @if($u->canView('lms'))
+            <a href="{{ route('lms.index') }}"
+               class="nav-item {{ request()->routeIs('lms.index') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0
+                             016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0
+                             2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+                </svg>
+                <span>Mes formations</span>
+            </a>
+            @endif
+
+            @if($u->canView('referentiel'))
+            <a href="{{ route('referentiel.index') }}"
+               class="nav-item {{ request()->routeIs('referentiel.*') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0
+                             01 13.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5
+                             3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504
+                             1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0
+                             00-9-9z"/>
+                </svg>
+                <span>Référentiel Formations</span>
+            </a>
+            @endif
+
+            @if($u->canView('lms_planning'))
+            <a href="{{ route('lms.planning') }}"
+               class="nav-item {{ request()->routeIs('lms.planning') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8"  y1="2" x2="8"  y2="6"/>
+                    <line x1="3"  y1="10" x2="21" y2="10"/>
+                </svg>
+                <span>Planning formations</span>
+            </a>
+            @endif
+            @endif
+
+            {{-- ── Paie ── --}}
+            @if($u->canView('salary') && $u->employee_id)
+            <div class="nav-section-label">Paie</div>
+
+            <a href="{{ route('salary.show', $u->employee_id) }}"
+               class="nav-item {{ request()->routeIs('salary.show') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 00 0 7h5a3.5 3.5 0 01 0 7H6"/>
+                </svg>
+                <span>Mon Salaire</span>
+            </a>
+            @endif
+
+            {{-- ── GED ── --}}
+            @if($u->canView('ged') || $u->canView('ged_modeles') || $u->canView('ged_entete'))
+            <div class="nav-section-label">GED</div>
+
+            @if($u->canView('ged'))
+            <a href="{{ route('ged.index') }}"
+               class="nav-item {{ request()->routeIs('ged.index') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586
+                        a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19
+                        a2 2 0 01-2 2z"/>
+                </svg>
+                <span>Documents</span>
+            </a>
+            @endif
+
+            @if($u->canView('ged_modeles'))
+            <a href="{{ route('ged.modeles.index') }}"
+               class="nav-item {{ request()->routeIs('ged.modeles.*') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="8" height="8" rx="1.5"/>
+                    <rect x="13" y="3" width="8" height="8" rx="1.5"/>
+                    <rect x="3" y="13" width="8" height="8" rx="1.5"/>
+                    <rect x="13" y="13" width="8" height="8" rx="1.5"/>
+                </svg>
+                <span>Modèles</span>
+            </a>
+            @endif
+
+            @if($u->canView('ged_entete'))
+            <a href="{{ route('ged.entete.index') }}"
+               class="nav-item {{ request()->routeIs('ged.entete.*') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <rect x="4" y="4" width="16" height="16" rx="2"/>
+                    <line x1="4" y1="9" x2="20" y2="9"/>
+                    <line x1="8" y1="13" x2="16" y2="13"/>
+                    <line x1="8" y1="17" x2="14" y2="17"/>
+                </svg>
+                <span>Entête</span>
+            </a>
+            @endif
+            @endif
+
+            {{-- ── Paramétrage & Rapports ── --}}
+            @if($u->canView('parametrage') || $u->canView('reporting'))
+            <div class="nav-section-label">Paramétrage</div>
+
+            @if($u->canView('parametrage'))
+            <a href="{{ route('parametrage.index') }}"
+               class="nav-item {{ request()->routeIs('parametrage.*') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0
+                             002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0
+                             001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0
+                             00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0
+                             00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0
+                             00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0
+                             00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0
+                             001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                <span>Paramétrage</span>
+            </a>
+            @endif
+
+            @if($u->canView('reporting'))
+            <a href="{{ route('reporting.index') }}"
+               class="nav-item {{ request()->routeIs('reporting.*') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586
+                             a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span>Rapport RH</span>
+            </a>
+            @endif
+            @endif
+
+            @endif {{-- fin employee --}}
+
+            {{-- ══════════════════════════════════════════════════════════
+                 ADMIN / RH — Temps & Présence
+            ══════════════════════════════════════════════════════════ --}}
+            @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
+            @php $navUser = Auth::user(); @endphp
+
+            @if($navUser->canView('planning') || $navUser->canView('temps_vue') || $navUser->canView('pointage'))
+            <div class="nav-section-label">Temps &amp; Présence</div>
+            @endif
+
+            @if($navUser->canView('planning'))
             <a href="{{ route('planning.weekly') }}"
                class="nav-item {{ request()->routeIs('planning.*') ? 'active' : '' }}">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -273,7 +529,9 @@
                 </svg>
                 <span>Planning</span>
             </a>
+            @endif
 
+            @if($navUser->canView('temps_vue'))
             <a href="{{ route('temps.vue-ensemble') }}"
                class="nav-item {{ request()->routeIs('temps.vue-ensemble') ? 'active' : '' }}">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -282,13 +540,14 @@
                 </svg>
                 <span>Vue d'ensemble</span>
             </a>
+            @endif
 
+            @if($navUser->canView('pointage'))
             @php
                 $pointageEnAttente = 0;
                 try {
                     $currentTenantId = config('app.current_tenant_id')
                         ?? (auth()->check() ? auth()->user()->tenant_id : null);
-
                     $pointageEnAttente = \App\Models\Pointage::forDate(today()->toDateString())
                         ->when($currentTenantId, fn($q) => $q->where('tenant_id', $currentTenantId))
                         ->where('valide', false)
@@ -312,10 +571,19 @@
                 @endif
             </a>
             @endif
+            @endif
 
-            {{-- ── Absences & Congés ── --}}
-            <div class="nav-section-label">Absences & Congés</div>
+            {{-- ══════════════════════════════════════════════════════════
+                 ADMIN / RH — Absences & Congés
+            ══════════════════════════════════════════════════════════ --}}
+            @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
+            @php $navUser = Auth::user(); @endphp
 
+            @if($navUser->canView('absences') || $navUser->canView('absences_calendar') || $navUser->canView('absences_counters'))
+            <div class="nav-section-label">Absences &amp; Congés</div>
+            @endif
+
+            @if($navUser->canView('absences'))
             <a href="{{ route('absences.index') }}"
                class="nav-item {{ request()->routeIs('absences.index') || request()->routeIs('absences.show') ? 'active' : '' }}">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -324,8 +592,9 @@
                 </svg>
                 <span>Liste des demandes</span>
             </a>
+            @endif
 
-            @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
+            @if($navUser->canView('absences_calendar'))
             <a href="{{ route('absences.calendar') }}"
                class="nav-item {{ request()->routeIs('absences.calendar') ? 'active' : '' }}">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -336,7 +605,9 @@
                 </svg>
                 <span>État visuel des absences</span>
             </a>
+            @endif
 
+            @if($navUser->canView('absences_counters'))
             <a href="{{ route('absences.counters') }}"
                class="nav-item {{ request()->routeIs('absences.counters') ? 'active' : '' }}">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -347,15 +618,19 @@
                 <span>Compteurs et droits d'absences</span>
             </a>
             @endif
+            @endif
 
-            {{-- ══════════════════════════════════════════════════
-                 LMS — Formations  (admin / rh)
-            ══════════════════════════════════════════════════ --}}
+            {{-- ══════════════════════════════════════════════════════════
+                 ADMIN / RH — Formations LMS
+            ══════════════════════════════════════════════════════════ --}}
             @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
+            @php $navUser = Auth::user(); @endphp
 
+            @if($navUser->canView('lms') || $navUser->canView('referentiel') || $navUser->canView('lms_planning'))
             <div class="nav-section-label">Formations</div>
+            @endif
 
-            {{-- Compteur formations planifiées (badge live) --}}
+            @if($navUser->canView('lms'))
             @php
                 $lmsEnAttente = 0;
                 try {
@@ -370,7 +645,6 @@
                 }
             @endphp
 
-            {{-- Liste --}}
             <a href="{{ route('lms.index') }}"
                class="nav-item {{ request()->routeIs('lms.index') || request()->routeIs('lms.store') || request()->routeIs('lms.update') || request()->routeIs('lms.destroy') ? 'active' : '' }}">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -384,21 +658,24 @@
                 <span class="nav-badge-live">{{ $lmsEnAttente }}</span>
                 @endif
             </a>
-{{-- Référentiel --}}
-<a href="{{ route('referentiel.index') }}"
-   class="nav-item {{ request()->routeIs('referentiel.*') ? 'active' : '' }}">
-    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round"
-              d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0
-                 01 13.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5
-                 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504
-                 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0
-                 00-9-9z"/>
-    </svg>
-    <span>Référentiel Formations</span>
-</a>
+            @endif
 
-            {{-- Planning --}}
+            @if($navUser->canView('referentiel'))
+            <a href="{{ route('referentiel.index') }}"
+               class="nav-item {{ request()->routeIs('referentiel.*') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0
+                             01 13.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5
+                             3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504
+                             1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0
+                             00-9-9z"/>
+                </svg>
+                <span>Référentiel Formations</span>
+            </a>
+            @endif
+
+            @if($navUser->canView('lms_planning'))
             <a href="{{ route('lms.planning') }}"
                class="nav-item {{ request()->routeIs('lms.planning') ? 'active' : '' }}">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -409,32 +686,20 @@
                 </svg>
                 <span>Planning formations</span>
             </a>
-
+            @endif
             @endif
 
-            {{-- ── LMS employee : mes formations ── --}}
-            @if(Auth::check() && Auth::user()->role === 'employee')
-
-            <div class="nav-section-label">Formations</div>
-
-            <a href="{{ route('lms.index') }}"
-               class="nav-item {{ request()->routeIs('lms.*') ? 'active' : '' }}">
-                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0
-                             016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0
-                             2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
-                </svg>
-                <span>Mes formations</span>
-            </a>
-
-            @endif
-            {{-- ══════════════════════════════════════════════════ --}}
-
-            {{-- ── Paie (admin / rh) ── --}}
+            {{-- ══════════════════════════════════════════════════════════
+                 ADMIN / RH — Paie
+            ══════════════════════════════════════════════════════════ --}}
             @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
-            <div class="nav-section-label">Paie</div>
+            @php $navUser = Auth::user(); @endphp
 
+            @if($navUser->canView('salary') || $navUser->canView('reporting'))
+            <div class="nav-section-label">Paie</div>
+            @endif
+
+            @if($navUser->canView('salary'))
             <a href="{{ route('salary.index') }}"
                class="nav-item {{ request()->routeIs('salary.index') || request()->routeIs('salary.show') || request()->routeIs('salary.create') ? 'active' : '' }}">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -445,24 +710,30 @@
             </a>
             @endif
 
-            {{-- ── Paie (employee) ── --}}
-            @if(Auth::check() && Auth::user()->role === 'employee' && Auth::user()->employee_id)
-            <div class="nav-section-label">Paie</div>
-
-            <a href="{{ route('salary.show', Auth::user()->employee_id) }}"
-               class="nav-item {{ request()->routeIs('salary.show') ? 'active' : '' }}">
+            @if($navUser->canView('reporting'))
+            <a href="{{ route('reporting.index') }}"
+               class="nav-item {{ request()->routeIs('reporting.*') ? 'active' : '' }}">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="1" x2="12" y2="23"/>
-                    <path d="M17 5H9.5a3.5 3.5 0 00 0 7h5a3.5 3.5 0 01 0 7H6"/>
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586
+                             a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                <span>Mon Salaire</span>
+                <span>Rapport RH</span>
             </a>
             @endif
+            @endif
 
-            {{-- ── GED (admin / rh) ── --}}
+            {{-- ══════════════════════════════════════════════════════════
+                 ADMIN / RH — GED
+            ══════════════════════════════════════════════════════════ --}}
             @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
-            <div class="nav-section-label">GED</div>
+            @php $navUser = Auth::user(); @endphp
 
+            @if($navUser->canView('ged') || $navUser->canView('ged_modeles') || $navUser->canView('ged_entete'))
+            <div class="nav-section-label">GED</div>
+            @endif
+
+            @if($navUser->canView('ged'))
             <a href="{{ route('ged.index') }}"
                class="nav-item {{ request()->routeIs('ged.index') ? 'active' : '' }}">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -473,7 +744,9 @@
                 </svg>
                 <span>Documents</span>
             </a>
+            @endif
 
+            @if($navUser->canView('ged_modeles'))
             <a href="{{ route('ged.modeles.index') }}"
                class="nav-item {{ request()->routeIs('ged.modeles.*') ? 'active' : '' }}">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -484,7 +757,9 @@
                 </svg>
                 <span>Modèles</span>
             </a>
+            @endif
 
+            @if($navUser->canView('ged_entete'))
             <a href="{{ route('ged.entete.index') }}"
                class="nav-item {{ request()->routeIs('ged.entete.*') ? 'active' : '' }}">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -496,9 +771,15 @@
                 <span>Entête</span>
             </a>
             @endif
+            @endif
 
-            {{-- ── Paramétrage (admin / rh) ── --}}
+            {{-- ══════════════════════════════════════════════════════════
+                 ADMIN / RH — Paramétrage
+            ══════════════════════════════════════════════════════════ --}}
             @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
+            @php $navUser = Auth::user(); @endphp
+
+            @if($navUser->canView('parametrage'))
             <div class="nav-section-label">Paramétrage</div>
 
             <a href="{{ route('parametrage.index') }}"
@@ -517,17 +798,7 @@
                 </svg>
                 <span>Paramétrage</span>
             </a>
-            <div class="nav-section-label">Rapport</div>
-
-<a href="{{ route('reporting.index') }}"
-   class="nav-item {{ request()->routeIs('reporting.*') ? 'active' : '' }}">
-    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round"
-              d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586
-                 a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-    </svg>
-    <span>Rapport </span>
-</a>
+            @endif
             @endif
 
         </nav>
@@ -568,12 +839,11 @@
                 <i class="fa-solid fa-bars" aria-hidden="true"></i>
             </button>
             <div class="topbar-title">@yield('page-title', 'Tableau de bord')</div>
-             {{-- Logo medstaff centré ou à gauche du titre --}}
-    <div style="flex:1; display:flex; justify-content:flex-end; align-items:center; margin-right:12px;">
-        <img src="{{ asset('images/medstaff-logo.jpeg') }}"
-             alt="medstaff HR Solutions"
-             style="height:50px; object-fit:contain;">
-    </div>
+            <div style="flex:1; display:flex; justify-content:flex-end; align-items:center; margin-right:12px;">
+                <img src="{{ asset('images/medstaff-logo.jpeg') }}"
+                     alt="medstaff HR Solutions"
+                     style="height:50px; object-fit:contain;">
+            </div>
             <div class="topbar-actions">
 
                 {{-- Notifications --}}
@@ -601,7 +871,8 @@
                     </div>
                 </div>
 
-                {{-- Export Dropdown --}}
+                {{-- Export Dropdown — masqué pour les employees --}}
+                @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh', 'superadmin']))
                 <div class="export-wrapper" style="position: relative;">
                     <button class="topbar-btn" id="exportBtn" title="Fichier Excel Imprimable" onclick="toggleExportDropdown()">
                         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -619,10 +890,11 @@
                         <a href="{{ route('planning.weekly.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Planning Hebdomadaire</a>
                         <a href="{{ route('pointage.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Pointages</a>
                         <a href="{{ route('salary.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Salaires</a>
-                        {{-- Export LMS --}}
                         <a href="{{ route('lms.exportPdf') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Formations (LMS)</a>
                     </div>
                 </div>
+                @endif
+
             </div>
         </header>
 
@@ -812,12 +1084,13 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleChat
 
 function toggleExportDropdown() {
     const d = document.getElementById('exportDropdown');
-    d.style.display = d.style.display === 'none' ? 'block' : 'none';
+    if (d) d.style.display = d.style.display === 'none' ? 'block' : 'none';
 }
 document.addEventListener('click', function(e) {
     const wrapper = document.querySelector('.export-wrapper');
-    if (wrapper && !wrapper.contains(e.target))
-        document.getElementById('exportDropdown').style.display = 'none';
+    const dropdown = document.getElementById('exportDropdown');
+    if (wrapper && dropdown && !wrapper.contains(e.target))
+        dropdown.style.display = 'none';
 });
 
 function toggleNotifications() {

@@ -13,6 +13,7 @@ class Formation extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'tenant_id',
         'employee_id',
         'titre',
         'formateur',

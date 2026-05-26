@@ -9,7 +9,7 @@ class VariableElement extends Model
 {
     protected $fillable = [
         'employee_id', 'month', 'year',
-        'category', 'rubrique', 'label', 'amount', 'unit', 'type',
+        'category', 'rubrique', 'label', 'amount', 'unit', 'type', 'tenant_id',
     ];
 
     protected $casts = [

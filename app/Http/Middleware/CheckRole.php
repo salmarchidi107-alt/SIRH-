@@ -4,29 +4,52 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Support\Str;
 
+/**
+ * Middleware CheckRole
+ *
+ * Usage : ->middleware('role:admin,rh')
+ *
+ * CORRECTION : on compare directement $user->role aux rôles autorisés.
+ * On ne passe plus par $user->can() qui dépend de config/roles.php
+ * et peut retourner false si la config est incomplète.
+ *
+ * Superadmin passe toujours.
+ */
 class CheckRole
 {
-    public function handle(Request $request, Closure $next, ...$roles): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
         $user = $request->user();
 
         if (! $user) {
-            abort(401, 'Non authentifié.');
+            return redirect()->route('login');
         }
 
-        $allowedRoles = is_array($roles) ? $roles : func_get_args();
-
-        foreach ($allowedRoles as $role) {
-            if (Str::is($role, $user->role) || $user->can($role)) {
-                return $next($request);
-            }
+        // Superadmin passe toujours, quel que soit le rôle demandé
+        if ($user->isSuperAdmin()) {
+            return $next($request);
         }
 
-        abort(403, 'Accès non autorisé pour votre rôle.');
+        // Comparaison directe du rôle (case-insensitive pour sécurité)
+        $userRole     = strtolower(trim($user->role ?? ''));
+        $allowedRoles = array_map('strtolower', array_map('trim', $roles));
+
+        if (in_array($userRole, $allowedRoles)) {
+            return $next($request);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['error' => 'Accès non autorisé pour votre rôle.'], 403);
+        }
+
+        // Redirection intelligente selon le rôle réel
+        $redirect = $user->isAdminOrRh()
+            ? route('admin.dashboard')
+            : route('employee.dashboard');
+
+        return redirect($redirect)
+            ->with('error', 'Vous n\'avez pas accès à cette section.');
     }
 }
-

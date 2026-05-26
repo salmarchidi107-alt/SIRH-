@@ -13,7 +13,7 @@ class Formateur extends Model
 
     protected $fillable = [
         'nom', 'prenom', 'email', 'telephone',
-        'specialite', 'type', 'actif',
+        'specialite', 'type', 'actif','tenant_id',
     ];
 
     protected $casts = ['actif' => 'boolean'];

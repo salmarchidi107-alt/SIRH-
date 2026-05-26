@@ -3,14 +3,154 @@
 @section('title', 'Modifier - '.$employee->full_name)
 @section('page-title', 'Modifier un Employé')
 
+@push('styles')
+<style>
+/* ══════════════════════════════════════════════
+   Permissions
+══════════════════════════════════════════════ */
+.perm-col-labels {
+    display: grid;
+    grid-template-columns: 220px repeat(4, 1fr);
+    padding: 8px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-secondary, #f8fafc);
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+.perm-col-labels div:first-child { text-align: left; }
+.perm-col-labels div:not(:first-child) { text-align: center; }
+
+.perm-group-label {
+    padding: 6px 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    color: #94a3b8;
+    text-transform: uppercase;
+    background: #f1f5f9;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.perm-row {
+    display: grid;
+    grid-template-columns: 220px repeat(4, 1fr);
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+    transition: background .15s;
+}
+.perm-row:last-child { border-bottom: none; }
+.perm-row:hover { background: var(--bg-secondary, #f8fafc); }
+.perm-row--sub { background: #fafbfc; }
+.perm-row--sub:hover { background: #f1f5f9; }
+
+.perm-mod-name {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 13px;
+    color: var(--text-primary, #1e293b);
+}
+.perm-row--sub .perm-mod-name {
+    padding-left: 24px;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.perm-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.perm-cell input[type=checkbox] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #14b8a6;
+    border-radius: 3px;
+}
+.perm-na {
+    color: #e2e8f0;
+    font-size: 14px;
+    font-weight: 500;
+    user-select: none;
+}
+
+.perm-toolbar {
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-secondary, #f8fafc);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.perm-toolbar-label {
+    font-size: 12px;
+    color: #64748b;
+    margin-right: 4px;
+}
+.perm-quick-btn {
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border, #e2e8f0);
+    background: #fff;
+    color: #475569;
+    cursor: pointer;
+    transition: all .15s;
+    font-weight: 500;
+}
+.perm-quick-btn:hover {
+    background: #0d9488;
+    color: #fff;
+    border-color: #0d9488;
+}
+.perm-footer-note {
+    padding: 10px 20px;
+    font-size: 12px;
+    color: #94a3b8;
+    border-top: 1px solid var(--border);
+    background: var(--bg-secondary, #f8fafc);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Pièces jointes */
+.doc-file-input.has-doc {
+    border-color: #16a34a;
+    background-color: #f0fdf4;
+    color: #15803d;
+}
+.doc-file-input.has-doc::-webkit-file-upload-button,
+.doc-file-input.has-doc::file-selector-button {
+    background: #16a34a;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.82rem;
+}
+
+/* Mot de passe */
+.password-group { position: relative; }
+.password-group .form-control { padding-right: 42px; }
+.toggle-password {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; padding: 4px;
+    opacity: 0.5; transition: opacity .2s; color: var(--text-primary);
+}
+.toggle-password:hover { opacity: 1; }
+</style>
+@endpush
+
 @section('content')
-<div class="page-header">
-    <div class="page-header-left">
-        <h1>Modifier : {{ $employee->full_name }}</h1>
-        <p>Matricule : {{ $employee->matricule }}</p>
-    </div>
-    <a href="{{ route('employees.show', $employee) }}" class="btn btn-ghost">← Retour</a>
-</div>
 
 @if($errors->any())
     <div class="alert alert-danger" style="margin-bottom:16px;">
@@ -22,8 +162,17 @@
     </div>
 @endif
 
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Modifier : {{ $employee->full_name }}</h1>
+        <p>Matricule : {{ $employee->matricule }}</p>
+    </div>
+    <a href="{{ route('employees.show', $employee) }}" class="btn btn-ghost">← Retour</a>
+</div>
+
 <form action="{{ route('employees.update', $employee) }}" method="POST" enctype="multipart/form-data">
-    @csrf @method('PUT')
+    @csrf
+    @method('PUT')
 
     {{-- ══════════════════════════════════════
          Informations personnelles
@@ -60,15 +209,16 @@
                     <input type="date" name="birth_date" class="form-control"
                            value="{{ old('birth_date', $employee->birth_date?->format('Y-m-d')) }}">
                 </div>
+                {{-- Genre — du fichier 1 (absent du fichier 2) --}}
                 <div class="form-group">
-    <label>Genre</label>
-    <select name="genre" class="form-control">
-        <option value="">Sélectionner...</option>
-        <option value="homme" {{ old('genre', $employee->genre) == 'homme' ? 'selected' : '' }}>Homme</option>
-        <option value="femme" {{ old('genre', $employee->genre) == 'femme' ? 'selected' : '' }}>Femme</option>
-    </select>
-    @error('genre') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
-</div>
+                    <label>Genre</label>
+                    <select name="genre" class="form-control">
+                        <option value="">Sélectionner...</option>
+                        <option value="homme" {{ old('genre', $employee->genre) == 'homme' ? 'selected' : '' }}>Homme</option>
+                        <option value="femme" {{ old('genre', $employee->genre) == 'femme' ? 'selected' : '' }}>Femme</option>
+                    </select>
+                    @error('genre') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+                </div>
                 <div class="form-group">
                     <label>CIN</label>
                     <input type="text" name="cin" class="form-control"
@@ -150,15 +300,16 @@
                     <input type="text" name="skills" class="form-control"
                            value="{{ old('skills', $employee->skills) }}">
                 </div>
+                {{-- contract_type — select du fichier 1 (meilleur que l'input texte du fichier 2) --}}
                 <div class="form-group">
                     <label>Contrat *</label>
-<select name="contract_type" class="form-control" required>
-    <option value="">— Sélectionner —</option>
-    <option value="CDI"     {{ old('contract_type', $employee->contract_type) == 'CDI'     ? 'selected' : '' }}>CDI</option>
-    <option value="CDD"     {{ old('contract_type', $employee->contract_type) == 'CDD'     ? 'selected' : '' }}>CDD</option>
-    <option value="Interim" {{ old('contract_type', $employee->contract_type) == 'Interim' ? 'selected' : '' }}>Intérim</option>
-    <option value="Stage"   {{ old('contract_type', $employee->contract_type) == 'Stage'   ? 'selected' : '' }}>Stage</option>
-</select>
+                    <select name="contract_type" class="form-control" required>
+                        <option value="">— Sélectionner —</option>
+                        <option value="CDI"     {{ old('contract_type', $employee->contract_type) == 'CDI'     ? 'selected' : '' }}>CDI</option>
+                        <option value="CDD"     {{ old('contract_type', $employee->contract_type) == 'CDD'     ? 'selected' : '' }}>CDD</option>
+                        <option value="Interim" {{ old('contract_type', $employee->contract_type) == 'Interim' ? 'selected' : '' }}>Intérim</option>
+                        <option value="Stage"   {{ old('contract_type', $employee->contract_type) == 'Stage'   ? 'selected' : '' }}>Stage</option>
+                    </select>
                     @error('contract_type') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group">
@@ -174,6 +325,73 @@
                         <option value="leave"    {{ old('status', $employee->status) == 'leave'    ? 'selected' : '' }}>En congé</option>
                     </select>
                 </div>
+                {{-- Responsable direct — du fichier 2 --}}
+                <div class="form-group">
+                    <label>Responsable direct</label>
+                    <select name="manager_id" class="form-control">
+                        <option value="">Aucun</option>
+                        @foreach($managers as $mgr)
+                            <option value="{{ $mgr->id }}"
+                                {{ old('manager_id', $employee->manager_id) == $mgr->id ? 'selected' : '' }}>
+                                {{ $mgr->full_name }} — {{ $mgr->position }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ══════════════════════════════════════
+         Pièces jointes
+    ══════════════════════════════════════ --}}
+    <div class="card mb-4">
+        <div class="card-header"><div class="card-title">Pièces jointes</div></div>
+        <div class="card-body">
+            <div class="form-grid">
+                @foreach([
+                    'doc_casier'   => 'Casier judiciaire',
+                    'doc_rib'      => 'Relevé bancaire (RIB)',
+                    'doc_diplomes' => 'Copies des diplômes',
+                    'doc_cin'      => 'Copie CIN / Carte d\'identité',
+                ] as $field => $docLabel)
+                    <div class="form-group">
+                        <label>
+                            {{ $docLabel }}
+                            @if($employee->{$field.'_path'})
+                                <a href="{{ asset('storage/'.$employee->{$field.'_path'}) }}" target="_blank"
+                                   style="margin-left:6px;font-size:0.72rem;color:#16a34a;text-decoration:none;font-weight:400;">↗ voir</a>
+                            @endif
+                        </label>
+                        <input type="file" name="{{ $field }}" accept="application/pdf"
+                               class="form-control doc-file-input {{ $employee->{$field.'_path'} ? 'has-doc' : '' }}">
+                        @error($field) <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+                    </div>
+                @endforeach
+
+                <div class="form-group full">
+                    <label>
+                        Contrat de travail
+                        @if($employee->doc_contrat_path)
+                            <a href="{{ asset('storage/'.$employee->doc_contrat_path) }}" target="_blank"
+                               style="margin-left:6px;font-size:0.72rem;color:#16a34a;text-decoration:none;font-weight:400;">↗ voir</a>
+                        @endif
+                    </label>
+                    <input type="file" name="doc_contrat" accept="application/pdf"
+                           class="form-control doc-file-input {{ $employee->doc_contrat_path ? 'has-doc' : '' }}">
+                    @error('doc_contrat') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ══════════════════════════════════════
+         Rémunération & Informations Sociales
+    ══════════════════════════════════════ --}}
+    <div class="card mb-4">
+        <div class="card-header"><div class="card-title">Rémunération &amp; Informations Sociales</div></div>
+        <div class="card-body">
+            <div class="form-grid">
                 <div class="form-group">
                     <label>Salaire de base (MAD)</label>
                     <input type="number" name="base_salary" class="form-control"
@@ -237,49 +455,6 @@
                     <label>Téléphone urgence</label>
                     <input type="text" name="emergency_phone" class="form-control"
                            value="{{ old('emergency_phone', $employee->emergency_phone) }}">
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- ══════════════════════════════════════
-         Pièces jointes
-    ══════════════════════════════════════ --}}
-    <div class="card mb-4">
-        <div class="card-header"><div class="card-title">Pièces jointes</div></div>
-        <div class="card-body">
-            <div class="form-grid">
-                @foreach([
-                    'doc_casier'   => 'Casier judiciaire',
-                    'doc_rib'      => 'Relevé bancaire (RIB)',
-                    'doc_diplomes' => 'Copies des diplômes',
-                    'doc_cin'      => 'Copie CIN / Carte d\'identité',
-                ] as $field => $docLabel)
-                    <div class="form-group">
-                        <label>
-                            {{ $docLabel }}
-                            @if($employee->{$field.'_path'})
-                                <a href="{{ asset('storage/'.$employee->{$field.'_path'}) }}" target="_blank"
-                                   style="margin-left:6px;font-size:0.72rem;color:#16a34a;text-decoration:none;font-weight:400;">↗ voir</a>
-                            @endif
-                        </label>
-                        <input type="file" name="{{ $field }}" accept="application/pdf"
-                               class="form-control doc-file-input {{ $employee->{$field.'_path'} ? 'has-doc' : '' }}">
-                        @error($field) <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
-                    </div>
-                @endforeach
-
-                <div class="form-group full">
-                    <label>
-                        Contrat de travail
-                        @if($employee->doc_contrat_path)
-                            <a href="{{ asset('storage/'.$employee->doc_contrat_path) }}" target="_blank"
-                               style="margin-left:6px;font-size:0.72rem;color:#16a34a;text-decoration:none;font-weight:400;">↗ voir</a>
-                        @endif
-                    </label>
-                    <input type="file" name="doc_contrat" accept="application/pdf"
-                           class="form-control doc-file-input {{ $employee->doc_contrat_path ? 'has-doc' : '' }}">
-                    @error('doc_contrat') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
             </div>
         </div>
@@ -355,23 +530,27 @@
             <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;">
                 Liez ce profil employé à un compte utilisateur pour permettre l'accès au tableau de bord.
             </p>
-            @php $linkedUser = \App\Models\User::find(old('user_id', $employee->user_id)); @endphp
-            @if($linkedUser)
-                <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border);">
-                    <div style="width:40px;height:40px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:600;">
-                        {{ strtoupper(substr($linkedUser->name, 0, 1)) }}
-                    </div>
-                    <div>
-                        <div style="font-weight:600;">{{ $linkedUser->name }}</div>
-                        <div style="font-size:0.8rem;color:var(--text-muted);">{{ $linkedUser->email }}</div>
-                    </div>
-                    <a href="{{ route('employees.edit', [$employee, 'remove_user' => true]) }}"
-                       class="btn btn-danger btn-sm" style="margin-left:auto;">Délier</a>
-                </div>
-            @else
-                <div class="form-grid">
-                    <div class="form-group full">
-                        <label>Compte utilisateur lié</label>
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label>Compte utilisateur lié</label>
+                    @if($linkedUser)
+                        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border);">
+                            <div style="width:40px;height:40px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:600;">
+                                {{ strtoupper(substr($linkedUser->name, 0, 1)) }}
+                            </div>
+                            <div>
+                                <div style="font-weight:600;">{{ $linkedUser->name }}</div>
+                                <div style="font-size:0.8rem;color:var(--text-muted);">
+                                    {{ $linkedUser->email }}
+                                    <span style="margin-left:8px;padding:2px 8px;background:#e0f2fe;color:#0369a1;border-radius:12px;font-size:0.7rem;font-weight:600;">
+                                        {{ strtoupper($linkedUser->role ?? 'employee') }}
+                                    </span>
+                                </div>
+                            </div>
+                            <a href="{{ route('employees.edit', [$employee, 'remove_user' => true]) }}"
+                               class="btn btn-danger btn-sm" style="margin-left:auto;">Délier</a>
+                        </div>
+                    @else
                         <select name="user_id" class="form-control">
                             <option value="">Sélectionner un compte utilisateur...</option>
                             @foreach($users as $user)
@@ -381,14 +560,317 @@
                                 </option>
                             @endforeach
                         </select>
-                    </div>
+                    @endif
                 </div>
-            @endif
+            </div>
         </div>
     </div>
 
     {{-- ══════════════════════════════════════
+         Gestion des permissions
+         (visible seulement si compte lié)
+    ══════════════════════════════════════ --}}
+    @if($linkedUser)
+    @php
+        $currentPerms = [];
+        foreach ($linkedUser->modulePermissions as $perm) {
+            $currentPerms[$perm->module] = [
+                'view'   => (bool) $perm->can_view,
+                'create' => (bool) $perm->can_create,
+                'edit'   => (bool) $perm->can_edit,
+                'delete' => (bool) $perm->can_delete,
+            ];
+        }
+
+        $checked = function(string $module, string $action) use ($currentPerms): bool {
+            if (request()->hasSession() && request()->session()->hasOldInput('permissions')) {
+                $oldPerms = old('permissions', []);
+                return isset($oldPerms[$module][$action]);
+            }
+            return $currentPerms[$module][$action] ?? false;
+        };
+    @endphp
+
+    <div class="card mb-4" id="perm-card">
+        <div class="card-header" style="display:flex;align-items:center;gap:10px;">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24"
+                 stroke="currentColor" stroke-width="2" style="color:#14b8a6;flex-shrink:0">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6
+                         11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623
+                         5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152
+                         c-3.196 0-6.1-1.248-8.25-3.285z"/>
+            </svg>
+            <div class="card-title" style="margin:0;">Gestion des permissions</div>
+            <span style="font-size:11px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;border-radius:20px;padding:2px 10px;">
+                {{ $linkedUser->name }} — <strong>{{ strtoupper($linkedUser->role ?? 'employee') }}</strong>
+            </span>
+            @if($linkedUser->isFullAccessRole())
+            <span style="font-size:11px;background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0;border-radius:20px;padding:2px 10px;">
+                ✓ Accès total (rôle Admin)
+            </span>
+            @endif
+        </div>
+
+        @if($linkedUser->isFullAccessRole())
+        <div style="padding:20px;color:#64748b;font-size:0.875rem;background:#f8fafc;">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                 style="display:inline;margin-right:6px;color:#14b8a6;">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            Les utilisateurs avec le rôle <strong>Admin</strong> ont automatiquement accès à toutes les fonctionnalités.
+            Les permissions granulaires ne s'appliquent qu'aux rôles <strong>RH</strong> et <strong>Employé</strong>.
+        </div>
+        @else
+
+        <div class="perm-toolbar">
+            <span class="perm-toolbar-label">Sélection rapide :</span>
+            <button type="button" class="perm-quick-btn" onclick="Perms.selectAll()">Tout cocher</button>
+            <button type="button" class="perm-quick-btn" onclick="Perms.deselectAll()">Tout décocher</button>
+            <button type="button" class="perm-quick-btn" onclick="Perms.selectView()">Lecture seule</button>
+            <button type="button" class="perm-quick-btn" onclick="Perms.selectRH()">Profil RH</button>
+            <button type="button" class="perm-quick-btn" onclick="Perms.selectEmployee()">Profil Employé</button>
+        </div>
+
+        <div class="perm-col-labels">
+            <div>Module</div>
+            <div>Voir</div>
+            <div>Créer</div>
+            <div>Modifier</div>
+            <div>Supprimer</div>
+        </div>
+
+        <div id="perm-table">
+
+            <div class="perm-group-label">Principal</div>
+
+            <div class="perm-row">
+                <div class="perm-mod-name">Tableau de bord</div>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[dashboard][view]"
+                           {{ $checked('dashboard','view') ? 'checked' : '' }}>
+                </div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+            </div>
+
+            <div class="perm-group-label">Personnel</div>
+
+            <div class="perm-row">
+                <div class="perm-mod-name">Employés</div>
+                @foreach(['view','create','edit','delete'] as $a)
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[employees][{{ $a }}]"
+                           {{ $checked('employees',$a) ? 'checked' : '' }}>
+                </div>
+                @endforeach
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">Trombinoscope</div>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[trombinoscope][view]"
+                           {{ $checked('trombinoscope','view') ? 'checked' : '' }}>
+                </div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">Actualités</div>
+                @foreach(['view','create','edit','delete'] as $a)
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[news][{{ $a }}]"
+                           {{ $checked('news',$a) ? 'checked' : '' }}>
+                </div>
+                @endforeach
+            </div>
+
+            <div class="perm-group-label">Temps &amp; Présence</div>
+
+            <div class="perm-row">
+                <div class="perm-mod-name">Planning</div>
+                @foreach(['view','create','edit','delete'] as $a)
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[planning][{{ $a }}]"
+                           {{ $checked('planning',$a) ? 'checked' : '' }}>
+                </div>
+                @endforeach
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">Vue d'ensemble</div>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[temps_vue][view]"
+                           {{ $checked('temps_vue','view') ? 'checked' : '' }}>
+                </div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">Pointage</div>
+                @foreach(['view','create','edit','delete'] as $a)
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[pointage][{{ $a }}]"
+                           {{ $checked('pointage',$a) ? 'checked' : '' }}>
+                </div>
+                @endforeach
+            </div>
+
+            <div class="perm-group-label">Absences &amp; Congés</div>
+
+            <div class="perm-row">
+                <div class="perm-mod-name">Demandes d'absences</div>
+                @foreach(['view','create','edit','delete'] as $a)
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[absences][{{ $a }}]"
+                           {{ $checked('absences',$a) ? 'checked' : '' }}>
+                </div>
+                @endforeach
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">État visuel absences</div>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[absences_calendar][view]"
+                           {{ $checked('absences_calendar','view') ? 'checked' : '' }}>
+                </div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">Compteurs &amp; droits</div>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[absences_counters][view]"
+                           {{ $checked('absences_counters','view') ? 'checked' : '' }}>
+                </div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[absences_counters][edit]"
+                           {{ $checked('absences_counters','edit') ? 'checked' : '' }}>
+                </div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+            </div>
+
+            <div class="perm-group-label">Formations (LMS)</div>
+
+            <div class="perm-row">
+                <div class="perm-mod-name">Formations</div>
+                @foreach(['view','create','edit','delete'] as $a)
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[lms][{{ $a }}]"
+                           {{ $checked('lms',$a) ? 'checked' : '' }}>
+                </div>
+                @endforeach
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">Référentiel formations</div>
+                @foreach(['view','create','edit','delete'] as $a)
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[referentiel][{{ $a }}]"
+                           {{ $checked('referentiel',$a) ? 'checked' : '' }}>
+                </div>
+                @endforeach
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">Planning formations</div>
+                @foreach(['view','create','edit','delete'] as $a)
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[lms_planning][{{ $a }}]"
+                           {{ $checked('lms_planning',$a) ? 'checked' : '' }}>
+                </div>
+                @endforeach
+            </div>
+
+            <div class="perm-group-label">Paie</div>
+
+            <div class="perm-row">
+                <div class="perm-mod-name">Salaires</div>
+                @foreach(['view','create','edit','delete'] as $a)
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[salary][{{ $a }}]"
+                           {{ $checked('salary',$a) ? 'checked' : '' }}>
+                </div>
+                @endforeach
+            </div>
+
+            <div class="perm-group-label">GED</div>
+
+            <div class="perm-row">
+                <div class="perm-mod-name">Documents</div>
+                @foreach(['view','create','edit','delete'] as $a)
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[ged][{{ $a }}]"
+                           {{ $checked('ged',$a) ? 'checked' : '' }}>
+                </div>
+                @endforeach
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">Modèles</div>
+                @foreach(['view','create','edit','delete'] as $a)
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[ged_modeles][{{ $a }}]"
+                           {{ $checked('ged_modeles',$a) ? 'checked' : '' }}>
+                </div>
+                @endforeach
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">Entêtes</div>
+                @foreach(['view','create','edit','delete'] as $a)
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[ged_entete][{{ $a }}]"
+                           {{ $checked('ged_entete',$a) ? 'checked' : '' }}>
+                </div>
+                @endforeach
+            </div>
+
+            <div class="perm-group-label">Paramétrage &amp; Rapports</div>
+
+            <div class="perm-row">
+                <div class="perm-mod-name">Paramétrage</div>
+                @foreach(['view','create','edit','delete'] as $a)
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[parametrage][{{ $a }}]"
+                           {{ $checked('parametrage',$a) ? 'checked' : '' }}>
+                </div>
+                @endforeach
+            </div>
+
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name perm-row--sub">Rapport RH</div>
+                <div class="perm-cell">
+                    <input type="checkbox" name="permissions[reporting][view]"
+                           {{ $checked('reporting','view') ? 'checked' : '' }}>
+                </div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+            </div>
+
+        </div>{{-- #perm-table --}}
+
+        <div class="perm-footer-note">
+            Les colonnes grisées (—) indiquent qu'une action n'est pas applicable pour ce module.
+        </div>
+        @endif {{-- fin !isFullAccessRole --}}
+    </div>{{-- #perm-card --}}
+    @endif {{-- fin $linkedUser --}}
+
+    {{-- ══════════════════════════════════════
          Modifier le mot de passe
+         (visible seulement si compte lié)
     ══════════════════════════════════════ --}}
     @if($employee->user)
     <div class="card mb-4">
@@ -400,7 +882,6 @@
             </div>
         </div>
         <div class="card-body">
-
             {{-- Toggle switch --}}
             <div style="display:flex;align-items:center;gap:12px;cursor:pointer;" id="toggle-pwd-label">
                 <div style="position:relative;width:44px;height:24px;flex-shrink:0;">
@@ -437,8 +918,6 @@
                             </button>
                         </div>
                         @error('new_password') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
-
-                        {{-- Indicateur de force --}}
                         <div style="margin-top:8px;">
                             <div style="display:flex;gap:4px;margin-bottom:4px;">
                                 <div class="pwd-bar" style="height:4px;flex:1;border-radius:2px;background:var(--border);transition:background .3s;"></div>
@@ -449,7 +928,6 @@
                             <span id="pwd-strength-label" style="font-size:0.72rem;color:var(--text-muted);"></span>
                         </div>
                     </div>
-
                     <div class="form-group">
                         <label>Confirmer le mot de passe *</label>
                         <div class="password-group">
@@ -462,7 +940,6 @@
                                 </svg>
                             </button>
                         </div>
-                        {{-- Indicateur correspondance --}}
                         <span id="pwd-match-label" style="font-size:0.72rem;margin-top:4px;display:none;"></span>
                     </div>
                 </div>
@@ -476,30 +953,20 @@
     ══════════════════════════════════════ --}}
     <div style="display:flex;gap:12px;justify-content:flex-end;margin-bottom:32px;">
         <a href="{{ route('employees.show', $employee) }}" class="btn btn-ghost">Annuler</a>
-        <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+        <button type="submit" class="btn btn-primary">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"
+                 stroke="currentColor" stroke-width="2.5">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            Enregistrer les modifications
+        </button>
     </div>
 
 </form>
 
-<style>
-.doc-file-input.has-doc {
-    border-color:#16a34a;background-color:#f0fdf4;color:#15803d;
-}
-.doc-file-input.has-doc::-webkit-file-upload-button,
-.doc-file-input.has-doc::file-selector-button {
-    background:#16a34a;color:white;border:none;
-    padding:6px 12px;border-radius:4px;cursor:pointer;font-size:0.82rem;
-}
-.password-group { position:relative; }
-.password-group .form-control { padding-right:42px; }
-.toggle-password {
-    position:absolute;right:10px;top:50%;transform:translateY(-50%);
-    background:none;border:none;cursor:pointer;padding:4px;
-    opacity:0.5;transition:opacity .2s;color:var(--text-primary);
-}
-.toggle-password:hover { opacity:1; }
-</style>
-
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -541,7 +1008,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // ── Toggle visibilité ────────────────────────────────────
+    // ── Toggle visibilité mot de passe ───────────────────────
     document.querySelectorAll('.toggle-password').forEach(btn => {
         btn.addEventListener('click', function () {
             const input = document.getElementById(this.dataset.target);
@@ -556,6 +1023,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const bars          = document.querySelectorAll('.pwd-bar');
     const strengthLabel = document.getElementById('pwd-strength-label');
     const matchLabel    = document.getElementById('pwd-match-label');
+
+    if (!pwdInput) return;
 
     const levels = [
         { color:'#ef4444', label:'Très faible' },
@@ -580,7 +1049,6 @@ document.addEventListener('DOMContentLoaded', function () {
         checkMatch();
     });
 
-    // ── Indicateur correspondance ────────────────────────────
     confirmInput.addEventListener('input', checkMatch);
 
     function checkMatch() {
@@ -589,13 +1057,76 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!confirm) { matchLabel.style.display = 'none'; return; }
         matchLabel.style.display = 'inline';
         if (pwd === confirm) {
-            matchLabel.textContent  = '✓ Les mots de passe correspondent';
-            matchLabel.style.color  = '#16a34a';
+            matchLabel.textContent = '✓ Les mots de passe correspondent';
+            matchLabel.style.color = '#16a34a';
         } else {
-            matchLabel.textContent  = '✗ Les mots de passe ne correspondent pas';
-            matchLabel.style.color  = '#ef4444';
+            matchLabel.textContent = '✗ Les mots de passe ne correspondent pas';
+            matchLabel.style.color = '#ef4444';
         }
     }
 });
+
+/* ═══════════════════════════════════════════════════════
+   Gestionnaire de permissions
+═══════════════════════════════════════════════════════ */
+const Perms = {
+
+    all() {
+        return document.querySelectorAll('#perm-table input[type=checkbox]:not([disabled])');
+    },
+
+    byAction(action) {
+        return document.querySelectorAll(
+            `#perm-table input[name*="[${action}]"]:not([disabled])`
+        );
+    },
+
+    byModule(keys, actions = ['view','create','edit','delete']) {
+        keys.forEach(key => {
+            actions.forEach(action => {
+                const cb = document.querySelector(
+                    `#perm-table input[name="permissions[${key}][${action}]"]`
+                );
+                if (cb) cb.checked = true;
+            });
+        });
+    },
+
+    selectAll()   { this.all().forEach(c => c.checked = true);  },
+    deselectAll() { this.all().forEach(c => c.checked = false); },
+
+    selectView() {
+        this.deselectAll();
+        this.byAction('view').forEach(c => c.checked = true);
+    },
+
+    selectEmployee() {
+        this.deselectAll();
+        this.byModule(
+            ['dashboard','trombinoscope','absences','lms','salary'],
+            ['view']
+        );
+        const abCreate = document.querySelector(
+            '#perm-table input[name="permissions[absences][create]"]'
+        );
+        if (abCreate) abCreate.checked = true;
+    },
+
+    selectRH() {
+        this.deselectAll();
+        this.byModule(
+            [
+                'dashboard','employees','trombinoscope','news',
+                'planning','temps_vue','pointage',
+                'absences','absences_calendar','absences_counters',
+                'lms','referentiel','lms_planning',
+                'salary','ged','ged_modeles','ged_entete',
+                'reporting'
+            ],
+            ['view','create','edit']
+        );
+    },
+};
 </script>
+@endpush
 @endsection

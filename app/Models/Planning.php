@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 class Planning extends Model
 {
     use HasFactory;
-    // ⚠️ PAS de HasTenantScope ici — on gère manuellement dans le controller
 
     protected $fillable = [
         'tenant_id',

@@ -15,6 +15,7 @@ class CompteurTemps extends Model
     protected $table = 'compteurs_temps';
 
     protected $fillable = [
+        'tenant_id',
         'employee_id',
         'annee',
         'mois',
@@ -69,14 +70,14 @@ class CompteurTemps extends Model
         return 0;
     }
 
-   
+
     public static function getOuCreeParMois($employeeId, $annee, $mois): CompteurMoisDTO
     {
         if (!$employeeId) {
             return new CompteurMoisDTO(140, 0, 0);
         }
-        
-        $heuresPlanifiees = 35 * 4; 
+
+        $heuresPlanifiees = 35 * 4;
         $compteur = self::where('employee_id', $employeeId)
             ->where('annee', $annee)
             ->where('mois', $mois)
@@ -107,7 +108,7 @@ class CompteurTemps extends Model
         return CompteurMoisDTO::fromModel($compteur);
     }
 
-   
+
     public static function getParAnnee($employeeId, $annee)
     {
         return self::parEmployee($employeeId)

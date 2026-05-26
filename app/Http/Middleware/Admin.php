@@ -10,21 +10,31 @@ class Admin
 {
     /**
      * Handle an incoming request.
+     *
+     * Autorise : admin, rh, superadmin
+     * Bloque   : employee + utilisateurs d'un autre tenant
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return redirect()->route('login');
         }
 
-        $user = auth()->user();
+        $user            = auth()->user();
         $currentTenantId = config('app.current_tenant_id');
 
-        if (! $user->isAdminOrRh()) {
-            abort(403, 'Accès réservé aux administrateurs du tenant.');
+        // ── Vérification du rôle ─────────────────────────────────────────
+        if (! $user->isAdminOrRh() && ! $user->isSuperAdmin()) {
+            abort(403, 'Accès réservé aux administrateurs et responsables RH.');
         }
 
-        if (filled($currentTenantId) && $user->tenant_id !== $currentTenantId) {
+        // ── Vérification du tenant ───────────────────────────────────────
+        // CORRECTION : cast les deux en string pour éviter "1" !== 1
+        if (
+            filled($currentTenantId) &&
+            ! $user->isSuperAdmin() &&
+            (string) $user->tenant_id !== (string) $currentTenantId
+        ) {
             abort(403, 'Utilisateur non autorisé sur ce tenant.');
         }
 

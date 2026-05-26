@@ -15,7 +15,7 @@ class OrganismeFormation extends Model
 
     protected $fillable = [
         'nom', 'adresse', 'telephone',
-        'email', 'site_web', 'agree', 'actif', 'date_creation',
+        'email', 'site_web', 'agree', 'actif', 'date_creation', 'tenant_id',
     ];
 
     protected $casts = [

@@ -2,8 +2,9 @@
 <?php $__env->startSection('page-title', 'Planning'); ?>
 
 <?php
-    $isEmployee = isset($isEmployee) && $isEmployee;
-    $filterAbsence = ($shift_type ?? '') === 'absence';
+    $isEmployee   = isset($isEmployee) && $isEmployee;
+    $filterAbsence  = ($shift_type ?? '') === 'absence';
+    $filterSansShift = ($shift_type ?? '') === 'sans_shift';
 ?>
 
 <?php $__env->startSection('content'); ?>
@@ -254,11 +255,15 @@
                 <option value="apres_midi" <?php echo e(($shift_type ?? '') === 'apres_midi' ? 'selected' : ''); ?>>Après-midi</option>
                 <option value="journee"    <?php echo e(($shift_type ?? '') === 'journee'    ? 'selected' : ''); ?>>Journée complète</option>
                 <option value="garde"      <?php echo e(($shift_type ?? '') === 'garde'      ? 'selected' : ''); ?>>Garde</option>
-                
                 <option value="absence"    <?php echo e(($shift_type ?? '') === 'absence'    ? 'selected' : ''); ?>
 
                     style="color:#ef4444;font-weight:700">
-                     Absences uniquement
+                    Absences uniquement
+                </option>
+                <option value="sans_shift" <?php echo e(($shift_type ?? '') === 'sans_shift' ? 'selected' : ''); ?>
+
+                    style="color:#6b7280;font-weight:700">
+                    Sans shift
                 </option>
             </select>
             <select name="room_id" style="min-width:120px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem">
@@ -277,9 +282,6 @@
         </div>
     </form>
 </div>
-
-
-
 <?php endif; ?>
 
 <?php else: ?>
@@ -310,12 +312,41 @@
             </thead>
             <tbody>
                 <?php
-                    //  Filtre absence : ne garder que les employés avec au moins 1 absence cette semaine
+                    $shiftFilter = ($shift_type ?? '');
+
+                    // Filtrer les employés selon le filtre actif
                     $displayEmployees = $employees;
+
                     if ($filterAbsence) {
+                        // Absences uniquement : garder seulement ceux avec au moins 1 absence cette semaine
                         $displayEmployees = $employees->filter(function($emp) use ($weekDays) {
                             foreach ($weekDays as $day) {
                                 if ($emp->hasApprovedAbsenceOn($day['date'])) return true;
+                            }
+                            return false;
+                        });
+                    } elseif ($filterSansShift) {
+                        // Sans shift : garder seulement ceux sans aucun shift toute la semaine
+                        $displayEmployees = $employees->filter(function($emp) use ($weekDays, $plannings) {
+                            $empPlannings = $plannings->get($emp->id, collect());
+                            foreach ($weekDays as $day) {
+                                $hasShift = $empPlannings->filter(fn($p) =>
+                                    \Carbon\Carbon::parse($p->date)->format('Y-m-d') === $day['date']->format('Y-m-d')
+                                )->isNotEmpty();
+                                if ($hasShift) return false;
+                            }
+                            return true;
+                        });
+                    } elseif ($shiftFilter) {
+                        // Filtre shift normal : garder les employés qui ont au moins 1 shift de ce type cette semaine
+                        $displayEmployees = $employees->filter(function($emp) use ($weekDays, $plannings, $shiftFilter) {
+                            $empPlannings = $plannings->get($emp->id, collect());
+                            foreach ($weekDays as $day) {
+                                $hasMatchingShift = $empPlannings->filter(fn($p) =>
+                                    \Carbon\Carbon::parse($p->date)->format('Y-m-d') === $day['date']->format('Y-m-d')
+                                    && $p->shift_type === $shiftFilter
+                                )->isNotEmpty();
+                                if ($hasMatchingShift) return true;
                             }
                             return false;
                         });
@@ -325,11 +356,6 @@
                 <?php $__empty_1 = true; $__currentLoopData = $displayEmployees; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $emp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                 <?php
                     $empPlannings = $plannings->get($emp->id, collect());
-                    $shiftFilter  = ($shift_type ?? '');
-                    // Pour les filtres shifts normaux (pas absence), filtrer les plannings
-                    if (!$isEmployee && $shiftFilter && $shiftFilter !== 'absence') {
-                        $empPlannings = $empPlannings->filter(fn($p) => $p->shift_type === $shiftFilter);
-                    }
                     $roomCounts     = $empPlannings->whereNotNull('room')->groupBy('room')->map->count();
                     $mostCommonRoom = $roomCounts->isNotEmpty() ? $roomCounts->sortDesc()->keys()->first() : null;
                 ?>
@@ -369,7 +395,13 @@
                         $dayPlannings = $empPlannings->filter(function($p) use ($day) {
                             return \Carbon\Carbon::parse($p->date)->format('Y-m-d') === $day['date']->format('Y-m-d');
                         })->values();
+
                         $isAbsent = $emp->hasApprovedAbsenceOn($day['date']);
+
+                        // Plannings filtrés par type de shift (pour l'affichage dans la cellule)
+                        $filteredDayPlannings = (!$isEmployee && $shiftFilter && !in_array($shiftFilter, ['absence', 'sans_shift']))
+                            ? $dayPlannings->filter(fn($p) => $p->shift_type === $shiftFilter)->values()
+                            : $dayPlannings;
                     ?>
                     <td style="padding:6px 8px;text-align:center;vertical-align:top;min-height:60px"
                         data-date="<?php echo e($day['date']->format('Y-m-d')); ?>"
@@ -379,17 +411,20 @@
                             ondrop="drop(event, '<?php echo e($day['date']->format('Y-m-d')); ?>', <?php echo e($emp->id); ?>)"
                         <?php endif; ?>>
 
-                       <?php if($isAbsent): ?>
-    <div style="background:linear-gradient(135deg,#ef4444,#f87171);color:white;padding:8px 12px;border-radius:8px;font-size:0.75rem;font-weight:700;min-height:48px;display:flex;align-items:center;justify-content:center;">
-        ABS
-    </div>
+                        <?php if($isAbsent && ($filterAbsence || !$shiftFilter)): ?>
+                            
+                            <div style="background:linear-gradient(135deg,#ef4444,#f87171);color:white;padding:8px 12px;border-radius:8px;font-size:0.75rem;font-weight:700;min-height:48px;display:flex;align-items:center;justify-content:center;">
+                                ABS
+                            </div>
 
-<?php elseif($filterAbsence): ?>
-    <div style="min-height:48px"></div>
+                        <?php elseif($isAbsent || $filterAbsence || $filterSansShift): ?>
+                            
+                            <div style="min-height:48px"></div>
 
-<?php elseif($dayPlannings->isNotEmpty()): ?>
+                        <?php elseif($filteredDayPlannings->isNotEmpty()): ?>
+                            
                             <div style="display:flex;flex-direction:column;gap:4px">
-                                <?php $__currentLoopData = $dayPlannings; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dayPlanning): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <?php $__currentLoopData = $filteredDayPlannings; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dayPlanning): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                 <div
                                     <?php if(!$isEmployee): ?>
                                         draggable="true"
@@ -430,7 +465,8 @@
                                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </div>
 
-                        <?php else: ?>
+                        <?php elseif(!$shiftFilter): ?>
+                            
                             <?php if(!$isEmployee): ?>
                             <div onclick="openQuickAddModal('<?php echo e($day['date']->format('Y-m-d')); ?>', <?php echo e($emp->id); ?>)"
                                  style="color:var(--text-muted);font-size:0.75rem;min-height:48px;display:flex;align-items:center;justify-content:center;border:2px dashed var(--border);border-radius:6px;cursor:pointer;transition:all 0.2s"
@@ -439,7 +475,12 @@
                                 + Creer shift
                             </div>
                             <?php endif; ?>
+
+                        <?php else: ?>
+                            
+                            <div style="min-height:48px"></div>
                         <?php endif; ?>
+
                     </td>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </tr>
@@ -449,6 +490,9 @@
                         <?php if($filterAbsence): ?>
                         <div style="font-size:2rem;margin-bottom:8px"></div>
                         <div>Aucune absence cette semaine</div>
+                        <?php elseif($filterSansShift): ?>
+                        <div style="font-size:2rem;margin-bottom:8px"></div>
+                        <div>Tous les employes ont au moins un shift cette semaine</div>
                         <?php else: ?>
                         <div style="font-size:2rem;margin-bottom:8px"></div>
                         <div>Aucun employe trouve</div>

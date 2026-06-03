@@ -627,6 +627,11 @@
         padding: 3px 8px;
         font-size: 11px; color: var(--text-muted); font-weight: 600;
     }
+.sa-item.active {
+    background: rgba(0, 201, 167, .12);
+    color: var(--accent-light);
+    border-left-color: var(--accent);
+}
 
     /* Breadcrumb */
     .sa-breadcrumb {
@@ -709,8 +714,19 @@
                 </svg>
                 Rôles
             </a>
+<div class="sa-section">Sécurité</div>
 
-            <div class="sa-section">Configuration</div>
+<a href="<?php echo e(route('superadmin.codes.index')); ?>"
+   class="sa-item <?php echo e(request()->routeIs('superadmin.codes*') ? 'active' : ''); ?>">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955
+                 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591
+                 3.824 10.29 9 11.622 5.176-1.332 9-6.03
+                 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+    </svg>
+    Codes de vérification
+</a>
 
             <a href="<?php echo e(route('superadmin.settings.index')); ?>"
                class="sa-item <?php echo e(request()->routeIs('superadmin.settings*') ? 'active' : ''); ?>">

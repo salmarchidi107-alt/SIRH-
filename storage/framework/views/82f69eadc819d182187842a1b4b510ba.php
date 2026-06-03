@@ -1,380 +1,153 @@
-<?php $__env->startSection('title', 'Paramétrage'); ?>
-<?php $__env->startSection('page-title', 'Paramétrage'); ?>
+<?php $__env->startSection('title', 'Parametrage'); ?>
+<?php $__env->startSection('page-title', 'Parametrage'); ?>
 
 <?php $__env->startSection('content'); ?>
 
-<?php $__env->startPush('styles'); ?>
 <style>
-/* ── Onglets ──────────────────────────────────────── */
-.param-tabs {
-    display: flex;
-    gap: 4px;
-    background: var(--surface-2, #f3f4f6);
-    padding: 6px;
-    border-radius: 12px;
-    margin-bottom: 28px;
-    width: fit-content;
-}
-.param-tab {
-    padding: 10px 22px;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    background: transparent;
-    color: var(--text-muted, #6b7280);
-    transition: all .2s;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.param-tab.active {
-    background: white;
-    color: var(--primary, #0ea5e9);
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-}
-.param-tab:hover:not(.active) {
-    background: rgba(255,255,255,.6);
-    color: var(--primary, #0ea5e9);
-}
-.param-panel { display: none; }
-.param-panel.active { display: block; }
-.param-grid {
-    display: grid;
-    grid-template-columns: 380px 1fr;
-    gap: 24px;
-    align-items: start;
-}
-.param-form-card {
-    background: white;
-    border: 1px solid var(--border, #e5e7eb);
-    border-radius: 12px;
-    overflow: hidden;
-    position: sticky;
-    top: 24px;
-}
-.param-form-card-header {
-    padding: 18px 20px;
-    border-bottom: 1px solid var(--border, #e5e7eb);
-    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.param-form-card-header.green { background: linear-gradient(135deg, #f0f9ff, #e0f2fe); }
-.param-form-card-header h3 { font-size: 0.95rem; font-weight: 700; color: #0f1731 !important; margin: 0; }
-.param-form-card-body { padding: 20px; }
-.param-list-card {
-    background: white;
-    border: 1px solid var(--border, #e5e7eb);
-    border-radius: 12px;
-    overflow: hidden;
-}
-.param-list-header {
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border, #e5e7eb);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-.param-list-header h3 { font-size: 0.9rem; font-weight: 700; color: var(--text, #111827); margin: 0; }
-.param-count-badge {
-    background: var(--primary, #0ea5e9);
-    color: white;
-    font-size: 0.72rem;
-    font-weight: 700;
-    padding: 2px 10px;
-    border-radius: 20px;
-}
-.param-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 20px;
-    border-bottom: 1px solid var(--border, #e5e7eb);
-    transition: background .15s;
-}
-.param-item:last-child { border-bottom: none; }
-.param-item:hover { background: #f9fafb; }
-.param-item-left { display: flex; align-items: center; gap: 12px; }
-.param-item-name { font-weight: 600; font-size: 0.875rem; color: var(--text, #111827); }
-.param-item-sub { font-size: 0.75rem; color: var(--text-muted, #6b7280); margin-top: 2px; }
-.param-item-actions { display: flex; gap: 6px; }
-.btn-icon-sm {
-    width: 32px; height: 32px; border-radius: 6px;
-    border: 1px solid var(--border, #e5e7eb); background: white;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    transition: all .15s; color: var(--text-muted, #6b7280); font-size: 13px;
-}
-.btn-icon-sm:hover { background: #f3f4f6; color: var(--primary, #0ea5e9); }
-.btn-icon-sm.danger:hover { background: #fef2f2; color: #ef4444; border-color: #fecaca; }
-.param-empty { padding: 48px 20px; text-align: center; color: var(--text-muted, #6b7280); }
-.param-empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
-.param-empty p { font-size: 0.875rem; }
-.param-label {
-    display: block; font-size: 0.8rem; font-weight: 600;
-    color: var(--text-muted, #6b7280); margin-bottom: 6px;
-    text-transform: uppercase; letter-spacing: .04em;
-}
-.param-input {
-    width: 100%; padding: 10px 14px;
-    border: 1px solid var(--border, #e5e7eb); border-radius: 8px;
-    font-size: 0.9rem; background: white;
-    transition: border-color .2s, box-shadow .2s;
-    box-sizing: border-box; font-family: inherit;
-}
-.param-input:focus {
-    outline: none; border-color: var(--primary, #0ea5e9);
-    box-shadow: 0 0 0 3px rgba(14,165,233,.12);
-}
-.param-input-group { margin-bottom: 16px; }
-.btn-param-submit {
-    width: 100%; padding: 11px 16px; border: none; border-radius: 8px;
-    font-size: 0.9rem; font-weight: 700; cursor: pointer;
-    transition: all .2s; display: flex; align-items: center;
-    justify-content: center; gap: 8px; font-family: inherit;
-}
-.btn-param-submit.blue {
-    background: linear-gradient(135deg, #2dd4bf, #0f766e);
-    color: white; box-shadow: 0 4px 12px rgba(14,165,233,.3);
-}
-.btn-param-submit.blue:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(14,165,233,.4); }
-.btn-param-submit.green {
-    background: linear-gradient(135deg, #2dd4bf, #0f766e);
-    color: white; box-shadow: 0 4px 12px rgba(34,197,94,.3);
-}
-.btn-param-submit.green:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(34,197,94,.4); }
-.param-alert {
-    padding: 10px 14px; border-radius: 8px; font-size: 0.82rem;
-    margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
-}
-.param-alert.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
-.param-alert.error   { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
-.param-modal-overlay {
-    display: none; position: fixed; inset: 0; z-index: 1000;
-    background: rgba(0,0,0,.45); align-items: center; justify-content: center;
-}
-.param-modal-overlay.open { display: flex; }
-.param-modal {
-    background: white; border-radius: 14px; padding: 28px;
-    width: 90%; max-width: 420px;
-    box-shadow: 0 20px 60px rgba(0,0,0,.2);
-    animation: modalIn .25s cubic-bezier(0.16,1,0.3,1);
-}
-@keyframes modalIn {
-    from { opacity:0; transform:translateY(20px) scale(.97); }
-    to   { opacity:1; transform:translateY(0) scale(1); }
-}
-.param-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.param-modal-header h3 { font-size: 1rem; font-weight: 700; margin: 0; }
-.btn-modal-close { background: none; border: none; font-size: 1.3rem; color: var(--text-muted, #6b7280); cursor: pointer; line-height: 1; }
-.btn-modal-close:hover { color: #ef4444; }
-.param-search {
-    padding: 8px 14px; border: 1px solid var(--border, #e5e7eb);
-    border-radius: 8px; font-size: 0.8rem; outline: none;
-    width: 200px; font-family: inherit;
-}
-.param-search:focus { border-color: var(--primary, #0ea5e9); }
-
-/* ── Documents panel ─────────────────────────────── */
-.docs-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-.docs-table th {
-    padding: 10px 14px; text-align: left;
-    background: #f9fafb; border-bottom: 2px solid var(--border, #e5e7eb);
-    font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .04em; color: var(--text-muted, #6b7280);
-    white-space: nowrap;
-}
-.docs-table td {
-    padding: 12px 14px; border-bottom: 1px solid var(--border, #f3f4f6);
-    vertical-align: middle;
-}
-.docs-table tr:last-child td { border-bottom: none; }
-.docs-table tr:hover td { background: #f9fafb; }
-.doc-icon-ok {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 32px; height: 32px; border-radius: 8px;
-    background: #dcfce7; color: #16a34a;
-    text-decoration: none; transition: all .15s;
-    font-size: 16px;
-}
-.doc-icon-ok:hover { background: #bbf7d0; transform: scale(1.1); }
-.doc-icon-missing {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 32px; height: 32px; border-radius: 8px;
-    background: #f3f4f6; color: #d1d5db;
-    font-size: 16px;
-}
-.docs-filter-bar {
-    display: flex; align-items: center; gap: 12px;
-    padding: 14px 20px; border-bottom: 1px solid var(--border, #e5e7eb);
-    background: #f9fafb; flex-wrap: wrap;
-}
-.docs-filter-bar label { font-size: 0.82rem; font-weight: 600; color: var(--text-muted, #6b7280); }
-.docs-filter-select {
-    padding: 7px 12px; border: 1px solid var(--border, #e5e7eb);
-    border-radius: 8px; font-size: 0.85rem; font-family: inherit;
-    background: white; cursor: pointer;
-}
-.docs-filter-select:focus { outline: none; border-color: var(--primary, #0ea5e9); }
-.emp-avatar-sm {
-    width: 30px; height: 30px; border-radius: 50%;
-    background: #e0f2fe; color: #0369a1;
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 700; flex-shrink: 0;
-}
-.doc-legend {
-    display: flex; align-items: center; gap: 16px;
-    font-size: 0.78rem; color: var(--text-muted, #6b7280);
-    padding: 10px 20px; border-top: 1px solid var(--border, #e5e7eb);
-    background: #fafafa;
-}
-.doc-legend span { display: flex; align-items: center; gap: 5px; }
+.param-tabs{display:flex;gap:4px;background:#f3f4f6;padding:6px;border-radius:12px;margin-bottom:28px;width:fit-content;}
+.param-tab{padding:10px 22px;border-radius:8px;font-size:0.875rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:#6b7280;transition:all .2s;font-family:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:8px;}
+.param-tab.active{background:white;color:#0ea5e9;box-shadow:0 1px 4px rgba(0,0,0,0.1);}
+.param-tab:hover:not(.active){background:rgba(255,255,255,.6);color:#0ea5e9;}
+.param-panel{display:none;}.param-panel.active{display:block;}
+.param-grid{display:grid;grid-template-columns:380px 1fr;gap:24px;align-items:start;}
+.param-form-card{background:white;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;position:sticky;top:24px;}
+.param-form-card-header{padding:18px 20px;border-bottom:1px solid #e5e7eb;background:linear-gradient(135deg,#f0f9ff,#e0f2fe);}
+.param-form-card-header h3{font-size:0.95rem;font-weight:700;color:#0f1731;margin:0;}
+.param-form-card-body{padding:20px;}
+.param-list-card{background:white;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;}
+.param-list-header{padding:16px 20px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;}
+.param-list-header h3{font-size:0.9rem;font-weight:700;color:#111827;margin:0;}
+.param-count-badge{background:#0ea5e9;color:white;font-size:0.72rem;font-weight:700;padding:2px 10px;border-radius:20px;}
+.param-item{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #e5e7eb;transition:background .15s;}
+.param-item:last-child{border-bottom:none;}.param-item:hover{background:#f9fafb;}
+.param-item-left{display:flex;align-items:center;gap:12px;}
+.param-item-name{font-weight:600;font-size:0.875rem;color:#111827;}
+.param-item-sub{font-size:0.75rem;color:#6b7280;margin-top:2px;}
+.param-item-actions{display:flex;gap:6px;}
+.btn-sm{padding:5px 12px;border-radius:6px;border:1px solid #e5e7eb;background:white;cursor:pointer;font-size:0.75rem;font-weight:600;transition:all .15s;color:#6b7280;font-family:inherit;}
+.btn-sm:hover{background:#f3f4f6;color:#0ea5e9;}.btn-sm.danger:hover{background:#fef2f2;color:#ef4444;border-color:#fecaca;}
+.param-empty{padding:48px 20px;text-align:center;color:#6b7280;}.param-empty p{font-size:0.875rem;}
+.param-label{display:block;font-size:0.8rem;font-weight:600;color:#6b7280;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;}
+.param-input{width:100%;padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;font-size:0.9rem;background:white;transition:border-color .2s;box-sizing:border-box;font-family:inherit;}
+.param-input:focus{outline:none;border-color:#0ea5e9;box-shadow:0 0 0 3px rgba(14,165,233,.12);}
+.param-input-group{margin-bottom:16px;}
+.btn-submit{width:100%;padding:11px 16px;border:none;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;background:linear-gradient(135deg,#2dd4bf,#0f766e);color:white;}
+.btn-submit:hover{transform:translateY(-1px);}
+.param-alert{padding:10px 14px;border-radius:8px;font-size:0.82rem;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.param-alert.success{background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;}
+.param-alert.error{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;}
+.param-modal-overlay{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);align-items:center;justify-content:center;}
+.param-modal-overlay.open{display:flex;}
+.param-modal{background:white;border-radius:14px;padding:28px;width:90%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto;}
+.param-modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.param-modal-header h3{font-size:1rem;font-weight:700;margin:0;}
+.btn-close{background:none;border:none;font-size:1.3rem;color:#6b7280;cursor:pointer;line-height:1;font-family:inherit;}
+.btn-close:hover{color:#ef4444;}
+.param-search{padding:8px 14px;border:1px solid #e5e7eb;border-radius:8px;font-size:0.8rem;outline:none;width:200px;font-family:inherit;}
+.docs-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+.docs-table th{padding:10px 14px;text-align:left;background:#f9fafb;border-bottom:2px solid #e5e7eb;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#6b7280;white-space:nowrap;}
+.docs-table td{padding:12px 14px;border-bottom:1px solid #f3f4f6;vertical-align:middle;}
+.docs-table tr:last-child td{border-bottom:none;}.docs-table tr:hover td{background:#f9fafb;}
+.docs-filter-bar{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid #e5e7eb;background:#f9fafb;flex-wrap:wrap;}
+.docs-filter-select{padding:7px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:0.85rem;font-family:inherit;background:white;cursor:pointer;}
+.emp-avatar{width:30px;height:30px;border-radius:50%;background:#e0f2fe;color:#0369a1;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.btn-add-doc{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:linear-gradient(135deg,#2dd4bf,#0f766e);color:white;border:none;border-radius:8px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;}
+.btn-add-doc:hover{transform:translateY(-1px);}
+.target-option{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:8px;cursor:pointer;background:white;width:100%;box-sizing:border-box;text-align:left;font-family:inherit;margin-bottom:8px;}
+.target-option:hover{border-color:#0ea5e9;background:#f0f9ff;}.target-option.selected{border-color:#0ea5e9;background:#f0f9ff;}
+.emp-file-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:8px;background:white;}
+.emp-file-row.ok{border-color:#10b981;background:#f0fdf4;}
+.emp-file-avatar{width:30px;height:30px;border-radius:50%;background:#e0f2fe;color:#0369a1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
 </style>
-<?php $__env->stopPush(); ?>
 
 <div class="page-header">
     <div class="page-header-left">
-        <h1>Paramétrage</h1>
-        <p>Gestion des salles, départements et Pièces jointes</p>
+        <h1>Parametrage</h1>
+        <p>Gestion des salles, departements et Pieces jointes</p>
     </div>
 </div>
 
+<?php if(session('success')): ?>
+<div class="param-alert success" style="max-width:700px;margin-bottom:20px;"><?php echo e(session('success')); ?></div>
+<?php endif; ?>
 <?php if(session('error')): ?>
-<div class="param-alert error" style="max-width:600px;margin-bottom:20px">
-    ✗ <?php echo e(session('error')); ?>
-
-</div>
+<div class="param-alert error" style="max-width:700px;margin-bottom:20px;"><?php echo e(session('error')); ?></div>
 <?php endif; ?>
 
+<?php $activeTab = request('tab', 'rooms'); ?>
 
 <div class="param-tabs">
-    <button class="param-tab active" onclick="switchTab('rooms', this)">
-        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-        </svg>
-        Salles
-        <span style="background:#e0f2fe;color:#0369a1;font-size:0.7rem;font-weight:700;padding:1px 7px;border-radius:10px"><?php echo e($rooms->count()); ?></span>
-    </button>
-    <button class="param-tab" onclick="switchTab('departments', this)">
-        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-        </svg>
-        Départements
-        <span style="background:#dcfce7;color:#15803d;font-size:0.7rem;font-weight:700;padding:1px 7px;border-radius:10px"><?php echo e($departments->count()); ?></span>
-    </button>
-    <button class="param-tab" onclick="switchTab('documents', this)">
-        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-        </svg>
-        Pièces jointes
-        <span style="background:#fef3c7;color:#d97706;font-size:0.7rem;font-weight:700;padding:1px 7px;border-radius:10px"><?php echo e($employeesWithDocs->count()); ?></span>
-    </button>
+    <a href="<?php echo e(route('parametrage.index', ['tab'=>'rooms'])); ?>" class="param-tab <?php echo e($activeTab=='rooms' ? 'active' : ''); ?>">
+        Salles <span style="background:#e0f2fe;color:#0369a1;font-size:0.7rem;font-weight:700;padding:1px 7px;border-radius:10px;"><?php echo e($rooms->count()); ?></span>
+    </a>
+    <a href="<?php echo e(route('parametrage.index', ['tab'=>'departments'])); ?>" class="param-tab <?php echo e($activeTab=='departments' ? 'active' : ''); ?>">
+        Departements <span style="background:#dcfce7;color:#15803d;font-size:0.7rem;font-weight:700;padding:1px 7px;border-radius:10px;"><?php echo e($departments->count()); ?></span>
+    </a>
+    <a href="<?php echo e(route('parametrage.index', ['tab'=>'documents'])); ?>" class="param-tab <?php echo e($activeTab=='documents' ? 'active' : ''); ?>">
+        Pieces jointes <span style="background:#fef3c7;color:#d97706;font-size:0.7rem;font-weight:700;padding:1px 7px;border-radius:10px;"></span>
+    </a>
 </div>
 
 
-<div id="panel-rooms" class="param-panel active">
+<div class="param-panel <?php echo e($activeTab=='rooms' ? 'active' : ''); ?>">
     <div class="param-grid">
         <div class="param-form-card">
-            <div class="param-form-card-header">
-                <h3>Nouvelle salle</h3>
-            </div>
+            <div class="param-form-card-header"><h3>Nouvelle salle</h3></div>
             <div class="param-form-card-body">
                 <form method="POST" action="<?php echo e(route('rooms.store')); ?>">
                     <?php echo csrf_field(); ?>
                     <?php if($errors->has('name') || $errors->has('department_id')): ?>
-                    <div class="param-alert error">✗ <?php echo e($errors->first()); ?></div>
+                    <div class="param-alert error"><?php echo e($errors->first()); ?></div>
                     <?php endif; ?>
                     <div class="param-input-group">
-                        <label class="param-label" for="room_name">Nom de la salle</label>
-                        <input type="text" id="room_name" name="name" class="param-input"
-                               value="<?php echo e(old('name')); ?>" placeholder="Ex: Salle des urgences A" required>
+                        <label class="param-label">Nom de la salle</label>
+                        <input type="text" name="name" class="param-input" value="<?php echo e(old('name')); ?>" placeholder="Ex: Salle des urgences A" required>
                     </div>
                     <div class="param-input-group">
-                        <label class="param-label" for="room_department">Département</label>
-                        <select id="room_department" name="department_id" class="param-input" required>
-                            <option value="">Sélectionner un département…</option>
+                        <label class="param-label">Departement</label>
+                        <select name="department_id" class="param-input" required>
+                            <option value="">Selectionner...</option>
                             <?php $__currentLoopData = $departments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dept): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <option value="<?php echo e($dept->id); ?>" <?php echo e(old('department_id') == $dept->id ? 'selected' : ''); ?>>
-                                    <?php echo e($dept->name); ?>
-
-                                </option>
+                            <option value="<?php echo e($dept->id); ?>" <?php echo e(old('department_id')==$dept->id ? 'selected' : ''); ?>><?php echo e($dept->name); ?></option>
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
-                        <?php if($departments->isEmpty()): ?>
-                        <p style="font-size:0.75rem;color:#f59e0b;margin-top:6px">
-                            ⚠️ Créez d'abord un département dans l'onglet "Départements"
-                        </p>
-                        <?php endif; ?>
                     </div>
                     <div class="param-input-group">
-                        <label class="param-label" for="room_capacity">Capacité (optionnel)</label>
-                        <input type="number" id="room_capacity" name="capacity" class="param-input"
-                               value="<?php echo e(old('capacity')); ?>" placeholder="Ex: 12" min="1">
+                        <label class="param-label">Capacite (optionnel)</label>
+                        <input type="number" name="capacity" class="param-input" value="<?php echo e(old('capacity')); ?>" min="1">
                     </div>
                     <div class="param-input-group">
-                        <label class="param-label" for="room_description">Description (optionnel)</label>
-                        <textarea id="room_description" name="description" class="param-input"
-                                  rows="2" placeholder="Ex: Salle équipée d'un défibrillateur…"
-                                  style="resize:vertical"><?php echo e(old('description')); ?></textarea>
+                        <label class="param-label">Description (optionnel)</label>
+                        <textarea name="description" class="param-input" rows="2" style="resize:vertical;"><?php echo e(old('description')); ?></textarea>
                     </div>
-                    <button type="submit" class="btn-param-submit blue">
-                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        Créer la salle
-                    </button>
+                    <button type="submit" class="btn-submit">Creer la salle</button>
                 </form>
             </div>
         </div>
-
         <div class="param-list-card">
             <div class="param-list-header">
                 <h3>Toutes les salles <span class="param-count-badge"><?php echo e($rooms->count()); ?></span></h3>
-                <input type="text" class="param-search" placeholder="Rechercher…" oninput="filterList(this, 'rooms-list')">
+                <input type="text" class="param-search" placeholder="Rechercher..." oninput="filterList(this,'rooms-list')">
             </div>
             <div id="rooms-list">
                 <?php $__empty_1 = true; $__currentLoopData = $rooms; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $room): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-                <div class="param-item" data-search="<?php echo e(strtolower($room->name . ' ' . ($room->department?->name ?? ''))); ?>">
+                <div class="param-item" data-search="<?php echo e(strtolower($room->name.' '.($room->department?->name ?? ''))); ?>">
                     <div class="param-item-left">
                         <div>
                             <div class="param-item-name"><?php echo e($room->name); ?></div>
-                            <div class="param-item-sub">
-                                <?php echo e($room->department?->name ?? '—'); ?>
-
-                                <?php if(isset($room->capacity) && $room->capacity): ?> · <?php echo e($room->capacity); ?> places <?php endif; ?>
-                                <?php if(isset($room->description) && $room->description): ?> · <?php echo e(Str::limit($room->description, 40)); ?> <?php endif; ?>
-                            </div>
+                            <div class="param-item-sub"><?php echo e($room->department?->name ?? '—'); ?><?php if($room->capacity): ?> · <?php echo e($room->capacity); ?> places <?php endif; ?></div>
                         </div>
                     </div>
                     <div class="param-item-actions">
-                        <button class="btn-icon-sm" title="Modifier"
-                                onclick="openEditRoomModal(<?php echo e($room->id); ?>, '<?php echo e(addslashes($room->name)); ?>', <?php echo e($room->department_id); ?>, <?php echo e($room->capacity ?? 'null'); ?>, '<?php echo e(addslashes($room->description ?? '')); ?>')">
-                            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                            </svg>
-                        </button>
-                        <form method="POST" action="<?php echo e(route('rooms.destroy', $room)); ?>" style="display:inline"
-                              onsubmit="return confirm('Supprimer cette salle ?')">
+                        <button class="btn-sm" onclick="openRoomModal(<?php echo e($room->id); ?>,'<?php echo e(addslashes($room->name)); ?>',<?php echo e($room->department_id); ?>,<?php echo e($room->capacity ?? 'null'); ?>,'<?php echo e(addslashes($room->description ?? '')); ?>')">Modifier</button>
+                        <form method="POST" action="<?php echo e(route('rooms.destroy',$room)); ?>" style="display:inline;" onsubmit="return confirm('Supprimer ?')">
                             <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
-                            <button type="submit" class="btn-icon-sm danger" title="Supprimer">
-                                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <polyline points="3 6 5 6 21 6"/>
-                                    <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
-                                    <path d="M10 11v6M14 11v6"/>
-                                    <path d="M9 6V4h6v2"/>
-                                </svg>
-                            </button>
+                            <button type="submit" class="btn-sm danger">Supprimer</button>
                         </form>
                     </div>
                 </div>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                <div class="param-empty">
-                    <div class="param-empty-icon"></div>
-                    <p>Aucune salle créée.<br>Utilisez le formulaire pour en ajouter une.</p>
-                </div>
+                <div class="param-empty"><p>Aucune salle creee.</p></div>
                 <?php endif; ?>
             </div>
         </div>
@@ -382,98 +155,59 @@
 </div>
 
 
-<div id="panel-departments" class="param-panel">
+<div class="param-panel <?php echo e($activeTab=='departments' ? 'active' : ''); ?>">
     <div class="param-grid">
         <div class="param-form-card">
-            <div class="param-form-card-header green">
-                <h3>Nouveau département</h3>
-            </div>
+            <div class="param-form-card-header"><h3>Nouveau departement</h3></div>
             <div class="param-form-card-body">
                 <form method="POST" action="<?php echo e(route('departments.store')); ?>">
                     <?php echo csrf_field(); ?>
-                    <?php if($errors->has('dept_name')): ?>
-                    <div class="param-alert error">✗ <?php echo e($errors->first('dept_name')); ?></div>
+                    <?php if($errors->has('name')): ?>
+                    <div class="param-alert error"><?php echo e($errors->first('name')); ?></div>
                     <?php endif; ?>
                     <div class="param-input-group">
-                        <label class="param-label" for="dept_name">Nom du département</label>
-                        <input type="text" id="dept_name" name="name" class="param-input"
-                               value="<?php echo e(old('name')); ?>" placeholder="Ex: Cardiologie" required>
+                        <label class="param-label">Nom</label>
+                        <input type="text" name="name" class="param-input" value="<?php echo e(old('name')); ?>" placeholder="Ex: Cardiologie" required>
                     </div>
                     <div class="param-input-group">
-                        <label class="param-label" for="dept_chef">Chef de service (optionnel)</label>
-                        <input type="text" id="dept_chef" name="chef" class="param-input"
-                               value="<?php echo e(old('chef')); ?>" placeholder="Ex: Dr. Martin">
+                        <label class="param-label">Chef de service (optionnel)</label>
+                        <input type="text" name="chef" class="param-input" value="<?php echo e(old('chef')); ?>" placeholder="Ex: Dr. Martin">
                     </div>
                     <div class="param-input-group">
-                        <label class="param-label" for="dept_description">Description (optionnel)</label>
-                        <textarea id="dept_description" name="description" class="param-input"
-                                  rows="2" placeholder="Description du service…"
-                                  style="resize:vertical"><?php echo e(old('description')); ?></textarea>
+                        <label class="param-label">Description (optionnel)</label>
+                        <textarea name="description" class="param-input" rows="2" style="resize:vertical;"><?php echo e(old('description')); ?></textarea>
                     </div>
-                    <button type="submit" class="btn-param-submit green">
-                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        Créer le département
-                    </button>
+                    <button type="submit" class="btn-submit">Creer le departement</button>
                 </form>
             </div>
         </div>
-
         <div class="param-list-card">
             <div class="param-list-header">
-                <h3>Tous les départements <span class="param-count-badge" style="background:#14b8a6"><?php echo e($departments->count()); ?></span></h3>
-                <input type="text" class="param-search" placeholder="Rechercher…" oninput="filterList(this, 'departments-list')">
+                <h3>Tous les departements <span class="param-count-badge" style="background:#14b8a6;"><?php echo e($departments->count()); ?></span></h3>
+                <input type="text" class="param-search" placeholder="Rechercher..." oninput="filterList(this,'departments-list')">
             </div>
             <div id="departments-list">
                 <?php $__empty_1 = true; $__currentLoopData = $departments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dept): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-                <div class="param-item" data-search="<?php echo e(strtolower($dept->name . ' ' . ($dept->code ?? '') . ' ' . ($dept->chef ?? ''))); ?>">
+                <div class="param-item" data-search="<?php echo e(strtolower($dept->name.' '.($dept->code ?? '').' '.($dept->chef ?? ''))); ?>">
                     <div class="param-item-left">
                         <div>
-                            <div class="param-item-name" style="display:flex;align-items:center;gap:8px">
-                                <?php echo e($dept->name); ?>
+                            <div class="param-item-name"><?php echo e($dept->name); ?>
 
-                                <?php if(isset($dept->code) && $dept->code): ?>
-                                <span style="background:#f3f4f6;color:#6b7280;font-size:0.65rem;font-weight:700;padding:1px 7px;border-radius:4px;letter-spacing:.04em">
-                                    <?php echo e($dept->code); ?>
-
-                                </span>
-                                <?php endif; ?>
+                                <?php if($dept->code): ?><span style="background:#f3f4f6;color:#6b7280;font-size:0.65rem;font-weight:700;padding:1px 7px;border-radius:4px;margin-left:6px;"><?php echo e($dept->code); ?></span><?php endif; ?>
                             </div>
-                            <div class="param-item-sub">
-                                <?php if(isset($dept->chef) && $dept->chef): ?> Chef : <?php echo e($dept->chef); ?> · <?php endif; ?>
-                                <?php echo e($dept->rooms_count ?? $dept->rooms?->count() ?? 0); ?> salle(s)
-                                <?php if(isset($dept->description) && $dept->description): ?> · <?php echo e(Str::limit($dept->description, 35)); ?> <?php endif; ?>
-                            </div>
+                            <div class="param-item-sub"><?php if($dept->chef): ?>Chef : <?php echo e($dept->chef); ?> · <?php endif; ?><?php echo e($dept->rooms_count ?? 0); ?> salle(s)</div>
                         </div>
                     </div>
                     <div class="param-item-actions">
-                        <button class="btn-icon-sm" title="Modifier"
-                                onclick="openEditDeptModal(<?php echo e($dept->id); ?>, '<?php echo e(addslashes($dept->name)); ?>', '<?php echo e(addslashes($dept->code ?? '')); ?>', '<?php echo e($dept->color ?? '#0ea5e9'); ?>', '<?php echo e(addslashes($dept->chef ?? '')); ?>', '<?php echo e(addslashes($dept->description ?? '')); ?>')">
-                            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                            </svg>
-                        </button>
-                        <form method="POST" action="<?php echo e(route('departments.destroy', $dept)); ?>" style="display:inline"
-                              onsubmit="return confirm('Supprimer ce département ? Les salles associées seront également affectées.')">
+                        <button class="btn-sm" onclick="openDeptModal(<?php echo e($dept->id); ?>,'<?php echo e(addslashes($dept->name)); ?>','<?php echo e(addslashes($dept->code ?? '')); ?>','<?php echo e($dept->color ?? '#0ea5e9'); ?>','<?php echo e(addslashes($dept->chef ?? '')); ?>','<?php echo e(addslashes($dept->description ?? '')); ?>')">Modifier</button>
+                        <form method="POST" action="<?php echo e(route('departments.destroy',$dept)); ?>" style="display:inline;" onsubmit="return confirm('Supprimer ?')">
                             <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
-                            <button type="submit" class="btn-icon-sm danger" title="Supprimer">
-                                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <polyline points="3 6 5 6 21 6"/>
-                                    <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
-                                    <path d="M10 11v6M14 11v6"/>
-                                    <path d="M9 6V4h6v2"/>
-                                </svg>
-                            </button>
+                            <button type="submit" class="btn-sm danger">Supprimer</button>
                         </form>
                     </div>
                 </div>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                <div class="param-empty">
-                    <div class="param-empty-icon"></div>
-                    <p>Aucun département créé.<br>Utilisez le formulaire pour en ajouter un.</p>
-                </div>
+                <div class="param-empty"><p>Aucun departement cree.</p></div>
                 <?php endif; ?>
             </div>
         </div>
@@ -481,372 +215,336 @@
 </div>
 
 
-<div id="panel-documents" class="param-panel">
+<div class="param-panel <?php echo e($activeTab=='documents' ? 'active' : ''); ?>">
     <div class="param-list-card">
-
-        
         <div class="docs-filter-bar">
-            <label>Filtrer par département :</label>
+            <label>Filtrer par departement :</label>
             <form method="GET" action="<?php echo e(route('parametrage.index')); ?>" style="display:flex;align-items:center;gap:8px;">
                 <input type="hidden" name="tab" value="documents">
                 <select name="dept_filter" class="docs-filter-select" onchange="this.form.submit()">
-                    <option value="">Tous les départements</option>
-                    <?php $__currentLoopData = $departmentNames; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $deptName): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                        <option value="<?php echo e($deptName); ?>" <?php echo e(request('dept_filter') == $deptName ? 'selected' : ''); ?>>
-                            <?php echo e($deptName); ?>
-
-                        </option>
+                    <option value="">Tous les departements</option>
+                    <?php $__currentLoopData = $departmentNames; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dn): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <option value="<?php echo e($dn); ?>" <?php echo e(request('dept_filter')==$dn ? 'selected' : ''); ?>><?php echo e($dn); ?></option>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </select>
                 <?php if(request('dept_filter')): ?>
-                    <a href="<?php echo e(route('parametrage.index', ['tab' => 'documents'])); ?>"
-                       style="font-size:0.8rem;color:#ef4444;text-decoration:none;padding:6px 10px;border:1px solid #fecaca;border-radius:6px;background:#fef2f2;">
-                        ✕ Reset
-                    </a>
+                <a href="<?php echo e(route('parametrage.index',['tab'=>'documents'])); ?>" style="font-size:0.8rem;color:#ef4444;text-decoration:none;padding:6px 10px;border:1px solid #fecaca;border-radius:6px;background:#fef2f2;">Reset</a>
                 <?php endif; ?>
             </form>
-            <span style="margin-left:auto;font-size:0.82rem;color:var(--text-muted);">
-                <?php echo e($employeesWithDocs->count()); ?> employé(s)
-            </span>
+            <span style="margin-left:auto;font-size:0.82rem;color:#6b7280;"><?php echo e($employeesWithDocs->count()); ?> employe(s)</span>
+            <button class="btn-add-doc" onclick="openModal('addDocModal')">+ Ajouter un document</button>
         </div>
-
-        
         <div style="overflow-x:auto;">
             <table class="docs-table">
                 <thead>
                     <tr>
-                        <th style="width:220px;">Employé</th>
-                        <th style="width:120px;">Département</th>
-                        <th style="text-align:center;">Casier judiciaire</th>
-                        <th style="text-align:center;">Relevé bancaire</th>
-                        <th style="text-align:center;">Diplômes</th>
-                        <th style="text-align:center;">CIN</th>
-                        <th style="text-align:center;">Contrat</th>
-                        <th style="text-align:center;width:80px;">Complétude</th>
+                        <th>Employe</th>
+                        <th>Departement</th>
+                        <th style="text-align:center;width:160px;">Documents</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php $__empty_1 = true; $__currentLoopData = $employeesWithDocs; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $emp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-                    <?php
-                        $docs = [
-                            'doc_casier_path'   => $emp->doc_casier_path,
-                            'doc_rib_path'      => $emp->doc_rib_path,
-                            'doc_diplomes_path' => $emp->doc_diplomes_path,
-                            'doc_cin_path'      => $emp->doc_cin_path,
-                            'doc_contrat_path'  => $emp->doc_contrat_path,
-                        ];
-                        $uploaded = collect($docs)->filter()->count();
-                        $total    = count($docs);
-                        $pct      = round(($uploaded / $total) * 100);
-                        $color    = $pct == 100 ? '#16a34a' : ($pct >= 60 ? '#d97706' : '#ef4444');
-                        $initials = strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1));
-                    ?>
+                    <?php $ini = strtoupper(substr($emp->first_name,0,1).substr($emp->last_name,0,1)); ?>
                     <tr>
                         <td>
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <div class="emp-avatar-sm"><?php echo e($initials); ?></div>
-                                <div>
-                                    <div style="font-weight:600;font-size:0.85rem;"><?php echo e($emp->first_name); ?> <?php echo e($emp->last_name); ?></div>
-                                </div>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <div class="emp-avatar"><?php echo e($ini); ?></div>
+                                <button onclick="openDocsModal(<?php echo e($emp->id); ?>,'<?php echo e(addslashes($emp->first_name)); ?> <?php echo e(addslashes($emp->last_name)); ?>')"
+                                        style="background:none;border:none;cursor:pointer;font-weight:600;font-size:0.875rem;color:#0ea5e9;text-decoration:underline;padding:0;font-family:inherit;">
+                                    <?php echo e($emp->first_name); ?> <?php echo e($emp->last_name); ?>
+
+                                </button>
                             </div>
                         </td>
-                        <td>
-                            <span style="font-size:0.78rem;background:#f3f4f6;padding:3px 8px;border-radius:5px;color:#374151;">
-                                <?php echo e($emp->department ?? '—'); ?>
-
-                            </span>
-                        </td>
-
-                        
+                        <td><span style="font-size:0.78rem;background:#f3f4f6;padding:3px 8px;border-radius:5px;color:#374151;"><?php echo e($emp->department ?? '—'); ?></span></td>
                         <td style="text-align:center;">
-                            <?php if($emp->doc_casier_path): ?>
-                                <a href="<?php echo e(asset('storage/' . $emp->doc_casier_path)); ?>"
-                                   target="_blank" class="doc-icon-ok" title="Voir le PDF">
-                                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                    </svg>
-                                </a>
+                            <?php if($emp->doc_count > 0): ?>
+                            <button onclick="openDocsModal(<?php echo e($emp->id); ?>,'<?php echo e(addslashes($emp->first_name)); ?> <?php echo e(addslashes($emp->last_name)); ?>')"
+                                    style="background:#dcfce7;color:#16a34a;font-size:0.78rem;font-weight:700;padding:3px 14px;border-radius:20px;cursor:pointer;border:none;font-family:inherit;">
+                                <?php echo e($emp->doc_count); ?> doc(s)
+                            </button>
                             <?php else: ?>
-                                <span class="doc-icon-missing" title="Non fourni">
-                                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                    </svg>
-                                </span>
+                            <span style="background:#f3f4f6;color:#9ca3af;font-size:0.78rem;padding:3px 14px;border-radius:20px;display:inline-block;">Aucun</span>
                             <?php endif; ?>
-                        </td>
-
-                        
-                        <td style="text-align:center;">
-                            <?php if($emp->doc_rib_path): ?>
-                                <a href="<?php echo e(asset('storage/' . $emp->doc_rib_path)); ?>"
-                                   target="_blank" class="doc-icon-ok" title="Voir le PDF">
-                                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                    </svg>
-                                </a>
-                            <?php else: ?>
-                                <span class="doc-icon-missing" title="Non fourni">
-                                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                    </svg>
-                                </span>
-                            <?php endif; ?>
-                        </td>
-
-                        
-                        <td style="text-align:center;">
-                            <?php if($emp->doc_diplomes_path): ?>
-                                <a href="<?php echo e(asset('storage/' . $emp->doc_diplomes_path)); ?>"
-                                   target="_blank" class="doc-icon-ok" title="Voir le PDF">
-                                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                    </svg>
-                                </a>
-                            <?php else: ?>
-                                <span class="doc-icon-missing" title="Non fourni">
-                                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                    </svg>
-                                </span>
-                            <?php endif; ?>
-                        </td>
-
-                        
-                        <td style="text-align:center;">
-                            <?php if($emp->doc_cin_path): ?>
-                                <a href="<?php echo e(asset('storage/' . $emp->doc_cin_path)); ?>"
-                                   target="_blank" class="doc-icon-ok" title="Voir le PDF">
-                                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                    </svg>
-                                </a>
-                            <?php else: ?>
-                                <span class="doc-icon-missing" title="Non fourni">
-                                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                    </svg>
-                                </span>
-                            <?php endif; ?>
-                        </td>
-
-                        
-                        <td style="text-align:center;">
-                            <?php if($emp->doc_contrat_path): ?>
-                                <a href="<?php echo e(asset('storage/' . $emp->doc_contrat_path)); ?>"
-                                   target="_blank" class="doc-icon-ok" title="Voir le PDF">
-                                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                    </svg>
-                                </a>
-                            <?php else: ?>
-                                <span class="doc-icon-missing" title="Non fourni">
-                                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                    </svg>
-                                </span>
-                            <?php endif; ?>
-                        </td>
-
-                        
-                        <td style="text-align:center;">
-                            <div style="font-size:0.78rem;font-weight:700;color:<?php echo e($color); ?>;">
-                                <?php echo e($uploaded); ?>/<?php echo e($total); ?>
-
-                            </div>
-                            <div style="height:4px;background:#f3f4f6;border-radius:2px;margin-top:4px;width:50px;margin-left:auto;margin-right:auto;">
-                                <div style="height:4px;background:<?php echo e($color); ?>;border-radius:2px;width:<?php echo e($pct); ?>%;"></div>
-                            </div>
                         </td>
                     </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                    <tr>
-                        <td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted);">
-                            Aucun employé trouvé.
-                        </td>
-                    </tr>
+                    <tr><td colspan="3" style="text-align:center;padding:40px;color:#6b7280;">Aucun employe trouve.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
         </div>
-
-        
-        <div class="doc-legend">
-            <span>
-                <span class="doc-icon-ok" style="width:22px;height:22px;font-size:12px;">
-                    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                </span>
-                Document disponible — cliquer pour ouvrir
-            </span>
-            <span>
-                <span class="doc-icon-missing" style="width:22px;height:22px;font-size:12px;">
-                    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                </span>
-                Document manquant
-            </span>
-        </div>
     </div>
 </div>
 
 
-<div class="param-modal-overlay" id="editRoomModal">
+<div class="param-modal-overlay" id="roomModal">
     <div class="param-modal">
-        <div class="param-modal-header">
-            <h3>Modifier la salle</h3>
-            <button class="btn-modal-close" onclick="closeModal('editRoomModal')">×</button>
-        </div>
-        <form id="editRoomForm" method="POST">
+        <div class="param-modal-header"><h3>Modifier la salle</h3><button class="btn-close" onclick="closeModal('roomModal')">&#x2715;</button></div>
+        <form id="roomForm" method="POST">
             <?php echo csrf_field(); ?> <?php echo method_field('PUT'); ?>
-            <div class="param-input-group">
-                <label class="param-label">Nom de la salle</label>
-                <input type="text" name="name" id="editRoomName" class="param-input" required>
-            </div>
-            <div class="param-input-group">
-                <label class="param-label">Département</label>
-                <select name="department_id" id="editRoomDept" class="param-input" required>
-                    <?php $__currentLoopData = $departments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dept): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                    <option value="<?php echo e($dept->id); ?>"><?php echo e($dept->name); ?></option>
-                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            <div class="param-input-group"><label class="param-label">Nom</label><input type="text" name="name" id="rName" class="param-input" required></div>
+            <div class="param-input-group"><label class="param-label">Departement</label>
+                <select name="department_id" id="rDept" class="param-input" required>
+                    <?php $__currentLoopData = $departments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $d): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($d->id); ?>"><?php echo e($d->name); ?></option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </select>
             </div>
-            <div class="param-input-group">
-                <label class="param-label">Capacité (optionnel)</label>
-                <input type="number" name="capacity" id="editRoomCapacity" class="param-input" min="1" placeholder="Ex: 12">
-            </div>
-            <div class="param-input-group">
-                <label class="param-label">Description (optionnel)</label>
-                <textarea name="description" id="editRoomDescription" class="param-input" rows="2" style="resize:vertical"></textarea>
-            </div>
-            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-                <button type="button" onclick="closeModal('editRoomModal')"
-                        style="padding:9px 18px;border:1px solid var(--border);border-radius:8px;background:white;cursor:pointer;font-size:0.875rem;font-family:inherit">
-                    Annuler
-                </button>
-                <button type="submit" class="btn-param-submit blue" style="width:auto;padding:9px 24px">
-                    Enregistrer
-                </button>
+            <div class="param-input-group"><label class="param-label">Capacite</label><input type="number" name="capacity" id="rCap" class="param-input" min="1"></div>
+            <div class="param-input-group"><label class="param-label">Description</label><textarea name="description" id="rDesc" class="param-input" rows="2" style="resize:vertical;"></textarea></div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+                <button type="button" onclick="closeModal('roomModal')" style="padding:9px 18px;border:1px solid #e5e7eb;border-radius:8px;background:white;cursor:pointer;font-size:0.875rem;font-family:inherit;">Annuler</button>
+                <button type="submit" class="btn-submit" style="width:auto;padding:9px 24px;">Enregistrer</button>
             </div>
         </form>
     </div>
 </div>
 
 
-<div class="param-modal-overlay" id="editDeptModal">
+<div class="param-modal-overlay" id="deptModal">
     <div class="param-modal">
-        <div class="param-modal-header">
-            <h3>Modifier le département</h3>
-            <button class="btn-modal-close" onclick="closeModal('editDeptModal')">×</button>
-        </div>
-        <form id="editDeptForm" method="POST">
+        <div class="param-modal-header"><h3>Modifier le departement</h3><button class="btn-close" onclick="closeModal('deptModal')">&#x2715;</button></div>
+        <form id="deptForm" method="POST">
             <?php echo csrf_field(); ?> <?php echo method_field('PUT'); ?>
-            <div class="param-input-group">
-                <label class="param-label">Nom du département</label>
-                <input type="text" name="name" id="editDeptName" class="param-input" required>
-            </div>
-            <div class="param-input-group">
-                <label class="param-label">Code</label>
-                <input type="text" name="code" id="editDeptCode" class="param-input" maxlength="10" style="text-transform:uppercase">
-            </div>
-            <div class="param-input-group">
-                <label class="param-label">Couleur</label>
-                <input type="color" name="color" id="editDeptColor"
-                       style="width:48px;height:40px;border-radius:8px;border:1px solid var(--border);cursor:pointer;padding:2px">
-            </div>
-            <div class="param-input-group">
-                <label class="param-label">Chef de service</label>
-                <input type="text" name="chef" id="editDeptChef" class="param-input" placeholder="Ex: Dr. Martin">
-            </div>
-            <div class="param-input-group">
-                <label class="param-label">Description</label>
-                <textarea name="description" id="editDeptDescription" class="param-input" rows="2" style="resize:vertical"></textarea>
-            </div>
-            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-                <button type="button" onclick="closeModal('editDeptModal')"
-                        style="padding:9px 18px;border:1px solid var(--border);border-radius:8px;background:white;cursor:pointer;font-size:0.875rem;font-family:inherit">
-                    Annuler
-                </button>
-                <button type="submit" class="btn-param-submit green" style="width:auto;padding:9px 24px">
-                    Enregistrer
-                </button>
+            <div class="param-input-group"><label class="param-label">Nom</label><input type="text" name="name" id="dName" class="param-input" required></div>
+            <div class="param-input-group"><label class="param-label">Code</label><input type="text" name="code" id="dCode" class="param-input" maxlength="10" style="text-transform:uppercase;"></div>
+            <div class="param-input-group"><label class="param-label">Couleur</label><input type="color" name="color" id="dColor" style="width:48px;height:40px;border-radius:8px;border:1px solid #e5e7eb;cursor:pointer;padding:2px;"></div>
+            <div class="param-input-group"><label class="param-label">Chef de service</label><input type="text" name="chef" id="dChef" class="param-input"></div>
+            <div class="param-input-group"><label class="param-label">Description</label><textarea name="description" id="dDesc" class="param-input" rows="2" style="resize:vertical;"></textarea></div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+                <button type="button" onclick="closeModal('deptModal')" style="padding:9px 18px;border:1px solid #e5e7eb;border-radius:8px;background:white;cursor:pointer;font-size:0.875rem;font-family:inherit;">Annuler</button>
+                <button type="submit" class="btn-submit" style="width:auto;padding:9px 24px;">Enregistrer</button>
             </div>
         </form>
     </div>
 </div>
 
-<?php $__env->startPush('scripts'); ?>
+
+<div class="param-modal-overlay" id="addDocModal">
+    <div class="param-modal" style="max-width:560px;">
+        <div class="param-modal-header"><h3>Ajouter un document</h3><button class="btn-close" onclick="closeModal('addDocModal')">&#x2715;</button></div>
+        <form method="POST" action="<?php echo e(route('parametrage.documents.upload')); ?>" enctype="multipart/form-data">
+            <?php echo csrf_field(); ?>
+            <div class="param-input-group">
+                <label class="param-label">Nom du document <span style="color:#ef4444;">*</span></label>
+                <input type="text" name="doc_name" class="param-input" required placeholder="Ex: Attestation de travail...">
+            </div>
+            <div class="param-input-group">
+                <label class="param-label">Assigner a <span style="color:#ef4444;">*</span></label>
+                <button type="button" class="target-option" id="opt-employee" onclick="selTarget('employee')">
+                    <input type="radio" name="target_type" value="employee" id="tEmp" style="accent-color:#0ea5e9;margin-top:3px;flex-shrink:0;">
+                    <div><div style="font-size:0.875rem;font-weight:700;color:#111827;">Un employe specifique</div><div style="font-size:0.75rem;color:#6b7280;margin-top:2px;">Choisir un employe et uploader son fichier</div></div>
+                </button>
+                <button type="button" class="target-option" id="opt-department" onclick="selTarget('department')">
+                    <input type="radio" name="target_type" value="department" id="tDept" style="accent-color:#0ea5e9;margin-top:3px;flex-shrink:0;">
+                    <div><div style="font-size:0.875rem;font-weight:700;color:#111827;">Un departement entier</div><div style="font-size:0.75rem;color:#6b7280;margin-top:2px;">Un fichier different par employe du departement</div></div>
+                </button>
+                <button type="button" class="target-option" id="opt-all" onclick="selTarget('all')">
+                    <input type="radio" name="target_type" value="all" id="tAll" style="accent-color:#0ea5e9;margin-top:3px;flex-shrink:0;">
+                    <div><div style="font-size:0.875rem;font-weight:700;color:#111827;">Tous les employes</div><div style="font-size:0.75rem;color:#6b7280;margin-top:2px;">Un fichier different par employe</div></div>
+                </button>
+            </div>
+            <div id="zone-emp" style="display:none;">
+                <div class="param-input-group">
+                    <label class="param-label">Employe</label>
+                    <select id="empSel" class="param-input" onchange="showEmpFile(this)">
+                        <option value="">Selectionner...</option>
+                        <?php $__currentLoopData = $allEmployees; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $e): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <option value="<?php echo e($e->id); ?>"><?php echo e($e->first_name); ?> <?php echo e($e->last_name); ?><?php if($e->department): ?> — <?php echo e($e->department); ?><?php endif; ?></option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </select>
+                </div>
+                <div class="param-input-group" id="emp-file-zone" style="display:none;">
+                    <label class="param-label">Fichier <span style="color:#ef4444;">*</span></label>
+                    <input type="file" id="empFile" class="param-input" accept=".pdf,.jpg,.jpeg,.png" style="padding:8px 14px;cursor:pointer;" onchange="bindFile(this)">
+                    <p style="font-size:0.72rem;color:#9ca3af;margin-top:4px;">PDF, JPG, PNG — max 10 Mo</p>
+                </div>
+            </div>
+            <div id="zone-dept" style="display:none;">
+                <div class="param-input-group">
+                    <label class="param-label">Departement</label>
+                    <select id="deptSel" class="param-input" onchange="loadDept(this.value)">
+                        <option value="">Selectionner...</option>
+                        <?php $__currentLoopData = $departmentNames; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dn): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($dn); ?>"><?php echo e($dn); ?></option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </select>
+                </div>
+                <div id="dept-list"></div>
+            </div>
+            <div id="zone-all" style="display:none;"><div id="all-list"></div></div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid #f3f4f6;">
+                <button type="button" onclick="closeModal('addDocModal')" style="padding:9px 20px;border:1px solid #e5e7eb;border-radius:8px;background:white;cursor:pointer;font-size:0.875rem;font-family:inherit;color:#6b7280;font-weight:600;">Annuler</button>
+                <button type="submit" class="btn-submit" style="width:auto;padding:9px 24px;">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<div class="param-modal-overlay" id="docsModal">
+    <div class="param-modal" style="max-width:560px;">
+        <div class="param-modal-header">
+            <h3 id="docsTitle">Documents</h3>
+            <button class="btn-close" onclick="closeModal('docsModal')">&#x2715;</button>
+        </div>
+        <div id="docsContent"><div style="text-align:center;padding:30px;color:#9ca3af;">Chargement...</div></div>
+    </div>
+</div>
+
 <script>
-function switchTab(tab, btn) {
-    document.querySelectorAll('.param-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.param-panel').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('panel-' + tab).classList.add('active');
-    const url = new URL(window.location);
-    url.searchParams.set('tab', tab);
-    window.history.replaceState({}, '', url);
+var EMPS = <?php echo json_encode($allEmployeesJs, JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_QUOT); ?>;
+
+function filterList(inp, lid) {
+    var q = inp.value.toLowerCase();
+    var items = document.querySelectorAll('#' + lid + ' .param-item');
+    for (var i = 0; i < items.length; i++) {
+        items[i].style.display = items[i].dataset.search.indexOf(q) !== -1 ? '' : 'none';
+    }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const params = new URLSearchParams(window.location.search);
-    const tab    = params.get('tab');
-    if (tab === 'departments') {
-        document.querySelectorAll('.param-tab')[1].click();
-    } else if (tab === 'documents') {
-        document.querySelectorAll('.param-tab')[2].click();
-    }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow = ''; }
+function openModal(id)  { document.getElementById(id).classList.add('open');    document.body.style.overflow = 'hidden'; }
+
+document.querySelectorAll('.param-modal-overlay').forEach(function(o) {
+    o.addEventListener('click', function(e) { if (e.target === o) closeModal(o.id); });
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') document.querySelectorAll('.param-modal-overlay.open').forEach(function(m) { closeModal(m.id); });
 });
 
-function filterList(input, listId) {
-    const q     = input.value.toLowerCase();
-    const items = document.querySelectorAll('#' + listId + ' .param-item');
-    items.forEach(item => {
-        item.style.display = item.dataset.search.includes(q) ? '' : 'none';
+function openRoomModal(id, name, deptId, cap, desc) {
+    document.getElementById('roomForm').action = '/rooms/' + id;
+    document.getElementById('rName').value = name;
+    document.getElementById('rDept').value = deptId;
+    document.getElementById('rCap').value  = cap || '';
+    document.getElementById('rDesc').value = desc || '';
+    openModal('roomModal');
+}
+function openDeptModal(id, name, code, color, chef, desc) {
+    document.getElementById('deptForm').action = '/departments/' + id;
+    document.getElementById('dName').value  = name;
+    document.getElementById('dCode').value  = code  || '';
+    document.getElementById('dColor').value = color || '#0ea5e9';
+    document.getElementById('dChef').value  = chef  || '';
+    document.getElementById('dDesc').value  = desc  || '';
+    openModal('deptModal');
+}
+
+function selTarget(type) {
+    document.getElementById('tAll').checked  = (type === 'all');
+    document.getElementById('tDept').checked = (type === 'department');
+    document.getElementById('tEmp').checked  = (type === 'employee');
+    document.getElementById('opt-employee').classList.remove('selected');
+    document.getElementById('opt-department').classList.remove('selected');
+    document.getElementById('opt-all').classList.remove('selected');
+    if (type === 'employee')   document.getElementById('opt-employee').classList.add('selected');
+    if (type === 'department') document.getElementById('opt-department').classList.add('selected');
+    if (type === 'all')        document.getElementById('opt-all').classList.add('selected');
+    document.getElementById('zone-emp').style.display  = (type === 'employee')   ? 'block' : 'none';
+    document.getElementById('zone-dept').style.display = (type === 'department') ? 'block' : 'none';
+    document.getElementById('zone-all').style.display  = (type === 'all')        ? 'block' : 'none';
+    if (type === 'all') loadAll();
+}
+function showEmpFile(sel) {
+    var z = document.getElementById('emp-file-zone');
+    if (sel.value) {
+        z.style.display = 'block';
+        document.getElementById('empFile').dataset.empId = sel.value;
+        document.getElementById('empFile').name = 'files[' + sel.value + ']';
+    } else {
+        z.style.display = 'none';
+    }
+}
+function bindFile(inp) { if (inp.dataset.empId) inp.name = 'files[' + inp.dataset.empId + ']'; }
+
+function makeRow(emp) {
+    return '<div class="emp-file-row" id="row-' + emp.id + '">'
+         + '<div class="emp-file-avatar">' + emp.initials + '</div>'
+         + '<div style="flex:1;min-width:0;"><strong style="display:block;font-size:0.85rem;color:#111827;">' + emp.name + '</strong>'
+         + '<span style="font-size:0.72rem;color:#9ca3af;">' + (emp.department || '—') + '</span></div>'
+         + '<input type="file" name="files[' + emp.id + ']" accept=".pdf,.jpg,.jpeg,.png" required '
+         + 'style="font-size:0.78rem;cursor:pointer;max-width:180px;" onchange="markOk(this,' + emp.id + ')">'
+         + '</div>';
+}
+function markOk(inp, id) {
+    var r = document.getElementById('row-' + id);
+    if (inp.files && inp.files[0]) r.classList.add('ok'); else r.classList.remove('ok');
+}
+function loadDept(dept) {
+    var c = document.getElementById('dept-list');
+    if (!dept) { c.innerHTML = ''; return; }
+    var emps = EMPS.filter(function(e) { return e.department === dept; });
+    if (!emps.length) { c.innerHTML = '<p style="font-size:0.82rem;color:#9ca3af;">Aucun employe.</p>'; return; }
+    c.innerHTML = '<div style="margin-bottom:8px;font-size:0.78rem;color:#6b7280;font-weight:600;">' + emps.length + ' employe(s) :</div>' + emps.map(makeRow).join('');
+}
+function loadAll() {
+    var c = document.getElementById('all-list');
+    c.innerHTML = '<div style="margin-bottom:8px;font-size:0.78rem;color:#6b7280;font-weight:600;">' + EMPS.length + ' employe(s) :</div>' + EMPS.map(makeRow).join('');
+}
+
+function openDocsModal(empId, empName) {
+    document.getElementById('docsTitle').textContent = 'Documents de ' + empName;
+    document.getElementById('docsContent').innerHTML = '<div style="text-align:center;padding:30px;color:#9ca3af;">Chargement...</div>';
+    openModal('docsModal');
+    fetch('/parametrage/employees/' + empId + '/documents', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (!data.docs || !data.docs.length) {
+            document.getElementById('docsContent').innerHTML =
+                '<div style="text-align:center;padding:30px;color:#9ca3af;">Aucun document pour cet employe.</div>';
+            return;
+        }
+        var html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+        for (var i = 0; i < data.docs.length; i++) {
+            var d = data.docs[i];
+            var isFixed = (d.type === 'fixed');
+            var badgeColor = isFixed ? 'background:#fef3c7;color:#d97706;' : 'background:#e0f2fe;color:#0369a1;';
+            var badgeLabel = isFixed ? 'Document employe' : 'Upload manuel';
+            var delBtn = '';
+            if (!isFixed) {
+                delBtn = '<button onclick="delDoc(' + d.id + ',' + empId + ',\'' + empName.replace(/'/g, "\\'") + '\')" '
+                       + 'style="padding:5px 12px;background:#fef2f2;color:#ef4444;border:1px solid #fecaca;'
+                       + 'border-radius:6px;font-size:0.75rem;font-weight:600;cursor:pointer;font-family:inherit;">'
+                       + 'Supprimer</button>';
+            }
+            html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;background:#fafafa;">'
+                  + '<div style="width:36px;height:36px;border-radius:8px;background:#e0f2fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+                  + '<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#0369a1" stroke-width="2">'
+                  + '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>'
+                  + '</svg></div>'
+                  + '<div style="flex:1;min-width:0;">'
+                  + '<div style="font-weight:600;font-size:0.875rem;color:#111827;">' + d.name + '</div>'
+                  + '<div style="font-size:0.72rem;color:#9ca3af;">' + d.original_name + '</div>'
+                  + '<span style="font-size:0.65rem;' + badgeColor + 'padding:1px 7px;border-radius:4px;font-weight:600;display:inline-block;margin-top:3px;">' + badgeLabel + '</span>'
+                  + '</div>'
+                  + '<div style="display:flex;gap:6px;flex-shrink:0;">'
+                  + '<a href="' + d.url + '" target="_blank" style="padding:5px 12px;background:#dcfce7;color:#16a34a;border:none;border-radius:6px;font-size:0.75rem;font-weight:600;text-decoration:none;">Voir</a>'
+                  + delBtn
+                  + '</div></div>';
+        }
+        html += '</div>';
+        document.getElementById('docsContent').innerHTML = html;
+    })
+    .catch(function() {
+        document.getElementById('docsContent').innerHTML =
+            '<div style="text-align:center;padding:30px;color:#ef4444;">Erreur de chargement.</div>';
     });
 }
 
-function closeModal(id) {
-    document.getElementById(id).classList.remove('open');
-    document.body.style.overflow = 'auto';
-}
-function openModal(id) {
-    document.getElementById(id).classList.add('open');
-    document.body.style.overflow = 'hidden';
-}
-
-document.querySelectorAll('.param-modal-overlay').forEach(overlay => {
-    overlay.addEventListener('click', e => {
-        if (e.target === overlay) closeModal(overlay.id);
+function delDoc(docId, empId, empName) {
+    if (!confirm('Supprimer ce document ?')) return;
+    var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    fetch('/parametrage/documents/' + docId, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-TOKEN': token, 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) openDocsModal(empId, empName);
     });
-});
-
-document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-        document.querySelectorAll('.param-modal-overlay.open').forEach(m => closeModal(m.id));
-    }
-});
-
-function openEditRoomModal(id, name, deptId, capacity, description) {
-    document.getElementById('editRoomForm').action = '/rooms/' + id;
-    document.getElementById('editRoomName').value        = name;
-    document.getElementById('editRoomDept').value        = deptId;
-    document.getElementById('editRoomCapacity').value    = capacity || '';
-    document.getElementById('editRoomDescription').value = description || '';
-    openModal('editRoomModal');
-}
-
-function openEditDeptModal(id, name, code, color, chef, description) {
-    document.getElementById('editDeptForm').action = '/departments/' + id;
-    document.getElementById('editDeptName').value        = name;
-    document.getElementById('editDeptCode').value        = code || '';
-    document.getElementById('editDeptColor').value       = color || '#0ea5e9';
-    document.getElementById('editDeptChef').value        = chef || '';
-    document.getElementById('editDeptDescription').value = description || '';
-    openModal('editDeptModal');
 }
 </script>
-<?php $__env->stopPush(); ?>
 
 <?php $__env->stopSection(); ?>
 

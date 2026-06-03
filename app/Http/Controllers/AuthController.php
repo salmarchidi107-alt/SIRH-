@@ -93,9 +93,15 @@ class AuthController extends Controller
             }
 
             // Superadmin : pas de tenant, redirect direct
-            if ($user->role === User::ROLE_SUPERADMIN) {
-                return redirect()->route('superadmin.dashboard');
+            // Les superadmins sont exemptés du 2FA (ils gèrent les codes)
+            if ($user->isSuperAdmin()) {
+            return redirect()->route('superadmin.dashboard');
             }
+
+    // Pour tous les autres rôles → étape 2FA obligatoire
+    // On efface toute vérification précédente et on redirige vers l'OTP
+    $request->session()->forget('2fa_verified');
+    return redirect()->route('2fa.show');
 
             // Vérifier que l'user a bien un tenant assigné
             if (! $user->tenant_id) {

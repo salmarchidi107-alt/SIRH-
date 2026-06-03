@@ -5,9 +5,6 @@
 
 @push('styles')
 <style>
-/* ══════════════════════════════════════════════════
-   REPORTING — thème projet
-══════════════════════════════════════════════════ */
 .rpt-filters {
     display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;
     background: white; border: 1px solid var(--border, #e5e7eb);
@@ -46,26 +43,20 @@
     gap: 6px; font-family: inherit; transition: all .2s;
     box-shadow: 0 4px 12px rgba(13,166,116,.25);
 }
-.btn-rpt-apply:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(13,166,116,.35); }
+.btn-rpt-apply:hover { transform: translateY(-1px); }
 .btn-rpt-pdf {
     padding: 9px 20px; background: white; color: #ef4444;
-    border: 1px solid #fecaca; border-radius: 8px; font-size: 10px;
+    border: 1px solid #fecaca; border-radius: 8px; font-size: 0.85rem;
     font-weight: 700; cursor: pointer; display: flex; align-items: center;
     gap: 6px; font-family: inherit; text-decoration: none; transition: all .2s;
 }
 .btn-rpt-pdf:hover { background: #fef2f2; }
-
-/* ── Sélecteur devise ── */
-.rpt-currency-switcher {
-    display: flex; align-items: center; gap: 8px;
-}
+.rpt-currency-switcher { display: flex; align-items: center; gap: 8px; }
 .rpt-currency-switcher label {
     font-size: 0.75rem; font-weight: 600; color: var(--text-muted, #6b7280);
     text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
 }
-.cur-btn-group {
-    display: flex; border: 1.5px solid #e5e7eb; border-radius: 8px; overflow: hidden;
-}
+.cur-btn-group { display: flex; border: 1.5px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
 .cur-btn {
     padding: 7px 16px; font-weight: 700; font-size: 0.82rem;
     border: none; cursor: pointer; transition: all .15s; white-space: nowrap;
@@ -73,14 +64,9 @@
 }
 .cur-btn.active-mad { background: #1d4ed8; color: white; }
 .cur-btn.active-mru { background: #065f46; color: white; }
-.cur-badge {
-    font-size: 0.72rem; padding: 3px 10px; border-radius: 20px;
-    font-weight: 700; white-space: nowrap;
-}
+.cur-badge { font-size: 0.72rem; padding: 3px 10px; border-radius: 20px; font-weight: 700; white-space: nowrap; }
 .cur-badge-mad { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
 .cur-badge-mru { background: #dcfce7; color: #14532d; border: 1px solid #86efac; }
-
-/* ── Section header ── */
 .rpt-section-header {
     display: flex; align-items: center; gap: 10px;
     margin: 28px 0 16px; padding-bottom: 12px;
@@ -88,16 +74,14 @@
 }
 .rpt-section-header h2 { font-size: 0.95rem; font-weight: 700; color: var(--text, #111827); margin: 0; }
 .rpt-section-header span.sub { font-size: 0.78rem; color: var(--text-muted, #6b7280); font-weight: 400; }
-
 .rpt-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
 .rpt-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
-
 .rpt-list-card { background: white; border: 1px solid var(--border, #e5e7eb); border-radius: 12px; overflow: hidden; }
 .rpt-list-card-header {
     padding: 14px 18px; border-bottom: 1px solid var(--border, #e5e7eb);
     display: flex; align-items: center; justify-content: space-between; background: #f9fafb;
 }
-.rpt-list-card-header h3 { font-size: 0.82rem; font-weight: 700; color: var(--text, #111827); margin: 0; display: flex; align-items: center; gap: 7px; }
+.rpt-list-card-header h3 { font-size: 0.82rem; font-weight: 700; color: var(--text, #111827); margin: 0; }
 .rpt-list-row {
     display: flex; justify-content: space-between; align-items: center;
     padding: 11px 18px; border-bottom: 1px solid var(--border, #f3f4f6); font-size: 0.875rem;
@@ -106,27 +90,22 @@
 .rpt-list-row:hover { background: #f9fafb; }
 .rpt-list-label { color: var(--text-muted, #6b7280); }
 .rpt-list-value { font-weight: 700; color: var(--text, #111827); font-size: 0.875rem; }
-
-.badge-ok    { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#dcfce7;color:#15803d; }
-.badge-warn  { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#fef3c7;color:#d97706; }
-.badge-bad   { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#fee2e2;color:#b91c1c; }
-.badge-blue  { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#e0f2fe;color:#0369a1; }
-.badge-teal  { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#ccfbf1;color:#0f766e; }
-.badge-purple{ display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#ede9fe;color:#6d28d9; }
-.badge-gray  { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#f3f4f6;color:#4b5563; }
-
+.badge-ok     { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#dcfce7;color:#15803d; }
+.badge-warn   { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#fef3c7;color:#d97706; }
+.badge-bad    { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#fee2e2;color:#b91c1c; }
+.badge-blue   { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#e0f2fe;color:#0369a1; }
+.badge-teal   { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#ccfbf1;color:#0f766e; }
+.badge-purple { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#ede9fe;color:#6d28d9; }
+.badge-gray   { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#f3f4f6;color:#4b5563; }
 .rpt-alert { padding:10px 16px;border-radius:8px;font-size:0.82rem;margin-bottom:20px;display:flex;align-items:center;gap:10px;font-weight:500; }
 .rpt-alert.warn { background:#fef3c7;border:1px solid #fde68a;color:#92400e; }
 .rpt-alert.ok   { background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d; }
-
 .rpt-period-info { font-size:0.82rem;color:var(--text-muted,#6b7280);margin-bottom:20px;display:flex;align-items:center;gap:6px; }
 .rpt-period-info strong { color:var(--text,#111827);font-weight:600; }
-
 .mini-bar-wrap { display:flex;align-items:center;gap:8px; }
 .mini-bar { flex:1;height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden; }
 .mini-bar-fill { height:100%;border-radius:3px;transition:width .8s ease; }
 .mini-bar-pct { font-size:0.72rem;color:var(--text-muted,#6b7280);width:35px;text-align:right;font-weight:600; }
-
 .rpt-table { width:100%;border-collapse:collapse;font-size:0.85rem; }
 .rpt-table th { padding:10px 16px;text-align:left;background:#f9fafb;border-bottom:2px solid var(--border,#e5e7eb);font-size:0.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted,#6b7280); }
 .rpt-table td { padding:10px 16px;border-bottom:1px solid var(--border,#f3f4f6);color:var(--text,#111827); }
@@ -134,6 +113,32 @@
 .rpt-table tr:hover td { background:#f9fafb; }
 .rpt-table tr.highlight-row td { background:#f0f9ff;font-weight:700; }
 .rpt-table tr.garde-row td { background:#faf5ff; }
+
+/* Modal validation */
+.export-modal-overlay {
+    display:none;position:fixed;inset:0;z-index:9999;
+    background:rgba(0,0,0,.5);align-items:center;justify-content:center;
+}
+.export-modal-overlay.open { display:flex; }
+.export-modal {
+    background:white;border-radius:16px;padding:28px;width:90%;max-width:500px;
+    box-shadow:0 20px 60px rgba(0,0,0,.2);
+    animation:modalIn .25s cubic-bezier(0.16,1,0.3,1);
+}
+@keyframes modalIn {
+    from { opacity:0;transform:translateY(20px) scale(.97); }
+    to   { opacity:1;transform:translateY(0) scale(1); }
+}
+.problem-row {
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 14px;border:1px solid #fde68a;border-radius:8px;
+    background:#fffbeb;margin-bottom:8px;
+}
+.problem-count {
+    width:28px;height:28px;border-radius:6px;background:#fef3c7;
+    display:flex;align-items:center;justify-content:center;
+    font-size:0.75rem;font-weight:700;color:#d97706;flex-shrink:0;
+}
 
 @media(max-width:900px){.rpt-grid-2{grid-template-columns:1fr}.rpt-grid-4{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.rpt-grid-4{grid-template-columns:1fr}.rpt-filters{flex-direction:column}}
@@ -182,35 +187,126 @@
             </select>
         </div>
 
-        {{-- ══ SÉLECTEUR DEVISE ══ --}}
         <div class="rpt-filter-group" style="min-width:auto">
             <label>Devise</label>
             <div class="rpt-currency-switcher">
                 <div class="cur-btn-group">
-                    <button type="button" id="btn-mad" class="cur-btn active-mad" onclick="setCurrency('MAD')">
-                        🇲🇦 MAD
-                    </button>
-                    <button type="button" id="btn-mru" class="cur-btn" onclick="setCurrency('MRU')">
-                        🇲🇷 MRU
-                    </button>
+                    <button type="button" id="btn-mad" class="cur-btn active-mad" onclick="setCurrency('MAD')">MAD</button>
+                    <button type="button" id="btn-mru" class="cur-btn" onclick="setCurrency('MRU')">MRU</button>
                 </div>
                 <span id="cur-badge" class="cur-badge cur-badge-mad">Dirham marocain</span>
             </div>
         </div>
 
-        <button type="submit" class="btn-rpt-apply">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
-            </svg>
-            Appliquer
-        </button>
+        <button type="submit" class="btn-rpt-apply">Appliquer</button>
 
-        <a href="{{ route('reporting.export-pdf', request()->query()) }}" class="btn-rpt-pdf" target="_blank">
+        {{-- Bouton Export PDF --}}
+        <button type="button" class="btn-rpt-pdf" onclick="checkAndExport()">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
             </svg>
             Export PDF
-        </a>
+        </button>
     </div>
 </form>
+
+{{-- ═══════════════════════════════════════
+     MODAL VALIDATION AVANT EXPORT
+═══════════════════════════════════════ --}}
+<div class="export-modal-overlay" id="exportModal">
+    <div class="export-modal">
+
+        @if($validation['isReady'])
+        {{-- ✅ Tout est prêt --}}
+        <div style="text-align:center;padding:8px 0 20px;">
+            <div style="width:60px;height:60px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+                <svg width="30" height="30" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <h3 style="font-size:1.1rem;font-weight:700;color:#111827;margin:0 0 8px;">Tout est prêt !</h3>
+            <p style="font-size:0.875rem;color:#6b7280;margin:0 0 24px;">
+                Toutes les données sont validées.<br>Le rapport PDF sera complet et fiable.
+            </p>
+            <div style="display:flex;gap:10px;justify-content:center;">
+                <button onclick="closeExportModal()"
+                        style="padding:9px 20px;border:1px solid #e5e7eb;border-radius:8px;background:white;cursor:pointer;font-size:0.875rem;font-family:inherit;color:#6b7280;">
+                    Annuler
+                </button>
+                <a href="{{ route('reporting.export-pdf', request()->query()) }}" target="_blank"
+                   onclick="closeExportModal()"
+                   style="padding:9px 24px;background:linear-gradient(135deg,#2dd4bf,#0f766e);color:white;border:none;border-radius:8px;font-size:0.875rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Exporter le PDF
+                </a>
+            </div>
+        </div>
+
+        @else
+        {{-- ⚠️ Données incomplètes --}}
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+            <div style="width:48px;height:48px;border-radius:50%;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#d97706" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h3 style="font-size:1rem;font-weight:700;color:#111827;margin:0 0 4px;">Données incomplètes</h3>
+                <p style="font-size:0.82rem;color:#6b7280;margin:0;">
+                    {{ count($validation['problems']) }} point(s) nécessitent votre attention avant l'export.
+                </p>
+            </div>
+        </div>
+
+        {{-- Liste des problèmes --}}
+        <div style="margin-bottom:20px;">
+            @foreach($validation['problems'] as $problem)
+            <div class="problem-row">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="problem-count">{{ $problem['count'] }}</div>
+                    <div>
+                        <div style="font-size:0.875rem;font-weight:600;color:#111827;">{{ $problem['label'] }}</div>
+                        <div style="font-size:0.72rem;color:#9ca3af;margin-top:1px;">{{ $problem['detail'] ?? '' }}</div>
+                    </div>
+                </div>
+                <a href="{{ $problem['url'] }}" target="_blank"
+                   style="font-size:0.75rem;color:#0ea5e9;font-weight:600;text-decoration:none;padding:5px 12px;border:1px solid #bae6fd;border-radius:6px;background:#f0f9ff;white-space:nowrap;flex-shrink:0;">
+                    Corriger →
+                </a>
+            </div>
+            @endforeach
+        </div>
+
+        {{-- Boutons --}}
+        <div style="border-top:1px solid #f3f4f6;padding-top:16px;">
+            <p style="font-size:0.78rem;color:#9ca3af;margin:0 0 14px;text-align:center;">
+                Corrigez ces points pour un rapport complet, ou exportez quand même avec les données disponibles.
+            </p>
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+                <button onclick="closeExportModal()"
+                        style="padding:9px 16px;border:1px solid #e5e7eb;border-radius:8px;background:white;cursor:pointer;font-size:0.875rem;font-family:inherit;color:#6b7280;">
+                    Annuler
+                </button>
+                <a href="{{ route('reporting.export-pdf', request()->query()) }}" target="_blank"
+                   onclick="closeExportModal()"
+                   style="padding:9px 16px;border:1px solid #fecaca;border-radius:8px;background:#fef2f2;color:#ef4444;font-size:0.875rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:5px;">
+                    <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Exporter quand même
+                </a>
+                <button onclick="closeExportModal()"
+                        style="padding:9px 16px;background:linear-gradient(135deg,#2dd4bf,#0f766e);color:white;border:none;border-radius:8px;font-size:0.875rem;font-weight:700;cursor:pointer;font-family:inherit;">
+                    Corriger d'abord
+                </button>
+            </div>
+        </div>
+        @endif
+
+    </div>
+</div>
 
 <script>
 var currentCurrency = 'MAD';
@@ -218,26 +314,36 @@ var currentCurrency = 'MAD';
 function setCurrency(cur) {
     currentCurrency = cur;
     localStorage.setItem('rpt_currency', cur);
-
-    // Boutons
     document.getElementById('btn-mad').className = 'cur-btn' + (cur==='MAD' ? ' active-mad' : '');
     document.getElementById('btn-mru').className = 'cur-btn' + (cur==='MRU' ? ' active-mru' : '');
-
-    // Badge
     var badge = document.getElementById('cur-badge');
     badge.textContent = cur === 'MAD' ? 'Dirham marocain' : 'Ouguiya mauritanien';
     badge.className   = 'cur-badge ' + (cur==='MAD' ? 'cur-badge-mad' : 'cur-badge-mru');
-
-    // Mettre à jour tous les labels de devise (MAD → MRU ou inverse)
-    document.querySelectorAll('.cur-label').forEach(function(el) {
-        el.textContent = cur;
-    });
+    document.querySelectorAll('.cur-label').forEach(function(el) { el.textContent = cur; });
+    var lbl = document.getElementById('cur-section-label');
+    if (lbl) lbl.textContent = cur === 'MAD' ? 'Dirham marocain (MAD)' : 'Ouguiya mauritanien (MRU)';
+    var recapBadge = document.getElementById('cur-recap-badge');
+    if (recapBadge) {
+        recapBadge.textContent = cur;
+        recapBadge.className   = 'cur-badge ' + (cur === 'MAD' ? 'cur-badge-mad' : 'cur-badge-mru');
+    }
 }
 
-function restoreCurrency() {
-    var saved = localStorage.getItem('rpt_currency') || 'MAD';
-    setCurrency(saved);
+function checkAndExport() {
+    document.getElementById('exportModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
 }
+function closeExportModal() {
+    document.getElementById('exportModal').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+document.getElementById('exportModal').addEventListener('click', function(e) {
+    if (e.target === this) closeExportModal();
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeExportModal();
+});
 </script>
 
 <p class="rpt-period-info">
@@ -257,9 +363,23 @@ function restoreCurrency() {
 </div>
 @endif
 
+@if(!$validation['isReady'])
+<div class="rpt-alert warn" style="cursor:pointer;" onclick="checkAndExport()">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+    </svg>
+    <span>
+        <strong>{{ count($validation['problems']) }} point(s) incomplet(s)</strong> —
+        @foreach($validation['problems'] as $i => $p){{ $p['label'] }}{{ $i < count($validation['problems'])-1 ? ', ' : '' }}@endforeach.
+        <span style="text-decoration:underline;">Cliquez pour voir le détail.</span>
+    </span>
+</div>
+@endif
+
 {{-- ══ SECTION 1 — OPÉRATIONNEL ══ --}}
 <div class="rpt-section-header">
-    <div class="rpt-section-icon" style="background:#e0f2fe">
+    <div style="width:32px;height:32px;border-radius:8px;background:#e0f2fe;display:flex;align-items:center;justify-content:center;">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#0369a1" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
         </svg>
@@ -271,7 +391,6 @@ function restoreCurrency() {
 </div>
 
 <div class="rpt-grid-2">
-    {{-- Effectifs & présences --}}
     <div class="rpt-list-card">
         <div class="rpt-list-card-header"><h3>Effectifs &amp; présences</h3></div>
         <div class="rpt-list-row">
@@ -302,7 +421,6 @@ function restoreCurrency() {
         </div>
     </div>
 
-    {{-- Temps de travail --}}
     <div class="rpt-list-card">
         <div class="rpt-list-card-header"><h3>Temps de travail</h3></div>
         <div class="rpt-list-row">
@@ -323,9 +441,7 @@ function restoreCurrency() {
         <div class="rpt-list-row" style="background:{{ $heuresGarde > 0 ? '#faf5ff' : 'transparent' }}">
             <span class="rpt-list-label">Heures de garde</span>
             <div style="display:flex;align-items:center;gap:8px">
-                <span class="rpt-list-value" style="font-family:monospace;color:{{ $heuresGarde > 0 ? '#6d28d9' : '#6b7280' }}">
-                    {{ number_format($heuresGarde, 1) }} h
-                </span>
+                <span class="rpt-list-value" style="font-family:monospace;color:{{ $heuresGarde > 0 ? '#6d28d9' : '#6b7280' }}">{{ number_format($heuresGarde, 1) }} h</span>
                 @if($nbGardes > 0)<span class="badge-purple">{{ $nbGardes }} garde(s)</span>@endif
             </div>
         </div>
@@ -346,7 +462,6 @@ function restoreCurrency() {
     </div>
 </div>
 
-{{-- Répartition par département --}}
 @if($repartitionDept->isNotEmpty())
 <div class="rpt-list-card" style="margin-bottom:16px">
     <div class="rpt-list-card-header">
@@ -361,13 +476,11 @@ function restoreCurrency() {
             <div class="mini-bar"><div class="mini-bar-fill" style="width:{{ $pct }}%;background:linear-gradient(90deg,#2dd4bf,#0ea5e9)"></div></div>
             <span class="mini-bar-pct">{{ $pct }}%</span>
         </div>
-        <span class="rpt-list-value" style="margin-left:12px;min-width:60px;text-align:right">{{ $dept->total }} sal.</span>
     </div>
     @endforeach
 </div>
 @endif
 
-{{-- Absences par type --}}
 @if($absencesParType->isNotEmpty())
 <div class="rpt-list-card" style="margin-bottom:16px">
     <div class="rpt-list-card-header"><h3>Absences par type</h3></div>
@@ -397,7 +510,8 @@ function restoreCurrency() {
 
 {{-- ══ SECTION 2 — FINANCIER ══ --}}
 <div class="rpt-section-header">
-    <div class="rpt-section-icon" style="background:#dcfce7">
+    <div style="width:32px;height:32px;border-radius:8px;background:#dcfce7;display:flex;align-items:center;justify-content:center;">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#15803d" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
     </div>
@@ -408,8 +522,6 @@ function restoreCurrency() {
 </div>
 
 <div class="rpt-grid-2" style="margin-bottom:16px">
-
-    {{-- Masse salariale --}}
     <div class="rpt-list-card">
         <div class="rpt-list-card-header"><h3>Masse salariale</h3></div>
         <div class="rpt-list-row">
@@ -448,13 +560,11 @@ function restoreCurrency() {
             </span>
         </div>
         <div class="rpt-list-row" style="background:#faf5ff;border-top:1px solid #ede9fe">
-            <span class="rpt-list-label" style="display:flex;align-items:center;gap:6px">Heures de garde (bulletins)</span>
-            <span class="rpt-list-value" style="font-family:monospace;color:#6d28d9">
-                {{ number_format($gardeHeures, 1) }} h
-            </span>
+            <span class="rpt-list-label">Heures de garde (bulletins)</span>
+            <span class="rpt-list-value" style="font-family:monospace;color:#6d28d9">{{ number_format($gardeHeures, 1) }} h</span>
         </div>
         <div class="rpt-list-row" style="background:#faf5ff">
-            <span class="rpt-list-label" style="display:flex;align-items:center;gap:6px">Paiement gardes</span>
+            <span class="rpt-list-label">Paiement gardes</span>
             <span class="rpt-list-value" style="font-family:monospace;color:#6d28d9;font-weight:700">
                 <span id="val-gardeTotal">{{ number_format($gardeTotal, 2, ',', ' ') }}</span>
                 <span class="cur-label">MAD</span>
@@ -462,7 +572,6 @@ function restoreCurrency() {
         </div>
     </div>
 
-    {{-- Charges & déclarations --}}
     <div class="rpt-list-card">
         <div class="rpt-list-card-header"><h3>Charges &amp; déclarations</h3></div>
         <div class="rpt-list-row">
@@ -510,7 +619,6 @@ function restoreCurrency() {
     </div>
 </div>
 
-{{-- Bulletins de paie --}}
 <div class="rpt-list-card" style="margin-bottom:16px">
     <div class="rpt-list-card-header">
         <h3>État des bulletins de paie</h3>
@@ -539,7 +647,6 @@ function restoreCurrency() {
     </div>
 </div>
 
-{{-- Récapitulatif financier complet --}}
 <div class="rpt-list-card" style="margin-bottom:24px">
     <div class="rpt-list-card-header">
         <h3>Récapitulatif financier complet</h3>
@@ -573,10 +680,7 @@ function restoreCurrency() {
             <tr class="{{ $label === 'Coût employeur total' ? 'highlight-row' : ($isGarde ? 'garde-row' : '') }}">
                 <td style="font-weight:{{ $label === 'Coût employeur total' ? '700' : '400' }}">
                     @if($isGarde)
-                        <span style="display:inline-flex;align-items:center;gap:5px">
-                            {{ $label }}
-                            <span style="font-size:0.72rem;color:#8b5cf6;font-weight:400">({{ $gardeHeures }} h)</span>
-                        </span>
+                        {{ $label }} <span style="font-size:0.72rem;color:#8b5cf6;font-weight:400">({{ $gardeHeures }} h)</span>
                     @else
                         {{ $label }}
                     @endif
@@ -585,9 +689,7 @@ function restoreCurrency() {
                     <span id="{{ $valId }}">{{ number_format($montant, 2, ',', ' ') }}</span>
                 </td>
                 <td style="text-align:right">
-                    <div class="mini-bar-wrap" style="justify-content:flex-end">
-                        <span class="mini-bar-pct">{{ $pct }}%</span>
-                    </div>
+                    <span class="mini-bar-pct">{{ $pct }}%</span>
                 </td>
                 <td><span class="{{ $badgeClass }}">{{ $nature }}</span></td>
             </tr>
@@ -617,22 +719,9 @@ document.querySelectorAll('.mini-bar-fill').forEach(function(el) {
     setTimeout(function() { el.style.width = w; }, 250);
 });
 
-// Surcharger setCurrency pour mettre aussi à jour le label de section
-var _origSetCurrency = setCurrency;
-setCurrency = function(cur) {
-    _origSetCurrency(cur);
-    var lbl = document.getElementById('cur-section-label');
-    if (lbl) lbl.textContent = cur === 'MAD' ? 'Dirham marocain (MAD)' : 'Ouguiya mauritanien (MRU)';
-    var recapBadge = document.getElementById('cur-recap-badge');
-    if (recapBadge) {
-        recapBadge.textContent = cur;
-        recapBadge.className   = 'cur-badge ' + (cur === 'MAD' ? 'cur-badge-mad' : 'cur-badge-mru');
-    }
-};
-
-// Restaurer la devise sauvegardée
 document.addEventListener('DOMContentLoaded', function() {
-    restoreCurrency();
+    var saved = localStorage.getItem('rpt_currency') || 'MAD';
+    setCurrency(saved);
 });
 </script>
 @endpush

@@ -38,6 +38,9 @@ use App\Http\Controllers\ParametrageController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\FormationController;
 use App\Http\Controllers\ReferentielController;
+use App\Http\Controllers\TwoFactorController;
+use App\Http\Controllers\SuperAdmin\VerificationCodeController;
+
 
 // ═════════════════════════════════════════════════════════════════════════════
 // DEBUG TEMPORAIRE — À SUPPRIMER APRÈS TEST
@@ -85,6 +88,11 @@ Route::get('/login',   [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login',  [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+Route::middleware(['auth'])->group(function () {
+    Route::get('/verify-2fa',  [TwoFactorController::class, 'show'])  ->name('2fa.show');
+    Route::post('/verify-2fa', [TwoFactorController::class, 'verify'])->name('2fa.verify');
+});
+
 // ═════════════════════════════════════════════════════════════════════════════
 // SUPERADMIN
 // ═════════════════════════════════════════════════════════════════════════════
@@ -110,12 +118,29 @@ Route::middleware(['auth', 'superadmin'])
         Route::get('clients/{tenant}', [ClientController::class, 'show'])->name('clients.show');
 
         Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
+        Route::prefix('codes')->name('codes.')->group(function () {
+    Route::get('/',                              [VerificationCodeController::class, 'index'])      ->name('index');
+    Route::post('/generate',                     [VerificationCodeController::class, 'generate'])   ->name('generate');
+    Route::post('/assign',                       [VerificationCodeController::class, 'assign'])     ->name('assign');
+    Route::delete('/{verificationCode}/revoke',  [VerificationCodeController::class, 'revoke'])    ->name('revoke');
+    Route::post('/users/{user}/replace',         [VerificationCodeController::class, 'replace'])   ->name('replace');
+    Route::get('/tenant/{tenantId}',             [VerificationCodeController::class, 'tenantCodes'])->name('tenant');
+    Route::get('/tenant-stats/{tenantId}',       [VerificationCodeController::class, 'tenantStats'])->name('tenant-stats');
+    Route::post('/generate-missing',             [VerificationCodeController::class, 'generateMissing'])->name('generate-missing');
+    Route::post('/renew-quarter',                [VerificationCodeController::class, 'renewQuarter'])->name('renew-quarter');
+    Route::post('/replace-user/{user}',          [VerificationCodeController::class, 'replaceForUser'])->name('replace-user');
+    Route::delete('/{verificationCode}/revoke',  [VerificationCodeController::class, 'revoke'])->name('revoke');
+
+    // Routes AJAX pour la régénération
+    Route::post('/regen-single',                 [VerificationCodeController::class, 'regenSingle'])->name('regen-single');
+    Route::post('/regen-all',                    [VerificationCodeController::class, 'regenAll'])   ->name('regen-all');
+});
     });
 
 // ═════════════════════════════════════════════════════════════════════════════
 // APPLICATION PRINCIPALE — tenant + auth
 // ═════════════════════════════════════════════════════════════════════════════
-Route::middleware(['web', 'domain-tenant', 'auth', 'identify-tenant'])->group(function () {
+Route::middleware(['web', 'auth', 'identify-tenant', '2fa'])->group(function () {
 
     // ── Redirection racine ────────────────────────────────────────────────
     Route::get('/', function () {
@@ -254,6 +279,9 @@ Route::middleware(['web', 'domain-tenant', 'auth', 'identify-tenant'])->group(fu
         // ── Paramétrage — rh + admin
         Route::middleware(['role:admin,rh'])->group(function () {
             Route::get('/parametrage', [ParametrageController::class, 'index'])->name('parametrage.index');
+            Route::post('/parametrage/documents/upload', [ParametrageController::class, 'uploadDocument'])->name('parametrage.documents.upload');
+            Route::get('/parametrage/employees/{id}/documents', [ParametrageController::class, 'getEmployeeDocuments']);
+            Route::delete('/parametrage/documents/{id}', [ParametrageController::class, 'deleteDocument']);
 
             Route::post('/departments',                [DepartmentController::class, 'store'])  ->name('departments.store');
             Route::put('/departments/{department}',    [DepartmentController::class, 'update']) ->name('departments.update');

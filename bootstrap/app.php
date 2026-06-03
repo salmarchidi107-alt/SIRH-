@@ -16,12 +16,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin'           => \App\Http\Middleware\Admin::class,
             'employee'        => \App\Http\Middleware\Employee::class,
             'superadmin'      => \App\Http\Middleware\SuperAdmin::class,
-            'domain-tenant'   => \App\Http\Middleware\DomainTenant::class,
             'tenant-user'     => \App\Http\Middleware\Authenticated::class,
             'badge.auth'      => \App\Http\Middleware\BadgeGuard::class,
             'role'            => \App\Http\Middleware\CheckRole::class,
             'ensure.absence.employee' => \App\Http\Middleware\EnsureAbsenceEmployeeId::class,
             'permission' => \App\Http\Middleware\CheckModulePermission::class,
+            '2fa' => \App\Http\Middleware\Require2FA::class,
+
         ]);
 
     })

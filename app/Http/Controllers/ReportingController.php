@@ -18,8 +18,6 @@ class ReportingController extends Controller
     private const TZ      = 'Africa/Casablanca';
     private const PAUSE_H = 1.0;
 
-    // Tous les noms de shift_type considérés comme "garde"
-    // Inclure les variantes avec majuscule (confirmé : 'Garde' dans le planning)
     private const GARDE_SHIFT_TYPES = [
         'garde', 'Garde', 'GARDE',
         'night', 'Night', 'nuit', 'Nuit',
@@ -56,7 +54,6 @@ class ReportingController extends Controller
 
             Log::debug('Reporting - statuts employés', ['statuts' => $sample]);
 
-            // Statuts confirmés en base : 'active' (anglais)
             $actifValues = array_values(array_filter($sample, function ($s) {
                 return in_array(strtolower(trim((string)$s)), [
                     'actif', 'active', '1', 'true', 'en_poste', 'employe',
@@ -73,8 +70,127 @@ class ReportingController extends Controller
     }
 
     // =========================================================================
-    // INDEX
+    // Validation avant export PDF
     // =========================================================================
+    private function getValidationStatus($tenantId, Carbon $startDate, Carbon $endDate): array
+    {
+        $problems = [];
+
+        // 1. Bulletins non generés ou non validés
+        try {
+            $empQuery  = $this->getEmployeesQuery($tenantId);
+            $allEmpIds = $empQuery->pluck('id')->toArray();
+            $nbrActifs = count($allEmpIds);
+
+            if ($nbrActifs > 0) {
+                $periodesMois = $this->getPeriodesMois($startDate, $endDate);
+
+                $salariesQuery = Salary::whereIn('employee_id', $allEmpIds)
+                    ->where(function ($q) use ($periodesMois) {
+                        foreach ($periodesMois as $pm) {
+                            $q->orWhere(fn($i) => $i->where('month', $pm['month'])->where('year', $pm['year']));
+                        }
+                    })
+                    ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId));
+
+                $empAvecBulletin    = (clone $salariesQuery)->distinct('employee_id')->count('employee_id');
+                $bulletinsManquants = max(0, $nbrActifs - $empAvecBulletin);
+                $bulletinsNonValides = (clone $salariesQuery)
+                    ->whereNotIn('status', ['validated', 'paid', 'valide', 'paye'])
+                    ->count();
+
+                if ($bulletinsManquants > 0) {
+                    $problems[] = [
+                        'type'   => 'bulletins_manquants',
+                        'label'  => 'Bulletins de paie non générés',
+                        'detail' => $bulletinsManquants . ' employé(s) actif(s) sans bulletin sur cette période',
+                        'count'  => $bulletinsManquants,
+                        'url'    => route('salary.index'),
+                    ];
+                }
+
+                if ($bulletinsNonValides > 0) {
+                    $problems[] = [
+                        'type'   => 'bulletins_invalides',
+                        'label'  => 'Bulletins de paie non validés',
+                        'detail' => $bulletinsNonValides . ' bulletin(s) en attente de validation',
+                        'count'  => $bulletinsNonValides,
+                        'url'    => route('salary.index'),
+                    ];
+                }
+            }
+        } catch (\Exception $e) {
+            Log::debug('Reporting - validation bulletins erreur', ['error' => $e->getMessage()]);
+        }
+
+        // 2. Pointages non validés
+        try {
+            $ptgBase = Pointage::withoutGlobalScope(TenantScope::class)
+                ->whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
+                ->where(fn($q) => $q->where('statut', 'present')->orWhere('statut', 'présent'));
+
+            $totalPointages   = (clone $ptgBase)->count();
+            $pointagesValides = (clone $ptgBase)
+                ->where(fn($q) => $q->where('valide', true)->orWhere('valide', 1))
+                ->count();
+
+            $pointagesNonValides = max(0, $totalPointages - $pointagesValides);
+
+            if ($pointagesNonValides > 0) {
+                $problems[] = [
+                    'type'   => 'pointages',
+                    'label'  => 'Pointages non validés',
+                    'detail' => $pointagesNonValides . ' pointage(s) de présence non confirmé(s)',
+                    'count'  => $pointagesNonValides,
+                    'url'    => route('pointage.index'),
+                ];
+            }
+        } catch (\Exception $e) {
+            Log::debug('Reporting - validation pointages erreur', ['error' => $e->getMessage()]);
+        }
+
+        // 3. Employés actifs sans planning
+        try {
+            $empQuery  = $this->getEmployeesQuery($tenantId);
+            $allEmpIds = $empQuery->pluck('id')->toArray();
+
+            $empAvecPlanAvec = $tenantId
+                ? Planning::whereIn('employee_id', $allEmpIds)
+                    ->whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                    ->where('tenant_id', $tenantId)
+                    ->distinct('employee_id')->count('employee_id')
+                : 0;
+
+            $empAvecPlanSans = Planning::whereIn('employee_id', $allEmpIds)
+                ->whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                ->distinct('employee_id')->count('employee_id');
+
+            $empAvecPlan     = max($empAvecPlanAvec, $empAvecPlanSans);
+            $empSansPlanning = max(0, count($allEmpIds) - $empAvecPlan);
+
+            if ($empSansPlanning > 0) {
+                $problems[] = [
+                    'type'   => 'planning',
+                    'label'  => 'Employés sans planning',
+                    'detail' => $empSansPlanning . ' employé(s) actif(s) sans planning sur cette période',
+                    'count'  => $empSansPlanning,
+                    'url'    => route('planning.weekly'),
+                ];
+            }
+        } catch (\Exception $e) {
+            Log::debug('Reporting - validation planning erreur', ['error' => $e->getMessage()]);
+        }
+
+        return [
+            'isReady'  => empty($problems),
+            'problems' => $problems,
+        ];
+    }
+
+
+
+
     public function index(Request $request)
     {
         $periode     = $request->get('periode', 'month');
@@ -127,6 +243,9 @@ class ReportingController extends Controller
         $evolutionMasse  = $this->evolutionMasseSalariale($tenantId, $employeeIds, $startDate);
         $departments     = $this->getDepartments($tenantId);
 
+        // ── Validation avant export ──
+        $validation = $this->getValidationStatus($tenantId, $startDate, $endDate);
+
         Log::debug('Reporting - résultat', [
             'nbrSalaries'     => $nbrSalaries,
             'heurePlanifiees' => $heurePlanifiees,
@@ -136,6 +255,7 @@ class ReportingController extends Controller
             'masseBrute'      => $fin['masseSalarialeBrute'],
             'gardeTotal'      => $fin['gardeTotal'],
             'gardeHeures'     => $fin['gardeHeures'],
+            'validation'      => $validation,
         ]);
 
         return view('reporting.index', [
@@ -177,6 +297,7 @@ class ReportingController extends Controller
             'gardeTotal'          => $fin['gardeTotal'],
             'gardeHeures'         => $fin['gardeHeures'],
             'evolutionMasse'      => $evolutionMasse,
+            'validation'          => $validation,
         ]);
     }
 
@@ -200,7 +321,7 @@ class ReportingController extends Controller
     }
 
     // =========================================================================
-    // HEURES DE GARDE — depuis Pointage (shift_type dans GARDE_SHIFT_TYPES)
+    // HEURES DE GARDE
     // =========================================================================
     private function calcGardeData($tenantId, array $ids, Carbon $debut, Carbon $fin): array
     {
@@ -208,7 +329,6 @@ class ReportingController extends Controller
             return ['count' => 0, 'heures' => 0.0];
         }
 
-        // ── Log diagnostic : voir tous les shift_type présents sur la période ──
         try {
             $typesPresents = Pointage::withoutGlobalScope(TenantScope::class)
                 ->whereIn('employee_id', $ids)
@@ -235,20 +355,13 @@ class ReportingController extends Controller
             ->whereBetween('date', [$debut->toDateString(), $fin->toDateString()])
             ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId));
 
-        $count = (clone $base)->count();
-
-        // Ordre de priorité basé sur les données réelles (debug) :
-        // total_heures est plus souvent renseigné que heures_travaillees
-
-        // Tentative 1 : total_heures (colonne fiable confirmée)
+        $count  = (clone $base)->count();
         $heures = (float) (clone $base)->whereNotNull('total_heures')->sum('total_heures');
 
-        // Tentative 2 : heures_travaillees
         if ($heures === 0.0) {
             $heures = (float) (clone $base)->whereNotNull('heures_travaillees')->sum('heures_travaillees');
         }
 
-        // Tentative 3 : TIMEDIFF heure_entree/heure_sortie
         if ($heures === 0.0) {
             try {
                 $h = (float) (clone $base)
@@ -259,7 +372,6 @@ class ReportingController extends Controller
             } catch (\Exception $e) {}
         }
 
-        // Tentative 4 : autres colonnes
         if ($heures === 0.0) {
             foreach (['hours_worked', 'duree', 'nb_heures', 'heures'] as $col) {
                 try {
@@ -269,12 +381,8 @@ class ReportingController extends Controller
             }
         }
 
-        // ── Fallback 5 : chercher dans la table Planning (shift_type = 'Garde') ──
-        // Screenshot confirme : Planning stocke les gardes avec shift_type='Garde'
-        // et les heures dans shift_start/shift_end
         if ($heures === 0.0 || $count === 0) {
             try {
-                // Essayer sans tenant puis avec tenant (même logique que calcHeuresPlanifiees)
                 $gardeQueryBase = fn($withTenant) => Planning::whereIn('employee_id', $ids)
                     ->whereIn('shift_type', self::GARDE_SHIFT_TYPES)
                     ->whereBetween('date', [$debut->toDateString(), $fin->toDateString()])
@@ -284,8 +392,8 @@ class ReportingController extends Controller
                 $countAvec  = $tenantId ? (clone $gardeQueryBase(true))->count() : 0;
                 $countSans  = (clone $gardeQueryBase(false))->count();
 
-                if ($countAvec > 0)      $planGardes = $gardeQueryBase(true)->get();
-                elseif ($countSans > 0)  $planGardes = $gardeQueryBase(false)->get();
+                if ($countAvec > 0)     $planGardes = $gardeQueryBase(true)->get();
+                elseif ($countSans > 0) $planGardes = $gardeQueryBase(false)->get();
 
                 if ($planGardes && $planGardes->isNotEmpty()) {
                     if ($count === 0) $count = $planGardes->count();
@@ -390,17 +498,9 @@ class ReportingController extends Controller
     {
         if (empty($ids)) return 0.0;
 
-        // Données réelles (screenshot) :
-        //   shift_type : 'Journée', 'Matin', 'Garde' (avec majuscule)
-        //   colonnes   : shift_start / shift_end  ex: "09:00" / "18:00"
-        //   La table plannings EXISTE mais le filtre tenant_id peut être absent
-
-        // ── Priorité 1 : table plannings SANS filtre tenant (plus sûr) ───
         $planningsQuery = fn() => Planning::whereIn('employee_id', $ids)
             ->whereBetween('date', [$debut->toDateString(), $fin->toDateString()]);
 
-        // Essayer d'abord sans tenant (au cas où Planning n'a pas la colonne)
-        // puis avec tenant si ça marche
         $planBase = null;
         try {
             $countSansTenant = (clone $planningsQuery())->count();
@@ -414,7 +514,6 @@ class ReportingController extends Controller
                 'tenant_id'   => $tenantId,
             ]);
 
-            // Utiliser le filtre qui retourne des résultats
             if ($countAvecTenant > 0) {
                 $planBase = fn() => Planning::whereIn('employee_id', $ids)
                     ->whereBetween('date', [$debut->toDateString(), $fin->toDateString()])
@@ -428,7 +527,6 @@ class ReportingController extends Controller
         }
 
         if ($planBase !== null) {
-            // Paires de colonnes à tester — shift_start/shift_end en premier
             $timePairs = [
                 ['shift_start', 'shift_end'],
                 ['start_time',  'end_time'],
@@ -442,7 +540,7 @@ class ReportingController extends Controller
                     $rows = $planBase()
                         ->whereNotNull($cs)
                         ->whereNotNull($ce)
-                        ->whereNotIn('shift_type', self::GARDE_SHIFT_TYPES) // exclure gardes
+                        ->whereNotIn('shift_type', self::GARDE_SHIFT_TYPES)
                         ->get(['date', $cs, $ce, 'shift_type']);
 
                     if ($rows->isEmpty()) continue;
@@ -456,10 +554,9 @@ class ReportingController extends Controller
                             $d = Carbon::parse($p->date);
                             $s = $d->copy()->setTimeFromTimeString($sv);
                             $e = $d->copy()->setTimeFromTimeString($ev);
-                            if ($e->lte($s)) $e->addDay(); // shift de nuit
+                            if ($e->lte($s)) $e->addDay();
                             $dur = min($s->diffInMinutes($e) / 60, 24.0);
                             if ($dur > 0) {
-                                // Soustraire pause seulement si shift > 4h
                                 $total += $dur > 4.0 ? max(0.0, $dur - self::PAUSE_H) : $dur;
                             }
                         } catch (\Exception $ex) {}
@@ -472,7 +569,6 @@ class ReportingController extends Controller
                 } catch (\Exception $e) {}
             }
 
-            // Colonnes heures directes
             foreach (['hours', 'heures', 'duration', 'duree', 'nb_heures', 'total_hours'] as $col) {
                 try {
                     $h = (float) $planBase()
@@ -486,7 +582,6 @@ class ReportingController extends Controller
             }
         }
 
-        // ── Priorité 2 : fallback sur les pointages ───────────────────────
         try {
             $mkPtg = fn() => Pointage::withoutGlobalScope(TenantScope::class)
                 ->whereIn('employee_id', $ids)
@@ -532,31 +627,22 @@ class ReportingController extends Controller
     {
         if (empty($ids)) return 0.0;
 
-        // Données réelles confirmées par debug :
-        // - colonne "total_heures"       : décimal string ("0.10"), fiable
-        // - colonne "heures_travaillees" : souvent NULL
-        // - heure_sortie parfois NULL    : exclure ces lignes du TIMEDIFF
-        // - valide=1 sur peu de lignes   : on somme tout (présents + non validés)
-
         $mkBase = fn() => Pointage::withoutGlobalScope(TenantScope::class)
             ->whereIn('employee_id', $ids)
             ->whereBetween('date', [$debut->toDateString(), $fin->toDateString()])
             ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
-            ->whereNotIn('shift_type', self::GARDE_SHIFT_TYPES); // exclure les gardes
+            ->whereNotIn('shift_type', self::GARDE_SHIFT_TYPES);
 
-        // ── 1. total_heures (colonne la plus fiable d'après debug) ──
         try {
             $h = (float) $mkBase()->whereNotNull('total_heures')->sum('total_heures');
             if ($h > 0.0) return round($h, 1);
         } catch (\Exception $e) {}
 
-        // ── 2. heures_travaillees ──
         try {
             $h = (float) $mkBase()->whereNotNull('heures_travaillees')->sum('heures_travaillees');
             if ($h > 0.0) return round($h, 1);
         } catch (\Exception $e) {}
 
-        // ── 3. TIMEDIFF heure_entree/heure_sortie (heure_sortie NOT NULL) ──
         try {
             $h = (float) $mkBase()
                 ->whereNotNull('heure_entree')
@@ -565,7 +651,6 @@ class ReportingController extends Controller
             if ($h > 0.0) return round($h, 1);
         } catch (\Exception $e) {}
 
-        // ── 4. Autres colonnes ──
         foreach (['hours_worked', 'duree', 'nb_heures', 'heures'] as $col) {
             try {
                 $h = (float) $mkBase()->whereNotNull($col)->sum($col);
@@ -620,7 +705,6 @@ class ReportingController extends Controller
 
         if ($salaries->isEmpty()) return $zero;
 
-        // ── Log diagnostic des colonnes Salary ──
         Log::debug('Reporting - colonnes salary (premier bulletin)', [
             'keys' => array_keys($salaries->first()?->getAttributes() ?? []),
         ]);
@@ -634,40 +718,27 @@ class ReportingController extends Controller
         $amoPatron           = round((float) ($salaries->sum('employer_amo')  ?: $salaries->sum('amo_employer')  ?: 0), 2);
         $coutEmployeur       = round((float) ($salaries->sum('employer_total_cost') ?: 0), 2);
 
-        // ── GARDE heures : tous les noms de colonnes possibles ──
         $gardeHeures = 0.0;
-        foreach ([
-            'garde_hours', 'heures_garde', 'night_hours',
-            'overtime_night_hours', 'garde_h', 'hours_garde',
-        ] as $col) {
+        foreach (['garde_hours','heures_garde','night_hours','overtime_night_hours','garde_h','hours_garde'] as $col) {
             $v = (float) $salaries->sum($col);
             if ($v > 0.0) { $gardeHeures = round($v, 1); break; }
         }
 
-        // ── GARDE montant : tous les noms de colonnes possibles ──
         $gardeTotal = 0.0;
-        foreach ([
-            'overtime_night_amount', 'garde_amount', 'garde_indemnite',
-            'indemnite_garde', 'night_pay', 'montant_garde',
-            'garde_pay', 'astreinte_amount',
-        ] as $col) {
+        foreach (['overtime_night_amount','garde_amount','garde_indemnite','indemnite_garde','night_pay','montant_garde','garde_pay','astreinte_amount'] as $col) {
             $v = (float) $salaries->sum($col);
             if ($v > 0.0) { $gardeTotal = round($v, 2); break; }
         }
 
-        // ── Fallback gardeHeures : Priorité 1 → Planning (source principale confirmée) ──
         if ($gardeHeures === 0.0 && !empty($employeeIds) && $debut && $fin) {
             try {
-                // Les gardes sont stockées dans Planning avec shift_type='Garde'
-                // et les horaires dans shift_start/shift_end (ex: "20:00"/"08:00")
-                // On essaie sans tenant puis avec tenant (même logique que calcHeuresPlanifiees)
                 $gardeQueryFn = fn($withTenant) => Planning::whereIn('employee_id', $employeeIds)
                     ->whereIn('shift_type', self::GARDE_SHIFT_TYPES)
                     ->whereBetween('date', [$debut->toDateString(), $fin->toDateString()])
                     ->when($withTenant && $tenantId, fn($q) => $q->where('tenant_id', $tenantId));
 
-                $countAvec = $tenantId ? (clone $gardeQueryFn(true))->count() : 0;
-                $countSans = (clone $gardeQueryFn(false))->count();
+                $countAvec  = $tenantId ? (clone $gardeQueryFn(true))->count() : 0;
+                $countSans  = (clone $gardeQueryFn(false))->count();
                 $planGardes = null;
 
                 if ($countAvec > 0)     $planGardes = $gardeQueryFn(true)->get();
@@ -685,7 +756,7 @@ class ReportingController extends Controller
                                 $d = Carbon::parse($pg->date);
                                 $s = $d->copy()->setTimeFromTimeString($sv);
                                 $e = $d->copy()->setTimeFromTimeString($ev);
-                                if ($e->lte($s)) $e->addDay(); // shift nuit ex: 20:00→08:00
+                                if ($e->lte($s)) $e->addDay();
                                 $dur = min($s->diffInMinutes($e) / 60, 24.0);
                                 if ($dur > 0) $total += $dur;
                             } catch (\Exception $ex) {}
@@ -702,7 +773,6 @@ class ReportingController extends Controller
             }
         }
 
-        // ── Fallback gardeHeures : Priorité 2 → Pointage ─────────────────
         if ($gardeHeures === 0.0 && !empty($employeeIds) && $debut && $fin) {
             try {
                 $mkPtgGarde = fn() => Pointage::withoutGlobalScope(TenantScope::class)
@@ -711,7 +781,7 @@ class ReportingController extends Controller
                     ->whereBetween('date', [$debut->toDateString(), $fin->toDateString()])
                     ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId));
 
-                foreach (['total_heures', 'heures_travaillees', 'hours_worked', 'duree'] as $col) {
+                foreach (['total_heures','heures_travaillees','hours_worked','duree'] as $col) {
                     $h = (float) $mkPtgGarde()->whereNotNull($col)->sum($col);
                     if ($h > 0.0) { $gardeHeures = round($h, 1); break; }
                 }
@@ -727,9 +797,7 @@ class ReportingController extends Controller
             }
         }
 
-        // ── Calcul gardeTotal depuis gardeHeures × taux horaire (base 191.25h Maroc) ──
         if ($gardeTotal === 0.0 && $gardeHeures > 0.0 && $masseSalarialeBrute > 0 && $salaries->count() > 0) {
-            // Taux horaire moyen = masse brute / (nb bulletins × 191.25h mensuel légal Maroc)
             $tauxHMoyen = $masseSalarialeBrute / ($salaries->count() * 191.25);
             $gardeTotal = round($tauxHMoyen * $gardeHeures, 2);
             Log::debug('Reporting - gardeTotal calculé', [
@@ -739,7 +807,6 @@ class ReportingController extends Controller
             ]);
         }
 
-        // ── Fallback colonnes patronales ──
         if ($cnssPatron    === 0.0 && $masseSalarialeBrute > 0) $cnssPatron    = round($masseSalarialeBrute * 0.0898, 2);
         if ($amoPatron     === 0.0 && $masseSalarialeBrute > 0) $amoPatron     = round($masseSalarialeBrute * 0.0226, 2);
         if ($coutEmployeur === 0.0)                              $coutEmployeur = round($masseSalarialeBrute + $cnssPatron + $amoPatron, 2);
@@ -931,126 +998,104 @@ class ReportingController extends Controller
             'heuresGarde','nbGardes','evolutionMasse'
         ), $fin);
     }
+
     // =========================================================================
     // DEBUG — route temporaire : /reporting/debug
-    // Ajouter dans routes/web.php : Route::get('/reporting/debug', [ReportingController::class, 'debug']);
-    // SUPPRIMER après diagnostic
     // =========================================================================
     public function debug(Request $request)
     {
-        $tenantId    = $this->getTenantId();
-        $startDate   = Carbon::now()->startOfMonth();
-        $endDate     = Carbon::now()->endOfMonth();
+        $tenantId  = $this->getTenantId();
+        $startDate = Carbon::now()->startOfMonth();
+        $endDate   = Carbon::now()->endOfMonth();
 
-        // ── Employés ──
-        $empQuery    = $this->getEmployeesQuery($tenantId);
-        $employees   = $empQuery->get(['id','first_name','last_name','status','department_id']);
-        $ids         = $employees->pluck('id')->toArray();
+        $empQuery  = $this->getEmployeesQuery($tenantId);
+        $employees = $empQuery->get(['id','first_name','last_name','status','department_id']);
+        $ids       = $employees->pluck('id')->toArray();
 
-        // ── Statuts distincts ──
-        $allStatuts  = Employee::when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
+        $allStatuts = Employee::when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
             ->select('status')->distinct()->pluck('status');
 
-        // ── Planning : premier enregistrement + colonnes ──
-        $planSample  = null;
-        $planCols    = [];
-        $planCount   = 0;
+        $planSample = null; $planCols = []; $planCount = 0;
         try {
             $planCount  = Planning::whereIn('employee_id', $ids)
                 ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
-                ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
-                ->count();
+                ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))->count();
             $planSample = Planning::whereIn('employee_id', $ids)
                 ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
-                ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
-                ->first();
+                ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))->first();
             $planCols   = $planSample ? array_keys($planSample->getAttributes()) : [];
         } catch (\Exception $e) {}
 
-        // ── Planning : shift_types distincts ──
         $planShiftTypes = [];
         try {
             $planShiftTypes = Planning::whereIn('employee_id', $ids)
                 ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
-                ->whereNotNull('shift_type')
-                ->select('shift_type')->distinct()->pluck('shift_type')->toArray();
+                ->whereNotNull('shift_type')->select('shift_type')->distinct()->pluck('shift_type')->toArray();
         } catch (\Exception $e) {}
 
-        // ── Planning : valeurs shift_start et shift_end sur 3 lignes ──
         $planSamples = [];
         try {
             $planSamples = Planning::whereIn('employee_id', $ids)
                 ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
                 ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
-                ->limit(3)
-                ->get()
-                ->map(fn($p) => $p->getAttributes())
-                ->toArray();
+                ->limit(3)->get()->map(fn($p) => $p->getAttributes())->toArray();
         } catch (\Exception $e) {}
 
-        // ── Pointage : premier enregistrement + colonnes ──
-        $ptgSample  = null;
-        $ptgCols    = [];
-        $ptgCount   = 0;
+        $ptgSample = null; $ptgCols = []; $ptgCount = 0;
         try {
-            $ptgCount  = \App\Models\Pointage::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            $ptgCount  = Pointage::withoutGlobalScope(TenantScope::class)
                 ->whereIn('employee_id', $ids)
                 ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
-                ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
-                ->count();
-            $ptgSample = \App\Models\Pointage::withoutGlobalScope(\App\Scopes\TenantScope::class)
+                ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))->count();
+            $ptgSample = Pointage::withoutGlobalScope(TenantScope::class)
                 ->whereIn('employee_id', $ids)
                 ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
-                ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
-                ->first();
+                ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))->first();
             $ptgCols   = $ptgSample ? array_keys($ptgSample->getAttributes()) : [];
         } catch (\Exception $e) {}
 
-        // ── Pointage : shift_types distincts ──
         $ptgShiftTypes = [];
         try {
-            $ptgShiftTypes = \App\Models\Pointage::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            $ptgShiftTypes = Pointage::withoutGlobalScope(TenantScope::class)
                 ->whereIn('employee_id', $ids)
                 ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
-                ->whereNotNull('shift_type')
-                ->select('shift_type')->distinct()->pluck('shift_type')->toArray();
+                ->whereNotNull('shift_type')->select('shift_type')->distinct()->pluck('shift_type')->toArray();
         } catch (\Exception $e) {}
 
-        // ── Pointage : 3 lignes avec valeurs ──
         $ptgSamples = [];
         try {
-            $ptgSamples = \App\Models\Pointage::withoutGlobalScope(\App\Scopes\TenantScope::class)
+            $ptgSamples = Pointage::withoutGlobalScope(TenantScope::class)
                 ->whereIn('employee_id', $ids)
                 ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
                 ->when($tenantId, fn($q) => $q->where('tenant_id', $tenantId))
-                ->limit(3)
-                ->get()
-                ->map(fn($p) => $p->getAttributes())
-                ->toArray();
+                ->limit(3)->get()->map(fn($p) => $p->getAttributes())->toArray();
         } catch (\Exception $e) {}
 
+        // Validation status
+        $validation = $this->getValidationStatus($tenantId, $startDate, $endDate);
+
         return response()->json([
-            'periode'           => $startDate->toDateString() . ' → ' . $endDate->toDateString(),
-            'tenant_id'         => $tenantId,
-            'employes' => [
+            'periode'    => $startDate->toDateString() . ' → ' . $endDate->toDateString(),
+            'tenant_id'  => $tenantId,
+            'validation' => $validation,
+            'employes'   => [
                 'total'          => $employees->count(),
                 'statuts_tous'   => $allStatuts,
                 'statuts_actifs' => $employees->pluck('status')->unique()->values(),
                 'ids'            => array_slice($ids, 0, 10),
             ],
-            'planning' => [
-                'count'          => $planCount,
-                'colonnes'       => $planCols,
-                'shift_types'    => $planShiftTypes,
-                'exemples'       => $planSamples,
+            'planning'   => [
+                'count'       => $planCount,
+                'colonnes'    => $planCols,
+                'shift_types' => $planShiftTypes,
+                'exemples'    => $planSamples,
             ],
-            'pointage' => [
-                'count'          => $ptgCount,
-                'colonnes'       => $ptgCols,
-                'shift_types'    => $ptgShiftTypes,
-                'exemples'       => $ptgSamples,
+            'pointage'   => [
+                'count'       => $ptgCount,
+                'colonnes'    => $ptgCols,
+                'shift_types' => $ptgShiftTypes,
+                'exemples'    => $ptgSamples,
             ],
         ], 200, [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
-
 }

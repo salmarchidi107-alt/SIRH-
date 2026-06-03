@@ -78,6 +78,16 @@ class User extends Authenticatable
     {
         return $this->hasOne(Employee::class, 'user_id');
     }
+    public function verificationCodes()
+    {
+        return $this->hasMany(\App\Models\VerificationCode::class, 'user_id');
+    }
+
+    public function activeVerificationCode()
+    {
+        return $this->hasOne(\App\Models\VerificationCode::class, 'user_id')
+            ->where('status', \App\Models\VerificationCode::STATUS_ASSIGNED);
+    }
 
     public function modulePermissions()
     {

@@ -369,6 +369,15 @@
         </div>
         <span class="trim-next-badge" id="trimNextLabel">Renouvellement : <?php echo e($nextDate); ?></span>
     </div>
+    <button class="gen-btn gen-btn-outline"
+        style="margin-left:auto;"
+        onclick="confirmRenewAllTenants()">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+    </svg>
+    Renouveler tous
+</button>
 </div>
 
 
@@ -668,6 +677,7 @@
 <script>
 const REVOKE_BASE_URL = "/superadmin/codes/";
 const REVOKE_BASE_SUFFIX = "/revoke";
+const FORCE_RENEW_URL = "<?php echo e(route('superadmin.codes.force-renew')); ?>";
 </script>
 
 
@@ -714,6 +724,58 @@ function selectQ(btn) {
     fill.style.background = btn.dataset.color;
     document.getElementById('trimBarLabel').textContent  = pct + '% écoulé';
     document.getElementById('trimNextLabel').textContent = 'Renouvellement : ' + btn.dataset.next;
+}
+/* ══════════════════════════════════════════════════════════════════
+   RENOUVELLEMENT — TOUS LES TENANTS
+══════════════════════════════════════════════════════════════════ */
+function confirmRenewAllTenants() {
+    openModal(
+        'Renouveler le trimestre — tous les tenants',
+        `Les codes actifs du <strong>trimestre précédent</strong> de <strong>tous les tenants</strong> seront expirés.<br>
+         Un nouveau code sera créé pour chaque employé actif de chaque tenant.<br><br>
+         <strong>Cette action est irréversible.</strong>`,
+        doRenewAllTenants,
+        true
+    );
+}
+
+async function doRenewAllTenants() {
+    showToast('Renouvellement forcé en cours…', 'warn');
+
+    const tenantIds = [...document.querySelectorAll('.tenant-card')]
+        .map(c => c.dataset.tenantId)
+        .filter(Boolean);
+
+    let totalRevoked = 0, totalGenerated = 0, errors = 0;
+
+    for (const tid of tenantIds) {
+        try {
+            const res  = await fetch(FORCE_RENEW_URL, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': CSRF,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ tenant_id: tid })
+            });
+            const data = await res.json();
+            if (data.success) {
+                totalRevoked   += data.result?.revoked   ?? 0;
+                totalGenerated += data.result?.generated ?? 0;
+            } else {
+                errors++;
+            }
+        } catch {
+            errors++;
+        }
+    }
+
+    const msg = `Terminé : ${totalRevoked} révoqué(s), ${totalGenerated} généré(s)`
+              + (errors > 0 ? ` — ${errors} tenant(s) en erreur` : '');
+
+    showToast(msg, errors > 0 ? 'warn' : 'success');
+    setTimeout(() => window.location.reload(), 2000);
 }
 
 /* ══════════════════════════════════════════════════════════════════

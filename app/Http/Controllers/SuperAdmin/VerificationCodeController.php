@@ -119,6 +119,32 @@ class VerificationCodeController extends Controller
         }
     }
 
+    public function forceRenew(Request $request): JsonResponse
+{
+    $request->validate([
+        'tenant_id' => ['required', 'string', 'exists:tenants,id'],
+    ]);
+
+    try {
+        $result = $this->service->forceRenewCurrentQuarter(
+            $request->tenant_id,
+            auth()->id()
+        );
+
+        $msg = "Renouvellement forcé {$result['quarter']} : "
+             . "{$result['revoked']} révoqué(s), {$result['generated']} généré(s).";
+
+        return response()->json([
+            'success' => true,
+            'result'  => $result,
+            'message' => $msg,
+        ]);
+
+    } catch (\DomainException $e) {
+        return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+    }
+}
+
     // ─── Remplacement individuel ─────────────────────────────────────────────
 
     /**

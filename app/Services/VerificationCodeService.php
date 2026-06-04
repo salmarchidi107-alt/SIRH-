@@ -294,6 +294,49 @@ class VerificationCodeService
         });
     }
 
+    public function forceRenewCurrentQuarter(string $tenantId, int $triggeredBy): array
+{
+    $quarter = $this->currentQuarter();
+
+    return DB::transaction(function () use ($tenantId, $quarter, $triggeredBy) {
+        // Étape 1 — révoquer tous les codes ASSIGNED du trimestre courant
+        $toRevoke = VerificationCode::forTenant($tenantId)
+            ->forQuarter($quarter)
+            ->active()
+            ->get();
+
+        $revokedCount = 0;
+        foreach ($toRevoke as $code) {
+            $code->revoke($triggeredBy, 'Renouvellement forcé');
+            $revokedCount++;
+        }
+
+        // Étape 2 — générer un nouveau code pour chaque utilisateur actif
+        $activeUsers = $this->activeUsersForTenant($tenantId);
+
+        $generatedCount = 0;
+        foreach ($activeUsers as $user) {
+            VerificationCode::create([
+                'code'         => VerificationCode::generateUniqueCode(),
+                'tenant_id'    => $tenantId,
+                'quarter'      => $quarter,
+                'status'       => VerificationCode::STATUS_ASSIGNED,
+                'user_id'      => $user->id,
+                'assigned_by'  => $triggeredBy,
+                'assigned_at'  => now(),
+                'generated_by' => $triggeredBy,
+            ]);
+            $generatedCount++;
+        }
+
+        return [
+            'revoked'   => $revokedCount,
+            'generated' => $generatedCount,
+            'quarter'   => $quarter,
+        ];
+    });
+}
+
     // ─── Révocation individuelle ─────────────────────────────────────────────
 
     public function revoke(VerificationCode $code, int $revokedBy, string $reason = ''): void

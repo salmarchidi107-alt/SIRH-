@@ -129,6 +129,7 @@ Route::middleware(['auth', 'superadmin'])
     Route::post('/renew-quarter',                [VerificationCodeController::class, 'renewQuarter'])->name('renew-quarter');
     Route::post('/replace-user/{user}',          [VerificationCodeController::class, 'replaceForUser'])->name('replace-user');
     Route::delete('/{verificationCode}/revoke',  [VerificationCodeController::class, 'revoke'])->name('revoke');
+    Route::post('/force-renew',                  [VerificationCodeController::class, 'forceRenew'])->name('force-renew');
 
     // Routes AJAX pour la régénération
     Route::post('/regen-single',                 [VerificationCodeController::class, 'regenSingle'])->name('regen-single');

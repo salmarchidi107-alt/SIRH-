@@ -607,9 +607,9 @@
                     </td>
 <td style="font-size:11px;color:<?php echo e($isUsedOnce ? 'var(--green)' : 'var(--muted)'); ?>;font-weight:<?php echo e($isUsedOnce ? '600' : '400'); ?>;">
     <?php if($isUsedOnce): ?>
-        <span title="<?php echo e($code->used_at?->format('d/m/Y à H:i:s')); ?>">
+        <span title="<?php echo e($code->used_at?->format('d/m/Y à H:i')); ?>">
             <?php echo e($code->used_at?->format('d/m/Y')); ?><br>
-            <span style="font-size:10px;opacity:.85;"><?php echo e($code->used_at?->format('H:i:s')); ?></span>
+            <span style="font-size:10px;opacity:.85;"><?php echo e($code->used_at?->format('H:i')); ?></span>
         </span>
     <?php else: ?>
         —
@@ -666,15 +666,8 @@
 </div>
 
 <script>
-const REVOKE_URLS = {
-<?php $__currentLoopData = $tenants; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tenant): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-    <?php $__currentLoopData = $userRowsByTenant[$tenant->id] ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $code): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-        <?php if($code->status === \App\Models\VerificationCode::STATUS_ASSIGNED): ?>
-        <?php echo e($code->id); ?>: "<?php echo e(route('superadmin.codes.revoke', $code)); ?>",
-        <?php endif; ?>
-    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-};
+const REVOKE_BASE_URL = "/superadmin/codes/";
+const REVOKE_BASE_SUFFIX = "/revoke";
 </script>
 
 
@@ -945,6 +938,12 @@ async function replaceForUser(userId, codeId, userName) {
             }
             row.dataset.status = 'assigned';
 
+// Mettre à jour le bouton Révoquer avec le nouveau codeId
+const revokeBtn = row.querySelector('.btn-revoke');
+if (revokeBtn) {
+    revokeBtn.setAttribute('onclick',
+        `confirmRevoke(${data.new_id}, '${userName.replace(/'/g, "\\'")}')` );
+}
             showToast('Nouveau code attribué à ' + userName);
         } else {
             showToast(data.message ?? 'Erreur', 'error');
@@ -972,7 +971,7 @@ function confirmRevoke(codeId, userName) {
 }
 
 async function doRevoke(codeId, userName) {
-    const url = REVOKE_URLS[codeId];
+    const url = REVOKE_BASE_URL + codeId + REVOKE_BASE_SUFFIX;
     if (!url) { showToast('URL de révocation introuvable.', 'error'); return; }
 
     try {
@@ -1084,7 +1083,12 @@ function closeModal() {
     _modalCb = null;
 }
 
-document.getElementById('vModalOk').addEventListener('click', () => { closeModal(); if (_modalCb) _modalCb(); });
+// APRÈS — callback exécuté avant la réinitialisation
+document.getElementById('vModalOk').addEventListener('click', () => {
+    const cb = _modalCb;
+    closeModal();
+    if (cb) cb();
+});
 document.getElementById('vModal').addEventListener('click', function (e) { if (e.target === this) closeModal(); });
 
 /* ══════════════════════════════════════════════════════════════════

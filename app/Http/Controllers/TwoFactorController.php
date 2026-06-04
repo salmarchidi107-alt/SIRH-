@@ -73,6 +73,8 @@ class TwoFactorController extends Controller
         // ✅ Code valide — statut non modifié, réutilisable jusqu'à la fin du trimestre
         RateLimiter::clear($throttleKey);
 
+        VerificationCode::consume($request->code, $userId);
+
         // Ouvrir la session 2FA
         session([
             '2fa_verified' => true,

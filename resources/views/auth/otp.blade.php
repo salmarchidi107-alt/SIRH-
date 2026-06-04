@@ -222,13 +222,7 @@
                     Se déconnecter · Retour à la connexion
                 </button>
             </form>
-
         </div>
-
-        <div class="auth-footer">
-            <p>Pas de code ? Contactez votre <a href="#">administrateur</a></p>
-        </div>
-
     </div>
 </div>
 

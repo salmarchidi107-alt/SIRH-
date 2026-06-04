@@ -122,7 +122,6 @@ Route::middleware(['auth', 'superadmin'])
     Route::get('/',                              [VerificationCodeController::class, 'index'])      ->name('index');
     Route::post('/generate',                     [VerificationCodeController::class, 'generate'])   ->name('generate');
     Route::post('/assign',                       [VerificationCodeController::class, 'assign'])     ->name('assign');
-    Route::delete('/{verificationCode}/revoke',  [VerificationCodeController::class, 'revoke'])    ->name('revoke');
     Route::post('/users/{user}/replace',         [VerificationCodeController::class, 'replace'])   ->name('replace');
     Route::get('/tenant/{tenantId}',             [VerificationCodeController::class, 'tenantCodes'])->name('tenant');
     Route::get('/tenant-stats/{tenantId}',       [VerificationCodeController::class, 'tenantStats'])->name('tenant-stats');

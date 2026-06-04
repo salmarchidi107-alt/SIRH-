@@ -152,10 +152,10 @@ class VerificationCodeController extends Controller
 
         try {
             $this->service->revoke(
-                $verificationCode,
-                auth()->id(),
-                $request->input('reason', '')
-            );
+    $verificationCode,
+    auth()->id(),
+    (string) ($request->input('reason') ?? '')
+);
 
             if ($request->expectsJson()) {
                 return response()->json(['success' => true, 'message' => 'Code révoqué.']);

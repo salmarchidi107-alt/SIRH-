@@ -6,15 +6,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Traits\HasTenantScope;
+
 
 class CatalogueFormation extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasTenantScope;
 
     protected $table = 'catalogue_formations';
 
     protected $fillable = [
-        'titre', 'description', 'categorie',
+         'tenant_id', 'titre', 'description', 'categorie',
         'duree_heures', 'type', 'actif', 'date_creation',
     ];
 

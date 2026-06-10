@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\HasTenantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Planning extends Model
 {
-    use HasFactory;
+    use HasFactory, HasTenantScope;
 
     protected $fillable = [
         'tenant_id',
@@ -34,7 +35,7 @@ class Planning extends Model
 
     public function employee()
     {
-        return $this->belongsTo(Employee::class)->withoutGlobalScopes();
+        return $this->belongsTo(Employee::class);
     }
 
     public function room()

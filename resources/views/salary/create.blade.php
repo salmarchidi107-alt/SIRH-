@@ -17,7 +17,9 @@
     <div class="alert alert-success mb-4">{{ session('success') }}</div>
 @endif
 
-{{-- MODAL PLANNING DE GARDE --}}
+{{-- ════════════════════════════════════════════════════════════
+     MODAL PLANNING DE GARDE
+════════════════════════════════════════════════════════════ --}}
 <div id="gardeModal" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.55);overflow-y:auto">
     <div style="background:white;margin:4% auto 40px;padding:0;border-radius:16px;width:90%;max-width:700px;box-shadow:0 24px 80px rgba(0,0,0,0.3);overflow:hidden">
         <div style="background:linear-gradient(135deg,#0f766e,#2dd4bf);padding:22px 28px;display:flex;justify-content:space-between;align-items:center">
@@ -70,6 +72,33 @@
     </div>
 </div>
 
+{{-- ════════════════════════════════════════════════════════════
+     MODAL DÉTAILS — Heures travaillées / HS / Absences / Retards
+════════════════════════════════════════════════════════════ --}}
+<div id="detailModal" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.55);overflow-y:auto">
+    <div style="background:white;margin:4% auto 40px;padding:0;border-radius:16px;width:90%;max-width:680px;box-shadow:0 24px 80px rgba(0,0,0,0.3);overflow:hidden">
+        <div id="detailModalHeader" style="padding:22px 28px;display:flex;justify-content:space-between;align-items:center">
+            <div>
+                <div id="detailModalTitle" style="color:white;font-size:1.15rem;font-weight:700"></div>
+                <div style="color:rgba(255,255,255,0.8);font-size:0.82rem;margin-top:3px">
+                    {{ $employee->full_name }} — {{ \Carbon\Carbon::create($year,$month)->locale('fr')->isoFormat('MMMM YYYY') }}
+                </div>
+            </div>
+            <button onclick="closeDetailModal()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:34px;height:34px;border-radius:50%;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
+        </div>
+        <div id="detailModalStats" style="display:grid;gap:1px;background:#e5e7eb"></div>
+        <div style="padding:20px 28px">
+            <div id="detailModalTableHeader"></div>
+            <div id="detailModalList" style="display:flex;flex-direction:column;gap:6px">
+                <div style="text-align:center;padding:32px;color:#94a3b8">Chargement...</div>
+            </div>
+        </div>
+        <div style="padding:14px 28px 20px;border-top:1px solid #e5e7eb;background:#f9fafb;display:flex;justify-content:flex-end">
+            <button onclick="closeDetailModal()" class="btn btn-ghost">Fermer</button>
+        </div>
+    </div>
+</div>
+
 <script>
 const EMPLOYEE_DATA = {
     base_salary:     {{ (float) $employee->base_salary }},
@@ -108,7 +137,11 @@ const EXISTING = {
     garde_indemnite:          {{ (float) ($existing?->garde_indemnite ?? 0) }},
     garde_override:           {{ (int)   ($existing?->garde_override   ?? 0) }},
 };
-const GARDE_SHIFTS = @json($workingData['garde_shifts'] ?? []);
+const GARDE_SHIFTS    = @json($workingData['garde_shifts']    ?? []);
+const WORKING_SHIFTS  = @json($workingData['pointage_shifts'] ?? []);
+const OVERTIME_SHIFTS = @json($workingData['overtime_shifts'] ?? []);
+const ABSENCE_SHIFTS  = @json($workingData['absence_shifts']  ?? []);
+const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
 </script>
 
 <form action="{{ route('salary.update', $employee) }}" method="POST" id="salaryForm">
@@ -151,30 +184,66 @@ const GARDE_SHIFTS = @json($workingData['garde_shifts'] ?? []);
 <input type="hidden" name="garde_indemnite"         id="h_garde_indemnite" value="{{ old('garde_indemnite', $existing?->garde_indemnite ?? 0) }}">
 <input type="hidden" name="garde_override"          id="h_garde_override"  value="{{ old('garde_override',  $existing?->garde_override  ?? 0) }}">
 
-{{-- SECTION 1 — TEMPS DE TRAVAIL --}}
+{{-- ════════════════════════════════════════════════════════════
+     SECTION 1 — TEMPS DE TRAVAIL
+════════════════════════════════════════════════════════════ --}}
 <div class="card mb-4" style="border-left:4px solid var(--primary)">
     <div class="card-header" style="border:none;padding:16px 20px">
         <div class="card-title" style="font-size:1.05rem;color:#0066cc">TEMPS DE TRAVAIL — {{ \Carbon\Carbon::create($year,$month)->locale('fr')->translatedFormat('F Y') }}</div>
-        <div style="font-size:0.8rem;color:var(--text-muted)">Données extraites automatiquement du pointage</div>
+        <div style="font-size:0.8rem;color:var(--text-muted)">Données extraites automatiquement du pointage — cliquer sur une carte pour les détails</div>
     </div>
     <div class="card-body" style="padding:0">
         <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border-color)">
-            <div style="background:var(--surface,white);padding:14px 16px">
-                <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-bottom:4px">Heures travaillées</div>
+
+            {{-- Heures travaillées --}}
+            <div onclick="openDetailModal('working')"
+                 style="background:var(--surface,white);padding:14px 16px;cursor:pointer;transition:background .2s"
+                 onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='var(--surface,white)'">
+                <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:4px">
+                    Heures travaillées
+                    <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
                 <div style="font-size:1.6rem;font-weight:700;color:#065f46" id="disp-working">{{ $workingData['working_hours'] ?? 0 }} h</div>
+                <div style="font-size:0.7rem;color:#10b981;margin-top:2px">Voir pointages →</div>
             </div>
-            <div style="background:var(--surface,white);padding:14px 16px">
-                <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-bottom:4px">H. supp jour (25%)</div>
+
+            {{-- H. supp jour --}}
+            <div onclick="openDetailModal('overtime')"
+                 style="background:var(--surface,white);padding:14px 16px;cursor:pointer;transition:background .2s"
+                 onmouseover="this.style.background='#fffbeb'" onmouseout="this.style.background='var(--surface,white)'">
+                <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:4px">
+                    H. supp jour (25%)
+                    <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
                 <div style="font-size:1.6rem;font-weight:700;color:#d97706" id="disp-ot-day">{{ $workingData['overtime_day'] ?? 0 }} h</div>
+                <div style="font-size:0.7rem;color:#f59e0b;margin-top:2px">Voir détails →</div>
             </div>
-            <div style="background:var(--surface,white);padding:14px 16px">
-                <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-bottom:4px">Heures absence</div>
+
+            {{-- Heures absence --}}
+            <div onclick="openDetailModal('absence')"
+                 style="background:var(--surface,white);padding:14px 16px;cursor:pointer;transition:background .2s"
+                 onmouseover="this.style.background='#fff1f2'" onmouseout="this.style.background='var(--surface,white)'">
+                <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:4px">
+                    Heures absence
+                    <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
                 <div style="font-size:1.6rem;font-weight:700;color:#ef4444" id="disp-abs">{{ $workingData['absence_hours'] ?? 0 }} h</div>
+                <div style="font-size:0.7rem;color:#f87171;margin-top:2px">Voir absences →</div>
             </div>
-            <div style="background:var(--surface,white);padding:14px 16px">
-                <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-bottom:4px">Heures retard</div>
+
+            {{-- Heures retard --}}
+            <div onclick="openDetailModal('delay')"
+                 style="background:var(--surface,white);padding:14px 16px;cursor:pointer;transition:background .2s"
+                 onmouseover="this.style.background='#fdf4ff'" onmouseout="this.style.background='var(--surface,white)'">
+                <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:4px">
+                    Heures retard
+                    <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
                 <div style="font-size:1.6rem;font-weight:700;color:#ec4899" id="disp-delay">{{ $workingData['delay_hours'] ?? 0 }} h</div>
+                <div style="font-size:0.7rem;color:#f472b6;margin-top:2px">Voir retards →</div>
             </div>
+
+            {{-- Jours de garde --}}
             <div style="background:#f0fdfa;padding:14px 16px;cursor:pointer;transition:background 0.2s;border-left:3px solid #0f766e;position:relative"
                  onclick="openGardeModal()"
                  onmouseover="this.style.background='#f3e8ff'"
@@ -187,11 +256,14 @@ const GARDE_SHIFTS = @json($workingData['garde_shifts'] ?? []);
                 <div style="font-size:0.72rem;color:#2dd4bf;margin-top:3px" id="disp-garde-sub">{{ $workingData['garde_hours'] ?? 0 }} h au total</div>
                 <div style="position:absolute;bottom:6px;right:8px;font-size:0.65rem;color:#c084fc;font-weight:600">Voir détails →</div>
             </div>
+
         </div>
     </div>
 </div>
 
-{{-- SECTION 2 — SYSTÈME DE PAIE --}}
+{{-- ════════════════════════════════════════════════════════════
+     SECTION 2 — SYSTÈME DE PAIE
+════════════════════════════════════════════════════════════ --}}
 <div class="card mb-4" style="border-left:4px solid #0f766e">
     <div class="card-header" style="border:none;padding:14px 20px">
         <div class="card-title" style="font-size:1.0rem;color:#0f766e">SYSTÈME DE PAIE &amp; TYPE DE SALAIRE</div>
@@ -233,7 +305,9 @@ const GARDE_SHIFTS = @json($workingData['garde_shifts'] ?? []);
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
 
-{{-- COLONNE GAUCHE — GAINS --}}
+{{-- ════════════════════════════════════════════════════════════
+     COLONNE GAUCHE — GAINS
+════════════════════════════════════════════════════════════ --}}
 <div>
     <div class="card mb-4" style="border-left:3px solid var(--primary)">
         <div class="card-body" style="padding:10px 16px">
@@ -314,7 +388,7 @@ const GARDE_SHIFTS = @json($workingData['garde_shifts'] ?? []);
                         </td>
                     </tr>
 
-                    {{-- INDEMNITÉ DE GARDE — cliquable + synchronisée --}}
+                    {{-- Indemnité de garde --}}
                     <tr style="border-bottom:1px solid var(--border-color);background:#f0fdfa">
                         <td style="padding:9px 14px">
                             <div style="font-weight:600;color:#0f766e;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -336,7 +410,6 @@ const GARDE_SHIFTS = @json($workingData['garde_shifts'] ?? []);
                             </div>
                         </td>
                         <td style="padding:9px 14px">
-                            {{-- Affichage cliquable --}}
                             <div id="garde-gain-display"
                                  onclick="toggleGardeEdit(true)"
                                  title="Cliquer pour modifier manuellement"
@@ -347,7 +420,6 @@ const GARDE_SHIFTS = @json($workingData['garde_shifts'] ?? []);
                                  onmouseout="if(!gardeEditMode)this.style.background='transparent'">
                                 0,00 <span class="cur-label">MAD</span>
                             </div>
-                            {{-- Input manuel --}}
                             <div id="garde-input-wrap" style="display:none">
                                 <input type="number" id="garde_indemnite_input" class="form-control"
                                        step="0.01" min="0"
@@ -417,7 +489,6 @@ const GARDE_SHIFTS = @json($workingData['garde_shifts'] ?? []);
                         </td>
                     </tr>
 
-                    {{-- ÉLÉMENTS VARIABLES — champ garde lié --}}
                     @if($variableElements->where('category','gain')->count())
                     <tr style="background:#f0fff4">
                         <td colspan="2" style="padding:9px 14px">
@@ -461,7 +532,9 @@ const GARDE_SHIFTS = @json($workingData['garde_shifts'] ?? []);
     </div>
 </div>
 
-{{-- COLONNE DROITE --}}
+{{-- ════════════════════════════════════════════════════════════
+     COLONNE DROITE
+════════════════════════════════════════════════════════════ --}}
 <div>
     <div class="card mb-4">
         <div class="card-header" style="background:#eff6ff;border-bottom:2px solid #bfdbfe">
@@ -636,8 +709,10 @@ const GARDE_SHIFTS = @json($workingData['garde_shifts'] ?? []);
 var currentSystem  = 'MAD';
 var gardeEditMode  = false;
 var gardeAutoValue = 0;
-var gardeManual    = EXISTING.garde_indemnite || 0;
-var isGardeOverride= EXISTING.garde_override === 1;
+
+// Lire la valeur persistée dès le chargement — ne jamais l'écraser si override
+var isGardeOverride = EXISTING.garde_override === 1;
+var gardeManual     = isGardeOverride ? EXISTING.garde_indemnite : 0;
 
 var SYS = {
     MAD:{CNSS_SAL:0.0448,CNSS_PLAFOND:6000,AMO_SAL:0.0226,FP_RATE:0.20,FP_MAX:2500,HAS_FP:true,CNSS_PAT:0.1029,AMO_PAT:0.0226,TFP:0.016,HAS_TFP:true,HEURES_REF:191.25,
@@ -663,6 +738,153 @@ function fmt(n){return parseFloat(n.toFixed(2)).toLocaleString('fr-FR',{minimumF
 function setHTML(id,val){var el=document.getElementById(id);if(el)el.innerHTML=val+' <span class="cur-label">'+currentSystem+'</span>';}
 function setText(id,val){var el=document.getElementById(id);if(el)el.textContent=val;}
 function getVal(id){return parseFloat(document.getElementById(id).value)||0;}
+
+/* ══════════════════════════════════════════════════════════════════
+   MODAL DÉTAILS — Heures / HS / Absences / Retards
+══════════════════════════════════════════════════════════════════ */
+function openDetailModal(type) {
+    var configs = {
+        working: {
+            title: 'Détail des Heures Travaillées',
+            gradient: 'linear-gradient(135deg,#065f46,#10b981)',
+            stats: [
+                {label:'Jours pointés', value: WORKING_SHIFTS.length+' j', color:'#065f46'},
+                {label:'Total heures',  value: fmt(EMPLOYEE_DATA.working_hours)+' h', color:'#065f46'}
+            ],
+            header: ['Date','Entrée','Sortie','Durée'],
+            cols: '130px 90px 90px 90px',
+            border: '#d1fae5',
+            rowBg: ['white','#f0fdf4'],
+            render: function(s,i){
+                var d=new Date(s.date+'T00:00:00');
+                var J=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'],M=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+                var lbl=J[d.getDay()]+' '+d.getDate()+' '+M[d.getMonth()];
+                var debut=s.heure_entree?s.heure_entree.substring(0,5):'--:--';
+                var fin=s.heure_sortie?s.heure_sortie.substring(0,5):'--:--';
+                var dur=parseFloat(s.duree_heures||0);
+                return '<div style="display:grid;grid-template-columns:130px 90px 90px 90px;gap:8px;padding:11px 14px;background:'+(i%2===0?'white':'#f0fdf4')+';border:1px solid #d1fae5;border-radius:8px;align-items:center;font-size:0.83rem">'
+                    +'<div style="font-weight:700;color:#065f46">'+lbl+'</div>'
+                    +'<div style="text-align:center;background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:20px;font-size:0.75rem;font-weight:600">'+debut+'</div>'
+                    +'<div style="text-align:center;background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:20px;font-size:0.75rem;font-weight:600">'+fin+'</div>'
+                    +'<div style="text-align:center;font-weight:700;color:#065f46">'+fmt(dur)+' h</div></div>';
+            },
+            shifts: WORKING_SHIFTS
+        },
+        overtime: {
+            title: 'Détail des Heures Supplémentaires',
+            gradient: 'linear-gradient(135deg,#92400e,#f59e0b)',
+            stats: [
+                {label:'HS jour (25%)',     value: fmt(EMPLOYEE_DATA.ot_day)+' h',     color:'#92400e'},
+                {label:'HS nuit (50%)',     value: fmt(EMPLOYEE_DATA.ot_night)+' h',   color:'#92400e'},
+                {label:'HS weekend (100%)', value: fmt(EMPLOYEE_DATA.ot_weekend)+' h', color:'#92400e'},
+                {label:'Total HS',          value: fmt(EMPLOYEE_DATA.ot_day+EMPLOYEE_DATA.ot_night+EMPLOYEE_DATA.ot_weekend)+' h', color:'#92400e'}
+            ],
+            header: ['Date','Type','Heures','Majoration'],
+            cols: '130px 90px 90px 90px',
+            render: function(s,i){
+                var d=new Date(s.date+'T00:00:00');
+                var J=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'],M=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+                var lbl=J[d.getDay()]+' '+d.getDate()+' '+M[d.getMonth()];
+                var type=s.type==='night'?'Nuit':s.type==='weekend'?'Weekend':'Jour';
+                var maj=s.type==='night'?'+50%':s.type==='weekend'?'+100%':'+25%';
+                var dur=parseFloat(s.duree_heures||0);
+                return '<div style="display:grid;grid-template-columns:130px 90px 90px 90px;gap:8px;padding:11px 14px;background:'+(i%2===0?'white':'#fffbeb')+';border:1px solid #fde68a;border-radius:8px;align-items:center;font-size:0.83rem">'
+                    +'<div style="font-weight:700;color:#92400e">'+lbl+'</div>'
+                    +'<div style="text-align:center;background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:20px;font-size:0.75rem;font-weight:600">'+type+'</div>'
+                    +'<div style="text-align:center;font-weight:700;color:#d97706">'+fmt(dur)+' h</div>'
+                    +'<div style="text-align:center;background:#fcd34d;color:#78350f;padding:3px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">'+maj+'</div></div>';
+            },
+            shifts: OVERTIME_SHIFTS
+        },
+        absence: {
+            title: "Détail des Heures d'Absence",
+            gradient: 'linear-gradient(135deg,#991b1b,#ef4444)',
+            stats: [
+                {label:"Absences",    value: ABSENCE_SHIFTS.length+' j',                    color:'#991b1b'},
+                {label:'Total heures',value: fmt(EMPLOYEE_DATA.absence_hours)+' h', color:'#991b1b'}
+            ],
+            header: ['Date','Type','Heures','Statut'],
+            cols: '130px 110px 80px 100px',
+            render: function(s,i){
+                var d=new Date(s.date+'T00:00:00');
+                var J=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'],M=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+                var lbl=J[d.getDay()]+' '+d.getDate()+' '+M[d.getMonth()];
+                var dur=parseFloat(s.heures||0);
+                return '<div style="display:grid;grid-template-columns:130px 110px 80px 100px;gap:8px;padding:11px 14px;background:'+(i%2===0?'white':'#fff1f2')+';border:1px solid #fecaca;border-radius:8px;align-items:center;font-size:0.83rem">'
+                    +'<div style="font-weight:700;color:#991b1b">'+lbl+'</div>'
+                    +'<div style="color:#64748b;font-size:0.78rem">'+(s.type||'Absence')+'</div>'
+                    +'<div style="text-align:center;font-weight:700;color:#ef4444">'+fmt(dur)+' h</div>'
+                    +'<div style="text-align:center;background:#fecaca;color:#991b1b;padding:3px 8px;border-radius:20px;font-size:0.73rem;font-weight:600">'+(s.statut||'—')+'</div></div>';
+            },
+            shifts: ABSENCE_SHIFTS
+        },
+        delay: {
+            title: 'Détail des Retards',
+            gradient: 'linear-gradient(135deg,#701a75,#ec4899)',
+            stats: [
+                {label:'Jours avec retard', value: DELAY_SHIFTS.length+' j',                    color:'#701a75'},
+                {label:'Total retard',      value: fmt(EMPLOYEE_DATA.delay_hours)+' h', color:'#701a75'}
+            ],
+            header: ['Date','Heure arrivée','Retard','Heure prévue'],
+            cols: '130px 110px 90px 110px',
+            render: function(s,i){
+                var d=new Date(s.date+'T00:00:00');
+                var J=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'],M=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+                var lbl=J[d.getDay()]+' '+d.getDate()+' '+M[d.getMonth()];
+                var arrivee=s.heure_entree?s.heure_entree.substring(0,5):'--:--';
+                var prevue=s.heure_prevue?s.heure_prevue.substring(0,5):'--:--';
+                var retard=parseFloat(s.retard_minutes||0);
+                return '<div style="display:grid;grid-template-columns:130px 110px 90px 110px;gap:8px;padding:11px 14px;background:'+(i%2===0?'white':'#fdf4ff')+';border:1px solid #f5d0fe;border-radius:8px;align-items:center;font-size:0.83rem">'
+                    +'<div style="font-weight:700;color:#701a75">'+lbl+'</div>'
+                    +'<div style="text-align:center;background:#fdf4ff;color:#701a75;padding:3px 8px;border-radius:20px;font-size:0.75rem;font-weight:600">'+arrivee+'</div>'
+                    +'<div style="text-align:center;font-weight:700;color:#ec4899">'+retard+' min</div>'
+                    +'<div style="text-align:center;background:#f5d0fe;color:#701a75;padding:3px 8px;border-radius:20px;font-size:0.73rem;font-weight:600">'+prevue+'</div></div>';
+            },
+            shifts: DELAY_SHIFTS
+        }
+    };
+
+    var cfg = configs[type];
+    if (!cfg) return;
+
+    // Header
+    document.getElementById('detailModalHeader').style.background = cfg.gradient;
+    document.getElementById('detailModalTitle').textContent = cfg.title;
+
+    // Stats
+    var statsHtml = '';
+    cfg.stats.forEach(function(st) {
+        statsHtml += '<div style="background:white;padding:14px 20px;text-align:center">'
+            +'<div style="font-size:0.7rem;color:'+st.color+';font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">'+st.label+'</div>'
+            +'<div style="font-size:2rem;font-weight:900;color:'+st.color+'">'+st.value+'</div></div>';
+    });
+    var statsEl = document.getElementById('detailModalStats');
+    statsEl.style.gridTemplateColumns = 'repeat('+cfg.stats.length+',1fr)';
+    statsEl.innerHTML = statsHtml;
+
+    // Table header
+    var hdrHtml = '<div style="display:grid;grid-template-columns:'+cfg.cols+';gap:8px;padding:8px 14px;background:#f1f5f9;border-radius:8px;font-size:0.71rem;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">';
+    cfg.header.forEach(function(c){ hdrHtml += '<div>'+c+'</div>'; });
+    hdrHtml += '</div>';
+    document.getElementById('detailModalTableHeader').innerHTML = hdrHtml;
+
+    // Rows
+    var rowsHtml = '';
+    if (!cfg.shifts.length) {
+        rowsHtml = '<div style="text-align:center;padding:40px;color:#94a3b8">Aucune donnée pour ce mois</div>';
+    } else {
+        cfg.shifts.forEach(function(s,i){ rowsHtml += cfg.render(s,i); });
+    }
+    document.getElementById('detailModalList').innerHTML = rowsHtml;
+
+    document.getElementById('detailModal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeDetailModal() {
+    document.getElementById('detailModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
 
 /* ══════════════════════════════════════════════════════════════════
    GARDE — édition et synchronisation
@@ -718,7 +940,7 @@ function syncGardeToVE(amount) {
 function updateGardeDisplay(amount) {
     var disp = document.getElementById('garde-gain-display');
     if (disp) {
-        disp.innerHTML     = fmt(amount) + ' <span class="cur-label">' + currentSystem + '</span>';
+        disp.innerHTML    = fmt(amount) + ' <span class="cur-label">' + currentSystem + '</span>';
         disp.style.background  = isGardeOverride ? '#fffbeb' : 'transparent';
         disp.style.borderColor = isGardeOverride ? '#fcd34d' : 'rgba(13,118,110,0.35)';
         disp.style.borderStyle = isGardeOverride ? 'solid'   : 'dashed';
@@ -730,28 +952,27 @@ function updateGardeDisplay(amount) {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   MODAL PLANNING
+   MODAL PLANNING DE GARDE
 ══════════════════════════════════════════════════════════════════ */
 function openGardeModal() {
     var baseSalary = getVal('base_salary') || EMPLOYEE_DATA.base_salary;
-    var S      = SYS[currentSystem];
-    var tauxH  = baseSalary / S.HEURES_REF;
-    var gardeH = EMPLOYEE_DATA.garde_hours;
-    var gardeD = EMPLOYEE_DATA.garde_days;
-    var shifts = GARDE_SHIFTS;
+    var S     = SYS[currentSystem];
+    var tauxH = baseSalary / S.HEURES_REF;
+    var gardeH= EMPLOYEE_DATA.garde_hours;
+    var gardeD= EMPLOYEE_DATA.garde_days;
+    var shifts= GARDE_SHIFTS;
     var totalAmt = tauxH * gardeH;
-    document.getElementById('garde-count').textContent     = gardeD + (gardeD > 1 ? ' jours' : ' jour');
-    document.getElementById('garde-total-h').textContent   = fmt(gardeH) + ' h';
-    document.getElementById('garde-total-amt').textContent = fmt(totalAmt) + ' ' + currentSystem;
-    var jours=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
-    var mois =['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
-    var html = '';
-    if (!shifts.length) {
-        html = '<div style="text-align:center;padding:40px;color:#94a3b8">Aucune garde planifiée ce mois-ci</div>';
+    document.getElementById('garde-count').textContent     = gardeD+(gardeD>1?' jours':' jour');
+    document.getElementById('garde-total-h').textContent   = fmt(gardeH)+' h';
+    document.getElementById('garde-total-amt').textContent = fmt(totalAmt)+' '+currentSystem;
+    var J=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'],M=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+    var html='';
+    if(!shifts.length){
+        html='<div style="text-align:center;padding:40px;color:#94a3b8">Aucune garde planifiée ce mois-ci</div>';
     } else {
-        shifts.forEach(function(s, i) {
+        shifts.forEach(function(s,i){
             var d=new Date(s.date+'T00:00:00');
-            var label=jours[d.getDay()]+' '+d.getDate()+' '+mois[d.getMonth()];
+            var label=J[d.getDay()]+' '+d.getDate()+' '+M[d.getMonth()];
             var debut=s.shift_start?s.shift_start.substring(0,5):'--:--';
             var fin  =s.shift_end  ?s.shift_end.substring(0,5)  :'--:--';
             var duree=parseFloat(s.duree_heures||0);
@@ -766,8 +987,8 @@ function openGardeModal() {
             html+='<div style="text-align:right;font-weight:700;color:#0f766e">'+fmt(amt)+' '+currentSystem+'</div></div>';
         });
     }
-    document.getElementById('garde-list').innerHTML = html;
-    if (shifts.length) {
+    document.getElementById('garde-list').innerHTML=html;
+    if(shifts.length){
         document.getElementById('garde-total-row').style.display='block';
         document.getElementById('garde-total-final').textContent=fmt(totalAmt)+' '+currentSystem;
     } else {
@@ -777,7 +998,11 @@ function openGardeModal() {
     document.body.style.overflow='hidden';
 }
 function closeGardeModal(){document.getElementById('gardeModal').style.display='none';document.body.style.overflow='auto';}
-window.addEventListener('click',function(e){if(e.target===document.getElementById('gardeModal'))closeGardeModal();});
+
+window.addEventListener('click',function(e){
+    if(e.target===document.getElementById('gardeModal'))closeGardeModal();
+    if(e.target===document.getElementById('detailModal'))closeDetailModal();
+});
 
 /* ══════════════════════════════════════════════════════════════════
    SYSTÈME MAD / MRU
@@ -833,7 +1058,9 @@ function onTypeChange() {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   CALCULATE — fonction principale
+   CALCULATE
+   Modification clé : si isGardeOverride=true, gardeManual n'est
+   JAMAIS réinitialisé par calculate(), même après soumission.
 ══════════════════════════════════════════════════════════════════ */
 function calculate() {
     var S      = SYS[currentSystem];
@@ -867,7 +1094,6 @@ function calculate() {
     }
     var tauxH = isHourly ? hourlyRate : (baseSalary / S.HEURES_REF);
 
-    // Ancienneté — pré-remplir si zéro, sinon respecter la saisie
     var seniInp = document.getElementById('seniority_bonus');
     var autoSeniority = baseSalary * seniorityRate(EMPLOYEE_DATA.seniority_years);
     if (seniInp && parseFloat(seniInp.value) === 0 && autoSeniority > 0) {
@@ -884,11 +1110,15 @@ function calculate() {
     setHTML('ot-wknd-amt-disp', '= '+fmt(otWkndAmt));
     setHTML('ot-total-disp',    fmt(totalOT));
 
-    // ── Garde
+    // ── GARDE : calcule l'auto mais PROTÈGE la valeur manuelle ──────
     gardeAutoValue = tauxH * gardeH;
-    var gardeAmt   = isGardeOverride ? gardeManual : gardeAutoValue;
-    if (!isGardeOverride) {
+    var gardeAmt;
+    if (isGardeOverride) {
+        // Valeur saisie manuellement — intouchable
+        gardeAmt = gardeManual;
+    } else {
         gardeManual = gardeAutoValue;
+        gardeAmt    = gardeAutoValue;
         syncGardeToVE(gardeAutoValue);
     }
     updateGardeDisplay(gardeAmt);
@@ -915,58 +1145,52 @@ function calculate() {
     if (currentSystem==='MAD') setText('cnss-sub','4,48% x min('+fmt(grossSalary)+', 6 000) = '+fmt(Math.min(grossSalary,6000)*0.0448)+' MAD');
     else setText('cnss-sub','1% x min('+fmt(grossSalary)+', 15 000) = '+fmt(Math.min(grossSalary,15000)*0.01)+' MRU');
 
-    var checked2 = document.querySelector('input[name="mode_cotisation"]:checked');
-    var isManual = checked2 && checked2.value==='manual';
-    var cnss, amo, fp;
-    if (isManual) {
-        cnss = getVal('cnss-manual');
-        amo  = getVal('amo-manual');
-        fp   = S.HAS_FP ? getVal('fp-manual') : 0;
+    var checked2=document.querySelector('input[name="mode_cotisation"]:checked');
+    var isManual=checked2&&checked2.value==='manual';
+    var cnss,amo,fp;
+    if(isManual){
+        cnss=getVal('cnss-manual');amo=getVal('amo-manual');fp=S.HAS_FP?getVal('fp-manual'):0;
     } else {
-        cnss = Math.min(grossSalary,S.CNSS_PLAFOND)*S.CNSS_SAL;
-        amo  = grossSalary*S.AMO_SAL;
-        fp   = S.HAS_FP ? Math.min(grossSalary*S.FP_RATE,S.FP_MAX) : 0;
+        cnss=Math.min(grossSalary,S.CNSS_PLAFOND)*S.CNSS_SAL;
+        amo=grossSalary*S.AMO_SAL;
+        fp=S.HAS_FP?Math.min(grossSalary*S.FP_RATE,S.FP_MAX):0;
         setHTML('cnss-auto',fmt(cnss));setHTML('amo-auto',fmt(amo));setHTML('fp-auto',fmt(fp));
     }
 
-    var totalCot      = cnss + amo;
-    var taxableIncome = Math.max(0, grossSalary - cnss - amo - fp);
+    var totalCot      = cnss+amo;
+    var taxableIncome = Math.max(0,grossSalary-cnss-amo-fp);
     setHTML('taxable-display',   fmt(taxableIncome));
     setHTML('cot-total-display', fmt(totalCot));
 
-    var irAnnuelBrut, deductFam, irMensuel;
-    if (currentSystem==='MAD') {
-        irAnnuelBrut = calcIR_MAD(taxableIncome*12);
-        deductFam    = calcDeductFam_MAD(EMPLOYEE_DATA.family_status, EMPLOYEE_DATA.children_count);
-        irMensuel    = Math.max(0, irAnnuelBrut - deductFam) / 12;
-        setHTML('ir-annual', fmt(irAnnuelBrut));
-        document.getElementById('ir-family').innerHTML = '-'+fmt(deductFam)+' <span class="cur-label">MAD</span>';
+    var irAnnuelBrut,deductFam,irMensuel;
+    if(currentSystem==='MAD'){
+        irAnnuelBrut=calcIR_MAD(taxableIncome*12);
+        deductFam=calcDeductFam_MAD(EMPLOYEE_DATA.family_status,EMPLOYEE_DATA.children_count);
+        irMensuel=Math.max(0,irAnnuelBrut-deductFam)/12;
+        setHTML('ir-annual',fmt(irAnnuelBrut));
+        document.getElementById('ir-family').innerHTML='-'+fmt(deductFam)+' <span class="cur-label">MAD</span>';
     } else {
-        irAnnuelBrut = calcITS_MRU(taxableIncome);
-        deductFam    = 0; irMensuel = irAnnuelBrut;
-        setHTML('ir-annual', fmt(irAnnuelBrut));
-        document.getElementById('ir-family').innerHTML = '-0,00 <span class="cur-label">MRU</span>';
+        irAnnuelBrut=calcITS_MRU(taxableIncome);
+        deductFam=0;irMensuel=irAnnuelBrut;
+        setHTML('ir-annual',fmt(irAnnuelBrut));
+        document.getElementById('ir-family').innerHTML='-0,00 <span class="cur-label">MRU</span>';
     }
-    setHTML('ir-monthly', fmt(irMensuel));
+    setHTML('ir-monthly',fmt(irMensuel));
 
-    var totalRet = getVal('advance_deduction') + getVal('loan_deduction') + getVal('garnishment_deduction') + getVal('other_deductions');
-    setHTML('ret-total-display', fmt(totalRet));
+    var totalRet=getVal('advance_deduction')+getVal('loan_deduction')+getVal('garnishment_deduction')+getVal('other_deductions');
+    setHTML('ret-total-display',fmt(totalRet));
 
-    var netSalary = Math.max(0, grossSalary - totalCot - fp - irMensuel - totalRet);
-    setText('net-display', fmt(netSalary));
-    setText('net-detail',
-        'Brut '+fmt(grossSalary)+' - Cotis. '+fmt(totalCot)+
-        (fp>0?' - FP '+fmt(fp):'')+' - '+(currentSystem==='MAD'?'IR':'ITS')+' '+fmt(irMensuel)+
-        ' - Retenues '+fmt(totalRet)+' ('+currentSystem+')'
-    );
+    var netSalary=Math.max(0,grossSalary-totalCot-fp-irMensuel-totalRet);
+    setText('net-display',fmt(netSalary));
+    setText('net-detail','Brut '+fmt(grossSalary)+' - Cotis. '+fmt(totalCot)+(fp>0?' - FP '+fmt(fp):'')
+        +' - '+(currentSystem==='MAD'?'IR':'ITS')+' '+fmt(irMensuel)+' - Retenues '+fmt(totalRet)+' ('+currentSystem+')');
 
-    var empBase = Math.min(grossSalary,S.CNSS_PLAFOND);
-    var empCnss = empBase*S.CNSS_PAT, empAmo=grossSalary*S.AMO_PAT, empTfp=S.HAS_TFP?grossSalary*S.TFP:0;
-    var empTotal= netSalary+totalCot+fp+irMensuel+empCnss+empAmo+empTfp;
+    var empBase=Math.min(grossSalary,S.CNSS_PLAFOND);
+    var empCnss=empBase*S.CNSS_PAT,empAmo=grossSalary*S.AMO_PAT,empTfp=S.HAS_TFP?grossSalary*S.TFP:0;
+    var empTotal=netSalary+totalCot+fp+irMensuel+empCnss+empAmo+empTfp;
     setText('emp-cnss',fmt(empCnss));setText('emp-amo',fmt(empAmo));setText('emp-tfp',fmt(empTfp));
     setHTML('emp-total',fmt(empTotal));
 
-    // Hidden fields
     document.getElementById('h_gross_salary').value        = grossSalary.toFixed(2);
     document.getElementById('h_seniority_bonus').value     = seniority.toFixed(2);
     document.getElementById('h_ot_day_amount').value       = otDayAmt.toFixed(2);
@@ -1002,7 +1226,6 @@ function calculate() {
    INIT
 ══════════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', function() {
-    // Type salaire
     if (EXISTING.salary_type === 'hourly') {
         document.getElementById('type_hourly').checked  = true;
         document.getElementById('hourly_rate').disabled = false;
@@ -1012,19 +1235,18 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('type_monthly').checked = true;
     }
 
-    // Mode cotisation
-    var modeInput = document.querySelector('input[name="mode_cotisation"][value="'+EXISTING.mode_cotisation+'"]');
-    if (modeInput) modeInput.checked = true;
+    var modeInput=document.querySelector('input[name="mode_cotisation"][value="'+EXISTING.mode_cotisation+'"]');
+    if(modeInput)modeInput.checked=true;
 
-    // Système (appelle calculate() une première fois)
-    setSystem(EXISTING.currency || 'MAD');
+    setSystem(EXISTING.currency||'MAD');
     toggleCotisationMode();
 
-    // 2e passe après rendu complet du DOM — corrige tauxH=0 au premier passage
-    setTimeout(function() {
+    setTimeout(function(){
         calculate();
-        // Restaurer override garde si sauvegardé
-        if (isGardeOverride && gardeManual > 0) {
+        // Restaurer la garde manuelle sauvegardée APRÈS le premier calculate()
+        // calculate() ne peut pas l'écraser car isGardeOverride=true,
+        // mais on force l'affichage ici pour être sûr
+        if(isGardeOverride && gardeManual > 0){
             updateGardeDisplay(gardeManual);
             syncGardeToVE(gardeManual);
         }

@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasTenantScope;
+
 
 class News extends Model
 {
-    use HasFactory, \App\Traits\HasTenantScope;
+    use HasFactory, HasTenantScope;
 
     protected $fillable = [
         'tenant_id',

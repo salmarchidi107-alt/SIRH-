@@ -51,6 +51,7 @@ class Employee extends Model
         'contract_end_date',
         'work_days',
         'cp_days',
+        'conges_anterieurs',
         'work_hours_counter',
         'user_id',
         'pin',
@@ -71,6 +72,7 @@ class Employee extends Model
         'work_days'           => 'array',
         'base_salary'         => 'decimal:2',
         'work_hours_counter'  => 'decimal:2',
+        'conges_anterieurs' => 'decimal:0',
         'children_count'      => 'integer',
     ];
 

@@ -22,9 +22,9 @@ class DepartmentController extends Controller
             'name.unique' => 'Un département avec ce nom existe déjà.',
         ]);
 
-        // tenant_id injecté automatiquement par HasTenantScope::creating()
         Department::create([
             'name'        => $request->name,
+            'tenant_id' => Auth::user()->tenant_id,
             'code'        => $request->code ? strtoupper($request->code) : null,
             'color'       => $request->color ?? '#0ea5e9',
             'chef'        => $request->chef,
@@ -64,7 +64,15 @@ class DepartmentController extends Controller
     public function destroy(Department $department)
     {
         $name = $department->name;
-        $department->rooms()->update(['department_id' => null]);
+
+        if ($department->rooms()->exists()) {
+            $count = $department->rooms()->count();
+            return redirect()
+                ->route('parametrage.index', ['tab' => 'departments'])
+                ->with('error', 'Impossible de supprimer le département « ' . $name . ' » : '
+                    . $count . ' salle(s) y sont rattachées. Réaffectez-les d\'abord.');
+        }
+
         $department->delete();
 
         return redirect()

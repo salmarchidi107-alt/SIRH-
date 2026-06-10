@@ -297,6 +297,9 @@ class EmployeeController extends Controller
 
             $this->employeeService->update($employee, $validated);
 
+            if (isset($validated['conges_anterieurs']) && !auth()->user()->isAdmin()) {
+    unset($validated['conges_anterieurs']);
+}
             // ── Mise à jour du mot de passe ──────────────────────────────
             if ($request->boolean('change_password') && $request->filled('new_password')) {
 
@@ -343,25 +346,45 @@ class EmployeeController extends Controller
     }
 
     public function destroy(Employee $employee)
-    {
-        try {
-            $docFields = ['doc_casier_path', 'doc_rib_path', 'doc_diplomes_path', 'doc_cin_path', 'doc_contrat_path'];
-            foreach ($docFields as $field) {
-                if ($employee->$field && Storage::disk('public')->exists($employee->$field)) {
-                    Storage::disk('public')->delete($employee->$field);
-                }
+{
+    try {
+        $docFields = ['doc_casier_path', 'doc_rib_path', 'doc_diplomes_path', 'doc_cin_path', 'doc_contrat_path'];
+        foreach ($docFields as $field) {
+            if ($employee->$field && Storage::disk('public')->exists($employee->$field)) {
+                Storage::disk('public')->delete($employee->$field);
             }
-
-            $employee->delete();
-
-            return redirect()->route('employees.index')
-                ->with('success', 'Employé supprimé.');
-
-        } catch (Exception $e) {
-            Log::error('Employee delete error', ['error' => $e->getMessage()]);
-            return back()->with('error', 'Erreur suppression employé.');
         }
+
+        // Trouver le User lié — par user_id OU par email (fallback)
+        $tenantId = auth()->user()->tenant_id;
+        $user = null;
+
+        if ($employee->user_id) {
+            $user = User::find($employee->user_id);
+        }
+
+        if (!$user && $employee->email) {
+            $user = User::where('email', $employee->email)
+                        ->where('tenant_id', $tenantId)
+                        ->first();
+        }
+
+        if ($user) {
+            $user->verificationCodes()->delete();
+            $user->modulePermissions()->delete();
+            $user->delete();
+        }
+
+        $employee->delete();
+
+        return redirect()->route('employees.index')
+            ->with('success', 'Employé supprimé.');
+
+    } catch (Exception $e) {
+        Log::error('Employee delete error', ['error' => $e->getMessage()]);
+        return back()->with('error', 'Erreur suppression employé.');
     }
+}
 
     public function export()
     {

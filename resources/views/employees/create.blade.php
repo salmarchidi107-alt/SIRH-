@@ -268,9 +268,6 @@
                                 {{ $deptName }}
                             </option>
                         @empty
-                            @foreach(['Médecine Générale','Chirurgie','Urgences','Pédiatrie','Radiologie','Laboratoire','Pharmacie','Administration','Ressources Humaines'] as $d)
-                                <option value="{{ $d }}">{{ $d }}</option>
-                            @endforeach
                         @endforelse
                     </select>
                     @error('department')
@@ -748,10 +745,24 @@
                            value="{{ old('contract_end_date') }}">
                 </div>
                 <div class="form-group">
-                    <label>Compteur Congés Payés (jours)</label>
-                    <input type="number" name="cp_days" class="form-control"
-                           value="{{ old('cp_days', 0) }}" min="0" placeholder="0">
-                </div>
+    <label>
+        Congés antérieurs (jours déjà consommés)
+    </label>
+    <input type="number"
+           name="conges_anterieurs"
+           class="form-control"
+           value="{{ old('conges_anterieurs', 0) }}"
+           min="0"
+           step="0"
+           placeholder="0"
+           title="Jours de congés déjà consommés avant la création du compte dans l'application">
+    <small style="color:#64748b;font-size:0.72rem;margin-top:4px;display:block;">
+        Ces jours seront automatiquement déduits du solde de congés calculé par le système.
+    </small>
+    @error('conges_anterieurs')
+        <span style="color:var(--danger);font-size:.75rem">{{ $message }}</span>
+    @enderror
+</div>
                 <div class="form-group">
                     <label>Compteur de temps (heures)</label>
                     <input type="number" name="work_hours_counter" class="form-control"

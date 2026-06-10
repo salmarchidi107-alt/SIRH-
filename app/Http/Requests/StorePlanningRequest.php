@@ -36,4 +36,21 @@ class StorePlanningRequest extends FormRequest
 
         return $rules;
     }
+   public function store(StorePlanningRequest $request)
+{
+    try {
+        $data              = $request->validated();
+        $data['tenant_id'] = auth()->user()->tenant_id;
+
+        Planning::create($data);
+
+        return back()->with('success', 'Planning créé.');
+    } catch (Exception $e) {
+        Log::error('Planning store error: ' . $e->getMessage(), [
+            'data'  => $request->validated(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+        return back()->with('error', 'Erreur sauvegarde planning.');
+    }
+}
 }

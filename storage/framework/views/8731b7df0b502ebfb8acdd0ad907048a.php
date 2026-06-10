@@ -224,6 +224,24 @@
     .toast svg   { width:13px; height:13px; flex-shrink:0; }
     .v-spin { animation:vSpin .6s linear infinite; display:inline-block; }
     @keyframes vSpin { to { transform:rotate(360deg); } }
+    .t-export-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 11px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--muted); font-size: 11px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: all .15s;
+}
+.t-export-btn:hover { border-color: var(--primary-l); color: var(--primary); background: #e0f2fe; }
+.t-export-btn svg   { width: 11px; height: 11px; }
+.role-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 6px; border-radius: 4px;
+    font-size: 9px; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase; margin-top: 3px;
+}
+.role-badge.role-admin    { background: #e0f2fe; color: #0f6b7c; }
+.role-badge.role-rh       { background: #e0f2fe; color: #0f6b7c; }
+.role-badge.role-employee { background: #e0f2fe; color: #0f6b7c; }
 </style>
 <?php $__env->stopPush(); ?>
 
@@ -499,6 +517,15 @@
             </div>
         </div>
         <div class="tenant-header-right">
+        <button class="t-export-btn"
+            onclick="event.stopPropagation();exportTenantPDF('<?php echo e($tenantId); ?>','<?php echo e(addslashes($tName)); ?>')">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 13h4M10 17h4M13 3v5a1 1 0 001 1h4"/>
+        </svg>
+        PDF
+    </button>
             <span class="coverage-badge <?php echo e($coverageClass); ?>"><?php echo e($coveragePct); ?>% couvert</span>
             <button class="t-renew-btn"
                     onclick="event.stopPropagation();confirmRenewQuarterForTenant('<?php echo e($tenantId); ?>','<?php echo e(addslashes($tName)); ?>')">
@@ -517,7 +544,7 @@
             <thead>
                 <tr>
                     <th style="width:32px">#</th>
-                    <th>Employé</th>
+                    <th>Collaborateur</th>
                     <th>Code 2FA</th>
                     <th>Statut</th>
                     <th>Trimestre</th>
@@ -573,16 +600,29 @@
                     <td style="font-size:10px;color:var(--light);"><?php echo e(str_pad($i + 1, 2, '0', STR_PAD_LEFT)); ?></td>
                     <td>
                         <?php if($code->user): ?>
-                        <div class="user-row">
-                            <div class="user-av" style="background:<?php echo e($tc['bg']); ?>;color:<?php echo e($tc['color']); ?>;">
-                                <?php echo e(strtoupper(substr($code->user->name ?? $code->user->email, 0, 2))); ?>
+<div class="user-row">
+    <div class="user-av" style="background:<?php echo e($tc['bg']); ?>;color:<?php echo e($tc['color']); ?>;">
+        <?php echo e(strtoupper(substr($code->user->name ?? $code->user->email, 0, 2))); ?>
 
-                            </div>
-                            <div>
-                                <div class="user-name"><?php echo e($code->user->name ?? '—'); ?></div>
-                                <div class="user-email"><?php echo e($code->user->email); ?></div>
-                            </div>
-                        </div>
+    </div>
+    <div>
+        <div class="user-name"><?php echo e($code->user->name ?? '—'); ?></div>
+        <div class="user-email"><?php echo e($code->user->email); ?></div>
+        <?php
+            $roleClass = match($code->user->role ?? '') {
+                'admin'    => 'role-admin',
+                'rh'       => 'role-rh',
+                default    => 'role-employee',
+            };
+            $roleLabel = match($code->user->role ?? '') {
+                'admin'    => 'Admin',
+                'rh'       => 'RH',
+                default    => 'Employé',
+            };
+        ?>
+        <span class="role-badge <?php echo e($roleClass); ?>"><?php echo e($roleLabel); ?></span>
+    </div>
+</div>
                         <?php else: ?>
                         <div class="user-row">
                             <div class="user-av" style="background:#fee2e2;color:#991b1b;">!</div>
@@ -711,6 +751,8 @@ const REPLACE_USER_URL    = "<?php echo e(rtrim(route('superadmin.codes.replace-
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startPush('scripts'); ?>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
 /* ══════════════════════════════════════════════════════════════════
    TRIMESTRE
@@ -1167,6 +1209,119 @@ function showToast(msg, type = 'success') {
 /* ── Helper SVG ─────────────────────────────────────────────────── */
 function svgR(s) {
     return `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" style="width:${s}px;height:${s}px;flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>`;
+}
+/* ══════════════════════════════════════════════════════════════════
+   EXPORT PDF PAR TENANT
+══════════════════════════════════════════════════════════════════ */
+function exportTenantPDF(tenantId, tenantName) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+    // ── Trimestre courant (lu depuis le bouton actif) ──
+    const quarter = document.querySelector('.trim-q.active')?.dataset?.q
+        ? 'T' + document.querySelector('.trim-q.active').dataset.q + '-' + new Date().getFullYear()
+        : '';
+
+    // ── En-tête ──
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Codes de vérification 2FA — ' + tenantName, 14, 16);
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Trimestre : ' + quarter, 14, 23);
+    doc.text('Généré le : ' + new Date().toLocaleDateString('fr-FR', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+    }), 14, 28);
+
+    // ── Collecte des lignes depuis le DOM ──
+    const card = document.querySelector(`.tenant-card[data-tenant-id="${tenantId}"]`);
+    if (!card) { showToast('Tenant introuvable dans la page.', 'error'); return; }
+
+    const rows = [];
+    card.querySelectorAll('tbody tr.code-row').forEach((tr, i) => {
+        const tds   = tr.querySelectorAll('td');
+        const name  = tr.querySelector('.user-name')?.textContent?.trim() ?? '—';
+        const email = tr.querySelector('.user-email')?.textContent?.trim() ?? '—';
+
+        // Code : concaténer les chiffres des cases
+        const code  = [...tr.querySelectorAll('.code-digit')]
+            .map(d => d.textContent.trim()).join('');
+
+        const status   = tr.querySelector('.badge')?.textContent?.trim() ?? '—';
+        const quarter_ = tds[4]?.textContent?.trim() ?? '—';
+        const assigned = tds[5]?.textContent?.trim() ?? '—';
+        const used     = tds[6]?.textContent?.trim().replace(/\s+/g, ' ') ?? '—';
+
+        rows.push([
+            String(i + 1).padStart(2, '0'),
+            name,
+            email,
+            code,
+            status,
+            quarter_,
+            assigned,
+            used,
+        ]);
+    });
+
+    if (rows.length === 0) {
+        showToast('Aucune ligne à exporter pour ce tenant.', 'warn');
+        return;
+    }
+
+    // ── Tableau ──
+    doc.autoTable({
+        startY: 34,
+        head: [['#', 'Employé', 'Email', 'Code 2FA', 'Statut', 'Trimestre', 'Attribué le', 'Utilisé le']],
+        body: rows,
+        theme: 'grid',
+        styles: {
+            font: 'helvetica',
+            fontSize: 8,
+            cellPadding: 3,
+            textColor: 20,
+            lineColor: 180,
+            lineWidth: 0.2,
+        },
+        headStyles: {
+            fillColor: [240, 240, 240],
+            textColor: 20,
+            fontStyle: 'bold',
+            halign: 'center',
+        },
+        columnStyles: {
+            0: { halign: 'center', cellWidth: 8  },   // #
+            3: { halign: 'center', cellWidth: 22, font: 'courier', fontSize: 10, fontStyle: 'bold' }, // Code
+            4: { halign: 'center', cellWidth: 20 },   // Statut
+            5: { halign: 'center', cellWidth: 20 },   // Trimestre
+            6: { halign: 'center', cellWidth: 24 },   // Attribué le
+            7: { halign: 'center', cellWidth: 28 },   // Utilisé le
+        },
+        alternateRowStyles: { fillColor: [250, 250, 250] },
+        margin: { left: 14, right: 14 },
+    });
+
+    // ── Numérotation des pages ──
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let p = 1; p <= pageCount; p++) {
+        doc.setPage(p);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(
+            `Page ${p} / ${pageCount}`,
+            doc.internal.pageSize.getWidth() / 2,
+            doc.internal.pageSize.getHeight() - 8,
+            { align: 'center' }
+        );
+    }
+
+    // ── Téléchargement ──
+    const safeName = tenantName.replace(/[^a-zA-Z0-9]/g, '_');
+    doc.save(`2FA_${safeName}_${quarter}.pdf`);
+
+    showToast('PDF exporté : 2FA_' + safeName + '_' + quarter + '.pdf');
 }
 </script>
 <?php $__env->stopPush(); ?>

@@ -37,10 +37,9 @@ class DashboardController extends Controller
        $stats = [
     'total_employees'  => Employee::where('tenant_id', $tenantId)->count(),
     'active_employees' => Employee::where('tenant_id', $tenantId)->where('status', 'active')->count(),
-    'today_present'    => Planning::where(function ($q) use ($tenantId) {
-                              $q->where('tenant_id', $tenantId)
-                                ->orWhereNull('tenant_id');
-                          })->whereDate('date', today())->count(),
+    'today_present'    =>  Planning::where('tenant_id', $tenantId)
+    ->whereDate('date', today())
+    ->count(),
 ];
 
         $recent_absences = collect();

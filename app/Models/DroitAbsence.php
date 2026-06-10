@@ -65,30 +65,38 @@ class DroitAbsence extends Model
 
 
     public static function getOuCreeParAnnee($employeeId, $annee)
-    {
-        if (!$employeeId) {
-
-            $result = new \stdClass();
-            $result->jours_acquis = 25;
-            $result->jours_pris = 0;
-            $result->jours_en_attente = 0;
-            $result->jours_solde = 25;
-            $result->rtt_acquis = 0;
-            $result->rtt_pris = 0;
-            $result->rtt_solde = 0;
-            return $result;
-        }
-
-        return self::firstOrCreate(
-            ['employee_id' => $employeeId, 'annee' => $annee],
-            [
-                'jours_acquis'     => 25,
-                'jours_pris'       => 0,
-                'jours_en_attente' => 0,
-                'jours_solde'      => 25,
-                'rtt_acquis'       => 0,
-                'rtt_pris'         => 0,
-            ]
-        );
+{
+    if (!$employeeId) {
+        $result = new \stdClass();
+        $result->jours_acquis     = 25;
+        $result->jours_pris       = 0;
+        $result->jours_en_attente = 0;
+        $result->jours_solde      = 25;
+        $result->rtt_acquis       = 0;
+        $result->rtt_pris         = 0;
+        $result->rtt_solde        = 0;
+        return $result;
     }
+
+    // Récupérer les congés antérieurs de l'employé
+    $congesAnterieurs = 0;
+    $employee = \App\Models\Employee::find($employeeId);
+    if ($employee) {
+        $congesAnterieurs = (float) ($employee->conges_anterieurs ?? 0);
+    }
+
+    $record = self::firstOrCreate(
+        ['employee_id' => $employeeId, 'annee' => $annee],
+        [
+            'jours_acquis'     => 25,
+            'jours_pris'       => $congesAnterieurs,   // ← initialiser avec l'antérieur
+            'jours_en_attente' => 0,
+            'jours_solde'      => 25 - $congesAnterieurs,
+            'rtt_acquis'       => 0,
+            'rtt_pris'         => 0,
+        ]
+    );
+
+    return $record;
+}
 }

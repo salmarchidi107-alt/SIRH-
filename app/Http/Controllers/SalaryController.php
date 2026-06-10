@@ -28,16 +28,13 @@ class SalaryController extends Controller
         $search     = $request->get('search');
         $department = $request->get('department');
 
-        // ── Filtre de période custom ─────────────────────────────────────
         $dateDebut = $request->get('date_debut');
         $dateFin   = $request->get('date_fin');
 
-        // Valider et normaliser les dates
         if ($dateDebut && $dateFin) {
             try {
                 $debutCarbon = Carbon::parse($dateDebut)->startOfDay();
                 $finCarbon   = Carbon::parse($dateFin)->endOfDay();
-
                 if ($debutCarbon->gt($finCarbon)) {
                     [$debutCarbon, $finCarbon] = [$finCarbon, $debutCarbon];
                     $dateDebut = $debutCarbon->format('Y-m-d');
@@ -56,10 +53,8 @@ class SalaryController extends Controller
             $finCarbon   = Carbon::create($year, $month, 1)->endOfMonth();
         }
 
-        // ── Couples (mois, année) couverts par la plage ──────────────────
         $periodesMois = $this->getPeriodesMois($debutCarbon, $finCarbon);
 
-        // ── Requête employés avec leurs bulletins ────────────────────────
         $query = Employee::with([
             'salaries' => function ($q) use ($periodesMois, $status) {
                 $q->where(function ($sub) use ($periodesMois) {
@@ -73,7 +68,6 @@ class SalaryController extends Controller
                 ->with(['createdBy', 'validatedBy', 'paidBy'])
                 ->orderBy('year')
                 ->orderBy('month');
-
                 if ($status) {
                     $q->where('status', $status);
                 }
@@ -106,12 +100,9 @@ class SalaryController extends Controller
             $query->where('department', $department);
         }
 
-        $employees = $query->orderByRaw("CONCAT(first_name, ' ', last_name) ASC")->paginate(50);
-
-        // ── Summary ──────────────────────────────────────────────────────
-        $summary = $this->getSummaryPeriode($periodesMois, $status);
-
-        $departments = Department::names();
+        $employees    = $query->orderByRaw("CONCAT(first_name, ' ', last_name) ASC")->paginate(50);
+        $summary      = $this->getSummaryPeriode($periodesMois, $status);
+        $departments  = Department::names();
 
         return view('salary.index', compact(
             'employees', 'month', 'year', 'summary',
@@ -121,7 +112,7 @@ class SalaryController extends Controller
     }
 
     // =========================================================================
-    // EXPORT PDF — Récapitulatif paie (mêmes filtres que l'index)
+    // EXPORT PDF
     // =========================================================================
     public function exportPdf(Request $request)
     {
@@ -132,7 +123,6 @@ class SalaryController extends Controller
         $dateDebut  = $request->get('date_debut');
         $dateFin    = $request->get('date_fin');
 
-        // ── Normaliser les dates (même logique que index) ─────────────────
         if ($dateDebut && $dateFin) {
             try {
                 $debutCarbon = Carbon::parse($dateDebut)->startOfDay();
@@ -157,7 +147,6 @@ class SalaryController extends Controller
 
         $periodesMois = $this->getPeriodesMois($debutCarbon, $finCarbon);
 
-        // ── Charger TOUS les employés sans pagination ─────────────────────
         $query = Employee::with([
             'salaries' => function ($q) use ($periodesMois, $status) {
                 $q->where(function ($sub) use ($periodesMois) {
@@ -171,7 +160,6 @@ class SalaryController extends Controller
                 ->with(['createdBy', 'validatedBy', 'paidBy'])
                 ->orderBy('year')
                 ->orderBy('month');
-
                 if ($status) {
                     $q->where('status', $status);
                 }
@@ -197,11 +185,8 @@ class SalaryController extends Controller
         }
 
         $allEmployees = $query->orderByRaw("CONCAT(first_name, ' ', last_name) ASC")->get();
+        $summary      = $this->getSummaryPeriode($periodesMois, $status);
 
-        // ── Summary ───────────────────────────────────────────────────────
-        $summary = $this->getSummaryPeriode($periodesMois, $status);
-
-        // ── Label de période ──────────────────────────────────────────────
         if ($dateDebut && $dateFin) {
             $periodLabel = Carbon::parse($dateDebut)->locale('fr')->isoFormat('D MMM YYYY')
                 . ' → '
@@ -212,7 +197,6 @@ class SalaryController extends Controller
             );
         }
 
-        // ── Générer le PDF ────────────────────────────────────────────────
         $data = [
             'allEmployees' => $allEmployees,
             'summary'      => $summary,
@@ -235,13 +219,11 @@ class SalaryController extends Controller
                 'dpi'                  => 150,
             ]);
 
-        $filename = 'paie-' . Str::slug($periodLabel) . '.pdf';
-
-        return $pdf->download($filename);
+        return $pdf->download('paie-' . Str::slug($periodLabel) . '.pdf');
     }
 
     // =========================================================================
-    // Calcule les couples (mois, année) couverts entre deux dates
+    // Couples (mois, année) couverts entre deux dates
     // =========================================================================
     private function getPeriodesMois(Carbon $debut, Carbon $fin): array
     {
@@ -250,10 +232,7 @@ class SalaryController extends Controller
         $dernierMois = $fin->copy()->startOfMonth();
 
         while ($courant->lte($dernierMois)) {
-            $periodes[] = [
-                'month' => $courant->month,
-                'year'  => $courant->year,
-            ];
+            $periodes[] = ['month' => $courant->month, 'year' => $courant->year];
             $courant->addMonth();
         }
 
@@ -275,8 +254,7 @@ class SalaryController extends Controller
         $query = Salary::where(function ($q) use ($periodesMois) {
             foreach ($periodesMois as $pm) {
                 $q->orWhere(function ($inner) use ($pm) {
-                    $inner->where('month', $pm['month'])
-                          ->where('year',  $pm['year']);
+                    $inner->where('month', $pm['month'])->where('year', $pm['year']);
                 });
             }
         });
@@ -288,16 +266,16 @@ class SalaryController extends Controller
         $salaries = $query->get();
 
         return [
-            'total_gross'        => $salaries->sum('gross_salary'),
-            'total_net'          => $salaries->sum('net_salary'),
-            'total_cnss_sal'     => $salaries->sum('cnss_deduction'),
-            'total_amo_sal'      => $salaries->sum('amo_deduction'),
-            'total_ir'           => $salaries->sum('ir_deduction'),
-            'total_employer_cost'=> $salaries->sum('employer_total_cost'),
-            'count'              => $salaries->count(),
-            'count_draft'        => $salaries->where('status', 'draft')->count(),
-            'count_validated'    => $salaries->where('status', 'validated')->count(),
-            'count_paid'         => $salaries->where('status', 'paid')->count(),
+            'total_gross'         => $salaries->sum('gross_salary'),
+            'total_net'           => $salaries->sum('net_salary'),
+            'total_cnss_sal'      => $salaries->sum('cnss_deduction'),
+            'total_amo_sal'       => $salaries->sum('amo_deduction'),
+            'total_ir'            => $salaries->sum('ir_deduction'),
+            'total_employer_cost' => $salaries->sum('employer_total_cost'),
+            'count'               => $salaries->count(),
+            'count_draft'         => $salaries->where('status', 'draft')->count(),
+            'count_validated'     => $salaries->where('status', 'validated')->count(),
+            'count_paid'          => $salaries->where('status', 'paid')->count(),
         ];
     }
 
@@ -411,6 +389,10 @@ class SalaryController extends Controller
             'employer_amo'             => 'nullable|numeric|min:0',
             'employer_tfp'             => 'nullable|numeric|min:0',
             'employer_total_cost'      => 'nullable|numeric|min:0',
+
+            // ── Les deux champs manquants — cause du bug ───────────
+            'garde_indemnite'          => 'nullable|numeric|min:0',
+            'garde_override'           => 'nullable|boolean',
         ]);
 
         $month = (int) $data['month'];
@@ -436,53 +418,57 @@ class SalaryController extends Controller
             'employee_id'              => $employee->id,
             'month'                    => $month,
             'year'                     => $year,
-            'currency'                 => $data['currency'] ?? 'MAD',
-            'salary_type'              => $data['salary_type'] ?? 'monthly',
-            'hourly_rate'              => $data['hourly_rate'] ?? 0,
-            'working_hours'            => $data['working_hours'] ?? 0,
+            'currency'                 => $data['currency']        ?? 'MAD',
+            'salary_type'              => $data['salary_type']     ?? 'monthly',
+            'hourly_rate'              => $data['hourly_rate']     ?? 0,
+            'working_hours'            => $data['working_hours']   ?? 0,
             'mode_cotisation'          => $data['mode_cotisation'] ?? 'auto',
             'base_salary'              => $data['base_salary'],
-            'performance_bonus'        => $data['performance_bonus'] ?? 0,
-            'transport_allowance'      => $data['transport_allowance'] ?? 0,
-            'meal_allowance'           => $data['meal_allowance'] ?? 0,
-            'housing_allowance'        => $data['housing_allowance'] ?? 0,
+            'performance_bonus'        => $data['performance_bonus']        ?? 0,
+            'transport_allowance'      => $data['transport_allowance']      ?? 0,
+            'meal_allowance'           => $data['meal_allowance']           ?? 0,
+            'housing_allowance'        => $data['housing_allowance']        ?? 0,
             'responsibility_allowance' => $data['responsibility_allowance'] ?? 0,
-            'other_gains'              => $data['other_gains'] ?? 0,
-            'advance_deduction'        => $data['advance_deduction'] ?? 0,
-            'loan_deduction'           => $data['loan_deduction'] ?? 0,
-            'garnishment_deduction'    => $data['garnishment_deduction'] ?? 0,
-            'other_deductions'         => $data['other_deductions'] ?? 0,
-            'cnss_deduction_manual'    => $data['cnss_deduction_manual'] ?? null,
-            'amo_deduction_manual'     => $data['amo_deduction_manual'] ?? null,
-            'fp_deduction_manual'      => $data['fp_deduction_manual'] ?? null,
-            'gross_salary'             => $data['gross_salary'] ?? 0,
-            'seniority_bonus'          => $data['seniority_bonus'] ?? 0,
-            'overtime_day_amount'      => $data['overtime_day_amount'] ?? 0,
-            'overtime_night_amount'    => $data['overtime_night_amount'] ?? 0,
-            'overtime_weekend_amount'  => $data['overtime_weekend_amount'] ?? 0,
-            'overtime_hours'           => $data['overtime_hours'] ?? 0,
-            'overtime_hours_day'       => $data['overtime_hours_day'] ?? 0,
-            'overtime_hours_night'     => $data['overtime_hours_night'] ?? 0,
-            'overtime_hours_weekend'   => $data['overtime_hours_weekend'] ?? 0,
-            'absence_deduction'        => $data['absence_deduction'] ?? 0,
-            'absence_days'             => $data['absence_days'] ?? 0,
-            'absence_hours'            => $data['absence_hours'] ?? 0,
-            'delay_hours'              => $data['delay_hours'] ?? 0,
-            'garde_hours'              => $data['garde_hours'] ?? 0,
-            'cnss_base'                => $data['cnss_base'] ?? 0,
-            'cnss_deduction'           => $data['cnss_deduction'] ?? 0,
-            'amo_deduction'            => $data['amo_deduction'] ?? 0,
-            'fp_deduction'             => $data['fp_deduction'] ?? 0,
-            'taxable_income'           => $data['taxable_income'] ?? 0,
-            'ir_annual'                => $data['ir_annual'] ?? 0,
-            'ir_family_deduction'      => $data['ir_family_deduction'] ?? 0,
-            'ir_deduction'             => $data['ir_deduction'] ?? 0,
-            'net_salary'               => $data['net_salary'] ?? 0,
-            'employer_cnss'            => $data['employer_cnss'] ?? 0,
-            'employer_amo'             => $data['employer_amo'] ?? 0,
-            'employer_tfp'             => $data['employer_tfp'] ?? 0,
-            'employer_total_cost'      => $data['employer_total_cost'] ?? 0,
+            'other_gains'              => $data['other_gains']              ?? 0,
+            'advance_deduction'        => $data['advance_deduction']        ?? 0,
+            'loan_deduction'           => $data['loan_deduction']           ?? 0,
+            'garnishment_deduction'    => $data['garnishment_deduction']    ?? 0,
+            'other_deductions'         => $data['other_deductions']         ?? 0,
+            'cnss_deduction_manual'    => $data['cnss_deduction_manual']    ?? null,
+            'amo_deduction_manual'     => $data['amo_deduction_manual']     ?? null,
+            'fp_deduction_manual'      => $data['fp_deduction_manual']      ?? null,
+            'gross_salary'             => $data['gross_salary']             ?? 0,
+            'seniority_bonus'          => $data['seniority_bonus']          ?? 0,
+            'overtime_day_amount'      => $data['overtime_day_amount']      ?? 0,
+            'overtime_night_amount'    => $data['overtime_night_amount']    ?? 0,
+            'overtime_weekend_amount'  => $data['overtime_weekend_amount']  ?? 0,
+            'overtime_hours'           => $data['overtime_hours']           ?? 0,
+            'overtime_hours_day'       => $data['overtime_hours_day']       ?? 0,
+            'overtime_hours_night'     => $data['overtime_hours_night']     ?? 0,
+            'overtime_hours_weekend'   => $data['overtime_hours_weekend']   ?? 0,
+            'absence_deduction'        => $data['absence_deduction']        ?? 0,
+            'absence_days'             => $data['absence_days']             ?? 0,
+            'absence_hours'            => $data['absence_hours']            ?? 0,
+            'delay_hours'              => $data['delay_hours']              ?? 0,
+            'garde_hours'              => $data['garde_hours']              ?? 0,
+            'cnss_base'                => $data['cnss_base']                ?? 0,
+            'cnss_deduction'           => $data['cnss_deduction']           ?? 0,
+            'amo_deduction'            => $data['amo_deduction']            ?? 0,
+            'fp_deduction'             => $data['fp_deduction']             ?? 0,
+            'taxable_income'           => $data['taxable_income']           ?? 0,
+            'ir_annual'                => $data['ir_annual']                ?? 0,
+            'ir_family_deduction'      => $data['ir_family_deduction']      ?? 0,
+            'ir_deduction'             => $data['ir_deduction']             ?? 0,
+            'net_salary'               => $data['net_salary']               ?? 0,
+            'employer_cnss'            => $data['employer_cnss']            ?? 0,
+            'employer_amo'             => $data['employer_amo']             ?? 0,
+            'employer_tfp'             => $data['employer_tfp']             ?? 0,
+            'employer_total_cost'      => $data['employer_total_cost']      ?? 0,
             'status'                   => $salary->status ?? 'draft',
+
+            // ── Persister la garde manuelle ────────────────────────
+            'garde_indemnite'          => $data['garde_indemnite'] ?? 0,
+            'garde_override'           => (bool) ($data['garde_override'] ?? false),
         ]);
 
         $salary->save();
@@ -547,7 +533,8 @@ class SalaryController extends Controller
 
         $this->payrollService->clearSummaryCache($month, $year);
 
-        return redirect()->route('salary.show', $employee)->with('success', 'Bulletin supprime.');
+        return redirect()->route('salary.show', $employee)
+            ->with('success', 'Bulletin supprime.');
     }
 
     // =========================================================================

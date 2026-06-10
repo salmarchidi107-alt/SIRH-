@@ -118,23 +118,22 @@ Route::middleware(['auth', 'superadmin'])
         Route::get('clients/{tenant}', [ClientController::class, 'show'])->name('clients.show');
 
         Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
-        Route::prefix('codes')->name('codes.')->group(function () {
-    Route::get('/',                              [VerificationCodeController::class, 'index'])      ->name('index');
-    Route::post('/generate',                     [VerificationCodeController::class, 'generate'])   ->name('generate');
-    Route::post('/assign',                       [VerificationCodeController::class, 'assign'])     ->name('assign');
-    Route::post('/users/{user}/replace',         [VerificationCodeController::class, 'replace'])   ->name('replace');
-    Route::get('/tenant/{tenantId}',             [VerificationCodeController::class, 'tenantCodes'])->name('tenant');
-    Route::get('/tenant-stats/{tenantId}',       [VerificationCodeController::class, 'tenantStats'])->name('tenant-stats');
-    Route::post('/generate-missing',             [VerificationCodeController::class, 'generateMissing'])->name('generate-missing');
-    Route::post('/renew-quarter',                [VerificationCodeController::class, 'renewQuarter'])->name('renew-quarter');
-    Route::post('/replace-user/{user}',          [VerificationCodeController::class, 'replaceForUser'])->name('replace-user');
-    Route::delete('/{verificationCode}/revoke',  [VerificationCodeController::class, 'revoke'])->name('revoke');
-    Route::post('/force-renew',                  [VerificationCodeController::class, 'forceRenew'])->name('force-renew');
 
-    // Routes AJAX pour la régénération
-    Route::post('/regen-single',                 [VerificationCodeController::class, 'regenSingle'])->name('regen-single');
-    Route::post('/regen-all',                    [VerificationCodeController::class, 'regenAll'])   ->name('regen-all');
-});
+        Route::prefix('codes')->name('codes.')->group(function () {
+            Route::get('/',                              [VerificationCodeController::class, 'index'])          ->name('index');
+            Route::post('/generate',                     [VerificationCodeController::class, 'generate'])       ->name('generate');
+            Route::post('/assign',                       [VerificationCodeController::class, 'assign'])         ->name('assign');
+            Route::post('/users/{user}/replace',         [VerificationCodeController::class, 'replace'])        ->name('replace');
+            Route::get('/tenant/{tenantId}',             [VerificationCodeController::class, 'tenantCodes'])    ->name('tenant');
+            Route::get('/tenant-stats/{tenantId}',       [VerificationCodeController::class, 'tenantStats'])    ->name('tenant-stats');
+            Route::post('/generate-missing',             [VerificationCodeController::class, 'generateMissing'])->name('generate-missing');
+            Route::post('/renew-quarter',                [VerificationCodeController::class, 'renewQuarter'])   ->name('renew-quarter');
+            Route::post('/replace-user/{user}',          [VerificationCodeController::class, 'replaceForUser']) ->name('replace-user');
+            Route::delete('/{verificationCode}/revoke',  [VerificationCodeController::class, 'revoke'])         ->name('revoke');
+            Route::post('/force-renew',                  [VerificationCodeController::class, 'forceRenew'])     ->name('force-renew');
+            Route::post('/regen-single',                 [VerificationCodeController::class, 'regenSingle'])    ->name('regen-single');
+            Route::post('/regen-all',                    [VerificationCodeController::class, 'regenAll'])       ->name('regen-all');
+        });
     });
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -153,7 +152,6 @@ Route::middleware(['web', 'auth', 'identify-tenant', '2fa'])->group(function () 
 
     // ─────────────────────────────────────────────────────────────────────
     // ACCESSIBLE À TOUS LES UTILISATEURS CONNECTÉS DU TENANT
-    // (employee, rh, admin, superadmin)
     // ─────────────────────────────────────────────────────────────────────
     Route::middleware(['tenant-user'])->group(function () {
 
@@ -170,7 +168,7 @@ Route::middleware(['web', 'auth', 'identify-tenant', '2fa'])->group(function () 
             ->where('employee', '[0-9]+')
             ->name('employees.show');
 
-        // ── Planning — lecture accessible à tous (vérification permission en controller/middleware si besoin)
+        // ── Planning — lecture
         Route::prefix('planning')->name('planning.')->group(function () {
             Route::get('/weekly',          [PlanningController::class, 'weekly']) ->name('weekly');
             Route::get('/monthly',         [PlanningController::class, 'monthly'])->name('monthly');
@@ -196,7 +194,7 @@ Route::middleware(['web', 'auth', 'identify-tenant', '2fa'])->group(function () 
             Route::get('/{absence}/pdf',   [AbsenceController::class, 'downloadPdf'])    ->name('pdf');
         });
 
-        // ── Salary — lecture accessible à tous
+        // ── Salary — lecture
         Route::prefix('salary')->name('salary.')->group(function () {
             Route::get('/{salary}/pdf', [SalaryController::class, 'pdf'])
                 ->where('salary', '[0-9]+')
@@ -206,11 +204,11 @@ Route::middleware(['web', 'auth', 'identify-tenant', '2fa'])->group(function () 
                 ->name('show');
         });
 
-        // ── Vue d'ensemble temps (rh + admin)
+        // ── Vue d'ensemble temps
         Route::get('/temps/vue-ensemble', [VueEnsembleController::class, 'index'])
             ->name('temps.vue-ensemble');
 
-        // ── Pointage — lecture + actions accessible à rh et admin
+        // ── Pointage — rh + admin
         Route::middleware(['role:admin,rh'])->group(function () {
             Route::get('/pointage',                            [PointageController::class, 'index'])             ->name('pointage.index');
             Route::get('/pointage/pdf',                        [PointageController::class, 'exportPdf'])         ->name('pointage.pdf');
@@ -220,19 +218,18 @@ Route::middleware(['web', 'auth', 'identify-tenant', '2fa'])->group(function () 
             Route::post('/pointage/valider-journee',           [PointageController::class, 'validerJournee'])    ->name('pointage.valider-journee');
             Route::post('/pointage/{pointage}/toggle-valider', [PointageController::class, 'toggleValider'])     ->name('pointage.toggle-valider');
             Route::post('/pointage/{pointage}/toggle-ignore',  [PointageController::class, 'toggleIgnore'])      ->name('pointage.toggle-ignore');
-            Route::put('/pointage/{pointage}',                 [PointageController::class, 'update'])             ->name('pointage.update');
+            Route::put('/pointage/{pointage}',                 [PointageController::class, 'update'])            ->name('pointage.update');
             Route::post('/pointage/toggle-absence',            [PointageController::class, 'toggleAbsence'])     ->name('pointage.toggle-absence');
             Route::get('/pointage/export',                     [PointageController::class, 'export'])            ->name('pointage.export');
         });
 
-        // ── Salary admin — accessible rh + admin
+        // ── Salary — rh + admin
         Route::prefix('salary')->name('salary.')->middleware(['role:admin,rh'])->group(function () {
             Route::get('/',              [SalaryController::class, 'index'])       ->name('index');
             Route::get('/export',        [SalaryController::class, 'export'])      ->name('export');
             Route::get('/export-pdf',    [SalaryController::class, 'exportPdf'])   ->name('export-pdf');
             Route::get('/setting',       [SalaryController::class, 'setting'])     ->name('setting');
             Route::post('/generate-all', [SalaryController::class, 'generateAll']) ->name('generate-all');
-
             Route::get('/{employee}/create',   [SalaryController::class, 'create'])         ->name('create')  ->where('employee', '[0-9]+');
             Route::post('/{employee}',         [SalaryController::class, 'store'])          ->name('update')  ->where('employee', '[0-9]+');
             Route::patch('/{salary}/validate', [SalaryController::class, 'validateSalary']) ->name('validate')->where('salary', '[0-9]+');
@@ -279,13 +276,53 @@ Route::middleware(['web', 'auth', 'identify-tenant', '2fa'])->group(function () 
         // ── Paramétrage — rh + admin
         Route::middleware(['role:admin,rh'])->group(function () {
             Route::get('/parametrage', [ParametrageController::class, 'index'])->name('parametrage.index');
-            Route::post('/parametrage/documents/upload', [ParametrageController::class, 'uploadDocument'])->name('parametrage.documents.upload');
+            Route::post('/parametrage/documents/upload',        [ParametrageController::class, 'uploadDocument'])     ->name('parametrage.documents.upload');
             Route::get('/parametrage/employees/{id}/documents', [ParametrageController::class, 'getEmployeeDocuments']);
-            Route::delete('/parametrage/documents/{id}', [ParametrageController::class, 'deleteDocument']);
+            Route::delete('/parametrage/documents/{id}',        [ParametrageController::class, 'deleteDocument']);
 
             Route::post('/departments',                [DepartmentController::class, 'store'])  ->name('departments.store');
             Route::put('/departments/{department}',    [DepartmentController::class, 'update']) ->name('departments.update');
             Route::delete('/departments/{department}', [DepartmentController::class, 'destroy'])->name('departments.destroy');
+        });
+
+        // ═════════════════════════════════════════════════════════════════
+        // LMS — DÉPLACÉ ICI ✅ (était hors du groupe identify-tenant)
+        // Le middleware identify-tenant initialise config('app.current_tenant_id')
+        // ce qui active TenantScope sur Formation, Formateur, etc.
+        // ═════════════════════════════════════════════════════════════════
+        Route::middleware(['role:admin,rh,employee'])->prefix('lms')->name('lms.')->group(function () {
+            Route::get('/',                        [FormationController::class, 'index'])                ->name('index');
+            Route::get('/planning',                [FormationController::class, 'planning'])             ->name('planning');
+            Route::post('/',                       [FormationController::class, 'store'])                ->name('store');
+            Route::put('/{formation}',             [FormationController::class, 'update'])               ->name('update');
+            Route::delete('/{formation}',          [FormationController::class, 'destroy'])              ->name('destroy');
+            Route::get('/export-pdf',              [FormationController::class, 'exportPdf'])            ->name('exportPdf');
+            Route::get('/employees-by-department', [FormationController::class, 'employeesByDepartment'])->name('employeesByDepartment');
+        });
+
+        // ═════════════════════════════════════════════════════════════════
+        // RÉFÉRENTIEL — DÉPLACÉ ICI ✅ (était hors du groupe identify-tenant)
+        // Le middleware identify-tenant initialise config('app.current_tenant_id')
+        // ce qui active TenantScope sur Formateur, CatalogueFormation, OrganismeFormation
+        // ═════════════════════════════════════════════════════════════════
+        Route::middleware(['role:admin,rh'])->prefix('referentiel')->name('referentiel.')->group(function () {
+            Route::get('/', [ReferentielController::class, 'index'])->name('index');
+
+            Route::post('/formateurs',               [ReferentielController::class, 'storeFormateur'])  ->name('formateurs.store');
+            Route::put('/formateurs/{formateur}',    [ReferentielController::class, 'updateFormateur']) ->name('formateurs.update');
+            Route::delete('/formateurs/{formateur}', [ReferentielController::class, 'destroyFormateur'])->name('formateurs.destroy');
+
+            Route::post('/formations',               [ReferentielController::class, 'storeFormation'])  ->name('formations.store');
+            Route::put('/formations/{formation}',    [ReferentielController::class, 'updateFormation']) ->name('formations.update');
+            Route::delete('/formations/{formation}', [ReferentielController::class, 'destroyFormation'])->name('formations.destroy');
+
+            Route::post('/organismes',               [ReferentielController::class, 'storeOrganisme'])  ->name('organismes.store');
+            Route::put('/organismes/{organisme}',    [ReferentielController::class, 'updateOrganisme']) ->name('organismes.update');
+            Route::delete('/organismes/{organisme}', [ReferentielController::class, 'destroyOrganisme'])->name('organismes.destroy');
+
+            Route::get('/api/formateurs', [ReferentielController::class, 'formateursActifs'])->name('api.formateurs');
+            Route::get('/api/formations', [ReferentielController::class, 'catalogueActif'])  ->name('api.formations');
+            Route::get('/api/organismes', [ReferentielController::class, 'organismesActifs'])->name('api.organismes');
         });
 
     }); // fin tenant-user
@@ -302,30 +339,30 @@ Route::middleware(['web', 'auth', 'identify-tenant', '2fa'])->group(function () 
 
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
-        // ── Employés — CRUD complet (admin seulement)
-        Route::get('employees',                               [EmployeeController::class, 'index'])           ->name('employees.index');
-        Route::get('employees/create',                        [EmployeeController::class, 'create'])          ->name('employees.create');
-        Route::post('employees',                              [EmployeeController::class, 'store'])           ->name('employees.store');
-        Route::get('employees/export',                        [EmployeeController::class, 'export'])          ->name('employees.export');
-        Route::get('employees/export-pdf',                    [EmployeeController::class, 'exportPdf'])       ->name('employees.export-pdf');
+        // ── Employés — CRUD complet
+        Route::get('employees',                               [EmployeeController::class, 'index'])          ->name('employees.index');
+        Route::get('employees/create',                        [EmployeeController::class, 'create'])         ->name('employees.create');
+        Route::post('employees',                              [EmployeeController::class, 'store'])          ->name('employees.store');
+        Route::get('employees/export',                        [EmployeeController::class, 'export'])         ->name('employees.export');
+        Route::get('employees/export-pdf',                    [EmployeeController::class, 'exportPdf'])      ->name('employees.export-pdf');
         Route::get('employees/export-pdf-dept/{department}',  [EmployeeController::class, 'exportPdfByDept'])->name('employees.export-pdf-dept');
         Route::post('employees/reorder',                      [EmployeeController::class, 'reorder'])        ->name('employees.reorder');
         Route::get('employees/ajax',                          [EmployeeController::class, 'ajax'])           ->name('employees.ajax');
         Route::post('employees/{employee}/regenerate-pin',    [EmployeeController::class, 'regeneratePin'])  ->name('employees.regeneratePin');
         Route::resource('employees', EmployeeController::class)->only(['edit', 'update', 'destroy']);
 
-        // ── Planning — écriture (admin seulement)
+        // ── Planning — écriture
         Route::prefix('planning')->name('planning.')->group(function () {
             Route::get('/global',          [PlanningController::class, 'global'])           ->name('global');
-            Route::get('/weekly/export',   [PlanningController::class, 'exportWeekly'])    ->name('weekly.export');
-            Route::get('/weekly/pdf',      [PlanningController::class, 'exportWeeklyPdf']) ->name('weekly.pdf');
-            Route::get('/monthly/export',  [PlanningController::class, 'exportMonthly'])   ->name('monthly.export');
-            Route::get('/monthly/pdf',     [PlanningController::class, 'exportMonthlyPdf'])->name('monthly.pdf');
-            Route::post('/',               [PlanningController::class, 'store'])            ->name('store');
-            Route::put('/{planning}',      [PlanningController::class, 'update'])           ->name('update');
-            Route::delete('/{planning}',   [PlanningController::class, 'destroy'])          ->name('destroy');
-            Route::post('/drag-drop',      [PlanningController::class, 'updateDragDrop'])   ->name('dragDrop');
-            Route::post('/update-room',    [PlanningController::class, 'updateRoom'])       ->name('update.room');
+            Route::get('/weekly/export',   [PlanningController::class, 'exportWeekly'])     ->name('weekly.export');
+            Route::get('/weekly/pdf',      [PlanningController::class, 'exportWeeklyPdf'])  ->name('weekly.pdf');
+            Route::get('/monthly/export',  [PlanningController::class, 'exportMonthly'])    ->name('monthly.export');
+            Route::get('/monthly/pdf',     [PlanningController::class, 'exportMonthlyPdf']) ->name('monthly.pdf');
+            Route::post('/',               [PlanningController::class, 'store'])             ->name('store');
+            Route::put('/{planning}',      [PlanningController::class, 'update'])            ->name('update');
+            Route::delete('/{planning}',   [PlanningController::class, 'destroy'])           ->name('destroy');
+            Route::post('/drag-drop',      [PlanningController::class, 'updateDragDrop'])    ->name('dragDrop');
+            Route::post('/update-room',    [PlanningController::class, 'updateRoom'])        ->name('update.room');
             Route::prefix('templates')->name('templates.')->group(function () {
                 Route::get('/',              [WeekTemplateController::class, 'index'])     ->name('index');
                 Route::get('/create',        [WeekTemplateController::class, 'create'])    ->name('create');
@@ -336,8 +373,8 @@ Route::middleware(['web', 'auth', 'identify-tenant', '2fa'])->group(function () 
             });
         });
 
-        Route::get('/rooms',  [RoomController::class, 'index'])->name('rooms.index');
-        Route::post('/rooms', [RoomController::class, 'store'])->name('rooms.store');
+        Route::get('/rooms',           [RoomController::class, 'index'])  ->name('rooms.index');
+        Route::post('/rooms',          [RoomController::class, 'store'])  ->name('rooms.store');
         Route::put('/rooms/{room}',    [RoomController::class, 'update']) ->name('rooms.update');
         Route::delete('/rooms/{room}', [RoomController::class, 'destroy'])->name('rooms.destroy');
 
@@ -373,48 +410,12 @@ Route::prefix('badge')->name('badge.')->group(function () {
     Route::post('/auth/Badge/validate', [BadgeAuthController::class, 'authAction'])->name('auth.validate');
 
     Route::middleware(['badge.auth'])->group(function () {
-        Route::post('/logout',   [BadgeAuthController::class,      'logout'])       ->name('logout');
-        Route::get('/dashboard', [BadgeDashboardController::class,  'index'])       ->name('dashboard');
-        Route::post('/entree',   [BadgePointageController::class,   'entree'])      ->name('entree');
-        Route::post('/sortie',   [BadgePointageController::class,   'sortie'])      ->name('sortie');
-        Route::post('/action',   [BadgePointageController::class,   'handleAction'])->name('action');
-        Route::get('/result',    [BadgePointageController::class,   'result'])      ->name('result');
-        Route::post('/geo/save', [BadgeAuthController::class,       'saveGeo'])     ->name('geo.save');
+        Route::post('/logout',   [BadgeAuthController::class,     'logout'])       ->name('logout');
+        Route::get('/dashboard', [BadgeDashboardController::class, 'index'])       ->name('dashboard');
+        Route::post('/entree',   [BadgePointageController::class,  'entree'])      ->name('entree');
+        Route::post('/sortie',   [BadgePointageController::class,  'sortie'])      ->name('sortie');
+        Route::post('/action',   [BadgePointageController::class,  'handleAction'])->name('action');
+        Route::get('/result',    [BadgePointageController::class,  'result'])      ->name('result');
+        Route::post('/geo/save', [BadgeAuthController::class,      'saveGeo'])     ->name('geo.save');
     });
-});
-
-// ═════════════════════════════════════════════════════════════════════════════
-// LMS — rh + admin
-// ═════════════════════════════════════════════════════════════════════════════
-Route::middleware(['auth', 'role:admin,rh,employee'])->prefix('lms')->name('lms.')->group(function () {
-    Route::get('/',                        [FormationController::class, 'index'])                ->name('index');
-    Route::get('/planning',                [FormationController::class, 'planning'])             ->name('planning');
-    Route::post('/',                       [FormationController::class, 'store'])                ->name('store');
-    Route::put('/{formation}',             [FormationController::class, 'update'])               ->name('update');
-    Route::delete('/{formation}',          [FormationController::class, 'destroy'])              ->name('destroy');
-    Route::get('/export-pdf',              [FormationController::class, 'exportPdf'])            ->name('exportPdf');
-    Route::get('/employees-by-department', [FormationController::class, 'employeesByDepartment'])->name('employeesByDepartment');
-});
-
-// ═════════════════════════════════════════════════════════════════════════════
-// RÉFÉRENTIEL — rh + admin
-// ═════════════════════════════════════════════════════════════════════════════
-Route::middleware(['auth', 'role:admin,rh'])->prefix('referentiel')->name('referentiel.')->group(function () {
-    Route::get('/', [ReferentielController::class, 'index'])->name('index');
-
-    Route::post('/formateurs',               [ReferentielController::class, 'storeFormateur'])  ->name('formateurs.store');
-    Route::put('/formateurs/{formateur}',    [ReferentielController::class, 'updateFormateur']) ->name('formateurs.update');
-    Route::delete('/formateurs/{formateur}', [ReferentielController::class, 'destroyFormateur'])->name('formateurs.destroy');
-
-    Route::post('/formations',               [ReferentielController::class, 'storeFormation'])  ->name('formations.store');
-    Route::put('/formations/{formation}',    [ReferentielController::class, 'updateFormation']) ->name('formations.update');
-    Route::delete('/formations/{formation}', [ReferentielController::class, 'destroyFormation'])->name('formations.destroy');
-
-    Route::post('/organismes',               [ReferentielController::class, 'storeOrganisme'])  ->name('organismes.store');
-    Route::put('/organismes/{organisme}',    [ReferentielController::class, 'updateOrganisme']) ->name('organismes.update');
-    Route::delete('/organismes/{organisme}', [ReferentielController::class, 'destroyOrganisme'])->name('organismes.destroy');
-
-    Route::get('/api/formateurs', [ReferentielController::class, 'formateursActifs'])->name('api.formateurs');
-    Route::get('/api/formations', [ReferentielController::class, 'catalogueActif'])  ->name('api.formations');
-    Route::get('/api/organismes', [ReferentielController::class, 'organismesActifs'])->name('api.organismes');
 });

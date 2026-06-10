@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use App\Traits\HasTenantScope;
 
 class WeekTemplate extends Model
 {
-    use HasFactory;
+    use HasFactory, HasTenantScope;
 
     protected $fillable = [
         'name',
@@ -65,17 +66,10 @@ class WeekTemplate extends Model
         foreach ($days as $dayName => $shift) {
             if ($shift['shift_type'] && $shift['start'] && $shift['end']) {
                 Planning::updateOrCreate(
-                    [
-                        'employee_id' => $employeeId,
-                        'date' => $date->format('Y-m-d'),
-                    ],
-                    [
-                        'shift_type' => $shift['shift_type'],
-                        'shift_start' => $shift['start'],
-                        'shift_end' => $shift['end'],
-                        'room' => $shift['room'],
-                    ]
-                );
+            ['employee_id' => $employeeId, 'date' => $date->format('Y-m-d'), 'tenant_id' => $tenantId],
+            ['shift_type' => $shift['shift_type'], 'shift_start' => $shift['start'],
+             'shift_end'  => $shift['end'], 'room' => $shift['room'], 'tenant_id' => $tenantId]
+        );
             }
             $date->addDay();
         }

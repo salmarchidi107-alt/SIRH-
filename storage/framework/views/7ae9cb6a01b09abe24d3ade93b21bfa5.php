@@ -299,9 +299,6 @@ unset($__errorArgs, $__bag); ?>
 
                             </option>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                            <?php $__currentLoopData = ['Médecine Générale','Chirurgie','Urgences','Pédiatrie','Radiologie','Laboratoire','Pharmacie','Administration','Ressources Humaines']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $d): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <option value="<?php echo e($d); ?>"><?php echo e($d); ?></option>
-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         <?php endif; ?>
                     </select>
                     <?php $__errorArgs = ['department'];
@@ -861,10 +858,31 @@ unset($__errorArgs, $__bag); ?>
                            value="<?php echo e(old('contract_end_date')); ?>">
                 </div>
                 <div class="form-group">
-                    <label>Compteur Congés Payés (jours)</label>
-                    <input type="number" name="cp_days" class="form-control"
-                           value="<?php echo e(old('cp_days', 0)); ?>" min="0" placeholder="0">
-                </div>
+    <label>
+        Congés antérieurs (jours déjà consommés)
+    </label>
+    <input type="number"
+           name="conges_anterieurs"
+           class="form-control"
+           value="<?php echo e(old('conges_anterieurs', 0)); ?>"
+           min="0"
+           step="0"
+           placeholder="0"
+           title="Jours de congés déjà consommés avant la création du compte dans l'application">
+    <small style="color:#64748b;font-size:0.72rem;margin-top:4px;display:block;">
+        Ces jours seront automatiquement déduits du solde de congés calculé par le système.
+    </small>
+    <?php $__errorArgs = ['conges_anterieurs'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+        <span style="color:var(--danger);font-size:.75rem"><?php echo e($message); ?></span>
+    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+</div>
                 <div class="form-group">
                     <label>Compteur de temps (heures)</label>
                     <input type="number" name="work_hours_counter" class="form-control"

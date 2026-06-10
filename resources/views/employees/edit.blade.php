@@ -485,10 +485,28 @@
                            value="{{ old('contract_end_date', $employee->contract_end_date?->format('Y-m-d')) }}">
                 </div>
                 <div class="form-group">
-                    <label>Compteur Congés Payés (jours)</label>
-                    <input type="number" name="cp_days" class="form-control"
-                           value="{{ old('cp_days', $employee->cp_days ?? 0) }}" min="0">
-                </div>
+    <label>
+        Congés antérieurs (jours déjà consommés)
+    </label>
+    <input type="number"
+           name="conges_anterieurs"
+           class="form-control"
+           value="{{ old('conges_anterieurs', $employee->conges_anterieurs ?? 0) }}"
+           min="0"
+           step="0"
+           {{ auth()->user()->isAdmin() ? '' : 'readonly' }}
+           style="{{ auth()->user()->isAdmin() ? '' : 'background:#f8fafc;color:#94a3b8;cursor:not-allowed;' }}"
+           title="Jours de congés consommés avant création du compte">
+    <small style="color:#64748b;font-size:0.72rem;margin-top:4px;display:block;">
+        Ces jours sont déduits automatiquement du solde total.
+        @unless(auth()->user()->isAdmin())
+            Contactez un administrateur pour modifier cette valeur.
+        @endunless
+    </small>
+    @error('conges_anterieurs')
+        <span style="color:var(--danger);font-size:.75rem">{{ $message }}</span>
+    @enderror
+</div>
                 <div class="form-group">
                     <label>Compteur de temps (heures)</label>
                     <input type="number" name="work_hours_counter" class="form-control"

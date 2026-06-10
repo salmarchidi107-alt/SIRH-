@@ -287,6 +287,7 @@
         font-size: 12px; line-height: 1.5;
         white-space: nowrap; z-index: 999;
         box-shadow: 0 8px 24px rgba(0,0,0,.3); min-width: 200px;
+        pointer-events: none;
     }
     .geo-tooltip::after {
         content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
@@ -506,10 +507,11 @@
                     
                     <td style="text-align:center;padding:10px 6px;">
                         <?php if($hasGeo): ?>
-                            <div class="geo-tooltip-wrap">
-                                <a href="<?php echo e($mapsUrl); ?>" target="_blank"
-                                   style="font-size:18px;text-decoration:none;cursor:pointer;">📍</a>
-                                <div class="geo-tooltip">
+                            
+<div class="geo-tooltip-wrap">
+    <a href="<?php echo e($mapsUrl); ?>" target="_blank"
+       style="font-size:18px;text-decoration:none;cursor:pointer;position:relative;z-index:1000;">📍</a>
+    <div class="geo-tooltip" style="pointer-events:none;">
                                     <?php if(!empty($geo['address'])): ?>
                                     <div style="font-weight:600;margin-bottom:8px;color:#e2e8f0;font-size:12px;max-width:220px;white-space:normal;line-height:1.4;">
                                         <?php echo e($geo['address']); ?>

@@ -11,8 +11,6 @@
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
 
-
-
         {{-- Filters Form --}}
         <form method="GET" action="{{ route('absences.counters') }}" style="display:flex;gap:12px;align-items:end;flex-wrap:wrap">
             <input type="hidden" name="year" value="{{ $year }}">
@@ -58,17 +56,17 @@
     </div>
     <div class="card" style="background:linear-gradient(135deg, #f59e0b, #d97706);color:white;padding:24px;border-radius:12px">
         <div style="font-size:0.875rem;opacity:0.9">Congés pris</div>
-        <div style="font-size:2.5rem;font-weight:700">{{ array_sum(array_column($countersData, 'taken')) }} <span style="font-size:1rem">jours</span></div>
+        <div style="font-size:2.5rem;font-weight:700">{{ number_format(array_sum(array_column($countersData, 'taken')), 0, ',', '') }} <span style="font-size:1rem">jours</span></div>
         <div style="font-size:0.8rem;opacity:0.8">Approuvés cette année</div>
     </div>
     <div class="card" style="background:linear-gradient(135deg, #3b82f6, #1d4ed8);color:white;padding:24px;border-radius:12px">
         <div style="font-size:0.875rem;opacity:0.9">En attente</div>
-        <div style="font-size:2.5rem;font-weight:700">{{ array_sum(array_column($countersData, 'pending')) }} <span style="font-size:1rem">jours</span></div>
+        <div style="font-size:2.5rem;font-weight:700">{{ number_format(array_sum(array_column($countersData, 'pending')), 0, ',', '') }} <span style="font-size:1rem">jours</span></div>
         <div style="font-size:0.8rem;opacity:0.8">Demandes en cours</div>
     </div>
     <div class="card" style="background:linear-gradient(135deg, #8b5cf6, #7c3aed);color:white;padding:24px;border-radius:12px">
         <div style="font-size:0.875rem;opacity:0.9">Solde total</div>
-        <div style="font-size:2.5rem;font-weight:700">{{ array_sum(array_column($countersData, 'solde')) }} <span style="font-size:1rem">jours</span></div>
+        <div style="font-size:2.5rem;font-weight:700">{{ number_format(array_sum(array_column($countersData, 'solde')), 0, ',', '') }} <span style="font-size:1rem">jours</span></div>
         <div style="font-size:0.8rem;opacity:0.8">Restants à prendre</div>
     </div>
 </div>
@@ -107,8 +105,8 @@
             <tbody>
                 @forelse($countersData as $row)
                 @php
-                    $emp = $row['employee'];
-                    $progress = $row['acquis'] > 0 ? min(100, round($row['taken'] / $row['acquis'] * 100)) : 0;
+                    $emp        = $row['employee'];
+                    $progress   = $row['acquis'] > 0 ? min(100, round($row['taken'] / $row['acquis'] * 100)) : 0;
                     $soldeColor = $row['solde'] < 0 ? '#dc2626' : ($row['solde'] < 3 ? '#f59e0b' : '#10b981');
                 @endphp
                 <tr>
@@ -129,20 +127,20 @@
                         <span style="background:var(--bg-secondary);padding:4px 10px;border-radius:20px;font-size:0.75rem">{{ $emp->department ?? 'N/A' }}</span>
                     </td>
                     <td style="text-align:center">
-<span style="font-weight:600">{{ number_format($row['months_worked'], 0, ',', '') }}</span>
+                        <span style="font-weight:600">{{ number_format($row['months_worked'], 0, ',', '') }}</span>
                     </td>
                     <td style="text-align:center">
                         <span style="color:#10b981;font-weight:700;font-size:1.1rem">{{ number_format($row['acquis'], 0, ',', '') }}</span>
                         <div style="margin-top:4px;background:#e5e7eb;border-radius:4px;height:6px;width:60px;margin-left:auto;margin-right:auto">
-                            <div style="background:linear-gradient(90deg, #10b981, #059669);border-radius:4px;height:6px;width:100%"></div>
+                            <div style="background:linear-gradient(90deg, #10b981, #059669);border-radius:4px;height:6px;width:{{ $progress }}%"></div>
                         </div>
                     </td>
                     <td style="text-align:center">
-                        <span style="color:#dc2626;font-weight:600">{{ $row['taken'] }} j</span>
+                        <span style="color:#dc2626;font-weight:600">{{ number_format($row['taken'], 0, ',', '') }} j</span>
                     </td>
                     <td style="text-align:center">
                         @if($row['pending'] > 0)
-                            <span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px;font-size:0.8rem;font-weight:600">{{ $row['pending'] }} j</span>
+                            <span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px;font-size:0.8rem;font-weight:600">{{ number_format($row['pending'], 0, ',', '') }} j</span>
                         @else
                             <span style="color:var(--text-muted)">—</span>
                         @endif
@@ -171,6 +169,5 @@
         </table>
     </div>
 </div>
-
 
 @endsection

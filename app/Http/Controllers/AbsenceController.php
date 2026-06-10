@@ -27,7 +27,6 @@ class AbsenceController extends Controller
         $query = Absence::with([
             'employee:id,first_name,last_name,matricule,department',
             'replacement:id,first_name,last_name,matricule,department',
-            // FIX : charger l'approbateur/refuseur
             'approvedByUser:id,name',
         ])->whereHas('employee');
 
@@ -191,7 +190,7 @@ class AbsenceController extends Controller
     }
 
     // =========================================================================
-    // approve — FIX : enregistre approved_by = auth()->id()
+    // approve
     // =========================================================================
     public function approve(Absence $absence)
     {
@@ -203,17 +202,14 @@ class AbsenceController extends Controller
             'tenant_id'   => config('app.current_tenant_id'),
             'status'      => 'approved',
             'approved_at' => now(),
-            'approved_by' => auth()->id(),   // ← QUI a approuvé
+            'approved_by' => auth()->id(),
         ]);
 
         if (in_array($absence->type, ['conge_annuel', 'conge_sans_solde', 'conge_maladie', 'absence_justifiee'])) {
             $year  = $absence->start_date->year;
-            $droit = \App\Models\DroitAbsence::updateOrCreate(
-                ['employee_id' => $absence->employee_id, 'annee' => $year],
-                ['jours_pris' => 0, 'jours_en_attente' => 0, 'jours_solde' => 0]
-            );
-            $droit->jours_pris += $absence->days;
-            $droit->jours_solde = $droit->jours_acquis - $droit->jours_pris - $droit->jours_en_attente;
+            $droit = \App\Models\DroitAbsence::getOuCreeParAnnee($absence->employee_id, $year);
+            $droit->jours_pris   += $absence->days;
+            $droit->jours_solde   = $droit->jours_acquis - $droit->jours_pris - $droit->jours_en_attente;
             $droit->save();
         }
 
@@ -229,7 +225,7 @@ class AbsenceController extends Controller
     }
 
     // =========================================================================
-    // reject — FIX : enregistre approved_by = auth()->id()
+    // reject
     // =========================================================================
     public function reject(Absence $absence)
     {
@@ -240,7 +236,7 @@ class AbsenceController extends Controller
         $absence->update([
             'status'      => 'rejected',
             'approved_at' => now(),
-            'approved_by' => auth()->id(),   // ← QUI a rejeté
+            'approved_by' => auth()->id(),
         ]);
 
         $year  = $absence->start_date->year;
@@ -264,63 +260,56 @@ class AbsenceController extends Controller
     }
 
     public function export()
+{
+    return Excel::download(
+        new AbsencesExport(config('app.current_tenant_id')),
+        'demandes_absences.xlsx'
+    );
+}
+
+    // =========================================================================
+    // counters — page web
+    // =========================================================================
+    public function counters(Request $request)
     {
-        return Excel::download(new AbsencesExport(), 'demandes_absences.xlsx');
+        $year         = $request->get('year', now()->year);
+        $departments  = $this->getDepartments();
+        $countersData = $this->buildCountersData($request);
+
+        $search     = $request->get('search');
+        $department = $request->get('department');
+
+        return view('absences.counters', compact(
+            'countersData', 'year', 'departments', 'search', 'department'
+        ));
     }
 
+    // =========================================================================
+    // countersExport — Excel compteurs
+    // =========================================================================
     public function countersExport(Request $request)
     {
-        $year      = $request->get('year', now()->year);
-        $employees = Employee::active()
-            ->withCount(['absences' => function ($q) use ($year) {
-                $q->where('status', 'approved')->whereYear('start_date', $year);
-            }])
-            ->orderBy('department')
-            ->orderBy('last_name')
-            ->select(['id', 'first_name', 'last_name', 'department', 'matricule', 'hire_date'])
-            ->get();
+        $year         = $request->get('year', now()->year);
+        $countersData = $this->buildCountersData($request);
 
-        $countersData = [];
-
-        foreach ($employees as $emp) {
-            $hireDate    = $emp->hire_date ? Carbon::parse($emp->hire_date) : Carbon::create($year, 1, 1);
-            $startOfYear = Carbon::create($year, 1, 1);
-            $endOfYear   = Carbon::create($year, 12, 31);
-
-            $workStart    = $hireDate->gt($startOfYear) ? $hireDate : $startOfYear;
-            $workEnd      = now()->lt($endOfYear) ? now() : $endOfYear;
-            $monthsWorked = max(0, $workStart->floatDiffInMonths($workEnd));
-            $acquis       = floor($monthsWorked * 1.5);
-
-            $taken = Absence::where('employee_id', $emp->id)
-                ->where('status', 'approved')
-                ->whereYear('start_date', $year)
-                ->whereIn('type', ['conge_annuel', 'conge_sans_solde', 'conge_maladie', 'absence_justifiee'])
-                ->sum('days');
-
-            $solde   = $acquis - $taken;
-            $pending = Absence::where('employee_id', $emp->id)
-                ->where('status', 'pending')
-                ->whereYear('start_date', $year)
-                ->sum('days');
-
-            $countersData[] = [
-                'employee'         => $emp,
-                'months_worked'    => floor($monthsWorked),
-                'acquis'           => $acquis,
-                'taken'            => $taken,
-                'pending'          => $pending,
-                'solde'            => round($solde, 2),
-                'solde_if_pending' => round($solde - $pending, 2),
-            ];
-        }
-
-        return Excel::download(new CountersExport($countersData, $year), "compteurs_absences_{$year}.xlsx");
+        return Excel::download(
+            new CountersExport($countersData, $year),
+            "compteurs_absences_{$year}.xlsx"
+        );
     }
 
-    public function droitsExport()
+    // =========================================================================
+    // droitsExport — Excel droits d'absence
+    // =========================================================================
+    public function droitsExport(Request $request)
     {
-        return Excel::download(new DroitsAbsenceExport(), 'droits_absences.xlsx');
+        $year         = $request->get('year', now()->year);
+        $countersData = $this->buildCountersData($request);
+
+        return Excel::download(
+            new DroitsAbsenceExport($countersData),
+            "droits_absences_{$year}.xlsx"
+        );
     }
 
     // =========================================================================
@@ -418,6 +407,105 @@ class AbsenceController extends Controller
         ));
     }
 
+    public function getConflicts(Request $request)
+    {
+        $month        = $request->get('month', now()->month);
+        $year         = $request->get('year',  now()->year);
+        $startOfMonth = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $endOfMonth   = $startOfMonth->copy()->endOfMonth();
+
+        $absences = Absence::with(['employee'])
+            ->whereHas('employee')
+            ->where('status', 'approved')
+            ->where(function ($q) use ($startOfMonth, $endOfMonth) {
+                $q->whereBetween('start_date', [$startOfMonth, $endOfMonth])
+                  ->orWhereBetween('end_date',   [$startOfMonth, $endOfMonth])
+                  ->orWhere(fn($q2) => $q2->where('start_date', '<=', $startOfMonth)
+                                          ->where('end_date',   '>=', $endOfMonth));
+            })
+            ->when($request->employee_id, fn($q) => $q->where('employee_id', $request->employee_id))
+            ->get();
+
+        $conflicts = $this->buildConflicts($absences);
+
+        return response()->json($conflicts->values());
+    }
+
+    public function downloadPdf(Absence $absence)
+    {
+        $absence->load(['employee', 'replacement', 'approver', 'approvedByUser']);
+        Carbon::setLocale('fr');
+
+        $tenant = $absence->employee->user?->tenant
+            ?? \App\Models\Tenant::find(config('app.current_tenant_id'));
+
+        $pdf = Pdf::loadView('absences.pdf', compact('absence', 'tenant'))
+            ->setPaper('a4', 'portrait')
+            ->setOptions([
+                'defaultFont'          => 'DejaVu Sans',
+                'isRemoteEnabled'      => false,
+                'isHtml5ParserEnabled' => true,
+            ]);
+
+        $filename = 'demande_absence_'
+            . str_replace(' ', '_', strtolower($absence->employee->full_name))
+            . '_' . $absence->start_date->format('Y-m-d') . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    // =========================================================================
+    // HELPERS PRIVÉS
+    // =========================================================================
+
+    /**
+     * Calcule les données compteurs pour tous les employés filtrés.
+     * Utilisé par counters(), countersExport() et droitsExport()
+     * — source de données unique pour éviter toute divergence.
+     */
+    private function buildCountersData(Request $request): array
+    {
+        $query = Employee::active()->orderBy('department')->orderBy('last_name');
+        $this->applyEmployeeFilters($query, $request);
+        $employees = $query->get();
+
+        $countersData = [];
+
+        foreach ($employees as $emp) {
+            $startDate    = Carbon::parse($emp->hire_date);
+            $now          = Carbon::now();
+            $monthsWorked = $startDate->diffInMonths($now);
+            $acquis       = round($monthsWorked * 1.5, 1);
+
+            $taken = Absence::where('employee_id', $emp->id)
+                ->where('status', 'approved')
+                ->whereDate('start_date', '>=', $startDate)
+                ->whereIn('type', ['conge_annuel', 'conge_sans_solde', 'conge_maladie', 'absence_justifiee'])
+                ->sum('days');
+            $taken += (float) ($emp->conges_anterieurs ?? 0);
+
+            $pending = Absence::where('employee_id', $emp->id)
+                ->where('status', 'pending')
+                ->whereDate('start_date', '>=', $startDate)
+                ->sum('days');
+
+            $solde = $acquis - $taken;
+
+            $countersData[] = [
+                'employee'          => $emp,
+                'months_worked'     => $monthsWorked,
+                'acquis'            => $acquis,
+                'taken'             => $taken,
+                'conges_anterieurs' => (float) ($emp->conges_anterieurs ?? 0),
+                'pending'           => $pending,
+                'solde'             => $solde,
+                'solde_if_pending'  => $solde - $pending,
+            ];
+        }
+
+        return $countersData;
+    }
+
     private function buildConflicts($absences)
     {
         $approved  = $absences->where('status', 'approved')->values();
@@ -467,100 +555,6 @@ class AbsenceController extends Controller
 
         return $conflicts;
     }
-
-    public function getConflicts(Request $request)
-    {
-        $month        = $request->get('month', now()->month);
-        $year         = $request->get('year',  now()->year);
-        $startOfMonth = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-        $endOfMonth   = $startOfMonth->copy()->endOfMonth();
-
-        $absences = Absence::with(['employee'])
-            ->whereHas('employee')
-            ->where('status', 'approved')
-            ->where(function ($q) use ($startOfMonth, $endOfMonth) {
-                $q->whereBetween('start_date', [$startOfMonth, $endOfMonth])
-                  ->orWhereBetween('end_date',   [$startOfMonth, $endOfMonth])
-                  ->orWhere(fn($q2) => $q2->where('start_date', '<=', $startOfMonth)
-                                          ->where('end_date',   '>=', $endOfMonth));
-            })
-            ->when($request->employee_id, fn($q) => $q->where('employee_id', $request->employee_id))
-            ->get();
-
-        $conflicts = $this->buildConflicts($absences);
-
-        return response()->json($conflicts->values());
-    }
-
-    public function downloadPdf(Absence $absence)
-    {
-        $absence->load(['employee', 'replacement', 'approver', 'approvedByUser']);
-        Carbon::setLocale('fr');
-
-        $pdf = Pdf::loadView('absences.pdf', compact('absence'))
-            ->setPaper('a4', 'portrait')
-            ->setOptions([
-                'defaultFont'          => 'DejaVu Sans',
-                'isRemoteEnabled'      => false,
-                'isHtml5ParserEnabled' => true,
-            ]);
-
-        $filename = 'demande_absence_'
-            . str_replace(' ', '_', strtolower($absence->employee->full_name))
-            . '_' . $absence->start_date->format('Y-m-d') . '.pdf';
-
-        return $pdf->download($filename);
-    }
-
-    public function counters(Request $request)
-    {
-        $year       = $request->get('year', now()->year);
-        $search     = $request->get('search');
-        $department = $request->get('department');
-
-        $query = Employee::active()->orderBy('department')->orderBy('last_name');
-        $this->applyEmployeeFilters($query, $request);
-        $employees   = $query->get();
-        $departments = $this->getDepartments();
-
-        $countersData = [];
-
-        foreach ($employees as $emp) {
-            $startDate    = Carbon::parse($emp->hire_date);
-            $now          = Carbon::now();
-            $monthsWorked = $startDate->diffInMonths($now);
-            $acquis       = round($monthsWorked * 1.5, 1);
-
-            $taken = Absence::where('employee_id', $emp->id)
-                ->where('status', 'approved')
-                ->whereDate('start_date', '>=', $startDate)
-                ->whereIn('type', ['conge_annuel', 'conge_sans_solde', 'conge_maladie', 'absence_justifiee'])
-                ->sum('days');
-
-            $pending = Absence::where('employee_id', $emp->id)
-                ->where('status', 'pending')
-                ->whereDate('start_date', '>=', $startDate)
-                ->sum('days');
-
-            $solde = $acquis - $taken;
-
-            $countersData[] = [
-                'employee'         => $emp,
-                'months_worked'    => $monthsWorked,
-                'acquis'           => $acquis,
-                'taken'            => $taken,
-                'pending'          => $pending,
-                'solde'            => $solde,
-                'solde_if_pending' => $solde - $pending,
-            ];
-        }
-
-        return view('absences.counters', compact('countersData', 'year', 'search', 'department', 'departments'));
-    }
-
-    // =========================================================================
-    // HELPERS PRIVÉS
-    // =========================================================================
 
     private function applyEmployeeFilters($query, Request $request)
     {

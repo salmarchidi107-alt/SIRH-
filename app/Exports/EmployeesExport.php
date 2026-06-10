@@ -9,12 +9,15 @@ use App\Models\Employee;
 
 class EmployeesExport implements FromCollection, WithHeadings, WithMapping
 {
-    /**
-    * @return \Illuminate\Support\Collection
-    */
+    public function __construct(
+        private ?string $tenantId = null
+    ) {}
+
     public function collection()
     {
-        return Employee::all();
+        return Employee::query()
+            ->when($this->tenantId, fn($q) => $q->where('tenant_id', $this->tenantId))
+            ->get();
     }
 
     public function map($employee): array
@@ -38,19 +41,9 @@ class EmployeesExport implements FromCollection, WithHeadings, WithMapping
     public function headings(): array
     {
         return [
-            'Matricule',
-            'Prénom',
-            'Nom',
-            'Nom Complet',
-            'Département',
-            'Poste',
-            'Email',
-            'Téléphone',
-            'Statut',
-            'Date Embauche',
-            'Salaire Base',
-            'Type Contrat',
+            'Matricule', 'Prénom', 'Nom', 'Nom Complet', 'Département',
+            'Poste', 'Email', 'Téléphone', 'Statut',
+            'Date Embauche', 'Salaire Base', 'Type Contrat',
         ];
     }
 }
-

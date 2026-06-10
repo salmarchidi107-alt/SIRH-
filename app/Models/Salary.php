@@ -38,6 +38,8 @@ class Salary extends Model
         'absence_hours', 'delay_hours',
         // Garde
         'garde_hours',
+        'garde_indemnite',   // ← AJOUTÉ : montant persisté (manuel ou auto)
+        'garde_override',    // ← AJOUTÉ : true = saisi manuellement
         // Tracking saisie / validation / paiement
         'created_by',
         'validated_by', 'validated_at',
@@ -51,6 +53,7 @@ class Salary extends Model
         'overtime_day_amount'      => 'decimal:2',
         'overtime_night_amount'    => 'decimal:2',
         'overtime_hours_weekend'   => 'decimal:2',
+        'overtime_weekend_amount'  => 'decimal:2',
         'performance_bonus'        => 'decimal:2',
         'transport_allowance'      => 'decimal:2',
         'meal_allowance'           => 'decimal:2',
@@ -84,10 +87,11 @@ class Salary extends Model
         'working_hours'            => 'decimal:2',
         'overtime_hours_day'       => 'decimal:2',
         'overtime_hours_night'     => 'decimal:2',
-        'overtime_weekend_amount'  => 'decimal:2',
         'absence_hours'            => 'decimal:2',
         'delay_hours'              => 'decimal:2',
         'garde_hours'              => 'decimal:2',
+        'garde_indemnite'          => 'decimal:2', // ← AJOUTÉ
+        'garde_override'           => 'boolean',   // ← AJOUTÉ
         // Dates de tracking
         'validated_at'             => 'datetime',
         'paid_at'                  => 'datetime',
@@ -199,10 +203,21 @@ class Salary extends Model
         );
     }
 
-    // Montant indemnite de garde (taux horaire x heures de garde)
+    /**
+     * Retourne le montant effectif de l'indemnité de garde :
+     * - Si override (saisie manuelle) : retourne garde_indemnite sauvegardée
+     * - Sinon : calcule automatiquement (taux horaire × heures de garde)
+     */
     public function getGardeAmountAttribute(): float
     {
-        if (! $this->base_salary || ! $this->garde_hours) return 0;
+        if ($this->garde_override && $this->garde_indemnite > 0) {
+            return (float) $this->garde_indemnite;
+        }
+
+        if (! $this->base_salary || ! $this->garde_hours) {
+            return 0;
+        }
+
         $tauxH = $this->base_salary / 191.25;
         return round($tauxH * $this->garde_hours, 2);
     }

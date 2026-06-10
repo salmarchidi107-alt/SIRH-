@@ -66,17 +66,21 @@ class PayrollService
             $base = (float) ($data['base_salary'] ?? $employee->base_salary);
         }
 
-        $workingHours       = (float) ($data['working_hours'] ?? $salary->working_hours ?? 0);
-        $overtimeHoursDay   = (float) ($data['overtime_hours_day'] ?? $salary->overtime_hours_day ?? 0);
+        $workingHours       = (float) ($data['working_hours']        ?? $salary->working_hours        ?? 0);
+        $overtimeHoursDay   = (float) ($data['overtime_hours_day']   ?? $salary->overtime_hours_day   ?? 0);
         $overtimeHoursNight = (float) ($data['overtime_hours_night'] ?? $salary->overtime_hours_night ?? 0);
         $overtimeHoursWe    = (float) ($data['overtime_hours_weekend'] ?? $salary->overtime_hours_weekend ?? 0);
-        $absenceHours       = (float) ($data['absence_hours'] ?? $salary->absence_hours ?? 0);
-        $delayHours         = (float) ($data['delay_hours'] ?? $salary->delay_hours ?? 0);
-        $gardeHours         = (float) ($data['garde_hours'] ?? $salary->garde_hours ?? 0);
+        $absenceHours       = (float) ($data['absence_hours']        ?? $salary->absence_hours        ?? 0);
+        $delayHours         = (float) ($data['delay_hours']          ?? $salary->delay_hours          ?? 0);
+        $gardeHours         = (float) ($data['garde_hours']          ?? $salary->garde_hours          ?? 0);
+
+        // ── Indemnité de garde : manuelle (override) ou auto ────────
+        $gardeOverride   = (bool) ($data['garde_override']   ?? $salary->garde_override   ?? false);
+        $gardeIndemnite  = (float) ($data['garde_indemnite'] ?? $salary->garde_indemnite  ?? 0);
 
         $variables = $employee->variableElements()
             ->where('month', $month)
-            ->where('year', $year)
+            ->where('year',  $year)
             ->get();
 
         $variableGains    = $variables->where('type', \App\Enums\VariableElementType::GAIN)->sum('amount');
@@ -97,8 +101,11 @@ class PayrollService
         $responsibilityAllow = (float) ($data['responsibility_allowance'] ?? 0);
         $otherGains          = (float) ($data['other_gains']              ?? 0);
 
-        // ── Indemnité de garde = heures de garde × taux horaire ──
-        $gardeAmount = round($hourlyRate * $gardeHours, 2);
+        // ── Si override : utiliser la valeur manuelle saisie ────────
+        // ── Sinon        : calculer automatiquement ─────────────────
+        $gardeAmount = $gardeOverride
+            ? $gardeIndemnite
+            : round($hourlyRate * $gardeHours, 2);
 
         $grossSalary = $base
             + $seniorityBonus
@@ -164,6 +171,11 @@ class PayrollService
             'absence_hours'            => $absenceHours,
             'delay_hours'              => $delayHours,
             'garde_hours'              => $gardeHours,
+
+            // ── Persister la garde manuelle ────────────────────────
+            'garde_indemnite'          => $gardeAmount,
+            'garde_override'           => $gardeOverride,
+
             'base_salary'              => $base,
             'overtime_hours'           => (float) ($overtimeHoursDay + $overtimeHoursNight + $overtimeHoursWe),
             'overtime_day_amount'      => $otDayAmount,
@@ -224,30 +236,163 @@ class PayrollService
         return max(0, $ir - $familyDeduction);
     }
 
-    // ─── Heures travaillées + heures de garde depuis le planning ──
+    // ─── Heures travaillées + gardes + détail shifts ───────────────
 
     public function getMonthlyWorkingHours(int $employeeId, int $month, int $year): array
     {
-        // ── 1. Heures depuis les pointages ──────────────────────────
+        // ══════════════════════════════════════════════════════════
+        // 1. POINTAGES — heures travaillées, retards, absences
+        // ══════════════════════════════════════════════════════════
         $pointages = \App\Models\Pointage::where('employee_id', $employeeId)
             ->whereYear('date',  $year)
             ->whereMonth('date', $month)
+            ->orderBy('date')
             ->get();
 
         $workingHours  = 0;
         $overtimeHours = 0;
         $absenceHours  = 0;
+        $delayHours    = 0;
+
+        // Shifts pour le modal "Heures travaillées"
+        $pointageShifts = [];
+        // Shifts pour le modal "Heures supplémentaires"
+        $overtimeShifts = [];
+        // Shifts pour le modal "Retards"
+        $delayShifts = [];
 
         foreach ($pointages as $p) {
-            $workingHours  += (float) ($p->heures_travaillees     ?? 0);
-            $overtimeHours += (float) ($p->heures_supplementaires ?? 0);
+            $wh = (float) ($p->heures_travaillees     ?? 0);
+            $oh = (float) ($p->heures_supplementaires ?? 0);
 
-            if (in_array($p->statut, ['absent', 'absence_injustifiee'])) {
+            $workingHours  += $wh;
+            $overtimeHours += $oh;
+
+            // Calcul retard en minutes
+            $retardMin = 0;
+            if (!empty($p->heure_entree) && !empty($p->heure_prevue)) {
+                try {
+                    $entree = \Carbon\Carbon::parse($p->heure_entree);
+                    $prevue = \Carbon\Carbon::parse($p->heure_prevue);
+                    if ($entree->gt($prevue)) {
+                        $retardMin = $entree->diffInMinutes($prevue);
+                        $delayHours += round($retardMin / 60, 2);
+                    }
+                } catch (\Exception $e) {}
+            } elseif (!empty($p->retard_minutes)) {
+                $retardMin  = (int) $p->retard_minutes;
+                $delayHours += round($retardMin / 60, 2);
+            }
+
+            // Absence
+            if (in_array($p->statut ?? '', ['absent', 'absence_injustifiee'])) {
                 $absenceHours += 8.0;
+            }
+
+            // ── Date normalisée ──────────────────────────────────
+            $dateStr = $p->date instanceof \Carbon\Carbon
+                ? $p->date->format('Y-m-d')
+                : \Carbon\Carbon::parse($p->date)->format('Y-m-d');
+
+            // ── Shift pointage (modal heures travaillées) ────────
+            if ($wh > 0 || !empty($p->heure_entree)) {
+                $pointageShifts[] = [
+                    'date'          => $dateStr,
+                    'heure_entree'  => $p->heure_entree  ?? null,
+                    'heure_sortie'  => $p->heure_sortie  ?? null,
+                    'duree_heures'  => $wh,
+                ];
+            }
+
+            // ── Shift heures supp (modal overtime) ───────────────
+            if ($oh > 0) {
+                // Essayer de ventiler jour/nuit/weekend selon les colonnes disponibles
+                $otDay     = (float) ($p->overtime_day     ?? $p->heures_sup_jour     ?? 0);
+                $otNight   = (float) ($p->overtime_night   ?? $p->heures_sup_nuit     ?? 0);
+                $otWeekend = (float) ($p->overtime_weekend ?? $p->heures_sup_weekend  ?? 0);
+
+                // Si pas de ventilation disponible, tout mettre en jour
+                if ($otDay + $otNight + $otWeekend == 0) {
+                    $otDay = $oh;
+                }
+
+                if ($otDay > 0) {
+                    $overtimeShifts[] = [
+                        'date'          => $dateStr,
+                        'type'          => 'day',
+                        'duree_heures'  => $otDay,
+                    ];
+                }
+                if ($otNight > 0) {
+                    $overtimeShifts[] = [
+                        'date'          => $dateStr,
+                        'type'          => 'night',
+                        'duree_heures'  => $otNight,
+                    ];
+                }
+                if ($otWeekend > 0) {
+                    $overtimeShifts[] = [
+                        'date'          => $dateStr,
+                        'type'          => 'weekend',
+                        'duree_heures'  => $otWeekend,
+                    ];
+                }
+            }
+
+            // ── Shift retard (modal delay) ────────────────────────
+            if ($retardMin > 0) {
+                $delayShifts[] = [
+                    'date'            => $dateStr,
+                    'heure_entree'    => $p->heure_entree ?? null,
+                    'heure_prevue'    => $p->heure_prevue ?? null,
+                    'retard_minutes'  => $retardMin,
+                ];
             }
         }
 
-        // ── 2. Gardes depuis le planning (avec détail par shift) ────
+        // ══════════════════════════════════════════════════════════
+        // 2. ABSENCES depuis la table absences (approuvées)
+        // ══════════════════════════════════════════════════════════
+        $absenceShifts = [];
+
+        try {
+            $absences = \App\Models\Absence::where('employee_id', $employeeId)
+                ->whereIn('status', ['approved', 'approuvee', 'validee'])
+                ->where(function ($q) use ($month, $year) {
+                    $q->where(function ($q2) use ($month, $year) {
+                        $q2->whereMonth('date_debut', $month)
+                           ->whereYear('date_debut', $year);
+                    })->orWhere(function ($q2) use ($month, $year) {
+                        $q2->whereMonth('date_fin', $month)
+                           ->whereYear('date_fin', $year);
+                    });
+                })
+                ->orderBy('date_debut')
+                ->get();
+
+            foreach ($absences as $a) {
+                $dateStr = $a->date_debut instanceof \Carbon\Carbon
+                    ? $a->date_debut->format('Y-m-d')
+                    : \Carbon\Carbon::parse($a->date_debut)->format('Y-m-d');
+
+                // Heures = jours_ouvres * 8  (fallback sur nb_jours ou 1 jour)
+                $jours  = (float) ($a->jours_ouvres ?? $a->nb_jours ?? 1);
+                $heures = round($jours * 8, 2);
+
+                $absenceShifts[] = [
+                    'date'    => $dateStr,
+                    'type'    => $a->type ?? $a->motif ?? 'Absence',
+                    'heures'  => $heures,
+                    'statut'  => $a->status ?? 'approuvee',
+                ];
+            }
+        } catch (\Exception $e) {
+            // La table absences peut ne pas exister dans tous les tenants
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // 3. GARDES depuis le planning (avec détail par shift)
+        // ══════════════════════════════════════════════════════════
         $gardeShifts = Planning::where('employee_id', $employeeId)
             ->where('shift_type', 'garde')
             ->whereYear('date',  $year)
@@ -288,20 +433,30 @@ class PayrollService
             ];
         }
 
+        // ══════════════════════════════════════════════════════════
+        // Retour complet avec tous les shifts pour les modals
+        // ══════════════════════════════════════════════════════════
         return [
+            // Totaux (utilisés pour les calculs de paie)
             'working_hours'    => round($workingHours,  2),
             'overtime_day'     => round($overtimeHours, 2),
             'overtime_night'   => 0,
             'overtime_weekend' => 0,
             'absence_hours'    => round($absenceHours,  2),
-            'delay_hours'      => 0,
-            'garde_hours'      => round($gardeHours, 2),
+            'delay_hours'      => round($delayHours,    2),
+            'garde_hours'      => round($gardeHours,    2),
             'garde_days'       => count($gardeData),
+
+            // Détail shifts pour les modals cliquables
             'garde_shifts'     => $gardeData,
+            'pointage_shifts'  => $pointageShifts,
+            'overtime_shifts'  => $overtimeShifts,
+            'absence_shifts'   => $absenceShifts,
+            'delay_shifts'     => $delayShifts,
         ];
     }
 
-        // ─── Résumé masse salariale ────────────────────────────────────
+    // ─── Résumé masse salariale ────────────────────────────────────
 
     public function getMonthlySummary(int $month, int $year): array
     {

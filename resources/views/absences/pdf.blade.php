@@ -29,7 +29,7 @@ hr { border: none; border-top: 0.5px solid #000; margin-bottom: 6mm; }
 </head>
 <body>
 
-<div class="field">Nom de société</div>
+<div class="field">{{ $tenant?->name ?? config('app.name') }}</div>
 <div class="field">Numéro de demande : ABS-{{ $absence->start_date->year }}-{{ str_pad($absence->id, 5, '0', STR_PAD_LEFT) }}</div>
 
 <div class="title">DEMANDE D'ABSENCE</div>

@@ -64,6 +64,7 @@ class StoreEmployeeRequest extends FormRequest
             'work_days'           => 'nullable|array',
             'work_days.*'         => 'string|in:lundi,mardi,mercredi,jeudi,vendredi,samedi,dimanche',
             'cp_days'             => 'nullable|numeric|min:0',
+            'conges_anterieurs' => ['nullable', 'numeric', 'min:0', 'max:999'],
             'work_hours_counter'  => 'nullable|numeric|min:0',
 
             // ── Fichiers ──────────────────────────────────────────────────

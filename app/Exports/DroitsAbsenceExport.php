@@ -2,33 +2,33 @@
 
 namespace App\Exports;
 
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
-use App\Models\DroitAbsence;
 
-class DroitsAbsenceExport implements FromCollection, WithHeadings, WithMapping
+class DroitsAbsenceExport implements FromArray, WithHeadings
 {
-    public function collection()
-    {
-        return DroitAbsence::with('employee')->get();
-    }
+    // Reçoit les mêmes données que la page Compteurs
+    // (calculées par AbsenceController::buildCountersData)
 
-    public function map($droit): array
+    public function __construct(private array $countersData) {}
+
+    public function array(): array
     {
-        return [
-            $droit->employee->matricule ?? '',
-            $droit->employee->full_name ?? '',
-            $droit->employee->department ?? '',
-            $droit->annee,
-            $droit->jours_acquis,
-            $droit->jours_pris,
-            $droit->jours_en_attente,
-            $droit->jours_solde,
-            $droit->rtt_acquis,
-            $droit->rtt_pris,
-            $droit->rtt_solde,
-        ];
+        $data = [];
+        foreach ($this->countersData as $row) {
+            $data[] = [
+                $row['employee']->matricule    ?? '',
+                $row['employee']->full_name    ?? '',
+                $row['employee']->department   ?? '',
+                (int) $row['months_worked'],
+                $this->fmt($row['acquis']),
+                $this->fmt($row['taken']),
+                $this->fmt($row['pending']),
+                $this->fmt($row['solde']),
+                $this->fmt($row['solde_if_pending']),
+            ];
+        }
+        return $data;
     }
 
     public function headings(): array
@@ -37,15 +37,17 @@ class DroitsAbsenceExport implements FromCollection, WithHeadings, WithMapping
             'Matricule',
             'Employé',
             'Département',
-            'Année',
-            'Jours acquis',
-            'Jours pris',
-            'Jours attente',
-            'Jours solde',
-            'RTT acquis',
-            'RTT pris',
-            'RTT solde',
+            'Mois travaillés (depuis embauche)',
+            'Droits acquis',
+            'Pris',
+            'En attente',
+            'Solde',
+            'Solde si approuvé',
         ];
     }
-}
 
+    private function fmt($value): string
+    {
+        return str_replace('.', ',', number_format((float) $value, 1, '.', ''));
+    }
+}

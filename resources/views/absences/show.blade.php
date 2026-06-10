@@ -55,10 +55,12 @@
             <div class="card-header">
                 <div class="card-title">Statut</div>
             </div>
-          
             <div class="card-body">
                 @if($absence->status == 'pending')
                     <span class="badge badge-warning" style="font-size:1rem;padding:8px 16px">En attente</span>
+
+                    {{-- Boutons Approuver/Rejeter : admin et rh uniquement --}}
+                    @if(auth()->user()->can('approve_absences'))
                     <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
                         <form action="{{ route('absences.approve', $absence) }}" method="POST">
                             @csrf
@@ -69,6 +71,8 @@
                             <button type="submit" class="btn btn-danger w-full">✗ Rejeter</button>
                         </form>
                     </div>
+                    @endif
+
                 @elseif($absence->status == 'approved')
                     <span class="badge badge-success" style="font-size:1rem;padding:8px 16px">Approuvé</span>
                     @if($absence->approved_at)

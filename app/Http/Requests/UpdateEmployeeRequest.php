@@ -44,6 +44,7 @@ class UpdateEmployeeRequest extends FormRequest
             'diploma_type' => 'nullable|string|max:100',
             'work_hours' => 'nullable|numeric|min:0',
             'work_days' => 'nullable|array',
+            'conges_anterieurs' => ['nullable', 'numeric', 'min:0', 'max:999'],
             'contract_start_date' => 'nullable|date',
             'contract_end_date' => 'nullable|date|after_or_equal:contract_start_date',
             'payment_method' => ['nullable', Rule::in(['virement','cash','chèque'])],

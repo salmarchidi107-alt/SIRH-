@@ -30,7 +30,9 @@ class TenantController extends Controller
 
         $counts = [
             'all'            => Tenant::count(),
-            'total_users'    => User::whereNotNull('tenant_id')->count(),
+            'total_users' => User::whereNotNull('tenant_id')
+                     ->where('role', 'employee')
+                     ->count(),
             'new_this_month' => Tenant::where('created_at', '>=', now()->startOfMonth())->count(),
         ];
 
@@ -114,9 +116,10 @@ class TenantController extends Controller
     }
 
     public function edit(Tenant $tenant)
-    {
-        return view('superadmin.tenants.edit', compact('tenant'));
-    }
+{
+    $tenant->load('admin');
+    return view('superadmin.tenants.edit', compact('tenant'));
+}
 
     public function update(Request $request, Tenant $tenant)
     {

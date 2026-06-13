@@ -34,7 +34,10 @@
                 @endif
             </strong></div>
             <div><div style="color:var(--text-muted);font-size:0.75rem">Salaire base</div><strong>{{ number_format($employee->base_salary,0,',',' ') }} MAD</strong></div>
-            <div><div style="color:var(--text-muted);font-size:0.75rem">Situation familiale</div><strong>{{ ucfirst($employee->family_status ?? 'Célibataire') }}</strong></div>
+
+            {{-- ── CORRECTION : family_situation au lieu de family_status ── --}}
+            <div><div style="color:var(--text-muted);font-size:0.75rem">Situation familiale</div><strong>{{ ucfirst($employee->family_situation ?? 'Célibataire') }}</strong></div>
+
             <div><div style="color:var(--text-muted);font-size:0.75rem">Enfants</div><strong>{{ $employee->children_count ?? 0 }}</strong></div>
             <div><div style="color:var(--text-muted);font-size:0.75rem">Banque</div><strong>{{ $employee->bank_name ?? '—' }}</strong></div>
             <div><div style="color:var(--text-muted);font-size:0.75rem">RIB</div><strong style="font-size:0.75rem">{{ $employee->rib ?? '—' }}</strong></div>
@@ -274,7 +277,6 @@
                     <td class="deduction" style="padding:7px 16px;text-align:right">-{{ number_format($salary->other_deductions,2,',',' ') }} {{ $cur }}</td>
                 </tr>
                 @endif
-                {{-- Cotisations : labels différents selon MAD/MRU --}}
                 <tr style="border-bottom:1px solid var(--border-color)">
                     <td style="padding:7px 16px;color:var(--text-muted)">
                         @if($cur === 'MRU')

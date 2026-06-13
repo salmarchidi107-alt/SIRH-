@@ -43,6 +43,24 @@ class PayrollService
         return filled($tenantId) ? $tenantId : null;
     }
 
+    // ─── Normaliser family_status ──────────────────────────────────
+    // Convertit n'importe quelle variante ("marié(e)", "Marié", "marie", etc.)
+    // en une chaîne ASCII minuscule sans caractères spéciaux.
+
+    private function normalizeFamilyStatus(string $status): string
+    {
+        $s = strtolower(trim($status));
+        $s = iconv('UTF-8', 'ASCII//TRANSLIT', $s); // retire accents : é→e, etc.
+        $s = preg_replace('/[^a-z]/', '', $s);       // retire (, ), espaces, tirets...
+        return $s;
+        // Exemples de résultats :
+        // "marié(e)"            → "marie"
+        // "Marié"               → "marie"
+        // "célibataire"         → "celibataire"
+        // "divorcé(e)"          → "divorce"
+        // "veuf / veuve"        → "veufveuve"
+    }
+
     // ─── Calcul principal ──────────────────────────────────────────
 
     public function calculate(Employee $employee, array $data): Salary
@@ -66,17 +84,17 @@ class PayrollService
             $base = (float) ($data['base_salary'] ?? $employee->base_salary);
         }
 
-        $workingHours       = (float) ($data['working_hours']        ?? $salary->working_hours        ?? 0);
-        $overtimeHoursDay   = (float) ($data['overtime_hours_day']   ?? $salary->overtime_hours_day   ?? 0);
-        $overtimeHoursNight = (float) ($data['overtime_hours_night'] ?? $salary->overtime_hours_night ?? 0);
+        $workingHours       = (float) ($data['working_hours']          ?? $salary->working_hours        ?? 0);
+        $overtimeHoursDay   = (float) ($data['overtime_hours_day']     ?? $salary->overtime_hours_day   ?? 0);
+        $overtimeHoursNight = (float) ($data['overtime_hours_night']   ?? $salary->overtime_hours_night ?? 0);
         $overtimeHoursWe    = (float) ($data['overtime_hours_weekend'] ?? $salary->overtime_hours_weekend ?? 0);
-        $absenceHours       = (float) ($data['absence_hours']        ?? $salary->absence_hours        ?? 0);
-        $delayHours         = (float) ($data['delay_hours']          ?? $salary->delay_hours          ?? 0);
-        $gardeHours         = (float) ($data['garde_hours']          ?? $salary->garde_hours          ?? 0);
+        $absenceHours       = (float) ($data['absence_hours']          ?? $salary->absence_hours        ?? 0);
+        $delayHours         = (float) ($data['delay_hours']            ?? $salary->delay_hours          ?? 0);
+        $gardeHours         = (float) ($data['garde_hours']            ?? $salary->garde_hours          ?? 0);
 
         // ── Indemnité de garde : manuelle (override) ou auto ────────
-        $gardeOverride   = (bool) ($data['garde_override']   ?? $salary->garde_override   ?? false);
-        $gardeIndemnite  = (float) ($data['garde_indemnite'] ?? $salary->garde_indemnite  ?? 0);
+        $gardeOverride  = (bool)  ($data['garde_override']   ?? $salary->garde_override  ?? false);
+        $gardeIndemnite = (float) ($data['garde_indemnite']  ?? $salary->garde_indemnite ?? 0);
 
         $variables = $employee->variableElements()
             ->where('month', $month)
@@ -143,10 +161,14 @@ class PayrollService
 
         $taxableIncome = max(0, round($grossSalary - $cnss - $amo - $fp, 2));
 
+        // ── Lire le statut familial depuis l'employé et normaliser ──
+        $rawFamilyStatus = $employee->family_situation ?? 'celibataire';
+        $childrenCount   = (int) ($employee->children_count ?? 0);
+
         $ir = round($this->calculateIR(
             $taxableIncome * 12,
-            $employee->family_status   ?? 'celibataire',
-            (int) ($employee->children_count ?? 0)
+            $rawFamilyStatus,
+            $childrenCount
         ) / 12, 2);
 
         $netSalary = round(
@@ -220,6 +242,10 @@ class PayrollService
     {
         if ($annualIncome <= 0) return 0;
 
+        // ── Normaliser family_status avant comparaison ─────────────
+        // Gère : "marié(e)", "Marié", "marie", "célibataire", etc.
+        $status = $this->normalizeFamilyStatus($familyStatus);
+
         $ir = 0;
         foreach (self::IR_BRACKETS as [$min, $max, $rate, $deduction]) {
             if ($annualIncome > $min) {
@@ -228,9 +254,12 @@ class PayrollService
         }
 
         $familyDeduction = 0;
-        if ($familyStatus === 'marie') {
+
+        // Correspond à "marié", "mariee", "marie" après normalisation
+        if (str_starts_with($status, 'mari')) {
             $familyDeduction += 360;
         }
+
         $familyDeduction += min($children, 6) * 360;
 
         return max(0, $ir - $familyDeduction);
@@ -297,16 +326,15 @@ class PayrollService
             // ── Shift pointage (modal heures travaillées) ────────
             if ($wh > 0 || !empty($p->heure_entree)) {
                 $pointageShifts[] = [
-                    'date'          => $dateStr,
-                    'heure_entree'  => $p->heure_entree  ?? null,
-                    'heure_sortie'  => $p->heure_sortie  ?? null,
-                    'duree_heures'  => $wh,
+                    'date'         => $dateStr,
+                    'heure_entree' => $p->heure_entree ?? null,
+                    'heure_sortie' => $p->heure_sortie ?? null,
+                    'duree_heures' => $wh,
                 ];
             }
 
             // ── Shift heures supp (modal overtime) ───────────────
             if ($oh > 0) {
-                // Essayer de ventiler jour/nuit/weekend selon les colonnes disponibles
                 $otDay     = (float) ($p->overtime_day     ?? $p->heures_sup_jour     ?? 0);
                 $otNight   = (float) ($p->overtime_night   ?? $p->heures_sup_nuit     ?? 0);
                 $otWeekend = (float) ($p->overtime_weekend ?? $p->heures_sup_weekend  ?? 0);
@@ -318,23 +346,23 @@ class PayrollService
 
                 if ($otDay > 0) {
                     $overtimeShifts[] = [
-                        'date'          => $dateStr,
-                        'type'          => 'day',
-                        'duree_heures'  => $otDay,
+                        'date'         => $dateStr,
+                        'type'         => 'day',
+                        'duree_heures' => $otDay,
                     ];
                 }
                 if ($otNight > 0) {
                     $overtimeShifts[] = [
-                        'date'          => $dateStr,
-                        'type'          => 'night',
-                        'duree_heures'  => $otNight,
+                        'date'         => $dateStr,
+                        'type'         => 'night',
+                        'duree_heures' => $otNight,
                     ];
                 }
                 if ($otWeekend > 0) {
                     $overtimeShifts[] = [
-                        'date'          => $dateStr,
-                        'type'          => 'weekend',
-                        'duree_heures'  => $otWeekend,
+                        'date'         => $dateStr,
+                        'type'         => 'weekend',
+                        'duree_heures' => $otWeekend,
                     ];
                 }
             }
@@ -342,10 +370,10 @@ class PayrollService
             // ── Shift retard (modal delay) ────────────────────────
             if ($retardMin > 0) {
                 $delayShifts[] = [
-                    'date'            => $dateStr,
-                    'heure_entree'    => $p->heure_entree ?? null,
-                    'heure_prevue'    => $p->heure_prevue ?? null,
-                    'retard_minutes'  => $retardMin,
+                    'date'           => $dateStr,
+                    'heure_entree'   => $p->heure_entree ?? null,
+                    'heure_prevue'   => $p->heure_prevue ?? null,
+                    'retard_minutes' => $retardMin,
                 ];
             }
         }
@@ -375,15 +403,14 @@ class PayrollService
                     ? $a->date_debut->format('Y-m-d')
                     : \Carbon\Carbon::parse($a->date_debut)->format('Y-m-d');
 
-                // Heures = jours_ouvres * 8  (fallback sur nb_jours ou 1 jour)
                 $jours  = (float) ($a->jours_ouvres ?? $a->nb_jours ?? 1);
                 $heures = round($jours * 8, 2);
 
                 $absenceShifts[] = [
-                    'date'    => $dateStr,
-                    'type'    => $a->type ?? $a->motif ?? 'Absence',
-                    'heures'  => $heures,
-                    'statut'  => $a->status ?? 'approuvee',
+                    'date'   => $dateStr,
+                    'type'   => $a->type ?? $a->motif ?? 'Absence',
+                    'heures' => $heures,
+                    'statut' => $a->status ?? 'approuvee',
                 ];
             }
         } catch (\Exception $e) {
@@ -448,11 +475,11 @@ class PayrollService
             'garde_days'       => count($gardeData),
 
             // Détail shifts pour les modals cliquables
-            'garde_shifts'     => $gardeData,
-            'pointage_shifts'  => $pointageShifts,
-            'overtime_shifts'  => $overtimeShifts,
-            'absence_shifts'   => $absenceShifts,
-            'delay_shifts'     => $delayShifts,
+            'garde_shifts'    => $gardeData,
+            'pointage_shifts' => $pointageShifts,
+            'overtime_shifts' => $overtimeShifts,
+            'absence_shifts'  => $absenceShifts,
+            'delay_shifts'    => $delayShifts,
         ];
     }
 

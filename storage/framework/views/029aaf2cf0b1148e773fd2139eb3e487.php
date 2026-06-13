@@ -1,25 +1,21 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Saisie Paie — '.$employee->full_name); ?>
+<?php $__env->startSection('page-title', 'Saisie de la Paie'); ?>
 
-@section('title', 'Saisie Paie — '.$employee->full_name)
-@section('page-title', 'Saisie de la Paie')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 
 <div class="page-header">
     <div class="page-header-left">
-        <h1>{{ $employee->full_name }}</h1>
-        <p>{{ $employee->department }} — {{ $employee->position }} — Paie {{ \Carbon\Carbon::create($year,$month)->locale('fr')->isoFormat('MMMM YYYY') }}</p>
+        <h1><?php echo e($employee->full_name); ?></h1>
+        <p><?php echo e($employee->department); ?> — <?php echo e($employee->position); ?> — Paie <?php echo e(\Carbon\Carbon::create($year,$month)->locale('fr')->isoFormat('MMMM YYYY')); ?></p>
     </div>
-    <a href="{{ route('salary.index', ['month'=>$month,'year'=>$year]) }}" class="btn btn-ghost">← Retour</a>
+    <a href="<?php echo e(route('salary.index', ['month'=>$month,'year'=>$year])); ?>" class="btn btn-ghost">← Retour</a>
 </div>
 
-@if(session('success'))
-    <div class="alert alert-success mb-4">{{ session('success') }}</div>
-@endif
+<?php if(session('success')): ?>
+    <div class="alert alert-success mb-4"><?php echo e(session('success')); ?></div>
+<?php endif; ?>
 
-{{-- ════════════════════════════════════════════════════════════
-     MODAL PLANNING DE GARDE
-════════════════════════════════════════════════════════════ --}}
+
 <div id="gardeModal" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.55);overflow-y:auto">
     <div style="background:white;margin:4% auto 40px;padding:0;border-radius:16px;width:90%;max-width:700px;box-shadow:0 24px 80px rgba(0,0,0,0.3);overflow:hidden">
         <div style="background:linear-gradient(135deg,#0f766e,#2dd4bf);padding:22px 28px;display:flex;justify-content:space-between;align-items:center">
@@ -29,7 +25,8 @@
                     Planning de Garde
                 </div>
                 <div style="color:rgba(255,255,255,0.8);font-size:0.82rem;margin-top:3px">
-                    {{ $employee->full_name }} — {{ \Carbon\Carbon::create($year,$month)->locale('fr')->isoFormat('MMMM YYYY') }}
+                    <?php echo e($employee->full_name); ?> — <?php echo e(\Carbon\Carbon::create($year,$month)->locale('fr')->isoFormat('MMMM YYYY')); ?>
+
                 </div>
             </div>
             <button onclick="closeGardeModal()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:34px;height:34px;border-radius:50%;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='rgba(255,255,255,0.35)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">×</button>
@@ -72,16 +69,15 @@
     </div>
 </div>
 
-{{-- ════════════════════════════════════════════════════════════
-     MODAL DÉTAILS — Heures travaillées / HS / Absences / Retards
-════════════════════════════════════════════════════════════ --}}
+
 <div id="detailModal" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.55);overflow-y:auto">
     <div style="background:white;margin:4% auto 40px;padding:0;border-radius:16px;width:90%;max-width:680px;box-shadow:0 24px 80px rgba(0,0,0,0.3);overflow:hidden">
         <div id="detailModalHeader" style="padding:22px 28px;display:flex;justify-content:space-between;align-items:center">
             <div>
                 <div id="detailModalTitle" style="color:white;font-size:1.15rem;font-weight:700"></div>
                 <div style="color:rgba(255,255,255,0.8);font-size:0.82rem;margin-top:3px">
-                    {{ $employee->full_name }} — {{ \Carbon\Carbon::create($year,$month)->locale('fr')->isoFormat('MMMM YYYY') }}
+                    <?php echo e($employee->full_name); ?> — <?php echo e(\Carbon\Carbon::create($year,$month)->locale('fr')->isoFormat('MMMM YYYY')); ?>
+
                 </div>
             </div>
             <button onclick="closeDetailModal()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:34px;height:34px;border-radius:50%;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
@@ -101,60 +97,60 @@
 
 <script>
 const EMPLOYEE_DATA = {
-    base_salary:     {{ (float) $employee->base_salary }},
-    seniority_years: {{ (int) ($employee->seniority_years ?? 0) }},
-    seniority_rate:  {{ (float) ($employee->seniority_rate ?? 0) }},
-    family_status:   '{{ $employee->family_status ?? 'celibataire' }}',
-    children_count:  {{ (int) ($employee->children_count ?? 0) }},
-    working_hours:   {{ (float) ($workingData['working_hours'] ?? 191.25) }},
-    ot_day:          {{ (float) ($workingData['overtime_day'] ?? 0) }},
-    ot_night:        {{ (float) ($workingData['overtime_night'] ?? 0) }},
-    ot_weekend:      {{ (float) ($workingData['overtime_weekend'] ?? 0) }},
-    absence_hours:   {{ (float) ($workingData['absence_hours'] ?? 0) }},
-    delay_hours:     {{ (float) ($workingData['delay_hours'] ?? 0) }},
-    garde_hours:     {{ (float) ($workingData['garde_hours'] ?? 0) }},
-    garde_days:      {{ (int)   ($workingData['garde_days']  ?? 0) }},
+    base_salary:     <?php echo e((float) $employee->base_salary); ?>,
+    seniority_years: <?php echo e((int) ($employee->seniority_years ?? 0)); ?>,
+    seniority_rate:  <?php echo e((float) ($employee->seniority_rate ?? 0)); ?>,
+    family_status:   '<?php echo e($employee->family_status ?? 'celibataire'); ?>',
+    children_count:  <?php echo e((int) ($employee->children_count ?? 0)); ?>,
+    working_hours:   <?php echo e((float) ($workingData['working_hours'] ?? 191.25)); ?>,
+    ot_day:          <?php echo e((float) ($workingData['overtime_day'] ?? 0)); ?>,
+    ot_night:        <?php echo e((float) ($workingData['overtime_night'] ?? 0)); ?>,
+    ot_weekend:      <?php echo e((float) ($workingData['overtime_weekend'] ?? 0)); ?>,
+    absence_hours:   <?php echo e((float) ($workingData['absence_hours'] ?? 0)); ?>,
+    delay_hours:     <?php echo e((float) ($workingData['delay_hours'] ?? 0)); ?>,
+    garde_hours:     <?php echo e((float) ($workingData['garde_hours'] ?? 0)); ?>,
+    garde_days:      <?php echo e((int)   ($workingData['garde_days']  ?? 0)); ?>,
 };
 const EXISTING = {
-    salary_type:              '{{ $existing?->salary_type ?? 'monthly' }}',
-    hourly_rate:              {{ (float) ($existing?->hourly_rate ?? 0) }},
-    base_salary:              {{ (float) ($existing?->base_salary ?? $employee->base_salary) }},
-    performance_bonus:        {{ (float) ($existing?->performance_bonus ?? 0) }},
-    transport_allowance:      {{ (float) ($existing?->transport_allowance ?? 0) }},
-    meal_allowance:           {{ (float) ($existing?->meal_allowance ?? 0) }},
-    housing_allowance:        {{ (float) ($existing?->housing_allowance ?? 0) }},
-    responsibility_allowance: {{ (float) ($existing?->responsibility_allowance ?? 0) }},
-    other_gains:              {{ (float) ($existing?->other_gains ?? 0) }},
-    advance_deduction:        {{ (float) ($existing?->advance_deduction ?? 0) }},
-    loan_deduction:           {{ (float) ($existing?->loan_deduction ?? 0) }},
-    garnishment_deduction:    {{ (float) ($existing?->garnishment_deduction ?? 0) }},
-    other_deductions:         {{ (float) ($existing?->other_deductions ?? 0) }},
-    mode_cotisation:          '{{ $existing?->mode_cotisation ?? 'auto' }}',
-    cnss_deduction_manual:    {{ (float) ($existing?->cnss_deduction_manual ?? 0) }},
-    amo_deduction_manual:     {{ (float) ($existing?->amo_deduction_manual ?? 0) }},
-    fp_deduction_manual:      {{ (float) ($existing?->fp_deduction_manual ?? 0) }},
-    currency:                 '{{ $existing?->currency ?? 'MAD' }}',
-    garde_indemnite:          {{ (float) ($existing?->garde_indemnite ?? 0) }},
-    garde_override:           {{ (int)   ($existing?->garde_override   ?? 0) }},
-    absence_deduction:        {{ (float) ($existing?->absence_deduction ?? 0) }},
-    absence_override:         {{ $existing && $existing->absence_deduction > 0 ? 1 : 0 }},
-    ir_deduction:             {{ (float) ($existing?->ir_deduction ?? 0) }},
-    ir_override:              {{ $existing && $existing->ir_deduction > 0 ? 1 : 0 }},
+    salary_type:              '<?php echo e($existing?->salary_type ?? 'monthly'); ?>',
+    hourly_rate:              <?php echo e((float) ($existing?->hourly_rate ?? 0)); ?>,
+    base_salary:              <?php echo e((float) ($existing?->base_salary ?? $employee->base_salary)); ?>,
+    performance_bonus:        <?php echo e((float) ($existing?->performance_bonus ?? 0)); ?>,
+    transport_allowance:      <?php echo e((float) ($existing?->transport_allowance ?? 0)); ?>,
+    meal_allowance:           <?php echo e((float) ($existing?->meal_allowance ?? 0)); ?>,
+    housing_allowance:        <?php echo e((float) ($existing?->housing_allowance ?? 0)); ?>,
+    responsibility_allowance: <?php echo e((float) ($existing?->responsibility_allowance ?? 0)); ?>,
+    other_gains:              <?php echo e((float) ($existing?->other_gains ?? 0)); ?>,
+    advance_deduction:        <?php echo e((float) ($existing?->advance_deduction ?? 0)); ?>,
+    loan_deduction:           <?php echo e((float) ($existing?->loan_deduction ?? 0)); ?>,
+    garnishment_deduction:    <?php echo e((float) ($existing?->garnishment_deduction ?? 0)); ?>,
+    other_deductions:         <?php echo e((float) ($existing?->other_deductions ?? 0)); ?>,
+    mode_cotisation:          '<?php echo e($existing?->mode_cotisation ?? 'auto'); ?>',
+    cnss_deduction_manual:    <?php echo e((float) ($existing?->cnss_deduction_manual ?? 0)); ?>,
+    amo_deduction_manual:     <?php echo e((float) ($existing?->amo_deduction_manual ?? 0)); ?>,
+    fp_deduction_manual:      <?php echo e((float) ($existing?->fp_deduction_manual ?? 0)); ?>,
+    currency:                 '<?php echo e($existing?->currency ?? 'MAD'); ?>',
+    garde_indemnite:          <?php echo e((float) ($existing?->garde_indemnite ?? 0)); ?>,
+    garde_override:           <?php echo e((int)   ($existing?->garde_override   ?? 0)); ?>,
+    absence_deduction:        <?php echo e((float) ($existing?->absence_deduction ?? 0)); ?>,
+    absence_override:         <?php echo e($existing && $existing->absence_deduction > 0 ? 1 : 0); ?>,
+    ir_deduction:             <?php echo e((float) ($existing?->ir_deduction ?? 0)); ?>,
+    ir_override:              <?php echo e($existing && $existing->ir_deduction > 0 ? 1 : 0); ?>,
 };
-const GARDE_SHIFTS    = @json($workingData['garde_shifts']    ?? []);
-const WORKING_SHIFTS  = @json($workingData['pointage_shifts'] ?? []);
-const OVERTIME_SHIFTS = @json($workingData['overtime_shifts'] ?? []);
-const ABSENCE_SHIFTS  = @json($workingData['absence_shifts']  ?? []);
-const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
+const GARDE_SHIFTS    = <?php echo json_encode($workingData['garde_shifts']    ?? [], 15, 512) ?>;
+const WORKING_SHIFTS  = <?php echo json_encode($workingData['pointage_shifts'] ?? [], 15, 512) ?>;
+const OVERTIME_SHIFTS = <?php echo json_encode($workingData['overtime_shifts'] ?? [], 15, 512) ?>;
+const ABSENCE_SHIFTS  = <?php echo json_encode($workingData['absence_shifts']  ?? [], 15, 512) ?>;
+const DELAY_SHIFTS    = <?php echo json_encode($workingData['delay_shifts']    ?? [], 15, 512) ?>;
 </script>
 
-<form action="{{ route('salary.update', $employee) }}" method="POST" id="salaryForm">
-@csrf
-<input type="hidden" name="month"  value="{{ $month }}">
-<input type="hidden" name="year"   value="{{ $year }}">
-@if($existing)
-<input type="hidden" name="salary_id" value="{{ $existing->id }}">
-@endif
+<form action="<?php echo e(route('salary.update', $employee)); ?>" method="POST" id="salaryForm">
+<?php echo csrf_field(); ?>
+<input type="hidden" name="month"  value="<?php echo e($month); ?>">
+<input type="hidden" name="year"   value="<?php echo e($year); ?>">
+<?php if($existing): ?>
+<input type="hidden" name="salary_id" value="<?php echo e($existing->id); ?>">
+<?php endif; ?>
 <input type="hidden" name="gross_salary"            id="h_gross_salary">
 <input type="hidden" name="seniority_bonus"         id="h_seniority_bonus">
 <input type="hidden" name="overtime_day_amount"     id="h_ot_day_amount">
@@ -185,21 +181,19 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
 <input type="hidden" name="garde_hours"             id="h_garde_hours">
 <input type="hidden" name="hourly_rate"             id="h_hourly_rate">
 <input type="hidden" name="currency"                id="h_currency" value="MAD">
-<input type="hidden" name="garde_indemnite"         id="h_garde_indemnite" value="{{ old('garde_indemnite', $existing?->garde_indemnite ?? 0) }}">
-<input type="hidden" name="garde_override"          id="h_garde_override"  value="{{ old('garde_override',  $existing?->garde_override  ?? 0) }}">
+<input type="hidden" name="garde_indemnite"         id="h_garde_indemnite" value="<?php echo e(old('garde_indemnite', $existing?->garde_indemnite ?? 0)); ?>">
+<input type="hidden" name="garde_override"          id="h_garde_override"  value="<?php echo e(old('garde_override',  $existing?->garde_override  ?? 0)); ?>">
 
-{{-- ════════════════════════════════════════════════════════════
-     SECTION 1 — TEMPS DE TRAVAIL
-════════════════════════════════════════════════════════════ --}}
+
 <div class="card mb-4" style="border-left:4px solid var(--primary)">
     <div class="card-header" style="border:none;padding:16px 20px">
-        <div class="card-title" style="font-size:1.05rem;color:#0066cc">TEMPS DE TRAVAIL — {{ \Carbon\Carbon::create($year,$month)->locale('fr')->translatedFormat('F Y') }}</div>
+        <div class="card-title" style="font-size:1.05rem;color:#0066cc">TEMPS DE TRAVAIL — <?php echo e(\Carbon\Carbon::create($year,$month)->locale('fr')->translatedFormat('F Y')); ?></div>
         <div style="font-size:0.8rem;color:var(--text-muted)">Données extraites automatiquement du pointage — cliquer sur une carte pour les détails</div>
     </div>
     <div class="card-body" style="padding:0">
         <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border-color)">
 
-            {{-- Heures travaillées --}}
+            
             <div onclick="openDetailModal('working')"
                  style="background:var(--surface,white);padding:14px 16px;cursor:pointer;transition:background .2s"
                  onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='var(--surface,white)'">
@@ -207,11 +201,11 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                     Heures travaillées
                     <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
-                <div style="font-size:1.6rem;font-weight:700;color:#065f46" id="disp-working">{{ $workingData['working_hours'] ?? 0 }} h</div>
+                <div style="font-size:1.6rem;font-weight:700;color:#065f46" id="disp-working"><?php echo e($workingData['working_hours'] ?? 0); ?> h</div>
                 <div style="font-size:0.7rem;color:#10b981;margin-top:2px">Voir pointages →</div>
             </div>
 
-            {{-- H. supp jour --}}
+            
             <div onclick="openDetailModal('overtime')"
                  style="background:var(--surface,white);padding:14px 16px;cursor:pointer;transition:background .2s"
                  onmouseover="this.style.background='#fffbeb'" onmouseout="this.style.background='var(--surface,white)'">
@@ -219,11 +213,11 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                     H. supp jour (25%)
                     <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
-                <div style="font-size:1.6rem;font-weight:700;color:#d97706" id="disp-ot-day">{{ $workingData['overtime_day'] ?? 0 }} h</div>
+                <div style="font-size:1.6rem;font-weight:700;color:#d97706" id="disp-ot-day"><?php echo e($workingData['overtime_day'] ?? 0); ?> h</div>
                 <div style="font-size:0.7rem;color:#f59e0b;margin-top:2px">Voir détails →</div>
             </div>
 
-            {{-- Heures absence --}}
+            
             <div onclick="openDetailModal('absence')"
                  style="background:var(--surface,white);padding:14px 16px;cursor:pointer;transition:background .2s"
                  onmouseover="this.style.background='#fff1f2'" onmouseout="this.style.background='var(--surface,white)'">
@@ -231,11 +225,11 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                     Heures absence
                     <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
-                <div style="font-size:1.6rem;font-weight:700;color:#ef4444" id="disp-abs">{{ $workingData['absence_hours'] ?? 0 }} h</div>
+                <div style="font-size:1.6rem;font-weight:700;color:#ef4444" id="disp-abs"><?php echo e($workingData['absence_hours'] ?? 0); ?> h</div>
                 <div style="font-size:0.7rem;color:#f87171;margin-top:2px">Voir absences →</div>
             </div>
 
-            {{-- Heures retard --}}
+            
             <div onclick="openDetailModal('delay')"
                  style="background:var(--surface,white);padding:14px 16px;cursor:pointer;transition:background .2s"
                  onmouseover="this.style.background='#fdf4ff'" onmouseout="this.style.background='var(--surface,white)'">
@@ -243,11 +237,11 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                     Heures retard
                     <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
-                <div style="font-size:1.6rem;font-weight:700;color:#ec4899" id="disp-delay">{{ $workingData['delay_hours'] ?? 0 }} h</div>
+                <div style="font-size:1.6rem;font-weight:700;color:#ec4899" id="disp-delay"><?php echo e($workingData['delay_hours'] ?? 0); ?> h</div>
                 <div style="font-size:0.7rem;color:#f472b6;margin-top:2px">Voir retards →</div>
             </div>
 
-            {{-- Jours de garde --}}
+            
             <div style="background:#f0fdfa;padding:14px 16px;cursor:pointer;transition:background 0.2s;border-left:3px solid #0f766e;position:relative"
                  onclick="openGardeModal()"
                  onmouseover="this.style.background='#f3e8ff'"
@@ -256,8 +250,8 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                     Jours de garde
                     <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="#0f766e" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
-                <div style="font-size:1.6rem;font-weight:700;color:#0f766e" id="disp-garde-days">{{ $workingData['garde_days'] ?? 0 }}<span style="font-size:1rem;font-weight:500"> j</span></div>
-                <div style="font-size:0.72rem;color:#2dd4bf;margin-top:3px" id="disp-garde-sub">{{ $workingData['garde_hours'] ?? 0 }} h au total</div>
+                <div style="font-size:1.6rem;font-weight:700;color:#0f766e" id="disp-garde-days"><?php echo e($workingData['garde_days'] ?? 0); ?><span style="font-size:1rem;font-weight:500"> j</span></div>
+                <div style="font-size:0.72rem;color:#2dd4bf;margin-top:3px" id="disp-garde-sub"><?php echo e($workingData['garde_hours'] ?? 0); ?> h au total</div>
                 <div style="position:absolute;bottom:6px;right:8px;font-size:0.65rem;color:#c084fc;font-weight:600">Voir détails →</div>
             </div>
 
@@ -265,9 +259,7 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
     </div>
 </div>
 
-{{-- ════════════════════════════════════════════════════════════
-     SECTION 2 — SYSTÈME DE PAIE
-════════════════════════════════════════════════════════════ --}}
+
 <div class="card mb-4" style="border-left:4px solid #0f766e">
     <div class="card-header" style="border:none;padding:14px 20px">
         <div class="card-title" style="font-size:1.0rem;color:#0f766e">SYSTÈME DE PAIE &amp; TYPE DE SALAIRE</div>
@@ -285,7 +277,7 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
             <div style="display:flex;align-items:center;gap:8px">
                 <label style="font-size:0.85rem;color:var(--text-muted);white-space:nowrap">Taux horaire</label>
                 <input type="number" name="hourly_rate_display" id="hourly_rate" class="form-control"
-                       value="{{ $existing?->hourly_rate ?? $employee->hourly_rate ?? 0 }}"
+                       value="<?php echo e($existing?->hourly_rate ?? $employee->hourly_rate ?? 0); ?>"
                        step="0.01" min="0" style="width:130px;text-align:right" disabled oninput="calculate()">
             </div>
             <div style="width:1px;height:32px;background:var(--border-color);margin:0 4px"></div>
@@ -309,16 +301,14 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
 
-{{-- ════════════════════════════════════════════════════════════
-     COLONNE GAUCHE — GAINS
-════════════════════════════════════════════════════════════ --}}
+
 <div>
     <div class="card mb-4" style="border-left:3px solid var(--primary)">
         <div class="card-body" style="padding:10px 16px">
             <div style="display:flex;gap:20px;font-size:0.83rem;flex-wrap:wrap">
-                <div><span style="color:var(--text-muted)">Base contrat</span> <strong style="margin-left:6px">{{ number_format($employee->base_salary,0,',',' ') }} <span class="cur-label">MAD</span></strong></div>
-                <div><span style="color:var(--text-muted)">Ancienneté</span> <strong style="margin-left:6px">{{ $employee->seniority_label }}</strong></div>
-                <div><span style="color:var(--text-muted)">Situation</span> <strong style="margin-left:6px">{{ ucfirst($employee->family_status ?? 'Célibataire') }} — {{ $employee->children_count ?? 0 }} enfant(s)</strong></div>
+                <div><span style="color:var(--text-muted)">Base contrat</span> <strong style="margin-left:6px"><?php echo e(number_format($employee->base_salary,0,',',' ')); ?> <span class="cur-label">MAD</span></strong></div>
+                <div><span style="color:var(--text-muted)">Ancienneté</span> <strong style="margin-left:6px"><?php echo e($employee->seniority_label); ?></strong></div>
+                <div><span style="color:var(--text-muted)">Situation</span> <strong style="margin-left:6px"><?php echo e(ucfirst($employee->family_status ?? 'Célibataire')); ?> — <?php echo e($employee->children_count ?? 0); ?> enfant(s)</strong></div>
             </div>
         </div>
     </div>
@@ -344,7 +334,7 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                         </td>
                         <td style="padding:9px 14px">
                             <input type="number" name="base_salary" id="base_salary" class="form-control"
-                                   value="{{ old('base_salary', $existing?->base_salary ?? $employee->base_salary) }}"
+                                   value="<?php echo e(old('base_salary', $existing?->base_salary ?? $employee->base_salary)); ?>"
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
                         </td>
                     </tr>
@@ -354,13 +344,13 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                         </td>
                         <td style="padding:9px 14px">
                             <input type="number" name="seniority_bonus" id="seniority_bonus" class="form-control"
-                                   value="{{ old('seniority_bonus', $existing?->seniority_bonus ?? 0) }}"
+                                   value="<?php echo e(old('seniority_bonus', $existing?->seniority_bonus ?? 0)); ?>"
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
-                            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">{{ $employee->seniority_years }} an(s) → {{ ($employee->seniority_rate * 100) }}%</div>
+                            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px"><?php echo e($employee->seniority_years); ?> an(s) → <?php echo e(($employee->seniority_rate * 100)); ?>%</div>
                         </td>
                     </tr>
 
-                    {{-- Heures supplémentaires --}}
+                    
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td colspan="2" style="padding:0">
                             <div style="padding:8px 14px;font-weight:600;font-size:0.82rem;color:#92400e;background:#fffbeb;border-bottom:1px solid #fde68a">
@@ -369,19 +359,19 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;background:#fffbeb">
                                 <div style="padding:10px 14px;border-right:1px solid #fde68a">
                                     <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Jour +25%</div>
-                                    <div style="font-size:1.1rem;font-weight:700;color:#d97706" id="ot-day-h-disp">{{ $workingData['overtime_day'] ?? 0 }} h</div>
+                                    <div style="font-size:1.1rem;font-weight:700;color:#d97706" id="ot-day-h-disp"><?php echo e($workingData['overtime_day'] ?? 0); ?> h</div>
                                     <div style="font-size:0.72rem;color:var(--text-muted)" id="ot-day-amt-disp">= 0,00 <span class="cur-label">MAD</span></div>
                                 </div>
                                 <div style="padding:10px 14px;border-right:1px solid #fde68a">
                                     <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Nuit +50%</div>
-                                    <div style="font-size:0.9rem;font-weight:700;color:#d97706" id="ot-night-h-disp">{{ $workingData['overtime_night'] ?? 0 }} h</div>
-                                    <input type="number" id="ot_night_h" class="form-control" value="{{ $workingData['overtime_night'] ?? 0 }}" step="0.5" min="0" style="margin-top:4px;font-size:0.8rem" oninput="calculate()">
+                                    <div style="font-size:0.9rem;font-weight:700;color:#d97706" id="ot-night-h-disp"><?php echo e($workingData['overtime_night'] ?? 0); ?> h</div>
+                                    <input type="number" id="ot_night_h" class="form-control" value="<?php echo e($workingData['overtime_night'] ?? 0); ?>" step="0.5" min="0" style="margin-top:4px;font-size:0.8rem" oninput="calculate()">
                                     <div style="font-size:0.72rem;color:var(--text-muted)" id="ot-night-amt-disp">= 0,00 <span class="cur-label">MAD</span></div>
                                 </div>
                                 <div style="padding:10px 14px">
                                     <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Weekend +100%</div>
-                                    <div style="font-size:0.9rem;font-weight:700;color:#d97706" id="ot-wknd-h-disp">{{ $workingData['overtime_weekend'] ?? 0 }} h</div>
-                                    <input type="number" id="ot_wknd_h" class="form-control" value="{{ $workingData['overtime_weekend'] ?? 0 }}" step="0.5" min="0" style="margin-top:4px;font-size:0.8rem" oninput="calculate()">
+                                    <div style="font-size:0.9rem;font-weight:700;color:#d97706" id="ot-wknd-h-disp"><?php echo e($workingData['overtime_weekend'] ?? 0); ?> h</div>
+                                    <input type="number" id="ot_wknd_h" class="form-control" value="<?php echo e($workingData['overtime_weekend'] ?? 0); ?>" step="0.5" min="0" style="margin-top:4px;font-size:0.8rem" oninput="calculate()">
                                     <div style="font-size:0.72rem;color:var(--text-muted)" id="ot-wknd-amt-disp">= 0,00 <span class="cur-label">MAD</span></div>
                                 </div>
                             </div>
@@ -392,7 +382,7 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                         </td>
                     </tr>
 
-                    {{-- Indemnité de garde --}}
+                    
                     <tr style="border-bottom:1px solid var(--border-color);background:#f0fdfa">
                         <td style="padding:9px 14px">
                             <div style="font-weight:600;color:#0f766e;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -401,7 +391,7 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                                         style="background:#ccfbf1;border:none;color:#0f766e;padding:2px 10px;border-radius:20px;font-size:0.68rem;cursor:pointer;font-weight:700;"
                                         onmouseover="this.style.background='#99f6e4'"
                                         onmouseout="this.style.background='#ccfbf1'">
-                                     {{ $workingData['garde_days'] ?? 0 }} j — Voir planning
+                                     <?php echo e($workingData['garde_days'] ?? 0); ?> j — Voir planning
                                 </button>
                                 <span id="garde-override-badge"
                                       style="display:none;background:#fef3c7;border:1px solid #fcd34d;color:#92400e;
@@ -410,7 +400,7 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                                 </span>
                             </div>
                             <div style="font-size:0.72rem;color:#14b8a6;margin-top:2px">
-                                {{ $workingData['garde_hours'] ?? 0 }} h × taux horaire
+                                <?php echo e($workingData['garde_hours'] ?? 0); ?> h × taux horaire
                             </div>
                         </td>
                         <td style="padding:9px 14px">
@@ -448,7 +438,7 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                         <td style="padding:9px 14px"><div style="font-weight:600">Prime de rendement</div></td>
                         <td style="padding:9px 14px">
                             <input type="number" name="performance_bonus" id="performance_bonus" class="form-control"
-                                   value="{{ old('performance_bonus', $existing?->performance_bonus ?? 0) }}"
+                                   value="<?php echo e(old('performance_bonus', $existing?->performance_bonus ?? 0)); ?>"
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
                         </td>
                     </tr>
@@ -456,7 +446,7 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                         <td style="padding:9px 14px"><div style="font-weight:600">Indemnité de transport</div></td>
                         <td style="padding:9px 14px">
                             <input type="number" name="transport_allowance" id="transport_allowance" class="form-control"
-                                   value="{{ old('transport_allowance', $existing?->transport_allowance ?? 0) }}"
+                                   value="<?php echo e(old('transport_allowance', $existing?->transport_allowance ?? 0)); ?>"
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
                         </td>
                     </tr>
@@ -464,7 +454,7 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                         <td style="padding:9px 14px"><div style="font-weight:600">Prime de panier</div></td>
                         <td style="padding:9px 14px">
                             <input type="number" name="meal_allowance" id="meal_allowance" class="form-control"
-                                   value="{{ old('meal_allowance', $existing?->meal_allowance ?? 0) }}"
+                                   value="<?php echo e(old('meal_allowance', $existing?->meal_allowance ?? 0)); ?>"
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
                         </td>
                     </tr>
@@ -472,7 +462,7 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                         <td style="padding:9px 14px"><div style="font-weight:600">Indemnité logement</div></td>
                         <td style="padding:9px 14px">
                             <input type="number" name="housing_allowance" id="housing_allowance" class="form-control"
-                                   value="{{ old('housing_allowance', $existing?->housing_allowance ?? 0) }}"
+                                   value="<?php echo e(old('housing_allowance', $existing?->housing_allowance ?? 0)); ?>"
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
                         </td>
                     </tr>
@@ -480,7 +470,7 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                         <td style="padding:9px 14px"><div style="font-weight:600">Indemnité de responsabilité</div></td>
                         <td style="padding:9px 14px">
                             <input type="number" name="responsibility_allowance" id="responsibility_allowance" class="form-control"
-                                   value="{{ old('responsibility_allowance', $existing?->responsibility_allowance ?? 0) }}"
+                                   value="<?php echo e(old('responsibility_allowance', $existing?->responsibility_allowance ?? 0)); ?>"
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
                         </td>
                     </tr>
@@ -488,41 +478,41 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                         <td style="padding:9px 14px"><div style="font-weight:600">Autres gains</div></td>
                         <td style="padding:9px 14px">
                             <input type="number" name="other_gains" id="other_gains" class="form-control"
-                                   value="{{ old('other_gains', $existing?->other_gains ?? 0) }}"
+                                   value="<?php echo e(old('other_gains', $existing?->other_gains ?? 0)); ?>"
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
                         </td>
                     </tr>
 
-                    @if($variableElements->where('category','gain')->count())
+                    <?php if($variableElements->where('category','gain')->count()): ?>
                     <tr style="background:#f0fff4">
                         <td colspan="2" style="padding:9px 14px">
                             <div style="font-weight:600;font-size:0.78rem;color:#065f46;margin-bottom:5px">Éléments variables (gains)</div>
-                            @foreach($variableElements->where('category','gain') as $ve)
+                            <?php $__currentLoopData = $variableElements->where('category','gain'); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $ve): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                             <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;padding:3px 0;gap:8px">
-                                <span>{{ $ve->label }}</span>
-                                @if(str_contains(strtolower($ve->label), 'garde'))
+                                <span><?php echo e($ve->label); ?></span>
+                                <?php if(str_contains(strtolower($ve->label), 'garde')): ?>
                                 <div style="display:flex;align-items:center;gap:5px">
                                     <input type="number"
                                            id="ve_garde_input"
                                            name="ve_garde_amount"
                                            class="form-control"
-                                           value="{{ number_format($ve->amount, 2, '.', '') }}"
+                                           value="<?php echo e(number_format($ve->amount, 2, '.', '')); ?>"
                                            step="0.01" min="0"
-                                           data-ve-id="{{ $ve->id }}"
+                                           data-ve-id="<?php echo e($ve->id); ?>"
                                            style="width:110px;text-align:right;font-size:0.8rem;border-color:#0f766e;background:#f0fdfa"
                                            oninput="onVeGardeChange()">
                                     <span class="cur-label" style="color:#059669;font-weight:600;white-space:nowrap">MAD</span>
                                 </div>
-                                @else
+                                <?php else: ?>
                                 <span class="bonus font-semibold" style="white-space:nowrap">
-                                    +{{ number_format($ve->amount,2,',',' ') }} <span class="cur-label">MAD</span>
+                                    +<?php echo e(number_format($ve->amount,2,',',' ')); ?> <span class="cur-label">MAD</span>
                                 </span>
-                                @endif
+                                <?php endif; ?>
                             </div>
-                            @endforeach
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </td>
                     </tr>
-                    @endif
+                    <?php endif; ?>
 
                     <tr style="background:#d1fae5">
                         <td style="padding:11px 14px;font-weight:700;color:#065f46">SALAIRE BRUT</td>
@@ -536,9 +526,7 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
     </div>
 </div>
 
-{{-- ════════════════════════════════════════════════════════════
-     COLONNE DROITE
-════════════════════════════════════════════════════════════ --}}
+
 <div>
     <div class="card mb-4">
         <div class="card-header" style="background:#eff6ff;border-bottom:2px solid #bfdbfe">
@@ -563,21 +551,21 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                     <td style="padding:9px 14px"><div style="font-weight:600" id="cnss-label">CNSS salariale</div><div style="font-size:0.75rem;color:var(--text-muted)" id="cnss-sub">4,48% × brut plafonné à 6 000 MAD/mois</div></td>
                     <td style="padding:9px 14px;width:155px;text-align:right">
                         <div id="cnss-auto" style="font-weight:600;padding:6px 0">0,00 <span class="cur-label">MAD</span></div>
-                        <input type="number" name="cnss_deduction_manual" id="cnss-manual" class="form-control" value="{{ $existing?->cnss_deduction_manual ?? 0 }}" step="0.01" min="0" style="display:none;text-align:right" oninput="calculate()">
+                        <input type="number" name="cnss_deduction_manual" id="cnss-manual" class="form-control" value="<?php echo e($existing?->cnss_deduction_manual ?? 0); ?>" step="0.01" min="0" style="display:none;text-align:right" oninput="calculate()">
                     </td>
                 </tr>
                 <tr style="border-bottom:1px solid var(--border-color)">
                     <td style="padding:9px 14px"><div style="font-weight:600" id="amo-label">AMO salariale</div><div style="font-size:0.75rem;color:var(--text-muted)" id="amo-sub">2,26% du salaire brut</div></td>
                     <td style="padding:9px 14px;text-align:right">
                         <div id="amo-auto" style="font-weight:600;padding:6px 0">0,00 <span class="cur-label">MAD</span></div>
-                        <input type="number" name="amo_deduction_manual" id="amo-manual" class="form-control" value="{{ $existing?->amo_deduction_manual ?? 0 }}" step="0.01" min="0" style="display:none;text-align:right" oninput="calculate()">
+                        <input type="number" name="amo_deduction_manual" id="amo-manual" class="form-control" value="<?php echo e($existing?->amo_deduction_manual ?? 0); ?>" step="0.01" min="0" style="display:none;text-align:right" oninput="calculate()">
                     </td>
                 </tr>
                 <tr style="border-bottom:1px solid var(--border-color);background:#f0f9ff" id="row-fp">
                     <td style="padding:9px 14px"><div style="font-weight:600">Frais professionnels <span class="badge badge-success" style="font-size:0.62rem">Déduction fiscale</span></div><div style="font-size:0.75rem;color:var(--text-muted)">20% du brut, plafonné à 2 500 MAD/mois</div></td>
                     <td style="padding:9px 14px;text-align:right">
                         <div id="fp-auto" style="font-weight:600;color:#059669;padding:6px 0">0,00 <span class="cur-label">MAD</span></div>
-                        <input type="number" name="fp_deduction_manual" id="fp-manual" class="form-control" value="{{ $existing?->fp_deduction_manual ?? 0 }}" step="0.01" min="0" style="display:none;text-align:right" oninput="calculate()">
+                        <input type="number" name="fp_deduction_manual" id="fp-manual" class="form-control" value="<?php echo e($existing?->fp_deduction_manual ?? 0); ?>" step="0.01" min="0" style="display:none;text-align:right" oninput="calculate()">
                     </td>
                 </tr>
                 <tr style="border-bottom:1px solid var(--border-color);background:#f0f9ff">
@@ -592,7 +580,7 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
         </div>
     </div>
 
-    {{-- ── IR — avec input éditable ── --}}
+    
     <div class="card mb-4">
         <div class="card-header" style="background:#fef3c7;border-bottom:2px solid #fcd34d">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
@@ -617,7 +605,7 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                     <td style="padding:8px 14px;color:var(--text-muted)" id="ir-family-label">Déductions familiales (360 MAD/pers.)</td>
                     <td style="padding:8px 14px;text-align:right;font-weight:600;color:#059669" id="ir-family">−0,00 <span class="cur-label">MAD</span></td>
                 </tr>
-                {{-- IR mensuel — ÉDITABLE --}}
+                
                 <tr style="background:#fef3c7">
                     <td style="padding:9px 14px">
                         <div style="font-weight:700;color:#78350f" id="ir-monthly-label">IR mensuel retenu</div>
@@ -657,7 +645,7 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                     </tr>
                 </thead>
                 <tbody>
-                    {{-- Absences non payées — ÉDITABLE --}}
+                    
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td style="padding:9px 14px">
                             <div style="font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -669,7 +657,7 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                                 </span>
                             </div>
                             <div style="font-size:0.75rem;color:var(--text-muted)" id="absence-sub">
-                                (Brut / <span id="heures-ref-label">191,25</span> h) × {{ $workingData['absence_hours'] ?? 0 }} h = calculé auto
+                                (Brut / <span id="heures-ref-label">191,25</span> h) × <?php echo e($workingData['absence_hours'] ?? 0); ?> h = calculé auto
                             </div>
                         </td>
                         <td style="padding:9px 14px;text-align:right">
@@ -690,33 +678,33 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                     </tr>
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td style="padding:9px 14px"><div style="font-weight:600">Avance sur salaire</div></td>
-                        <td style="padding:9px 14px"><input type="number" name="advance_deduction" id="advance_deduction" class="form-control" value="{{ old('advance_deduction', $existing?->advance_deduction ?? 0) }}" step="0.01" min="0" style="text-align:right" oninput="calculate()"></td>
+                        <td style="padding:9px 14px"><input type="number" name="advance_deduction" id="advance_deduction" class="form-control" value="<?php echo e(old('advance_deduction', $existing?->advance_deduction ?? 0)); ?>" step="0.01" min="0" style="text-align:right" oninput="calculate()"></td>
                     </tr>
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td style="padding:9px 14px"><div style="font-weight:600">Remboursement de prêt</div></td>
-                        <td style="padding:9px 14px"><input type="number" name="loan_deduction" id="loan_deduction" class="form-control" value="{{ old('loan_deduction', $existing?->loan_deduction ?? 0) }}" step="0.01" min="0" style="text-align:right" oninput="calculate()"></td>
+                        <td style="padding:9px 14px"><input type="number" name="loan_deduction" id="loan_deduction" class="form-control" value="<?php echo e(old('loan_deduction', $existing?->loan_deduction ?? 0)); ?>" step="0.01" min="0" style="text-align:right" oninput="calculate()"></td>
                     </tr>
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td style="padding:9px 14px"><div style="font-weight:600">Saisie sur salaire</div></td>
-                        <td style="padding:9px 14px"><input type="number" name="garnishment_deduction" id="garnishment_deduction" class="form-control" value="{{ old('garnishment_deduction', $existing?->garnishment_deduction ?? 0) }}" step="0.01" min="0" style="text-align:right" oninput="calculate()"></td>
+                        <td style="padding:9px 14px"><input type="number" name="garnishment_deduction" id="garnishment_deduction" class="form-control" value="<?php echo e(old('garnishment_deduction', $existing?->garnishment_deduction ?? 0)); ?>" step="0.01" min="0" style="text-align:right" oninput="calculate()"></td>
                     </tr>
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td style="padding:9px 14px"><div style="font-weight:600">Autres retenues</div></td>
-                        <td style="padding:9px 14px"><input type="number" name="other_deductions" id="other_deductions" class="form-control" value="{{ old('other_deductions', $existing?->other_deductions ?? 0) }}" step="0.01" min="0" style="text-align:right" oninput="calculate()"></td>
+                        <td style="padding:9px 14px"><input type="number" name="other_deductions" id="other_deductions" class="form-control" value="<?php echo e(old('other_deductions', $existing?->other_deductions ?? 0)); ?>" step="0.01" min="0" style="text-align:right" oninput="calculate()"></td>
                     </tr>
-                    @if($variableElements->where('category','retenue')->count())
+                    <?php if($variableElements->where('category','retenue')->count()): ?>
                     <tr style="background:#fff0f0">
                         <td colspan="2" style="padding:9px 14px">
                             <div style="font-weight:600;font-size:0.78rem;color:#991b1b;margin-bottom:5px">Éléments variables (retenues)</div>
-                            @foreach($variableElements->where('category','retenue') as $ve)
+                            <?php $__currentLoopData = $variableElements->where('category','retenue'); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $ve): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                             <div style="display:flex;justify-content:space-between;font-size:0.8rem;padding:2px 0">
-                                <span>{{ $ve->label }}</span>
-                                <span class="deduction font-semibold">−{{ number_format($ve->amount,2,',',' ') }} <span class="cur-label">MAD</span></span>
+                                <span><?php echo e($ve->label); ?></span>
+                                <span class="deduction font-semibold">−<?php echo e(number_format($ve->amount,2,',',' ')); ?> <span class="cur-label">MAD</span></span>
                             </div>
-                            @endforeach
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </td>
                     </tr>
-                    @endif
+                    <?php endif; ?>
                     <tr style="background:#fecaca;border-top:2px solid #f87171">
                         <td style="padding:11px 14px;font-weight:700;color:#991b1b">TOTAL RETENUES</td>
                         <td style="padding:11px 14px;text-align:right;font-weight:700;color:#991b1b;font-size:1rem" id="ret-total-display">0,00 <span class="cur-label">MAD</span></td>
@@ -752,7 +740,7 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
 
     <div style="display:flex;gap:12px">
         <button type="submit" class="btn btn-primary" style="flex:1;font-size:1rem;padding:12px">✓ Calculer &amp; Enregistrer</button>
-        <a href="{{ route('variables.index', ['month'=>$month,'year'=>$year]) }}" class="btn btn-ghost">Éléments variables</a>
+        <a href="<?php echo e(route('variables.index', ['month'=>$month,'year'=>$year])); ?>" class="btn btn-ghost">Éléments variables</a>
     </div>
 </div>
 </div>
@@ -1421,4 +1409,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-@endsection
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\HP\SIRH-v2\resources\views/salary/create.blade.php ENDPATH**/ ?>

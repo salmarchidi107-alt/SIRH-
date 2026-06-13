@@ -59,7 +59,7 @@
     </style>
 </head>
 <body>
-@php
+<?php
     $emp = $salary->employee;
     $cur = $salary->currency ?? 'MAD';
 
@@ -103,33 +103,33 @@
     $tenant       = auth()->user()?->tenant;
     $societe_nom  = $tenant?->name ?? config('app.name', 'HospitalRH');
     $societe_cnss = $tenant?->cnss ?? '';
-@endphp
+?>
 
 <div class="bulletin-paie">
 
-    {{-- En-tête société --}}
-    <div class="societe-nom">{{ strtoupper($societe_nom) }}</div>
-    <div class="cnss-line">N° C.N.S.S. : {{ $societe_cnss }}</div>
+    
+    <div class="societe-nom"><?php echo e(strtoupper($societe_nom)); ?></div>
+    <div class="cnss-line">N° C.N.S.S. : <?php echo e($societe_cnss); ?></div>
 
-    {{-- Titre + Période --}}
+    
     <div class="header-grid">
         <table>
             <tr>
                 <td class="header-titre">
                     Bulletin de paie
-                    @if($cur === 'MRU')
+                    <?php if($cur === 'MRU'): ?>
                         <span style="font-size:8pt;font-weight:normal;"> — Système mauritanien (MRU)</span>
-                    @endif
+                    <?php endif; ?>
                 </td>
                 <td class="header-periode">
                     <div class="periode-label">Période de paie</div>
-                    <div class="periode-valeur">Du {{ $debut_str }} Au {{ $fin_str }}</div>
+                    <div class="periode-valeur">Du <?php echo e($debut_str); ?> Au <?php echo e($fin_str); ?></div>
                 </td>
             </tr>
         </table>
     </div>
 
-    {{-- Identité employé - ligne 1 --}}
+    
     <table>
         <thead>
             <tr class="row-header">
@@ -144,27 +144,27 @@
         </thead>
         <tbody>
             <tr>
-                <td style="text-align:center;">{{ $emp->matricule ?? '—' }}</td>
-                <td><strong>{{ strtoupper($emp->last_name) }} {{ $emp->first_name }}</strong></td>
-                <td style="text-align:center;font-weight:bold;">{{ $emp->position ?? '—' }}</td>
+                <td style="text-align:center;"><?php echo e($emp->matricule ?? '—'); ?></td>
+                <td><strong><?php echo e(strtoupper($emp->last_name)); ?> <?php echo e($emp->first_name); ?></strong></td>
+                <td style="text-align:center;font-weight:bold;"><?php echo e($emp->position ?? '—'); ?></td>
                 <td style="text-align:center;">01</td>
-                <td style="text-align:center;">{{ $emp->department ?? '—' }}</td>
+                <td style="text-align:center;"><?php echo e($emp->department ?? '—'); ?></td>
                 <td style="text-align:center;">01</td>
                 <td style="text-align:center;">01</td>
             </tr>
         </tbody>
     </table>
 
-    {{-- Adresse --}}
+    
     <table>
         <tbody>
             <tr>
-                <td>Adresse : {{ $emp->address ?? '' }}</td>
+                <td>Adresse : <?php echo e($emp->address ?? ''); ?></td>
             </tr>
         </tbody>
     </table>
 
-    {{-- Identité employé - ligne 2 --}}
+    
     <table>
         <thead>
             <tr class="row-header">
@@ -180,28 +180,28 @@
         </thead>
         <tbody>
             <tr>
-                <td style="text-align:center;">{{ $emp->birth_date ? \Carbon\Carbon::parse($emp->birth_date)->format('d/m/Y') : '' }}</td>
-                <td style="text-align:center;">{{ $emp->hire_date ? \Carbon\Carbon::parse($emp->hire_date)->format('d/m/Y') : '—' }}</td>
-                <td style="text-align:center;">{{ $debut_str }}</td>
-                {{-- ── CORRECTION : affiche la valeur normalisée depuis family_situation ── --}}
-                <td style="text-align:center;">{{ $familyStatusLabel }}</td>
-                <td style="text-align:center;">{{ $emp->children_count ?? 0 }}</td>
-                <td style="text-align:center;">{{ $emp->cin ?? '—' }}</td>
-                <td style="text-align:center;">{{ $emp->cnss_number ?? '—' }}</td>
+                <td style="text-align:center;"><?php echo e($emp->birth_date ? \Carbon\Carbon::parse($emp->birth_date)->format('d/m/Y') : ''); ?></td>
+                <td style="text-align:center;"><?php echo e($emp->hire_date ? \Carbon\Carbon::parse($emp->hire_date)->format('d/m/Y') : '—'); ?></td>
+                <td style="text-align:center;"><?php echo e($debut_str); ?></td>
+                
+                <td style="text-align:center;"><?php echo e($familyStatusLabel); ?></td>
+                <td style="text-align:center;"><?php echo e($emp->children_count ?? 0); ?></td>
+                <td style="text-align:center;"><?php echo e($emp->cin ?? '—'); ?></td>
+                <td style="text-align:center;"><?php echo e($emp->cnss_number ?? '—'); ?></td>
                 <td style="text-align:center;"></td>
             </tr>
         </tbody>
     </table>
 
-    {{-- Table des lignes de paie --}}
+    
     <table class="table-lignes">
         <thead>
             <tr>
                 <th class="col-libelle">Libellé</th>
                 <th class="col-nbre-taux">Nbre ou taux</th>
-                <th class="col-gain">Gain ({{ $cur }})</th>
+                <th class="col-gain">Gain (<?php echo e($cur); ?>)</th>
                 <th class="col-total">Total</th>
-                <th class="col-retenues">Retenues ({{ $cur }})</th>
+                <th class="col-retenues">Retenues (<?php echo e($cur); ?>)</th>
             </tr>
         </thead>
         <tbody>
@@ -209,208 +209,208 @@
             <tr>
                 <td class="col-libelle">Salaire de base</td>
                 <td class="col-nbre-taux"></td>
-                <td class="col-gain">{{ number_format($salary->base_salary, 2, ',', ' ') }}</td>
+                <td class="col-gain"><?php echo e(number_format($salary->base_salary, 2, ',', ' ')); ?></td>
                 <td class="col-total"></td>
                 <td class="col-retenues"></td>
             </tr>
 
-            @if($salary->seniority_bonus > 0)
+            <?php if($salary->seniority_bonus > 0): ?>
             <tr>
                 <td class="col-libelle">Prime d'ancienneté</td>
-                <td class="col-nbre-taux">{{ ($emp->seniority_rate * 100) }}%</td>
-                <td class="col-gain">{{ number_format($salary->seniority_bonus, 2, ',', ' ') }}</td>
+                <td class="col-nbre-taux"><?php echo e(($emp->seniority_rate * 100)); ?>%</td>
+                <td class="col-gain"><?php echo e(number_format($salary->seniority_bonus, 2, ',', ' ')); ?></td>
                 <td class="col-total"></td>
                 <td class="col-retenues"></td>
             </tr>
-            @endif
+            <?php endif; ?>
 
-            @if($salary->overtime_day_amount > 0 || $salary->overtime_night_amount > 0 || $salary->overtime_weekend_amount > 0)
+            <?php if($salary->overtime_day_amount > 0 || $salary->overtime_night_amount > 0 || $salary->overtime_weekend_amount > 0): ?>
             <tr>
                 <td class="col-libelle">Heures supplémentaires</td>
-                <td class="col-nbre-taux">{{ number_format($salary->overtime_hours, 2, ',', ' ') }} h</td>
-                <td class="col-gain">{{ number_format($salary->overtime_day_amount + $salary->overtime_night_amount + $salary->overtime_weekend_amount, 2, ',', ' ') }}</td>
+                <td class="col-nbre-taux"><?php echo e(number_format($salary->overtime_hours, 2, ',', ' ')); ?> h</td>
+                <td class="col-gain"><?php echo e(number_format($salary->overtime_day_amount + $salary->overtime_night_amount + $salary->overtime_weekend_amount, 2, ',', ' ')); ?></td>
                 <td class="col-total"></td>
                 <td class="col-retenues"></td>
             </tr>
-            @endif
+            <?php endif; ?>
 
-            @if(($salary->garde_indemnite ?? 0) > 0)
+            <?php if(($salary->garde_indemnite ?? 0) > 0): ?>
             <tr>
                 <td class="col-libelle">Indemnité de garde</td>
-                <td class="col-nbre-taux">{{ number_format($salary->garde_hours ?? 0, 2, ',', ' ') }} h</td>
-                <td class="col-gain">{{ number_format($salary->garde_indemnite, 2, ',', ' ') }}</td>
+                <td class="col-nbre-taux"><?php echo e(number_format($salary->garde_hours ?? 0, 2, ',', ' ')); ?> h</td>
+                <td class="col-gain"><?php echo e(number_format($salary->garde_indemnite, 2, ',', ' ')); ?></td>
                 <td class="col-total"></td>
                 <td class="col-retenues"></td>
             </tr>
-            @endif
+            <?php endif; ?>
 
-            @if($salary->performance_bonus > 0)
+            <?php if($salary->performance_bonus > 0): ?>
             <tr>
                 <td class="col-libelle">Prime de rendement</td>
                 <td class="col-nbre-taux"></td>
-                <td class="col-gain">{{ number_format($salary->performance_bonus, 2, ',', ' ') }}</td>
+                <td class="col-gain"><?php echo e(number_format($salary->performance_bonus, 2, ',', ' ')); ?></td>
                 <td class="col-total"></td>
                 <td class="col-retenues"></td>
             </tr>
-            @endif
+            <?php endif; ?>
 
-            @if($salary->transport_allowance > 0)
+            <?php if($salary->transport_allowance > 0): ?>
             <tr>
                 <td class="col-libelle">Indemnité de transport</td>
                 <td class="col-nbre-taux"></td>
-                <td class="col-gain">{{ number_format($salary->transport_allowance, 2, ',', ' ') }}</td>
+                <td class="col-gain"><?php echo e(number_format($salary->transport_allowance, 2, ',', ' ')); ?></td>
                 <td class="col-total"></td>
                 <td class="col-retenues"></td>
             </tr>
-            @endif
+            <?php endif; ?>
 
-            @if($salary->meal_allowance > 0)
+            <?php if($salary->meal_allowance > 0): ?>
             <tr>
                 <td class="col-libelle">Prime de panier</td>
                 <td class="col-nbre-taux"></td>
-                <td class="col-gain">{{ number_format($salary->meal_allowance, 2, ',', ' ') }}</td>
+                <td class="col-gain"><?php echo e(number_format($salary->meal_allowance, 2, ',', ' ')); ?></td>
                 <td class="col-total"></td>
                 <td class="col-retenues"></td>
             </tr>
-            @endif
+            <?php endif; ?>
 
-            @if($salary->housing_allowance > 0)
+            <?php if($salary->housing_allowance > 0): ?>
             <tr>
                 <td class="col-libelle">Indemnité logement</td>
                 <td class="col-nbre-taux"></td>
-                <td class="col-gain">{{ number_format($salary->housing_allowance, 2, ',', ' ') }}</td>
+                <td class="col-gain"><?php echo e(number_format($salary->housing_allowance, 2, ',', ' ')); ?></td>
                 <td class="col-total"></td>
                 <td class="col-retenues"></td>
             </tr>
-            @endif
+            <?php endif; ?>
 
-            @if($salary->responsibility_allowance > 0)
+            <?php if($salary->responsibility_allowance > 0): ?>
             <tr>
                 <td class="col-libelle">Indemnité de responsabilité</td>
                 <td class="col-nbre-taux"></td>
-                <td class="col-gain">{{ number_format($salary->responsibility_allowance, 2, ',', ' ') }}</td>
+                <td class="col-gain"><?php echo e(number_format($salary->responsibility_allowance, 2, ',', ' ')); ?></td>
                 <td class="col-total"></td>
                 <td class="col-retenues"></td>
             </tr>
-            @endif
+            <?php endif; ?>
 
-            @if($salary->other_gains > 0)
+            <?php if($salary->other_gains > 0): ?>
             <tr>
                 <td class="col-libelle">Autres gains</td>
                 <td class="col-nbre-taux"></td>
-                <td class="col-gain">{{ number_format($salary->other_gains, 2, ',', ' ') }}</td>
+                <td class="col-gain"><?php echo e(number_format($salary->other_gains, 2, ',', ' ')); ?></td>
                 <td class="col-total"></td>
                 <td class="col-retenues"></td>
             </tr>
-            @endif
+            <?php endif; ?>
 
             <tr class="ligne-spacer"><td></td><td></td><td></td><td></td><td></td></tr>
 
             <tr>
                 <td class="col-libelle"><strong>Salaire brut</strong></td>
                 <td class="col-nbre-taux"></td>
-                <td class="col-gain"><strong>{{ number_format($salary->gross_salary, 2, ',', ' ') }}</strong></td>
-                <td class="col-total"><strong>{{ number_format($salary->gross_salary, 2, ',', ' ') }}</strong></td>
+                <td class="col-gain"><strong><?php echo e(number_format($salary->gross_salary, 2, ',', ' ')); ?></strong></td>
+                <td class="col-total"><strong><?php echo e(number_format($salary->gross_salary, 2, ',', ' ')); ?></strong></td>
                 <td class="col-retenues"></td>
             </tr>
 
-            @if($cur !== 'MRU' && $salary->fp_deduction > 0)
+            <?php if($cur !== 'MRU' && $salary->fp_deduction > 0): ?>
             <tr>
                 <td class="col-libelle">Frais professionnels</td>
                 <td class="col-nbre-taux">20%</td>
-                <td class="col-gain">{{ number_format($salary->fp_deduction, 2, ',', ' ') }}</td>
+                <td class="col-gain"><?php echo e(number_format($salary->fp_deduction, 2, ',', ' ')); ?></td>
                 <td class="col-total"></td>
                 <td class="col-retenues"></td>
             </tr>
-            @endif
+            <?php endif; ?>
 
             <tr>
                 <td class="col-libelle">Cotisation CNSS</td>
-                <td class="col-nbre-taux">{{ $taux_cnss }} &nbsp; {{ number_format($salary->cnss_base, 0, ',', ' ') }}</td>
+                <td class="col-nbre-taux"><?php echo e($taux_cnss); ?> &nbsp; <?php echo e(number_format($salary->cnss_base, 0, ',', ' ')); ?></td>
                 <td class="col-gain"></td>
                 <td class="col-total"></td>
-                <td class="col-retenues">{{ number_format($salary->cnss_deduction, 2, ',', ' ') }}</td>
+                <td class="col-retenues"><?php echo e(number_format($salary->cnss_deduction, 2, ',', ' ')); ?></td>
             </tr>
 
             <tr>
-                <td class="col-libelle">Cotisation {{ $label_amo }}</td>
-                <td class="col-nbre-taux">{{ $taux_amo }} &nbsp; {{ number_format($salary->gross_salary, 0, ',', ' ') }}</td>
+                <td class="col-libelle">Cotisation <?php echo e($label_amo); ?></td>
+                <td class="col-nbre-taux"><?php echo e($taux_amo); ?> &nbsp; <?php echo e(number_format($salary->gross_salary, 0, ',', ' ')); ?></td>
                 <td class="col-gain"></td>
                 <td class="col-total"></td>
-                <td class="col-retenues">{{ number_format($salary->amo_deduction, 2, ',', ' ') }}</td>
+                <td class="col-retenues"><?php echo e(number_format($salary->amo_deduction, 2, ',', ' ')); ?></td>
             </tr>
 
             <tr class="ligne-spacer"><td></td><td></td><td></td><td></td><td></td></tr>
 
             <tr>
-                <td class="col-libelle"><strong>{{ $cur === 'MRU' ? 'Revenu imposable ITS' : 'Salaire net imposable' }}</strong></td>
+                <td class="col-libelle"><strong><?php echo e($cur === 'MRU' ? 'Revenu imposable ITS' : 'Salaire net imposable'); ?></strong></td>
                 <td class="col-nbre-taux"></td>
-                <td class="col-gain"><strong>{{ number_format($salary->taxable_income, 2, ',', ' ') }}</strong></td>
+                <td class="col-gain"><strong><?php echo e(number_format($salary->taxable_income, 2, ',', ' ')); ?></strong></td>
                 <td class="col-total"></td>
                 <td class="col-retenues"></td>
             </tr>
 
             <tr class="ligne-spacer"><td></td><td></td><td></td><td></td><td></td></tr>
 
-            @if($salary->absence_deduction > 0)
+            <?php if($salary->absence_deduction > 0): ?>
             <tr>
-                <td class="col-libelle">Absences ({{ $salary->absence_days }} j)</td>
+                <td class="col-libelle">Absences (<?php echo e($salary->absence_days); ?> j)</td>
                 <td class="col-nbre-taux"></td>
                 <td class="col-gain"></td>
                 <td class="col-total"></td>
-                <td class="col-retenues">{{ number_format($salary->absence_deduction, 2, ',', ' ') }}</td>
+                <td class="col-retenues"><?php echo e(number_format($salary->absence_deduction, 2, ',', ' ')); ?></td>
             </tr>
-            @endif
+            <?php endif; ?>
 
-            @if($salary->advance_deduction > 0)
+            <?php if($salary->advance_deduction > 0): ?>
             <tr>
                 <td class="col-libelle">Avance sur salaire</td>
                 <td class="col-nbre-taux"></td>
                 <td class="col-gain"></td>
                 <td class="col-total"></td>
-                <td class="col-retenues">{{ number_format($salary->advance_deduction, 2, ',', ' ') }}</td>
+                <td class="col-retenues"><?php echo e(number_format($salary->advance_deduction, 2, ',', ' ')); ?></td>
             </tr>
-            @endif
+            <?php endif; ?>
 
-            @if($salary->loan_deduction > 0)
+            <?php if($salary->loan_deduction > 0): ?>
             <tr>
                 <td class="col-libelle">Remboursement prêt</td>
                 <td class="col-nbre-taux"></td>
                 <td class="col-gain"></td>
                 <td class="col-total"></td>
-                <td class="col-retenues">{{ number_format($salary->loan_deduction, 2, ',', ' ') }}</td>
+                <td class="col-retenues"><?php echo e(number_format($salary->loan_deduction, 2, ',', ' ')); ?></td>
             </tr>
-            @endif
+            <?php endif; ?>
 
-            @if($salary->garnishment_deduction > 0)
+            <?php if($salary->garnishment_deduction > 0): ?>
             <tr>
                 <td class="col-libelle">Saisie sur salaire</td>
                 <td class="col-nbre-taux"></td>
                 <td class="col-gain"></td>
                 <td class="col-total"></td>
-                <td class="col-retenues">{{ number_format($salary->garnishment_deduction, 2, ',', ' ') }}</td>
+                <td class="col-retenues"><?php echo e(number_format($salary->garnishment_deduction, 2, ',', ' ')); ?></td>
             </tr>
-            @endif
+            <?php endif; ?>
 
-            @if($salary->other_deductions > 0)
+            <?php if($salary->other_deductions > 0): ?>
             <tr>
                 <td class="col-libelle">Autres retenues</td>
                 <td class="col-nbre-taux"></td>
                 <td class="col-gain"></td>
                 <td class="col-total"></td>
-                <td class="col-retenues">{{ number_format($salary->other_deductions, 2, ',', ' ') }}</td>
+                <td class="col-retenues"><?php echo e(number_format($salary->other_deductions, 2, ',', ' ')); ?></td>
             </tr>
-            @endif
+            <?php endif; ?>
 
             <tr>
-                <td class="col-libelle">{{ $label_ir }} — Impôt {{ $cur === 'MRU' ? 'sur Traitements et Salaires' : 'sur le Revenu' }}</td>
+                <td class="col-libelle"><?php echo e($label_ir); ?> — Impôt <?php echo e($cur === 'MRU' ? 'sur Traitements et Salaires' : 'sur le Revenu'); ?></td>
                 <td class="col-nbre-taux"></td>
                 <td class="col-gain"></td>
                 <td class="col-total"></td>
-                <td class="col-retenues">{{ number_format($salary->ir_deduction, 2, ',', ' ') }}</td>
+                <td class="col-retenues"><?php echo e(number_format($salary->ir_deduction, 2, ',', ' ')); ?></td>
             </tr>
 
-            {{-- Lignes vides --}}
+            
             <tr style="height:18px;"><td class="col-libelle"></td><td class="col-nbre-taux"></td><td class="col-gain"></td><td class="col-total"></td><td class="col-retenues"></td></tr>
             <tr style="height:18px;"><td class="col-libelle"></td><td class="col-nbre-taux"></td><td class="col-gain"></td><td class="col-total"></td><td class="col-retenues"></td></tr>
             <tr style="height:18px;"><td class="col-libelle"></td><td class="col-nbre-taux"></td><td class="col-gain"></td><td class="col-total"></td><td class="col-retenues"></td></tr>
@@ -418,7 +418,7 @@
         </tbody>
     </table>
 
-    {{-- Pied de page --}}
+    
     <table class="table-pied">
         <thead>
             <tr>
@@ -433,7 +433,8 @@
                 <th style="width:18mm;">Mode Régl.</th>
                 <th colspan="2"><strong>Total</strong></th>
                 <td rowspan="3" style="text-align:center;vertical-align:middle;font-size:7.5pt;border-left:1px solid #000;width:14mm;">
-                    Cumul retenues {{ $label_ir }}
+                    Cumul retenues <?php echo e($label_ir); ?>
+
                 </td>
             </tr>
             <tr>
@@ -443,8 +444,8 @@
                 <td colspan="2" style="text-align:center;font-size:8pt;">Cumuls retenus</td>
             </tr>
             <tr>
-                <th class="label-cell">Jours {{ $label_ir }}</th>
-                <td colspan="2" style="font-weight:bold;">Hrs {{ $label_ir }}</td>
+                <th class="label-cell">Jours <?php echo e($label_ir); ?></th>
+                <td colspan="2" style="font-weight:bold;">Hrs <?php echo e($label_ir); ?></td>
                 <td colspan="3" style="font-weight:bold;text-align:center;">Cumul brut impos.</td>
                 <td colspan="3" style="font-weight:bold;text-align:center;">Cumul base impos.</td>
                 <td colspan="2" style="font-weight:bold;text-align:center;">Net à Payer</td>
@@ -454,29 +455,30 @@
             <tr>
                 <td></td>
                 <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
-                <td style="text-align:center;font-size:8pt;">{{ $emp->payment_method === 'virement' ? 'Virement' : ucfirst($emp->payment_method ?? 'Espèces') }}</td>
+                <td style="text-align:center;font-size:8pt;"><?php echo e($emp->payment_method === 'virement' ? 'Virement' : ucfirst($emp->payment_method ?? 'Espèces')); ?></td>
                 <td colspan="2" class="net-a-payer">
-                    {{ number_format($salary->net_salary, 2, ',', ' ') }} {{ $cur }}
+                    <?php echo e(number_format($salary->net_salary, 2, ',', ' ')); ?> <?php echo e($cur); ?>
+
                 </td>
                 <td></td>
             </tr>
         </tbody>
     </table>
 
-    {{-- Signature --}}
+    
     <div style="margin-top:8mm;display:flex;justify-content:space-between;">
         <div style="font-size:8pt;">
             <div>L'employé(e)</div>
             <div style="margin-top:12mm;">__________________________</div>
-            <div>{{ $emp->full_name }}</div>
+            <div><?php echo e($emp->full_name); ?></div>
         </div>
         <div style="font-size:8pt;text-align:right;">
             <div>L'employeur</div>
             <div style="margin-top:12mm;">__________________________</div>
-            <div>{{ $societe_nom }}</div>
+            <div><?php echo e($societe_nom); ?></div>
         </div>
     </div>
 
 </div>
 </body>
-</html>
+</html><?php /**PATH C:\Users\HP\SIRH-v2\resources\views/salary/bulletin_de_paie.blade.php ENDPATH**/ ?>

@@ -1,4 +1,6 @@
 <?php
+// ── StorePlanningRequest.php ──────────────────────────────────────────────────
+// Chemin : app/Http/Requests/StorePlanningRequest.php
 
 namespace App\Http\Requests;
 
@@ -10,22 +12,29 @@ class StorePlanningRequest extends FormRequest
 {
     public function authorize(): bool
     {
-       return true; // return auth()->user()?->can('manage_plannings') ?? true;
+        $user = auth()->user();
+        if (!$user) return false;
+
+        // Admin et RH ont toujours accès
+        if (in_array($user->role, ['admin', 'rh'])) return true;
+
+        // Autres rôles : vérifier la permission granulaire
+        return $user->can('manage_plannings');
     }
 
     public function rules(): array
     {
         $rules = [
             'employee_id' => 'required|exists:employees,id',
-            'date' => 'required|date',
+            'date'        => 'required|date',
             'shift_start' => 'required|string',
-            'shift_end' => 'required|string',
-            'shift_type' => ['required', Rule::in(array_keys(Planning::SHIFT_TYPES))],
-            'notes' => 'nullable|string',
-            'room' => 'nullable|string|max:255',
+            'shift_end'   => 'required|string',
+            'shift_type'  => ['required', Rule::in(array_keys(Planning::SHIFT_TYPES))],
+            'notes'       => 'nullable|string',
+            'room'        => 'nullable|string|max:255',
         ];
 
-        // Prevent planning on approved absence days
+        // Bloquer la création si l'employé a une absence approuvée ce jour-là
         if ($this->date && $this->employee_id) {
             $employee = \App\Models\Employee::find($this->employee_id);
             if ($employee && $employee->hasApprovedAbsenceOn($this->date)) {
@@ -36,21 +45,4 @@ class StorePlanningRequest extends FormRequest
 
         return $rules;
     }
-   public function store(StorePlanningRequest $request)
-{
-    try {
-        $data              = $request->validated();
-        $data['tenant_id'] = auth()->user()->tenant_id;
-
-        Planning::create($data);
-
-        return back()->with('success', 'Planning créé.');
-    } catch (Exception $e) {
-        Log::error('Planning store error: ' . $e->getMessage(), [
-            'data'  => $request->validated(),
-            'trace' => $e->getTraceAsString(),
-        ]);
-        return back()->with('error', 'Erreur sauvegarde planning.');
-    }
-}
 }

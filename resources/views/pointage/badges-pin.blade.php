@@ -150,7 +150,7 @@
     .dept-header-left {
         display: flex; align-items: center; gap: 10px;
     }
-   
+
     .dept-name {
         font-size: 14px; font-weight: 700; color: var(--pin-text);
     }
@@ -324,7 +324,7 @@
     /* Screen vs Print */
     .screen-only { display: block; }
     .print-only { display: none; }
-    
+
     /* Print styles */
     @media print {
         .pin-topbar, .pin-filters, .pin-action-bar,
@@ -333,11 +333,11 @@
         .pin-wrap { min-height: auto; }
         .dept-card { break-inside: avoid; margin-bottom: 1rem; }
         .dept-body { display: block !important; }
-        
+
         /* Afficher la section d'impression complet à la place */
         .screen-only { display: none !important; }
         .print-only { display: block !important; }
-        
+
         /* Style pour la section d'impression */
         .print-all-content { width: 100%; }
     }
@@ -381,11 +381,11 @@
     <div class="pin-action-bar">
         <button class="pin-btn pin-btn-regen-all no-print" id="btnRegenAll"
                 onclick="confirmRegenAll()">
-            🔄 Régénérer tous les PINs
+             Régénérer tous les PINs
         </button>
         <button class="pin-btn pin-btn-regen-all no-print" id="btnRegenDept"
                 onclick="confirmRegenDept()" style="background:#6d28d9;display:none;">
-            🔄 Régénérer ce département
+             Régénérer ce département
         </button>
         <button class="pin-btn pin-btn-print no-print" onclick="window.print()">
             🖨 Imprimer
@@ -413,7 +413,7 @@
                     <button class="dept-regen-btn no-print"
                             onclick="event.stopPropagation(); confirmRegenDept('{{ $dept }}', '{{ Str::slug($dept) }}')"
                             title="Régénérer tous les PINs de ce département">
-                        🔄 Régénérer dept.
+                         Régénérer dept.
                     </button>
                     <span class="dept-chevron">▾</span>
                 </div>
@@ -437,7 +437,7 @@
                             data-name="{{ strtolower($emp->first_name . ' ' . $emp->last_name) }}"
                             data-matricule="{{ strtolower($emp->matricule ?? '') }}"
                             data-dept="{{ strtolower($dept) }}">
-                            
+
                             <td>
                                 <div style="display:flex;align-items:center;gap:8px;">
                                     <div class="emp-avatar">
@@ -637,7 +637,7 @@ async function regenSingle(empId) {
         showToast('Erreur réseau', true);
     } finally {
         btn.classList.remove('loading');
-        btn.innerHTML = '🔄 Nouveau PIN';
+        btn.innerHTML = ' Nouveau PIN';
     }
 }
 
@@ -645,7 +645,7 @@ async function regenSingle(empId) {
 let _pendingAction = null;
 
 function confirmRegenAll() {
-    document.getElementById('modalTitle').textContent = '🔄 Régénérer TOUS les PINs';
+    document.getElementById('modalTitle').textContent = ' Régénérer TOUS les PINs';
     document.getElementById('modalBody').innerHTML =
         '⚠️ Cette action va régénérer les PINs de <strong>tous les employés</strong>.<br>' +
         'Les anciens PINs seront définitivement remplacés en base de données.<br><br>' +
@@ -656,7 +656,7 @@ function confirmRegenAll() {
 
 function confirmRegenDept(dept, slug) {
     const deptName = dept || document.getElementById('btnRegenDept').dataset.dept;
-    document.getElementById('modalTitle').textContent = '🔄 Régénérer PINs – ' + deptName;
+    document.getElementById('modalTitle').textContent = ' Régénérer PINs – ' + deptName;
     document.getElementById('modalBody').innerHTML =
         'Cette action va régénérer les PINs de tous les employés du département <strong>' + deptName + '</strong>.<br><br>' +
         'Les anciens PINs seront définitivement remplacés. Confirmer ?';
@@ -720,9 +720,9 @@ async function doRegenAll(department = null) {
         showToast('Erreur réseau', true);
     } finally {
         btnAll.disabled = false;
-        btnAll.innerHTML = '🔄 Régénérer tous les PINs';
+        btnAll.innerHTML = ' Régénérer tous les PINs';
         btnDept.disabled = false;
-        btnDept.innerHTML = '🔄 Régénérer ce département';
+        btnDept.innerHTML = ' Régénérer ce département';
     }
 }
 </script>

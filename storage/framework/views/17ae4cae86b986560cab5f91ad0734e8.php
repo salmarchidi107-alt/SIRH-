@@ -94,8 +94,6 @@
 .fg label .req { color:var(--red); margin-left:2px; }
 .fi { width:100%; padding:9px 12px; border:0.5px solid #d1d5db; border-radius:8px; background:#fff; color:#111827; font-size:13px; outline:none; transition:border-color .12s; font-family:inherit; }
 .fi:focus { border-color:var(--teal); box-shadow:0 0 0 3px rgba(29,158,117,.08); }
-.fi.hidden { display:none; }
-.fi.mt { margin-top:8px; }
 .frow { display:grid; gap:12px; }
 .fr2  { grid-template-columns:1fr 1fr; }
 .fr3  { grid-template-columns:1fr 1fr 1fr; }
@@ -332,7 +330,6 @@
                 <select name="titre" id="fTitre" class="fi" required>
                     <option value="">Chargement...</option>
                 </select>
-                <input type="text" name="titre_libre" id="fTitreLib" class="fi mt hidden" placeholder="Nom de la formation...">
             </div>
 
             <div class="frow fr2">
@@ -341,14 +338,12 @@
                     <select name="formateur" id="fFormateur" class="fi" required>
                         <option value="">Chargement...</option>
                     </select>
-                    <input type="text" name="formateur_libre" id="fFormateurLib" class="fi mt hidden" placeholder="Nom du formateur...">
                 </div>
                 <div class="fg">
                     <label>Organisme <span class="req">*</span></label>
                     <select name="organisme" id="fOrganisme" class="fi" required>
                         <option value="">Chargement...</option>
                     </select>
-                    <input type="text" name="organisme_libre" id="fOrganismeLib" class="fi mt hidden" placeholder="Nom de l'organisme...">
                 </div>
             </div>
 
@@ -432,21 +427,13 @@ function editFormation(f) {
     document.getElementById('fFin').value     = (f.heure_fin   || '').slice(0, 5);
     document.getElementById('fStatut').value  = f.statut || 'Planifiée';
 
-    ['fTitreLib','fFormateurLib','fOrganismeLib'].forEach(id => {
-        const el = document.getElementById(id);
-        el.classList.add('hidden'); el.required = false; el.value = '';
-    });
-    ['fTitre','fFormateur','fOrganisme'].forEach((id, i) => {
-        document.getElementById(id).name = ['titre','formateur','organisme'][i];
-    });
-
     document.getElementById('fEmp').innerHTML = '<option value="">Chargement...</option>';
     document.getElementById('fEmp').disabled = true;
 
     loadReferentiel().then(() => {
-        setSelectOrFree('fTitre',    'fTitreLib',    'titre',     f.titre);
-        setSelectOrFree('fFormateur','fFormateurLib','formateur', f.formateur);
-        setSelectOrFree('fOrganisme','fOrganismeLib','organisme', f.organisme);
+        document.getElementById('fTitre').value     = f.titre     || '';
+        document.getElementById('fFormateur').value = f.formateur || '';
+        document.getElementById('fOrganisme').value = f.organisme || '';
     });
 
     const deptId = f.employee?.department_id ?? '';
@@ -461,25 +448,25 @@ const rfCache = { formations: null, formateurs: null, organismes: null };
 
 function loadReferentiel() {
     return Promise.all([
-        loadSelect('fTitre',    '<?php echo e(route('referentiel.api.formations')); ?>', 'titre', rfCache, 'formations', 'fTitreLib',    'titre',    'Selectionner une formation'),
-        loadSelect('fFormateur','<?php echo e(route('referentiel.api.formateurs')); ?>', 'label', rfCache, 'formateurs', 'fFormateurLib','formateur','Selectionner'),
-        loadSelect('fOrganisme','<?php echo e(route('referentiel.api.organismes')); ?>', 'nom',   rfCache, 'organismes', 'fOrganismeLib','organisme','Selectionner'),
+        loadSelect('fTitre',    '<?php echo e(route('referentiel.api.formations')); ?>', 'titre', rfCache, 'formations', 'titre',    'Selectionner une formation'),
+        loadSelect('fFormateur','<?php echo e(route('referentiel.api.formateurs')); ?>', 'label', rfCache, 'formateurs', 'formateur','Selectionner'),
+        loadSelect('fOrganisme','<?php echo e(route('referentiel.api.organismes')); ?>', 'nom',   rfCache, 'organismes', 'organisme','Selectionner'),
     ]);
 }
 
-function loadSelect(selId, url, labelKey, cache, cacheKey, freeInputId, fieldName, placeholder) {
+function loadSelect(selId, url, labelKey, cache, cacheKey, fieldName, placeholder) {
     const sel = document.getElementById(selId);
     if (!sel) return Promise.resolve();
-    if (cache[cacheKey]) { buildOptions(sel, cache[cacheKey], labelKey, placeholder, freeInputId, fieldName); return Promise.resolve(); }
+    if (cache[cacheKey]) { buildOptions(sel, cache[cacheKey], labelKey, placeholder, fieldName); return Promise.resolve(); }
     sel.innerHTML = `<option value="">Chargement...</option>`;
     sel.disabled  = true;
     return fetch(url)
         .then(r => r.json())
-        .then(data => { cache[cacheKey] = data; buildOptions(sel, data, labelKey, placeholder, freeInputId, fieldName); sel.disabled = false; })
-        .catch(() => { sel.disabled = false; sel.innerHTML = `<option value="">${placeholder}</option><option value="__autre__">— Saisie libre —</option>`; });
+        .then(data => { cache[cacheKey] = data; buildOptions(sel, data, labelKey, placeholder, fieldName); sel.disabled = false; })
+        .catch(() => { sel.disabled = false; sel.innerHTML = `<option value="">${placeholder}</option>`; });
 }
 
-function buildOptions(sel, data, labelKey, placeholder, freeInputId, fieldName) {
+function buildOptions(sel, data, labelKey, placeholder, fieldName) {
     sel.innerHTML = `<option value="">${placeholder}</option>`;
     data.forEach(item => {
         const val = item[labelKey] ?? item.titre ?? item.nom ?? item.label ?? '';
@@ -487,38 +474,7 @@ function buildOptions(sel, data, labelKey, placeholder, freeInputId, fieldName) 
         opt.value = opt.textContent = val;
         sel.appendChild(opt);
     });
-    const autre = document.createElement('option');
-    autre.value = '__autre__'; autre.textContent = '— Autre (saisie libre) —';
-    sel.appendChild(autre);
     sel.name = fieldName;
-    sel.onchange = () => toggleAutre(sel.id, freeInputId, fieldName);
-}
-
-function toggleAutre(selId, inputId, fieldName) {
-    const sel = document.getElementById(selId);
-    const inp = document.getElementById(inputId);
-    if (!sel || !inp) return;
-    if (sel.value === '__autre__') {
-        inp.classList.remove('hidden'); inp.required = true; inp.focus();
-        sel.removeAttribute('name');
-    } else {
-        inp.classList.add('hidden'); inp.required = false; inp.value = '';
-        sel.name = fieldName;
-    }
-}
-
-function setSelectOrFree(selId, inputId, fieldName, val) {
-    const sel = document.getElementById(selId);
-    const inp = document.getElementById(inputId);
-    if (!sel || !inp || !val) return;
-    const found = Array.from(sel.options).some(o => o.value === val && o.value !== '' && o.value !== '__autre__');
-    if (found) {
-        sel.value = val; sel.name = fieldName;
-        inp.classList.add('hidden'); inp.required = false; inp.value = '';
-    } else {
-        sel.value = '__autre__'; sel.removeAttribute('name');
-        inp.classList.remove('hidden'); inp.required = true; inp.value = val;
-    }
 }
 
 /* ─── AJAX employes ─── */

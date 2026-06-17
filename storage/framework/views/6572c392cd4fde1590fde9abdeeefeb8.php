@@ -9,7 +9,7 @@
     <div class="card-body">
         <form action="<?php echo e(route('news.store')); ?>" method="POST" enctype="multipart/form-data">
             <?php echo csrf_field(); ?>
-            
+
             <div class="row">
                 <div class="col-md-8">
                     <div class="form-group">
@@ -116,6 +116,44 @@ function previewImage(event) {
         reader.readAsDataURL(file);
     }
 }
+
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    document.querySelectorAll('input[type="date"]').forEach(input => {
+
+
+
+        input.addEventListener('change', function () {
+
+
+
+            const date = this.value;
+
+
+
+            if (!date) return;
+
+
+
+            const year = date.split('-')[0];
+
+
+
+            if (year.length !== 4) {
+
+                alert('L\'année doit contenir 4 chiffres.');
+
+                this.value = '';
+
+            }
+
+        });
+
+    });
+
+});
+
 </script>
 <?php $__env->stopSection(); ?>
 

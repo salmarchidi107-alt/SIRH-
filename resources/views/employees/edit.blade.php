@@ -199,10 +199,17 @@
                            value="{{ old('email', $employee->email) }}" required>
                     @error('email') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
-                <div class="form-group">
+                 <div class="form-group">
                     <label>Téléphone</label>
-                    <input type="text" name="phone" class="form-control"
-                           value="{{ old('phone', $employee->phone) }}">
+                    <input type="tel" name="phone" class="form-control"
+                        value="{{ old('phone') }}"
+                        pattern="[0-9]{10}"
+                        maxlength="10"
+                        title="10 chiffres exacts requis"
+                        inputmode="numeric">
+                        @error('phone')
+                        <span style="color:var(--danger);font-size:.75rem">{{ $message }}</span>
+                    @enderror
                 </div>
                 <div class="form-group">
                     <label>Date de naissance</label>
@@ -222,7 +229,15 @@
                 <div class="form-group">
                     <label>CIN</label>
                     <input type="text" name="cin" class="form-control"
-                           value="{{ old('cin', $employee->cin) }}">
+                        value="{{ old('cin') }}"
+                        placeholder="AB123456"
+                        pattern="[A-Za-z]{1,2}[0-9]{5,6}"
+                        maxlength="8"
+                        title="Format CIN invalide (ex : AB123456)"
+                        oninput="this.value = this.value.toUpperCase()">
+                    @error('cin')
+                        <span style="color:var(--danger);font-size:.75rem">{{ $message }}</span>
+                    @enderror
                 </div>
                 <div class="form-group">
                     <label>Situation familiale</label>
@@ -395,7 +410,7 @@
                 <div class="form-group">
                     <label>Salaire de base (MAD)</label>
                     <input type="number" name="base_salary" class="form-control"
-                           value="{{ old('base_salary', $employee->base_salary) }}" min="0" step="100">
+                           value="{{ old('base_salary', $employee->base_salary) }}" min="0" step="50">
                 </div>
                 <div class="form-group">
                     <label>N° CNSS</label>

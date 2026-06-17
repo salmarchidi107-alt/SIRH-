@@ -237,20 +237,20 @@ tbody tr:last-child td {
     <div class="header">
         <div class="header-left">
             <h1>Pointage Journalier</h1>
-            <div class="date">{{ $dateStr }}</div>
-            @if($filterInfo)
-            <div class="filter">Filtre : {{ $filterInfo }}</div>
-            @endif
+            <div class="date"><?php echo e($dateStr); ?></div>
+            <?php if($filterInfo): ?>
+            <div class="filter">Filtre : <?php echo e($filterInfo); ?></div>
+            <?php endif; ?>
         </div>
         <div class="header-right">
             <div>Document genere le</div>
-            <div><strong>{{ $generatedAt }}</strong></div>
+            <div><strong><?php echo e($generatedAt); ?></strong></div>
         </div>
     </div>
 
-    @if($employees->isEmpty())
+    <?php if($employees->isEmpty()): ?>
         <div class="empty">Aucun pointage trouve pour ces criteres.</div>
-    @else
+    <?php else: ?>
 
         <table>
             <colgroup>
@@ -278,8 +278,8 @@ tbody tr:last-child td {
             </thead>
 
             <tbody>
-                @foreach($employees as $emp)
-                    @php
+                <?php $__currentLoopData = $employees; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $emp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <?php
                         $p        = $emp['pointage'];
                         $statut   = $p?->statut ?? 'pas_de_badge';
                         $valide   = $p?->valide ?? false;
@@ -287,25 +287,26 @@ tbody tr:last-child td {
                         $isNoBadge = $statut === 'pas_de_badge' && !$p?->heure_entree;
                         $statusClass = $isAbsent ? 'absent' : ($isNoBadge ? 'nobadge' : 'present');
                         $statusLabel = $isAbsent ? 'Absent' : ($isNoBadge ? 'Pas de badge' : 'Present');
-                    @endphp
+                    ?>
 
                     <tr>
-                        <td>{{ $emp['nom'] }}</td>
-                        <td>{{ $emp['department'] ?? '—' }}</td>
-                        <td class="time">{{ $p?->heure_entree ? \Carbon\Carbon::parse($p->heure_entree)->format('H:i') : '—' }}</td>
-                        <td class="time">{{ $p?->heure_sortie ? \Carbon\Carbon::parse($p->heure_sortie)->format('H:i') : '—' }}</td>
-                        <td class="time">{{ $p?->pause_formatee ?? '—' }}</td>
-                        <td class="total">{{ $p?->total_heures_formate ?? '—' }}</td>
-                        <td class="status {{ $statusClass }}">{{ $statusLabel }}</td>
-                        <td class="{{ $valide ? 'valide-ok' : 'valide-non' }}">
-                            {{ $valide ? 'Oui' : 'Non' }}
+                        <td><?php echo e($emp['nom']); ?></td>
+                        <td><?php echo e($emp['department'] ?? '—'); ?></td>
+                        <td class="time"><?php echo e($p?->heure_entree ? \Carbon\Carbon::parse($p->heure_entree)->format('H:i') : '—'); ?></td>
+                        <td class="time"><?php echo e($p?->heure_sortie ? \Carbon\Carbon::parse($p->heure_sortie)->format('H:i') : '—'); ?></td>
+                        <td class="time"><?php echo e($p?->pause_formatee ?? '—'); ?></td>
+                        <td class="total"><?php echo e($p?->total_heures_formate ?? '—'); ?></td>
+                        <td class="status <?php echo e($statusClass); ?>"><?php echo e($statusLabel); ?></td>
+                        <td class="<?php echo e($valide ? 'valide-ok' : 'valide-non'); ?>">
+                            <?php echo e($valide ? 'Oui' : 'Non'); ?>
+
                         </td>
                     </tr>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </tbody>
         </table>
 
-    @endif
+    <?php endif; ?>
 
 </body>
 </html>
@@ -350,3 +351,4 @@ tbody tr:last-child td {
 
 
 
+<?php /**PATH D:\Projects\SIRH-\resources\views/pdf/pointage.blade.php ENDPATH**/ ?>

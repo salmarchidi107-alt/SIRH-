@@ -421,7 +421,7 @@
                     style="padding:10px 12px 10px 40px;border:1px solid var(--border);border-radius:8px;min-width:220px">
             </div>
 
-           
+
 
             @if(request()->anyFilled(['department', 'employee_id', 'status']))
                 <a href="{{ $resetUrl }}" class="btn btn-ghost btn-sm">✕ Réinitialiser</a>
@@ -614,7 +614,7 @@
 @endif
 
 
-    
+
 
 {{-- Modal détail absence --}}
 <div class="modal-overlay" id="absenceModal" onclick="closeModal(event)">

@@ -215,16 +215,54 @@ unset($__errorArgs, $__bag); ?>
                 </div>
                 <div class="form-group">
                     <label>Téléphone</label>
-                    <input type="text" name="phone" class="form-control" value="<?php echo e(old('phone')); ?>">
+                    <input type="tel" name="phone" class="form-control"
+                        value="<?php echo e(old('phone')); ?>"
+                        pattern="[0-9]{10}"
+                        maxlength="10"
+                        title="10 chiffres exacts requis"
+                        inputmode="numeric">
+                        <?php $__errorArgs = ['phone'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                        <span style="color:var(--danger);font-size:.75rem"><?php echo e($message); ?></span>
+                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                 </div>
                 <div class="form-group">
                     <label>Date de naissance</label>
                     <input type="date" name="birth_date" class="form-control" value="<?php echo e(old('birth_date')); ?>">
                 </div>
                 <div class="form-group">
+    <label>Genre</label>
+    <select name="gender" class="form-control">
+        <option value="">Sélectionner...</option>
+        <option value="homme" <?php echo e(old('gender') == 'homme' ? 'selected' : ''); ?>>Homme</option>
+        <option value="femme" <?php echo e(old('gender') == 'femme' ? 'selected' : ''); ?>>Femme</option>
+    </select>
+    <?php $__errorArgs = ['gender'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+        <span style="color:var(--danger);font-size:.75rem"><?php echo e($message); ?></span>
+    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+</div>
+                <div class="form-group">
                     <label>CIN</label>
                     <input type="text" name="cin" class="form-control"
-                           value="<?php echo e(old('cin')); ?>" placeholder="AB123456">
+                        value="<?php echo e(old('cin')); ?>"
+                        placeholder="AB123456"
+                        pattern="[A-Za-z]{1,2}[0-9]{5,6}"
+                        maxlength="8"
+                        title="Format CIN invalide (ex : AB123456)"
+                        oninput="this.value = this.value.toUpperCase()">
                     <?php $__errorArgs = ['cin'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -248,6 +286,7 @@ unset($__errorArgs, $__bag); ?>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
                 </div>
+
                 <div class="form-group full">
                     <label>Adresse</label>
                     <textarea name="address" class="form-control" rows="2"
@@ -495,7 +534,7 @@ unset($__errorArgs, $__bag); ?>
                 <div class="form-group">
                     <label>Salaire de base (MAD)</label>
                     <input type="number" name="base_salary" class="form-control"
-                           value="<?php echo e(old('base_salary')); ?>" min="0" step="100" placeholder="8000">
+                           value="<?php echo e(old('base_salary')); ?>" min="0" step="50" placeholder="8000">
                 </div>
                 <div class="form-group">
                     <label>N° CNSS</label>
@@ -781,6 +820,12 @@ unset($__errorArgs, $__bag); ?>
                 'label'   => 'Salaires',
                 'actions' => ['view','create','edit','delete'],
             ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+             <?php echo $__env->make('employees._perm_row', [
+                'key'     => 'reporting',
+                'label'   => 'Rapport RH',
+                'actions' => ['view'],
+                'sub'     => true,
+            ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
             
             <div class="perm-group-label">GED</div>
@@ -811,12 +856,13 @@ unset($__errorArgs, $__bag); ?>
                 'label'   => 'Paramétrage',
                 'actions' => ['view','create','edit','delete'],
             ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
-            <?php echo $__env->make('employees._perm_row', [
-                'key'     => 'reporting',
-                'label'   => 'Rapport RH',
-                'actions' => ['view'],
-                'sub'     => true,
-            ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+            <div class="perm-group-label">Équipements</div>
+
+<?php echo $__env->make('employees._perm_row', [
+    'key'     => 'equipment',
+    'label'   => 'Gestion des équipements',
+    'actions' => ['view','create','edit','delete'],
+], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
         </div>
 
@@ -916,7 +962,7 @@ unset($__errorArgs, $__bag); ?>
 
     <div style="display:flex;gap:12px;justify-content:flex-end">
         <a href="<?php echo e(route('employees.index')); ?>" class="btn btn-ghost">Annuler</a>
-        <button type="submit" class="btn btn-primary">
+        <button type="submit"  id="saveBtn" class="btn btn-primary">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24"
                  stroke="currentColor" stroke-width="2.5">
                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
@@ -1037,7 +1083,7 @@ const Perms = {
                 'absences','absences_calendar','absences_counters',
                 'lms','referentiel','lms_planning',
                 'salary','ged','ged_modeles','ged_entete',
-                'reporting'
+                'reporting' ,'equipment' ,
             ],
             ['view','create','edit']
         );
@@ -1047,6 +1093,43 @@ const Perms = {
         this.selectAll();
     },
 };
+/* ── Limiter les années des champs date à 4 chiffres ── */
+document.querySelectorAll('input[type="date"]').forEach(function(input) {
+    input.addEventListener('change', function () {
+        const val = this.value;
+        if (!val) return;
+        const parts = val.split('-');
+        if (parts[0] && parts[0].length > 4) {
+            parts[0] = parts[0].slice(0, 4);
+            this.value = parts.join('-');
+        }
+    });
+    input.addEventListener('input', function () {
+        const year = this.value.split('-')[0];
+        if (year && year.length > 4) {
+            const [y, m, d] = this.value.split('-');
+            this.value = `${y.slice(0, 4)}-${m || ''}-${d || ''}`;
+        }
+    });
+    // Bloquer la soumission si l'année dépasse 4 chiffres
+    input.closest('form')?.addEventListener('submit', function(e) {
+        document.querySelectorAll('input[type="date"]').forEach(function(d) {
+            const year = d.value.split('-')[0];
+            if (year && year.length > 4) {
+                e.preventDefault();
+                d.setCustomValidity("L'année ne peut pas dépasser 4 chiffres.");
+                d.reportValidity();
+            } else {
+                d.setCustomValidity('');
+            }
+        });
+    }, { once: false });
+});
+document.querySelector("form").addEventListener("submit", function () {
+    const btn = document.getElementById("saveBtn");
+    btn.disabled = true;
+    btn.innerHTML = "Enregistrement...";
+});
 </script>
 <?php $__env->stopPush(); ?>
 <?php $__env->stopSection(); ?>

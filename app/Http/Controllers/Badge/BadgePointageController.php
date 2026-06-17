@@ -1,7 +1,4 @@
 <?php
-// ============================================================
-//  app/Http/Controllers/Badge/BadgePointageController.php
-// ============================================================
 
 namespace App\Http\Controllers\Badge;
 

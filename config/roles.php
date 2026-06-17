@@ -14,6 +14,9 @@ return [
         'view_dashboard_stats' => ['admin', 'rh'],
         'manage_salary' => ['admin', 'rh'],
         'manage_planning' => ['admin', 'rh'],
+        'manage_equipment'   => ['admin', 'rh'],
+        'view_own_equipment' => ['admin', 'rh', 'employee'],
+        'sign_discharge'      => ['admin'],
     ],
 ];
 

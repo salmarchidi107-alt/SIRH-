@@ -22,6 +22,9 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class AbsenceController extends Controller
 {
+    // =========================================================================
+    // index
+    // =========================================================================
     public function index(Request $request)
     {
         $query = Absence::with([
@@ -69,6 +72,9 @@ class AbsenceController extends Controller
         return view('absences.index', compact('absences', 'employees', 'pending_count', 'departments'));
     }
 
+    // =========================================================================
+    // create
+    // =========================================================================
     public function create()
     {
         if (auth()->user()->isEmployee() && auth()->user()->employee_id) {
@@ -83,7 +89,14 @@ class AbsenceController extends Controller
                 'label'      => $emp->full_name . ' — ' . $emp->department,
                 'department' => $emp->department,
             ])->values();
-            return view('absences.create', compact('employee', 'employees', 'departments', 'employeeOptions'));
+
+            // Absences approuvées pour la détection de conflit propre côté JS
+            $allIds        = $employees->pluck('id')->push($employee->id)->toArray();
+            $selfConflicts = $this->buildSelfConflictsData($allIds);
+
+            return view('absences.create', compact(
+                'employee', 'employees', 'departments', 'employeeOptions', 'selfConflicts'
+            ));
         }
 
         $employees = Employee::active()
@@ -97,12 +110,29 @@ class AbsenceController extends Controller
             'department' => $emp->department,
         ])->values();
 
-        return view('absences.create', compact('employees', 'departments', 'employeeOptions'));
+        // Absences approuvées pour la détection de conflit propre côté JS
+        $selfConflicts = $this->buildSelfConflictsData($employees->pluck('id')->toArray());
+
+        return view('absences.create', compact('employees', 'departments', 'employeeOptions', 'selfConflicts'));
     }
 
+    // =========================================================================
+    // store
+    // =========================================================================
     public function store(StoreAbsenceRequest $request)
     {
         $validated = $request->validated();
+
+        // ── Gestion du type "Autre" ──────────────────────────────────────────
+        if ($validated['type'] === 'autre') {
+            $typeAutre = trim($request->input('type_autre', ''));
+            if (empty($typeAutre)) {
+                return back()
+                    ->withInput()
+                    ->withErrors(['type_autre' => "Veuillez préciser le type d'absence."]);
+            }
+            $validated['type'] = $typeAutre;
+        }
 
         $start = Carbon::parse($validated['start_date']);
         $end   = Carbon::parse($validated['end_date']);
@@ -110,6 +140,7 @@ class AbsenceController extends Controller
         $validated['status']    = 'pending';
         $validated['tenant_id'] = config('app.current_tenant_id');
 
+        // ── Conflit avec un AUTRE employé ────────────────────────────────────
         $conflictingAbsence = Absence::with('employee')
             ->whereHas('employee')
             ->where('employee_id', '!=', $validated['employee_id'])
@@ -123,16 +154,22 @@ class AbsenceController extends Controller
                   });
             })->first();
 
+        // ── Conflit avec le MÊME employé (côté serveur, sécurité) ────────────
         $selfConflict = Absence::whereHas('employee')
             ->where('employee_id', $validated['employee_id'])
             ->where('status', 'approved')
             ->where(function ($q) use ($validated) {
                 $q->whereBetween('start_date', [$validated['start_date'], $validated['end_date']])
-                  ->orWhereBetween('end_date',   [$validated['start_date'], $validated['end_date']]);
+                  ->orWhereBetween('end_date',   [$validated['start_date'], $validated['end_date']])
+                  ->orWhere(function ($q2) use ($validated) {
+                      $q2->where('start_date', '<=', $validated['start_date'])
+                         ->where('end_date',   '>=', $validated['end_date']);
+                  });
             })->exists();
 
         $confirmed = $request->input('conflict_confirmed') === '1';
 
+        // Conflit avec un autre employé → bannière jaune (forçable)
         if ($conflictingAbsence && ! $confirmed) {
             $empName = $conflictingAbsence->employee->full_name;
             $from    = Carbon::parse($conflictingAbsence->start_date)->format('d/m/Y');
@@ -143,22 +180,31 @@ class AbsenceController extends Controller
                 ->with('conflict_warning', "Cette période est déjà occupée par <strong>{$empName}</strong> (du {$from} au {$to}). Voulez-vous soumettre quand même ?");
         }
 
+        // Conflit du même employé → refus (déjà bloqué côté JS, sécurisé ici)
+        if ($selfConflict) {
+            return back()
+                ->withInput()
+                ->withErrors(['start_date' => 'Cet employé a déjà une absence approuvée qui chevauche cette période.']);
+        }
+
         Absence::create($validated);
 
-        $message = $selfConflict
-            ? 'Demande créée mais un conflit a été détecté avec une absence déjà approuvée.'
-            : "Demande d'absence soumise avec succès.";
-
         return redirect()->route('absences.index')
-            ->with($selfConflict ? 'warning' : 'success', $message);
+            ->with('success', "Demande d'absence soumise avec succès.");
     }
 
+    // =========================================================================
+    // show
+    // =========================================================================
     public function show(Absence $absence)
     {
         $absence->load(['employee', 'replacement', 'approver', 'approvedByUser']);
         return view('absences.show', compact('absence'));
     }
 
+    // =========================================================================
+    // edit
+    // =========================================================================
     public function edit(Absence $absence)
     {
         $employees = Employee::active()
@@ -168,6 +214,9 @@ class AbsenceController extends Controller
         return view('absences.edit', compact('absence', 'employees'));
     }
 
+    // =========================================================================
+    // update
+    // =========================================================================
     public function update(UpdateAbsenceRequest $request, Absence $absence)
     {
         $validated = $request->validated();
@@ -182,6 +231,9 @@ class AbsenceController extends Controller
             ->with('success', 'Absence mise à jour.');
     }
 
+    // =========================================================================
+    // destroy
+    // =========================================================================
     public function destroy(Absence $absence)
     {
         $absence->delete();
@@ -259,13 +311,16 @@ class AbsenceController extends Controller
         return back()->with('success', "Demande rejetée. Un email a été envoyé à l'employé.");
     }
 
+    // =========================================================================
+    // export
+    // =========================================================================
     public function export()
-{
-    return Excel::download(
-        new AbsencesExport(config('app.current_tenant_id')),
-        'demandes_absences.xlsx'
-    );
-}
+    {
+        return Excel::download(
+            new AbsencesExport(config('app.current_tenant_id')),
+            'demandes_absences.xlsx'
+        );
+    }
 
     // =========================================================================
     // counters — page web
@@ -407,6 +462,9 @@ class AbsenceController extends Controller
         ));
     }
 
+    // =========================================================================
+    // getConflicts (API JSON)
+    // =========================================================================
     public function getConflicts(Request $request)
     {
         $month        = $request->get('month', now()->month);
@@ -431,6 +489,9 @@ class AbsenceController extends Controller
         return response()->json($conflicts->values());
     }
 
+    // =========================================================================
+    // downloadPdf
+    // =========================================================================
     public function downloadPdf(Absence $absence)
     {
         $absence->load(['employee', 'replacement', 'approver', 'approvedByUser']);
@@ -457,6 +518,29 @@ class AbsenceController extends Controller
     // =========================================================================
     // HELPERS PRIVÉS
     // =========================================================================
+
+    /**
+     * Construit la liste des absences approuvées pour le JS de détection
+     * de conflit propre (même employé, dates qui se chevauchent).
+     */
+    private function buildSelfConflictsData(array $employeeIds): array
+    {
+        return Absence::whereIn('employee_id', $employeeIds)
+            ->where('status', 'approved')
+            ->select(['id', 'employee_id', 'type', 'start_date', 'end_date'])
+            ->get()
+            ->map(function ($a) {
+                return [
+                    'employee_id' => $a->employee_id,
+                    'type_label'  => \App\Models\Absence::TYPES[$a->type] ?? $a->type,
+                    'start_date'  => $a->start_date->format('Y-m-d'),
+                    'end_date'    => $a->end_date->format('Y-m-d'),
+                    'start_fmt'   => $a->start_date->format('d/m/Y'),
+                    'end_fmt'     => $a->end_date->format('d/m/Y'),
+                ];
+            })
+            ->toArray();
+    }
 
     /**
      * Calcule les données compteurs pour tous les employés filtrés.

@@ -246,9 +246,7 @@
                                 </span>
                             </div>
                             <div class="activity-time">
-                                <?php echo e($plan->shift_start); ?> – <?php echo e($plan->shift_end); ?>
-
-                                <?php if(optional($plan->employee)->department): ?>
+                            <?php echo e(\Carbon\Carbon::parse($plan->shift_start)->format('H:i')); ?> – <?php echo e(\Carbon\Carbon::parse($plan->shift_end)->format('H:i')); ?>                                <?php if(optional($plan->employee)->department): ?>
                                 <span style="opacity:0.7;margin-left:12px">• <?php echo e($plan->employee->department); ?></span>
                                 <?php endif; ?>
                             </div>

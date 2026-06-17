@@ -245,8 +245,7 @@
                                 </span>
                             </div>
                             <div class="activity-time">
-                                {{ $plan->shift_start }} – {{ $plan->shift_end }}
-                                @if(optional($plan->employee)->department)
+                            {{ \Carbon\Carbon::parse($plan->shift_start)->format('H:i') }} – {{ \Carbon\Carbon::parse($plan->shift_end)->format('H:i') }}                                @if(optional($plan->employee)->department)
                                 <span style="opacity:0.7;margin-left:12px">• {{ $plan->employee->department }}</span>
                                 @endif
                             </div>

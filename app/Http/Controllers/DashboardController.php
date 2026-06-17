@@ -26,21 +26,14 @@ class DashboardController extends Controller
         $tenantId    = $user?->tenant_id;
         $isAdminOrRH = $user && ($user->isAdmin() || $user->isRh());
 
-        // ── Helper : filtre tenant sur n'importe quel modèle ──────────────
-        // Tous les modèles ont TenantScope via HasTenantScope trait,
-        // mais on s'assure du filtre explicitement pour éviter les bugs.
-        $tenantFilter = fn($q) => $tenantId
-            ? $q->where('tenant_id', $tenantId)
-            : $q;
-
         // ── Stats ─────────────────────────────────────────────────────────
-       $stats = [
-    'total_employees'  => Employee::where('tenant_id', $tenantId)->count(),
-    'active_employees' => Employee::where('tenant_id', $tenantId)->where('status', 'active')->count(),
-    'today_present'    =>  Planning::where('tenant_id', $tenantId)
-    ->whereDate('date', today())
-    ->count(),
-];
+        $stats = [
+            'total_employees'  => Employee::where('tenant_id', $tenantId)->count(),
+            'active_employees' => Employee::where('tenant_id', $tenantId)->where('status', 'active')->count(),
+            'today_present'    => Planning::where('tenant_id', $tenantId)
+                ->whereDate('date', today())
+                ->count(),
+        ];
 
         $recent_absences = collect();
         $contract_types  = collect();
@@ -69,52 +62,50 @@ class DashboardController extends Controller
             ->selectRaw('department, count(*) as total')
             ->pluck('total', 'department');
 
-       // ── Planning aujourd'hui ──────────────────────────────────────────
-$today_planning = Planning::with('employee')
-    ->where(function ($q) use ($tenantId) {
-        $q->where('tenant_id', $tenantId)
-          ->orWhereNull('tenant_id');
-    })
-    ->whereDate('date', today())
-    ->orderBy('shift_start')
-    ->get()
-    ->filter(fn($p) => $p->employee !== null);
+        // ── Planning aujourd'hui ──────────────────────────────────────────
+        $today_planning = Planning::with('employee')
+            ->where(function ($q) use ($tenantId) {
+                $q->where('tenant_id', $tenantId)
+                  ->orWhereNull('tenant_id');
+            })
+            ->whereDate('date', today())
+            ->orderBy('shift_start')
+            ->get()
+            ->filter(fn($p) => $p->employee !== null);
 
-// Mettre à jour le stat avec le bon count
-$stats['today_present'] = $today_planning->count();
+        $stats['today_present'] = $today_planning->count();
 
-        // ── Absences annuelles (janvier → mois actuel seulement) ─────────
-$currentYear  = now()->year;
-$currentMonth = now()->month;
+        // ── Absences annuelles ────────────────────────────────────────────
+        // Affiche janvier → mois actuel, + mois suivant si des demandes existent
+        $currentYear  = now()->year;
+        $currentMonth = now()->month;
+        $nextMonth    = $currentMonth + 1;
 
-$monthly_absences_raw = Absence::where('tenant_id', $tenantId)
-    ->selectRaw('MONTH(start_date) as month_num, COUNT(*) as count')
-    ->whereYear('start_date', $currentYear)
-    ->whereMonth('start_date', '<=', $currentMonth)  // ← bloquer les mois futurs
-    ->groupBy('month_num')
-    ->orderBy('month_num', 'asc')
-    ->get()
-    ->keyBy('month_num');
+        // Vérifier s'il y a des absences le mois prochain (toutes statuts)
+        $hasNextMonth = $nextMonth <= 12 && Absence::where('tenant_id', $tenantId)
+            ->whereYear('start_date', $currentYear)
+            ->whereMonth('start_date', $nextMonth)
+            ->exists();
 
-// Générer uniquement les mois passés + mois actuel
-$monthly_absences = collect(range(1, $currentMonth))->map(function ($month) use ($monthly_absences_raw, $currentYear) {
-    return [
-        'month' => Carbon::create($currentYear, $month, 1)->locale('fr')->monthName,
-        'count' => (int) ($monthly_absences_raw->get($month)?->count ?? 0),
-    ];
-})->toArray();
-        $monthly_absences = $monthly_absences_raw->map(function ($row) {
-            $month = Carbon::create($row->year, $row->month_num, 1);
+        $upToMonth = $hasNextMonth ? $nextMonth : $currentMonth;
+
+        $monthly_absences_raw = Absence::where('tenant_id', $tenantId)
+            ->selectRaw('MONTH(start_date) as month_num, COUNT(*) as count')
+            ->whereYear('start_date', $currentYear)
+            ->whereMonth('start_date', '<=', $upToMonth)
+            ->groupBy('month_num')
+            ->orderBy('month_num', 'asc')
+            ->get()
+            ->keyBy('month_num');
+
+        $monthly_absences = collect(range(1, $upToMonth))->map(function ($month) use ($monthly_absences_raw, $currentYear) {
             return [
-                'month' => $month->format('M Y'),
-                'count' => (int) $row->count,
+                'month' => Carbon::create($currentYear, $month, 1)->locale('fr')->isoFormat('MMM'),
+                'count' => (int) ($monthly_absences_raw->get($month)?->count ?? 0),
             ];
-        })->values()->toArray();
+        })->toArray();
 
         // ── Anniversaires du mois ─────────────────────────────────────────
-        $currentMonth = now()->month;
-        $currentYear  = now()->year;
-
         $birthdays = Employee::with('user')
             ->where('tenant_id', $tenantId)
             ->whereNotNull('birth_date')
@@ -131,7 +122,7 @@ $monthly_absences = collect(range(1, $currentMonth))->map(function ($month) use 
             })
             ->sortBy('birthday_this_year');
 
-        // ── Actualités ───────────────────────────────────────────────────
+        // ── Actualités ────────────────────────────────────────────────────
         $upcomingNews = News::active()->upcoming()->take(5)->get();
 
         $recentNews = News::active()

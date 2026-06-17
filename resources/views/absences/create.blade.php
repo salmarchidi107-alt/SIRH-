@@ -13,10 +13,7 @@
 </div>
 
 {{-- ============================================================
-     BANNIÈRE DE CONFLIT
-     Apparaît uniquement si le controller détecte un chevauchement
-     avec l'absence d'un autre employé sur la même période.
-     L'utilisateur peut annuler ou confirmer malgré le conflit.
+     BANNIÈRE DE CONFLIT (chevauchement avec un autre employé)
      ============================================================ --}}
 @if(session('conflict_warning'))
 <div id="conflict-banner" style="
@@ -76,6 +73,31 @@
 </div>
 @endif
 
+{{-- ============================================================
+     BANNIÈRE CONFLIT PROPRE (même employé, dates qui se chevauchent)
+     Déclenchée côté JS avant soumission
+     ============================================================ --}}
+<div id="self-conflict-banner" style="
+    display:none;
+    background:#fef2f2;
+    border:2px solid #ef4444;
+    border-radius:12px;
+    padding:18px 24px;
+    margin-bottom:24px;
+    align-items:center;
+    gap:16px;
+    box-shadow:0 4px 16px rgba(239,68,68,0.13);
+    animation: slideDown 0.35s ease;
+">
+    <span style="font-size:2rem;line-height:1">🚫</span>
+    <div>
+        <div style="font-weight:700;color:#991b1b;font-size:1rem;margin-bottom:4px">
+            Cet employé a déjà une absence approuvée sur cette période
+        </div>
+        <div id="self-conflict-detail" style="color:#7f1d1d;font-size:0.92rem;line-height:1.5"></div>
+    </div>
+</div>
+
 <form action="{{ route('absences.store') }}" method="POST" id="absence-form">
     @csrf
     {{-- Champ caché : passe à 1 si l'utilisateur confirme malgré le conflit --}}
@@ -87,6 +109,8 @@
         </div>
         <div class="card-body">
             <div class="form-grid">
+
+                {{-- ── Département ── --}}
                 <div class="form-group">
                     <label>Département</label>
                     <select id="department_filter" name="department_filter" class="form-control">
@@ -99,10 +123,11 @@
                     </select>
                 </div>
 
+                {{-- ── Employé ── --}}
                 <div class="form-group">
                     <label>Employé *</label>
                     @if(isset($employee))
-                        <input type="hidden" name="employee_id" value="{{ $employee->id }}">
+                        <input type="hidden" name="employee_id" id="employee_id_hidden" value="{{ $employee->id }}">
                         <div style="padding:16px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:24px">
                             <h3 style="margin:0 0 8px 0;color:var(--primary);font-size:1.1rem">{{ $employee->full_name }}</h3>
                             <div style="color:var(--text-muted);font-size:0.875rem">{{ $employee->department }} — {{ $employee->position }}</div>
@@ -122,36 +147,52 @@
                     @endif
                 </div>
 
+                {{-- ── Type d'absence ── --}}
                 <div class="form-group">
                     <label>Type d'absence *</label>
-                    <select name="type" class="form-control" required>
+                    <select name="type" id="type_select" class="form-control" required
+                            onchange="toggleAutreType(this)">
                         <option value="">Sélectionner le type</option>
                         @foreach(array_keys(\App\Models\Absence::TYPES) as $type)
                             <option value="{{ $type }}" {{ old('type') == $type ? 'selected' : '' }}>
                                 {{ \App\Models\Absence::TYPES[$type] }}
                             </option>
                         @endforeach
+                        <option value="autre" {{ old('type') == 'autre' ? 'selected' : '' }}>Autre</option>
                     </select>
                 </div>
 
+                {{-- ── Préciser si "Autre" ── --}}
+                <div class="form-group" id="autre_type_group"
+                     style="display:{{ old('type') == 'autre' ? 'block' : 'none' }}">
+                    <label>Préciser le type *</label>
+                    <input type="text" name="type_autre" id="type_autre" class="form-control"
+                           value="{{ old('type_autre') }}"
+                           placeholder="Ex : Formation, Mission externe…">
+                </div>
+
+                {{-- ── Date début ── --}}
                 <div class="form-group">
                     <label>Date de début *</label>
-                    <input type="date" name="start_date" class="form-control"
+                    <input type="date" name="start_date" id="start_date" class="form-control"
                            value="{{ old('start_date') }}" required>
                 </div>
 
+                {{-- ── Date fin ── --}}
                 <div class="form-group">
                     <label>Date de fin *</label>
-                    <input type="date" name="end_date" class="form-control"
+                    <input type="date" name="end_date" id="end_date" class="form-control"
                            value="{{ old('end_date') }}" required>
                 </div>
 
+                {{-- ── Motif ── --}}
                 <div class="form-group full">
                     <label>Motif</label>
                     <textarea name="reason" class="form-control" rows="2"
                               placeholder="Raison de l'absence...">{{ old('reason') }}</textarea>
                 </div>
 
+                {{-- ── Employé de remplacement (exclut l'employé sélectionné) ── --}}
                 <div class="form-group">
                     <label>Employé de remplacement</label>
                     <select id="replacement_select" name="replacement_id" class="form-control">
@@ -167,10 +208,12 @@
                     </select>
                 </div>
 
+                {{-- ── Notes ── --}}
                 <div class="form-group full">
                     <label>Notes supplémentaires</label>
                     <textarea name="notes" class="form-control" rows="2">{{ old('notes') }}</textarea>
                 </div>
+
             </div>
         </div>
     </div>
@@ -181,68 +224,170 @@
     </div>
 </form>
 
-@push('styles')
 <style>
 @keyframes slideDown {
     from { opacity: 0; transform: translateY(-16px); }
     to   { opacity: 1; transform: translateY(0); }
 }
 </style>
-@endpush
 
-@push('scripts')
 <script>
-    /* ── Confirmer malgré le conflit ── */
-    function submitWithConflict() {
-        document.getElementById('conflict_confirmed').value = '1';
-        document.getElementById('absence-form').submit();
+/* ─────────────────────────────────────────────────────────────
+   Données passées depuis le contrôleur
+   ───────────────────────────────────────────────────────────── */
+var employees       = @json($employeeOptions);
+var selfConflicts   = @json($selfConflicts ?? []);
+
+/* ─────────────────────────────────────────────────────────────
+   Confirmer malgré le conflit (autre employé)
+   ───────────────────────────────────────────────────────────── */
+function submitWithConflict() {
+    document.getElementById('conflict_confirmed').value = '1';
+    document.getElementById('absence-form').submit();
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Afficher/masquer le champ "Préciser le type"
+   ───────────────────────────────────────────────────────────── */
+function toggleAutreType(select) {
+    var group = document.getElementById('autre_type_group');
+    var input = document.getElementById('type_autre');
+    if (select.value === 'autre') {
+        group.style.display = 'block';
+        input.required = true;
+    } else {
+        group.style.display = 'none';
+        input.required = false;
+        input.value = '';
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Helpers : obtenir l'employé_id sélectionné
+   ───────────────────────────────────────────────────────────── */
+function getSelectedEmployeeId() {
+    var sel = document.getElementById('employee_select');
+    var hid = document.getElementById('employee_id_hidden');
+    if (sel) return sel.value;
+    if (hid) return hid.value;
+    return '';
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Filtre remplacement : exclut l'employé sélectionné
+   ───────────────────────────────────────────────────────────── */
+function renderReplacementOptions(excludeId) {
+    var select = document.getElementById('replacement_select');
+    if (!select) return;
+    var current = select.value;
+    select.innerHTML = '<option value="">Aucun</option>';
+    employees.forEach(function(emp) {
+        if (String(emp.id) === String(excludeId)) return; // exclure
+        var opt = document.createElement('option');
+        opt.value = emp.id;
+        opt.textContent = emp.label;
+        if (String(emp.id) === String(current)) opt.selected = true;
+        select.appendChild(opt);
+    });
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Filtre département → employés + remplacement
+   ───────────────────────────────────────────────────────────── */
+function renderEmployeeOptions(filtered) {
+    var select = document.getElementById('employee_select');
+    if (!select) return;
+    var current = select.value;
+    select.innerHTML = '<option value="">Sélectionner un employé</option>';
+    filtered.forEach(function(emp) {
+        var opt = document.createElement('option');
+        opt.value = emp.id;
+        opt.textContent = emp.label;
+        if (String(emp.id) === String(current)) opt.selected = true;
+        select.appendChild(opt);
+    });
+    // Rafraîchir le remplacement en excluant la sélection courante
+    renderReplacementOptions(select.value);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Détection conflit propre (même employé, dates communes)
+   ───────────────────────────────────────────────────────────── */
+function checkSelfConflict() {
+    var empId     = getSelectedEmployeeId();
+    var startVal  = document.getElementById('start_date').value;
+    var endVal    = document.getElementById('end_date').value;
+    var banner    = document.getElementById('self-conflict-banner');
+    var detail    = document.getElementById('self-conflict-detail');
+
+    if (!empId || !startVal || !endVal) {
+        banner.style.display = 'none';
+        return;
     }
 
-    /* ── Filtre département → employés ── */
-    document.addEventListener('DOMContentLoaded', function () {
-        const departmentSelect  = document.getElementById('department_filter');
-        const employeeSelect    = document.getElementById('employee_select');
-        const replacementSelect = document.getElementById('replacement_select');
-        const employees         = @json($employeeOptions);
+    var newStart = new Date(startVal);
+    var newEnd   = new Date(endVal);
 
-        function renderOptions(select, options, blankLabel) {
-            if (!select) return;
-            const currentValue = select.value;
-            select.innerHTML = '';
-
-            if (blankLabel !== null) {
-                const blankOption = document.createElement('option');
-                blankOption.value = '';
-                blankOption.textContent = blankLabel;
-                select.appendChild(blankOption);
-            }
-
-            options.forEach(function (employee) {
-                const option = document.createElement('option');
-                option.value = employee.id;
-                option.textContent = employee.label;
-                if (String(employee.id) === String(currentValue)) {
-                    option.selected = true;
-                }
-                select.appendChild(option);
-            });
-        }
-
-        function filterEmployees() {
-            if (!departmentSelect) return;
-            const selectedDepartment = departmentSelect.value;
-            const filtered = selectedDepartment
-                ? employees.filter(e => e.department === selectedDepartment)
-                : employees;
-            renderOptions(employeeSelect,    filtered, 'Sélectionner un employé');
-            renderOptions(replacementSelect, filtered, 'Aucun');
-        }
-
-        if (departmentSelect) {
-            departmentSelect.addEventListener('change', filterEmployees);
-            filterEmployees();
-        }
+    var conflicts = selfConflicts.filter(function(c) {
+        if (String(c.employee_id) !== String(empId)) return false;
+        var cStart = new Date(c.start_date);
+        var cEnd   = new Date(c.end_date);
+        // chevauchement si les périodes se croisent
+        return newStart <= cEnd && newEnd >= cStart;
     });
+
+    if (conflicts.length > 0) {
+        var lines = conflicts.map(function(c) {
+            return '• ' + c.type_label + ' : du ' + c.start_fmt + ' au ' + c.end_fmt;
+        });
+        detail.innerHTML = 'Absence(s) approuvée(s) déjà enregistrée(s) :<br>' + lines.join('<br>');
+        banner.style.display = 'flex';
+    } else {
+        banner.style.display = 'none';
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Initialisation au chargement
+   ───────────────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', function() {
+    var departmentSelect = document.getElementById('department_filter');
+    var employeeSelect   = document.getElementById('employee_select');
+
+    /* Filtre département */
+    function filterByDepartment() {
+        if (!departmentSelect) return;
+        var dep      = departmentSelect.value;
+        var filtered = dep ? employees.filter(function(e) { return e.department === dep; }) : employees;
+        renderEmployeeOptions(filtered);
+    }
+
+    if (departmentSelect) {
+        departmentSelect.addEventListener('change', filterByDepartment);
+        filterByDepartment(); // état initial
+    }
+
+    /* Mise à jour du remplacement quand on change d'employé */
+    if (employeeSelect) {
+        employeeSelect.addEventListener('change', function() {
+            renderReplacementOptions(this.value);
+            checkSelfConflict();
+        });
+    }
+
+    /* Détection conflit propre à la saisie des dates */
+    var startInput = document.getElementById('start_date');
+    var endInput   = document.getElementById('end_date');
+    if (startInput) startInput.addEventListener('change', checkSelfConflict);
+    if (endInput)   endInput.addEventListener('change',   checkSelfConflict);
+
+    /* Initialiser l'affichage du champ "Autre" au cas où old() le restaure */
+    var typeSelect = document.getElementById('type_select');
+    if (typeSelect) toggleAutreType(typeSelect);
+
+    /* Pour les cas où employee_id est fixe (mode employé connecté) */
+    renderReplacementOptions(getSelectedEmployeeId());
+    checkSelfConflict();
+});
 </script>
-@endpush
 @endsection

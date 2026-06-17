@@ -40,6 +40,7 @@ use App\Http\Controllers\FormationController;
 use App\Http\Controllers\ReferentielController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\SuperAdmin\VerificationCodeController;
+use App\Http\Controllers\EquipmentController;
 
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -418,4 +419,20 @@ Route::prefix('badge')->name('badge.')->group(function () {
         Route::get('/result',    [BadgePointageController::class,  'result'])      ->name('result');
         Route::post('/geo/save', [BadgeAuthController::class,      'saveGeo'])     ->name('geo.save');
     });
+});
+Route::middleware('auth')->prefix('equipements')->name('equipment.')->group(function () {
+    Route::get('/', [EquipmentController::class, 'catalogue'])->name('catalogue');
+    Route::post('/', [EquipmentController::class, 'storeEquipment'])->name('catalogue.store');
+
+    Route::get('/affecter', [EquipmentController::class, 'assignForm'])->name('assign');
+    Route::post('/affecter', [EquipmentController::class, 'storeAssignment'])->name('assign.store');
+
+    Route::get('/salarie/{employee}', [EquipmentController::class, 'employeeShow'])->name('employee');
+
+    Route::get('/decharges/{discharge}', [EquipmentController::class, 'discharge'])->name('discharge');
+    Route::get('/decharges/{discharge}/pdf', [EquipmentController::class, 'dischargePdf'])->name('discharge.pdf');
+    Route::post('/decharges/{discharge}/signer', [EquipmentController::class, 'dischargeSign'])->name('discharge.sign');
+
+    Route::get('/retours', [EquipmentController::class, 'returns'])->name('returns');
+    Route::post('/retours/{assignment}', [EquipmentController::class, 'storeReturn'])->name('returns.store');
 });

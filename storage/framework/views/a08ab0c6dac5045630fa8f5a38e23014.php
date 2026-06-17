@@ -419,7 +419,7 @@
                     style="padding:10px 12px 10px 40px;border:1px solid var(--border);border-radius:8px;min-width:220px">
             </div>
 
-           
+
 
             <?php if(request()->anyFilled(['department', 'employee_id', 'status'])): ?>
                 <a href="<?php echo e($resetUrl); ?>" class="btn btn-ghost btn-sm">✕ Réinitialiser</a>
@@ -616,7 +616,7 @@
 <?php endif; ?>
 
 
-    
+
 
 
 <div class="modal-overlay" id="absenceModal" onclick="closeModal(event)">
@@ -887,4 +887,5 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 <?php $__env->stopPush(); ?>
 <?php $__env->stopSection(); ?>
+
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\Projects\SIRH-\resources\views/absences/calendar.blade.php ENDPATH**/ ?>

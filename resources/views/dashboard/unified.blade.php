@@ -20,9 +20,9 @@
         <div class="flex items-center gap-3">
             <div class="role-badge @if(auth()->user()->isSuperAdmin()) superadmin-badge @else admin-badge @endif">
                 @if(auth()->user()->isSuperAdmin())
-                    👑 Super Administrateur
+                     Super Administrateur
                 @else
-                    🏢 Administrateur Tenant
+                     Administrateur Tenant
                 @endif
             </div>
             <div class="text-sm text-gray-600">

@@ -27,6 +27,7 @@ class Employee extends Model
         'position',
         'sort_order',
         'diploma_type',
+        'work_site',
         'skills',
         'contract_type',
         'hire_date',
@@ -281,6 +282,15 @@ public function user()
     {
         return $this->belongsTo(User::class);
     }
+    public function equipmentAssignments()
+{
+    return $this->hasMany(\App\Models\EquipmentAssignment::class);
+}
+
+public function activeEquipmentAssignments()
+{
+    return $this->equipmentAssignments()->where('status', 'active');
+}
 
     /**
      * Check if employee has an approved absence on a given date.

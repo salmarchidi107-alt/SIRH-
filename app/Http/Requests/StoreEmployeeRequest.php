@@ -15,36 +15,80 @@ class StoreEmployeeRequest extends FormRequest
     public function rules(): array
     {
         $createAccount = $this->boolean('create_account');
+        $tenantId      = auth()->user()->tenant_id;
 
         return [
-            // ── Infos personnelles ─────────────────────────────────────────
+            // ── Infos personnelles ──────────────────────────────────────
             'first_name'       => 'required|string|max:100',
             'last_name'        => 'required|string|max:100',
+
             'email' => [
                 'required',
                 'email',
-                'unique:employees,email',
+                Rule::unique('employees', 'email')
+                    ->where('tenant_id', $tenantId),
             ],
-            'phone'            => 'nullable|string|max:20',
-            'birth_date'       => 'nullable|date',
-            'genre' => 'nullable|in:homme,femme',
-            'cin'              => 'nullable|string|max:20',
+
+            'phone' => [
+                'nullable',
+                'digits:10',
+                Rule::unique('employees', 'phone')
+                    ->where('tenant_id', $tenantId),
+            ],
+
+            'birth_date'       => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
+            'genre'            => 'nullable|in:homme,femme',
+
+            'cin' => [
+                'nullable',
+                'regex:/^[A-Za-z]{1,2}[0-9]{5,6}$/',
+                Rule::unique('employees', 'cin')
+                    ->where('tenant_id', $tenantId),
+            ],
+
             'address'          => 'nullable|string',
             'family_situation' => 'nullable|string|max:50',
 
-            // ── Infos professionnelles ────────────────────────────────────
+            // ── Infos professionnelles ──────────────────────────────────
             'department'   => 'required|string|max:100',
             'position'     => 'required|string|max:100',
             'diploma_type' => 'nullable|string|max:100',
             'work_site'    => 'nullable|string|max:100',
             'skills'       => 'nullable|string',
 
-            'contract_type' => ['required', Rule::in(['CDI', 'CDD', 'Interim', 'Stage'])],
-            'hire_date'     => 'required|date',
-            'status'        => ['required', Rule::in(['active', 'inactive', 'leave'])],
-            'manager_id'    => 'nullable|exists:employees,id',
+            'contract_type' => 'required|string|max:50',
 
-            // ── Rémunération & social ─────────────────────────────────────
+            'hire_date' => [
+                'required',
+                'date',
+                'regex:/^\d{4}-\d{2}-\d{2}$/',
+                'after:1900-01-01',
+                'before_or_equal:today',
+            ],
+            'contract_start_date' => [
+                'nullable',
+                'date',
+                'regex:/^\d{4}-\d{2}-\d{2}$/',
+                'after:1900-01-01',
+            ],
+            'contract_end_date' => [
+                'nullable',
+                'date',
+                'regex:/^\d{4}-\d{2}-\d{2}$/',
+                'after_or_equal:contract_start_date',
+            ],
+            'birth_date' => [
+                'nullable',
+                'date',
+                'regex:/^\d{4}-\d{2}-\d{2}$/',
+                'before:today',
+                'after:1900-01-01',
+            ],
+
+            'status'     => ['required', Rule::in(['active', 'inactive', 'leave'])],
+            'manager_id' => 'nullable|exists:employees,id',
+
+            // ── Rémunération & social ───────────────────────────────────
             'base_salary'          => 'nullable|numeric|min:0',
             'cnss'                 => 'nullable|string|max:20',
             'children_count'       => 'nullable|integer|min:0',
@@ -53,31 +97,31 @@ class StoreEmployeeRequest extends FormRequest
             'rib'                  => 'nullable|string|max:30',
             'contractual_benefits' => 'nullable|string',
 
-            // ── Contact d'urgence ─────────────────────────────────────────
+            // ── Contact d'urgence ───────────────────────────────────────
             'emergency_contact' => 'nullable|string|max:100',
             'emergency_phone'   => 'nullable|string|max:20',
 
-            // ── Contrat de travail ────────────────────────────────────────
-            'work_hours'          => 'nullable|numeric|min:0',
-            'contract_start_date' => 'nullable|date',
-            'contract_end_date'   => 'nullable|date|after_or_equal:contract_start_date',
-            'work_days'           => 'nullable|array',
-            'work_days.*'         => 'string|in:lundi,mardi,mercredi,jeudi,vendredi,samedi,dimanche',
-            'cp_days'             => 'nullable|numeric|min:0',
-            'conges_anterieurs' => ['nullable', 'numeric', 'min:0', 'max:999'],
-            'work_hours_counter'  => 'nullable|numeric|min:0',
+            // ── Contrat de travail ──────────────────────────────────────
+            'work_hours'         => 'nullable|numeric|min:0|max:168',
+            'work_days'          => 'nullable|array',
+            'work_days.*'        => 'string|in:lundi,mardi,mercredi,jeudi,vendredi,samedi,dimanche',
+            'cp_days'            => 'nullable|numeric|min:0',
+            'conges_anterieurs'  => 'nullable|numeric|min:0|max:999',
+            'work_hours_counter' => 'nullable|numeric|min:0',
 
-            // ── Fichiers ──────────────────────────────────────────────────
-            'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            // ── Fichiers ────────────────────────────────────────────────
+            'photo'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'doc_casier'   => 'nullable|file|mimes:pdf|max:2048',
+            'doc_rib'      => 'nullable|file|mimes:pdf|max:2048',
+            'doc_diplomes' => 'nullable|file|mimes:pdf|max:2048',
+            'doc_cin'      => 'nullable|file|mimes:pdf|max:2048',
+            'doc_contrat'  => 'nullable|file|mimes:pdf|max:2048',
 
-            // ── Compte utilisateur (optionnel) ────────────────────────────
+            // ── Compte utilisateur ──────────────────────────────────────
             'create_account' => 'nullable|boolean',
-            'user_role'      => [
+            'user_role' => [
                 $createAccount ? 'required' : 'nullable',
-                Rule::when(
-                    $createAccount,
-                    [Rule::in(array_keys(config('roles.roles', ['employee' => 'Employé', 'rh' => 'RH', 'admin' => 'Admin'])))]
-                ),
+                'string',
             ],
             'user_password' => [
                 $createAccount ? 'required' : 'nullable',
@@ -87,39 +131,57 @@ class StoreEmployeeRequest extends FormRequest
             ],
             'user_id' => 'nullable|exists:users,id',
 
-            // ── PIN Badge ─────────────────────────────────────────────────
+            // ── PIN Badge ───────────────────────────────────────────────
             'pin' => 'nullable|string|size:6|regex:/^[0-9]{4}[A-Z]{2}$/',
-            // ── Pièces jointes PDF ──
-            'doc_casier'   => 'nullable|file|mimes:pdf|max:2048',
-            'doc_rib'      => 'nullable|file|mimes:pdf|max:2048',
-            'doc_diplomes' => 'nullable|file|mimes:pdf|max:2048',
-            'doc_cin'      => 'nullable|file|mimes:pdf|max:2048',
-            'doc_contrat'  => 'nullable|file|mimes:pdf|max:2048',
         ];
     }
 
     public function messages(): array
     {
         return [
-            'first_name.required'    => 'Le prénom est obligatoire.',
-            'last_name.required'     => 'Le nom est obligatoire.',
-            'email.required'         => 'L\'email est obligatoire.',
-            'email.unique'           => 'Cet email est déjà utilisé.',
-            'department.required'    => 'Le département est obligatoire.',
-            'position.required'      => 'Le poste est obligatoire.',
-            'contract_type.required' => 'Le type de contrat est obligatoire.',
-            'contract_type.in'       => 'Type de contrat invalide (CDI, CDD, Interim, Stage).',
-            'hire_date.required'     => 'La date d\'embauche est obligatoire.',
-            'status.required'        => 'Le statut est obligatoire.',
-            'status.in'              => 'Statut invalide.',
-            'user_role.required'     => 'Le rôle utilisateur est obligatoire si vous créez un compte.',
-            'user_password.required' => 'Le mot de passe est obligatoire si vous créez un compte.',
-            'user_password.min'      => 'Le mot de passe doit contenir au moins 8 caractères.',
-            'user_password.confirmed'=> 'Les mots de passe ne correspondent pas.',
-            'photo.image'            => 'Le fichier doit être une image.',
-            'photo.max'              => 'La photo ne doit pas dépasser 2 Mo.',
-            'pin.regex'              => 'Le PIN doit contenir 4 chiffres suivis de 2 lettres majuscules (ex: 1234AB).',
-            'contract_end_date.after_or_equal' => 'La date de fin doit être après la date de début.',
+            // Champs obligatoires
+            'first_name.required'     => 'Le prénom est obligatoire.',
+            'last_name.required'      => 'Le nom est obligatoire.',
+            'email.required'          => 'L\'adresse email est obligatoire.',
+            'department.required'     => 'Le département est obligatoire.',
+            'position.required'       => 'Le poste est obligatoire.',
+            'contract_type.required'  => 'Le type de contrat est obligatoire.',
+            'hire_date.required'      => 'La date d\'embauche est obligatoire.',
+            'status.required'         => 'Le statut est obligatoire.',
+
+            // Unicité
+            'email.unique'  => 'Cette adresse email est déjà utilisée par un autre employé.',
+            'phone.unique'  => 'Ce numéro de téléphone est déjà utilisé par un autre employé.',
+            'cin.unique'    => 'Ce numéro CIN est déjà associé à un autre employé.',
+
+            // Format téléphone
+            'phone.digits'  => 'Le numéro de téléphone doit contenir exactement 10 chiffres (ex : 0612345678).',
+
+            // Format CIN
+            'cin.regex'     => 'Le format du CIN est invalide (ex : AB123456 — 1 ou 2 lettres suivies de 5 ou 6 chiffres).',
+
+            // Dates
+            'hire_date.regex'             => 'L\'année de la date d\'embauche doit contenir exactement 4 chiffres.',
+            'hire_date.before_or_equal'   => 'La date d\'embauche ne peut pas être dans le futur.',
+            'birth_date.regex'            => 'L\'année de la date de naissance doit contenir exactement 4 chiffres.',
+            'birth_date.before'           => 'La date de naissance doit être dans le passé.',
+            'birth_date.after'            => 'La date de naissance semble invalide.',
+            'contract_start_date.regex'   => 'L\'année du début de contrat doit contenir exactement 4 chiffres.',
+            'contract_end_date.regex'     => 'L\'année de fin de contrat doit contenir exactement 4 chiffres.',
+            'contract_end_date.after_or_equal' => 'La date de fin de contrat doit être postérieure à la date de début.',
+
+            // Compte utilisateur
+            'user_role.required'      => 'Le rôle est obligatoire pour créer un compte.',
+            'user_password.required'  => 'Le mot de passe est obligatoire pour créer un compte.',
+            'user_password.min'       => 'Le mot de passe doit contenir au moins 8 caractères.',
+            'user_password.confirmed' => 'Les mots de passe ne correspondent pas.',
+
+            // Fichiers
+            'photo.image' => 'Le fichier doit être une image (jpg, jpeg, png, webp).',
+            'photo.max'   => 'La photo ne doit pas dépasser 2 Mo.',
+            'pin.regex'   => 'Le PIN doit contenir 4 chiffres suivis de 2 lettres majuscules (ex : 1234AB).',
+
+            'status.in' => 'Statut invalide.',
         ];
     }
 

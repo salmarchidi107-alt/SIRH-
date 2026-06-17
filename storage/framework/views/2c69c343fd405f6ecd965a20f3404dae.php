@@ -331,11 +331,6 @@
                style="background:#9CC4B7;color:white;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
                 Badges PIN
             </a>
-            <a href="<?php echo e(route('temps.vue-ensemble', ['annee' => $currentDate->year, 'mois' => $currentDate->month])); ?>"
-               style="background:#5E9E89;color:white;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;"
-               target="_blank">
-                Vue Mensuelle
-            </a>
             <button class="pt-btn-validate" id="btn-validate"
                     data-date="<?php echo e($currentDate->toDateString()); ?>"
                     data-url="<?php echo e(route('pointage.valider-journee')); ?>">

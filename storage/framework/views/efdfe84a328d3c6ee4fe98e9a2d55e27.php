@@ -216,10 +216,24 @@ if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>
                 </div>
-                <div class="form-group">
+                 <div class="form-group">
                     <label>Téléphone</label>
-                    <input type="text" name="phone" class="form-control"
-                           value="<?php echo e(old('phone', $employee->phone)); ?>">
+                    <input type="tel" name="phone" class="form-control"
+                        value="<?php echo e(old('phone')); ?>"
+                        pattern="[0-9]{10}"
+                        maxlength="10"
+                        title="10 chiffres exacts requis"
+                        inputmode="numeric">
+                        <?php $__errorArgs = ['phone'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                        <span style="color:var(--danger);font-size:.75rem"><?php echo e($message); ?></span>
+                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                 </div>
                 <div class="form-group">
                     <label>Date de naissance</label>
@@ -246,7 +260,22 @@ unset($__errorArgs, $__bag); ?>
                 <div class="form-group">
                     <label>CIN</label>
                     <input type="text" name="cin" class="form-control"
-                           value="<?php echo e(old('cin', $employee->cin)); ?>">
+                        value="<?php echo e(old('cin')); ?>"
+                        placeholder="AB123456"
+                        pattern="[A-Za-z]{1,2}[0-9]{5,6}"
+                        maxlength="8"
+                        title="Format CIN invalide (ex : AB123456)"
+                        oninput="this.value = this.value.toUpperCase()">
+                    <?php $__errorArgs = ['cin'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                        <span style="color:var(--danger);font-size:.75rem"><?php echo e($message); ?></span>
+                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                 </div>
                 <div class="form-group">
                     <label>Situation familiale</label>
@@ -459,7 +488,7 @@ unset($__errorArgs, $__bag); ?>
                 <div class="form-group">
                     <label>Salaire de base (MAD)</label>
                     <input type="number" name="base_salary" class="form-control"
-                           value="<?php echo e(old('base_salary', $employee->base_salary)); ?>" min="0" step="100">
+                           value="<?php echo e(old('base_salary', $employee->base_salary)); ?>" min="0" step="50">
                 </div>
                 <div class="form-group">
                     <label>N° CNSS</label>

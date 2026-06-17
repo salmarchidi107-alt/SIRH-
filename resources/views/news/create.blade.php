@@ -11,7 +11,7 @@
     <div class="card-body">
         <form action="{{ route('news.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
-            
+
             <div class="row">
                 <div class="col-md-8">
                     <div class="form-group">
@@ -118,6 +118,7 @@ function previewImage(event) {
         reader.readAsDataURL(file);
     }
 }
+
 </script>
 @endsection
 

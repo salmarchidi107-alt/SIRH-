@@ -126,7 +126,7 @@ trait HasModulePermissions
             'absences','absences_calendar','absences_counters',
             'lms','referentiel','lms_planning',
             'salary','ged','ged_modeles','ged_entete',
-            'parametrage','reporting',
+            'parametrage','reporting', 'equipment',
         ];
 
         if ($this->isFullAccessRole()) {

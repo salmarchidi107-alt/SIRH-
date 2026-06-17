@@ -24,6 +24,9 @@ class EmployeeController extends Controller
 {
     public function __construct(private EmployeeService $employeeService) {}
 
+    // =========================================================================
+    // index
+    // =========================================================================
     public function index(Request $request)
     {
         try {
@@ -48,6 +51,9 @@ class EmployeeController extends Controller
         }
     }
 
+    // =========================================================================
+    // ajaxIndex — utilisé par la recherche AJAX et le bouton "Charger plus"
+    // =========================================================================
     public function ajaxIndex(Request $request)
     {
         try {
@@ -73,6 +79,9 @@ class EmployeeController extends Controller
                     'csrf_token'    => csrf_token(),
                     '_method'       => 'DELETE',
                     'base_salary'   => $e->base_salary ? number_format($e->base_salary, 0) : '0',
+                    // ── Photo : nécessaire pour afficher l'avatar correct côté JS ──
+                    'photo'         => $e->photo,
+                    'photo_url'     => $e->photo ? asset('storage/' . $e->photo) : null,
                 ]),
                 'pagination' => [
                     'current_page' => $employees->currentPage(),
@@ -87,6 +96,9 @@ class EmployeeController extends Controller
         }
     }
 
+    // =========================================================================
+    // getStatusColor
+    // =========================================================================
     private function getStatusColor($status): string
     {
         return match ($status) {
@@ -97,6 +109,9 @@ class EmployeeController extends Controller
         };
     }
 
+    // =========================================================================
+    // normalizeRole
+    // =========================================================================
     private function normalizeRole(?string $role): string
     {
         if (!$role) return UserRole::Employee->value;
@@ -117,6 +132,9 @@ class EmployeeController extends Controller
         return UserRole::Employee->value;
     }
 
+    // =========================================================================
+    // reorder
+    // =========================================================================
     public function reorder(Request $request)
     {
         try {
@@ -139,6 +157,9 @@ class EmployeeController extends Controller
         }
     }
 
+    // =========================================================================
+    // create
+    // =========================================================================
     public function create()
     {
         try {
@@ -157,6 +178,9 @@ class EmployeeController extends Controller
         }
     }
 
+    // =========================================================================
+    // store
+    // =========================================================================
     public function store(StoreEmployeeRequest $request)
     {
         try {
@@ -187,17 +211,17 @@ class EmployeeController extends Controller
                     ]);
 
                     $user = User::firstOrCreate(
-    [
-        'email'     => $employee->email,
-        'tenant_id' => $tenantId,
-    ],
-    [
-        'name'           => $employee->first_name . ' ' . $employee->last_name,
-        'password'       => Hash::make($request->user_password),
-        'plain_password' => $request->user_password,
-        'role'           => $role,
-    ]
-);
+                        [
+                            'email'     => $employee->email,
+                            'tenant_id' => $tenantId,
+                        ],
+                        [
+                            'name'           => $employee->first_name . ' ' . $employee->last_name,
+                            'password'       => Hash::make($request->user_password),
+                            'plain_password' => $request->user_password,
+                            'role'           => $role,
+                        ]
+                    );
 
                     $employee->update(['user_id' => $user->id]);
 
@@ -218,6 +242,9 @@ class EmployeeController extends Controller
         }
     }
 
+    // =========================================================================
+    // show
+    // =========================================================================
     public function show(Employee $employee)
     {
         if (auth()->user()->role === 'employee' && auth()->user()->employee_id != $employee->id) {
@@ -246,10 +273,12 @@ class EmployeeController extends Controller
         }
     }
 
+    // =========================================================================
+    // edit
+    // =========================================================================
     public function edit(Employee $employee)
     {
         try {
-            // Charger le compte utilisateur lié avec ses permissions (eager load)
             $linkedUser = null;
             if ($employee->user_id) {
                 $linkedUser = User::with('modulePermissions')
@@ -273,6 +302,9 @@ class EmployeeController extends Controller
         }
     }
 
+    // =========================================================================
+    // update
+    // =========================================================================
     public function update(UpdateEmployeeRequest $request, Employee $employee)
     {
         try {
@@ -298,12 +330,12 @@ class EmployeeController extends Controller
             $this->employeeService->update($employee, $validated);
 
             if (isset($validated['conges_anterieurs']) && !auth()->user()->isAdmin()) {
-    unset($validated['conges_anterieurs']);
-}
+                unset($validated['conges_anterieurs']);
+            }
+
             // ── Mise à jour du mot de passe ──────────────────────────────
             if ($request->boolean('change_password') && $request->filled('new_password')) {
 
-                // Récupérer ou créer le compte utilisateur lié
                 $user = $employee->user;
 
                 if (! $user && $employee->user_id) {
@@ -320,7 +352,6 @@ class EmployeeController extends Controller
                         'employee_id' => $employee->id,
                     ]);
                 } else {
-                    // Aucun compte lié — impossible de définir un mot de passe
                     Log::warning('Tentative de mise à jour du mot de passe sans compte utilisateur lié', [
                         'employee_id' => $employee->id,
                     ]);
@@ -345,47 +376,52 @@ class EmployeeController extends Controller
         }
     }
 
+    // =========================================================================
+    // destroy
+    // =========================================================================
     public function destroy(Employee $employee)
-{
-    try {
-        $docFields = ['doc_casier_path', 'doc_rib_path', 'doc_diplomes_path', 'doc_cin_path', 'doc_contrat_path'];
-        foreach ($docFields as $field) {
-            if ($employee->$field && Storage::disk('public')->exists($employee->$field)) {
-                Storage::disk('public')->delete($employee->$field);
+    {
+        try {
+            $docFields = ['doc_casier_path', 'doc_rib_path', 'doc_diplomes_path', 'doc_cin_path', 'doc_contrat_path'];
+            foreach ($docFields as $field) {
+                if ($employee->$field && Storage::disk('public')->exists($employee->$field)) {
+                    Storage::disk('public')->delete($employee->$field);
+                }
             }
+
+            $tenantId = auth()->user()->tenant_id;
+            $user     = null;
+
+            if ($employee->user_id) {
+                $user = User::find($employee->user_id);
+            }
+
+            if (!$user && $employee->email) {
+                $user = User::where('email', $employee->email)
+                            ->where('tenant_id', $tenantId)
+                            ->first();
+            }
+
+            if ($user) {
+                $user->verificationCodes()->delete();
+                $user->modulePermissions()->delete();
+                $user->delete();
+            }
+
+            $employee->delete();
+
+            return redirect()->route('employees.index')
+                ->with('success', 'Employé supprimé.');
+
+        } catch (Exception $e) {
+            Log::error('Employee delete error', ['error' => $e->getMessage()]);
+            return back()->with('error', 'Erreur suppression employé.');
         }
-
-        // Trouver le User lié — par user_id OU par email (fallback)
-        $tenantId = auth()->user()->tenant_id;
-        $user = null;
-
-        if ($employee->user_id) {
-            $user = User::find($employee->user_id);
-        }
-
-        if (!$user && $employee->email) {
-            $user = User::where('email', $employee->email)
-                        ->where('tenant_id', $tenantId)
-                        ->first();
-        }
-
-        if ($user) {
-            $user->verificationCodes()->delete();
-            $user->modulePermissions()->delete();
-            $user->delete();
-        }
-
-        $employee->delete();
-
-        return redirect()->route('employees.index')
-            ->with('success', 'Employé supprimé.');
-
-    } catch (Exception $e) {
-        Log::error('Employee delete error', ['error' => $e->getMessage()]);
-        return back()->with('error', 'Erreur suppression employé.');
     }
-}
 
+    // =========================================================================
+    // export Excel
+    // =========================================================================
     public function export()
     {
         try {
@@ -397,6 +433,9 @@ class EmployeeController extends Controller
         }
     }
 
+    // =========================================================================
+    // regeneratePin
+    // =========================================================================
     public function regeneratePin(Request $request, Employee $employee)
     {
         abort_unless(auth()->user()->can('manage_employees'), 403);
@@ -415,6 +454,9 @@ class EmployeeController extends Controller
         ]);
     }
 
+    // =========================================================================
+    // exportPdf — liste globale ou filtrée
+    // =========================================================================
     public function exportPdf(Request $request)
     {
         try {
@@ -439,6 +481,9 @@ class EmployeeController extends Controller
         }
     }
 
+    // =========================================================================
+    // exportPdfByDept — PDF d'un département spécifique
+    // =========================================================================
     public function exportPdfByDept(Request $request, string $department)
     {
         try {
@@ -461,6 +506,9 @@ class EmployeeController extends Controller
         }
     }
 
+    // =========================================================================
+    // ajax — alias de ajaxIndex
+    // =========================================================================
     public function ajax(Request $request)
     {
         return $this->ajaxIndex($request);
@@ -473,13 +521,9 @@ class EmployeeController extends Controller
     /**
      * Persiste les permissions du formulaire pour un utilisateur donné.
      * Efface et recrée toutes les permissions en une seule opération.
-     *
-     * @param  User   $user
-     * @param  array  $rawPerms  Ex: ['employees' => ['view' => 'on', 'create' => 'on'], ...]
      */
     private function savePermissions(User $user, array $rawPerms): void
     {
-        // Suppression complète des anciennes permissions
         UserPermission::where('user_id', $user->id)->delete();
 
         if (empty($rawPerms)) {
@@ -490,7 +534,6 @@ class EmployeeController extends Controller
         $now  = now();
 
         foreach ($rawPerms as $module => $actions) {
-            // On ne sauvegarde que si au moins une action est cochée
             if (
                 empty($actions['view'])   &&
                 empty($actions['create']) &&

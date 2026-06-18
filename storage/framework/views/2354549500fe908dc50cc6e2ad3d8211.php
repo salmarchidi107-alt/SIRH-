@@ -115,13 +115,6 @@
             border-radius: 20px;
             line-height: 1.6;
         }
-
-        /* ── Bouton en cours de soumission ── */
-        button[data-submitting="true"] {
-            opacity: 0.65;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
     </style>
 </head>
 <body>
@@ -255,6 +248,7 @@
             <?php if(Auth::check() && Auth::user()->role === 'employee'): ?>
             <?php $u = Auth::user(); ?>
 
+            
             <?php if($u->canView('trombinoscope') || $u->canView('news')): ?>
             <div class="nav-section-label">Personnel</div>
 
@@ -282,6 +276,7 @@
             <?php endif; ?>
             <?php endif; ?>
 
+            
             <?php if($u->canView('planning') || $u->canView('temps_vue') || $u->canView('pointage')): ?>
             <div class="nav-section-label">Temps &amp; Présence</div>
 
@@ -322,6 +317,7 @@
             <?php endif; ?>
             <?php endif; ?>
 
+            
             <?php if($u->canView('absences') || $u->canCreate('absences') || $u->canView('absences_calendar') || $u->canView('absences_counters')): ?>
             <div class="nav-section-label">Absences &amp; Congés</div>
 
@@ -362,6 +358,7 @@
             <?php endif; ?>
             <?php endif; ?>
 
+            
             <?php if($u->canView('lms') || $u->canView('referentiel') || $u->canView('lms_planning')): ?>
             <div class="nav-section-label">Formations</div>
 
@@ -407,6 +404,7 @@
             <?php endif; ?>
             <?php endif; ?>
 
+            
             <?php if($u->canView('salary') && $u->employee_id): ?>
             <div class="nav-section-label">Paie</div>
 
@@ -420,6 +418,7 @@
             </a>
             <?php endif; ?>
 
+            
             <?php if($u->canView('ged') || $u->canView('ged_modeles') || $u->canView('ged_entete')): ?>
             <div class="nav-section-label">GED</div>
 
@@ -463,6 +462,7 @@
             <?php endif; ?>
             <?php endif; ?>
 
+            
             <?php if($u->canView('parametrage') || $u->canView('reporting')): ?>
             <div class="nav-section-label">Paramétrage</div>
 
@@ -960,86 +960,30 @@
 </style>
 
 <script>
-// ══════════════════════════════════════════════════════════════════════════════
-// PROTECTION ANTI DOUBLE-SUBMIT GLOBALE
-// Bloque tout re-submit de formulaire dès le premier envoi réussi.
-// Exceptions : formulaires avec data-no-lock="true" (ex: recherche, filtres)
-// ══════════════════════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', function () {
-    document.addEventListener('submit', function (e) {
-        var form = e.target;
-
-        // Ignorer les formulaires de recherche/filtre (GET) et ceux marqués explicitement
-        if (form.method && form.method.toUpperCase() === 'GET') return;
-        if (form.dataset.noLock === 'true') return;
-
-        // Déjà en cours de soumission → bloquer
-        if (form.dataset.submitting === 'true') {
-            e.preventDefault();
-            return;
-        }
-
-        // Marquer comme en cours
-        form.dataset.submitting = 'true';
-
-        // Désactiver tous les boutons submit du formulaire
-        var btns = form.querySelectorAll('button[type="submit"], input[type="submit"]');
-        btns.forEach(function (btn) {
-            btn.disabled = true;
-            btn.dataset.submitting = 'true';
-
-            // Ajouter un indicateur visuel sur les <button>
-            if (btn.tagName === 'BUTTON' && btn.innerHTML) {
-                btn.dataset.originalHtml = btn.innerHTML;
-                btn.innerHTML = btn.innerHTML
-                    + '<span style="margin-left:6px;opacity:0.6;font-size:0.82em;font-style:italic;">...</span>';
-            }
-        });
-
-        // Sécurité : si le formulaire ne navigue pas (ex: erreur réseau),
-        // réactiver après 8 secondes pour ne pas bloquer l'utilisateur
-        setTimeout(function () {
-            if (form.dataset.submitting === 'true') {
-                form.dataset.submitting = 'false';
-                btns.forEach(function (btn) {
-                    btn.disabled = false;
-                    btn.dataset.submitting = 'false';
-                    if (btn.dataset.originalHtml) {
-                        btn.innerHTML = btn.dataset.originalHtml;
-                        delete btn.dataset.originalHtml;
-                    }
-                });
-            }
-        }, 8000);
-    }, true); // capture phase — intercepte avant tout handler enfant
-});
-
-// ── Sidebar ──────────────────────────────────────────────────────────────────
 function toggleSidebar() {
-    var sidebar = document.getElementById('sidebar');
-    var icon    = document.getElementById('collapseIcon');
+    const sidebar     = document.getElementById('sidebar');
+    const icon        = document.getElementById('collapseIcon');
     sidebar.classList.toggle('collapsed');
-    var isCollapsed = sidebar.classList.contains('collapsed');
+    const isCollapsed = sidebar.classList.contains('collapsed');
     icon.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
     localStorage.setItem('sidebarCollapsed', isCollapsed);
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
     if (localStorage.getItem('sidebarCollapsed') === 'true') {
         document.getElementById('sidebar').classList.add('collapsed');
         document.getElementById('collapseIcon').style.transform = 'rotate(180deg)';
     }
 });
 
-// ── Chat popup ───────────────────────────────────────────────────────────────
 function toggleChatPopup() {
-    var popup = document.getElementById('chatPopup');
-    var btn   = document.querySelector('.floating-chat-btn');
+    const popup = document.getElementById('chatPopup');
+    const btn   = document.querySelector('.floating-chat-btn');
     popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
     if (btn) btn.classList.toggle('active');
 }
 
-var threadId = localStorage.getItem('chatThread') || null;
+let threadId = localStorage.getItem('chatThread') || null;
 
 function autoResize(el) {
     el.style.height = 'auto';
@@ -1055,14 +999,14 @@ function sendSuggestion(text) {
     sendWhatsAppMessage();
 }
 
-function sendWhatsAppMessage() {
-    var input    = document.getElementById('whatsappInput');
-    var btn      = document.getElementById('whatsappSend');
-    var messages = document.getElementById('whatsappMessages');
-    var text     = input.value.trim();
+async function sendWhatsAppMessage() {
+    const input    = document.getElementById('whatsappInput');
+    const btn      = document.getElementById('whatsappSend');
+    const messages = document.getElementById('whatsappMessages');
+    const text     = input.value.trim();
     if (!text) return;
 
-    var userMsg = document.createElement('div');
+    const userMsg = document.createElement('div');
     userMsg.className   = 'whatsapp-message whatsapp-user';
     userMsg.textContent = text;
     messages.appendChild(userMsg);
@@ -1070,123 +1014,116 @@ function sendWhatsAppMessage() {
 
     input.value = ''; autoResize(input); btn.disabled = true;
 
-    var typing = document.createElement('div');
+    const typing = document.createElement('div');
     typing.className = 'whatsapp-message whatsapp-bot typing';
     typing.innerHTML = '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>';
     messages.appendChild(typing);
     messages.scrollTop = messages.scrollHeight;
 
-    fetch('/ask-ai', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-        },
-        body: JSON.stringify({ message: text, thread: threadId }),
-    })
-    .then(function(res) { return res.json(); })
-    .then(function(data) {
+    try {
+        const res  = await fetch('/ask-ai', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ message: text, thread: threadId }),
+        });
+        const data = await res.json();
         typing.remove();
         if (data.reply) {
             threadId = data.thread;
             localStorage.setItem('chatThread', threadId);
-            var botMsg = document.createElement('div');
+            const botMsg = document.createElement('div');
             botMsg.className = 'whatsapp-message whatsapp-bot';
             botMsg.innerHTML = data.reply.replace(/\n/g, '<br>');
             messages.appendChild(botMsg);
         } else {
-            var err = document.createElement('div');
+            const err = document.createElement('div');
             err.className = 'whatsapp-message whatsapp-bot';
             err.textContent = 'Erreur serveur';
             messages.appendChild(err);
         }
-    })
-    .catch(function() {
+    } catch {
         typing.remove();
-        var err = document.createElement('div');
+        const err = document.createElement('div');
         err.className = 'whatsapp-message whatsapp-bot';
         err.textContent = 'Pas de connexion';
         messages.appendChild(err);
-    })
-    .finally(function() {
+    } finally {
         btn.disabled = false; input.focus();
         messages.scrollTop = messages.scrollHeight;
-    });
+    }
 }
 
-// ── Menu mobile ──────────────────────────────────────────────────────────────
-document.getElementById('menuToggle') && document.getElementById('menuToggle').addEventListener('click', function() {
+document.getElementById('menuToggle')?.addEventListener('click', () => {
     document.getElementById('sidebar').classList.toggle('open');
 });
 
-document.addEventListener('keydown', function(e) { if (e.key === 'Escape') toggleChatPopup(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleChatPopup(); });
 
-// ── Export dropdown ───────────────────────────────────────────────────────────
 function toggleExportDropdown() {
-    var d = document.getElementById('exportDropdown');
+    const d = document.getElementById('exportDropdown');
     if (d) d.style.display = d.style.display === 'none' ? 'block' : 'none';
 }
 document.addEventListener('click', function(e) {
-    var wrapper  = document.querySelector('.export-wrapper');
-    var dropdown = document.getElementById('exportDropdown');
+    const wrapper = document.querySelector('.export-wrapper');
+    const dropdown = document.getElementById('exportDropdown');
     if (wrapper && dropdown && !wrapper.contains(e.target))
         dropdown.style.display = 'none';
 });
 
-// ── Notifications ─────────────────────────────────────────────────────────────
 function toggleNotifications() {
-    var d = document.getElementById('notifDropdown');
+    const d = document.getElementById('notifDropdown');
     d.style.display = d.style.display === 'none' ? 'block' : 'none';
     if (d.style.display === 'block') loadNotifications();
 }
 document.addEventListener('click', function(e) {
-    var wrapper = document.querySelector('.notification-wrapper');
+    const wrapper = document.querySelector('.notification-wrapper');
     if (wrapper && !wrapper.contains(e.target))
         document.getElementById('notifDropdown').style.display = 'none';
 });
 
 function loadNotifications() {
     fetch('<?php echo e(route("api.notifications.data")); ?>')
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            var notifList  = document.getElementById('notifList');
-            var notifCount = document.getElementById('notifCount');
-            var notifDot   = document.getElementById('notifDot');
+        .then(r => r.json())
+        .then(data => {
+            const notifList  = document.getElementById('notifList');
+            const notifCount = document.getElementById('notifCount');
+            const notifDot   = document.getElementById('notifDot');
             notifCount.textContent = data.totalCount;
             notifDot.style.display = data.totalCount > 0 ? 'block' : 'none';
-            var items = [].concat(
-                data.absences.map(function(i) { return Object.assign({}, i, { color: '#f59e0b' }); }),
-                data.news.map(function(i)     { return Object.assign({}, i, { color: '#0ea5e9' }); })
-            ).sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
-
+            let items = [
+                ...data.absences.map(i => ({ ...i, color: '#f59e0b' })),
+                ...data.news.map(i    => ({ ...i, color: '#0ea5e9' })),
+            ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             if (!items.length) {
                 notifList.innerHTML = '<div style="padding:20px;text-align:center;color:#888;">Aucune notification</div>';
                 return;
             }
-            notifList.innerHTML = items.slice(0, 10).map(function(item) {
-                var icon = item.type === 'absence'
-                    ? '<i class="fa-solid fa-calendar-days"></i>'
-                    : '<i class="fa-solid fa-newspaper"></i>';
-                return '<a href="' + item.url + '" style="display:flex;align-items:center;gap:10px;padding:10px 16px;text-decoration:none;color:inherit;border-bottom:1px solid #f0f0f0;transition:background .2s;" onmouseover="this.style.background=\'#f8f9fa\'" onmouseout="this.style.background=\'transparent\'">'
-                    + '<div style="width:32px;height:32px;border-radius:50%;background:' + item.color + ';display:flex;align-items:center;justify-content:center;color:white;font-size:.8rem;flex-shrink:0;">' + icon + '</div>'
-                    + '<div style="flex:1;min-width:0;">'
-                    + '<div style="font-size:.85rem;font-weight:500;">' + item.message + '</div>'
-                    + '<div style="font-size:.75rem;color:#888;">' + item.created_at + '</div>'
-                    + '</div></a>';
-            }).join('');
+            notifList.innerHTML = items.slice(0, 10).map(item => `
+                <a href="${item.url}" style="display:flex;align-items:center;gap:10px;padding:10px 16px;text-decoration:none;color:inherit;border-bottom:1px solid #f0f0f0;transition:background .2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                    <div style="width:32px;height:32px;border-radius:50%;background:${item.color};display:flex;align-items:center;justify-content:center;color:white;font-size:.8rem;flex-shrink:0;">
+                        ${item.type === 'absence' ? '<i class="fa-solid fa-calendar-days"></i>' : '<i class="fa-solid fa-newspaper"></i>'}
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:.85rem;font-weight:500;">${item.message}</div>
+                        <div style="font-size:.75rem;color:#888;">${item.created_at}</div>
+                    </div>
+                </a>
+            `).join('');
         })
-        .catch(function() {
+        .catch(() => {
             document.getElementById('notifList').innerHTML = '<div style="padding:20px;text-align:center;color:#888;">Erreur de chargement</div>';
         });
 }
 
-// ── Compteurs animés ──────────────────────────────────────────────────────────
-document.querySelectorAll('[data-count]').forEach(function(el) {
-    var target  = parseInt(el.getAttribute('data-count'));
-    var current = 0;
-    var step    = Math.ceil(target / 40);
-    var timer   = setInterval(function() {
+document.querySelectorAll('[data-count]').forEach(el => {
+    const target = parseInt(el.getAttribute('data-count'));
+    let current  = 0;
+    const step   = Math.ceil(target / 40);
+    const timer  = setInterval(() => {
         current = Math.min(current + step, target);
         el.textContent = current.toLocaleString('fr-FR');
         if (current >= target) clearInterval(timer);

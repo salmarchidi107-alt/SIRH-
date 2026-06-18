@@ -60,7 +60,7 @@ table.eq-table tr:hover td { background: #f8fafc; }
                 </ul>
             </div>
         <?php endif; ?>
-        <form action="<?php echo e(route('equipment.catalogue.store')); ?>" method="POST">
+        <form action="<?php echo e(route('sirh.equipements.store')); ?>" method="POST">
             <?php echo csrf_field(); ?>
             <div class="form-grid">
                 <div class="form-group">
@@ -114,18 +114,18 @@ table.eq-table tr:hover td { background: #f8fafc; }
     <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
         <div class="card-title">Liste des équipements</div>
         <form method="GET" class="eq-filters" style="margin:0">
-            <select name="category" class="form-control" onchange="this.form.submit()">
+            <select name="category_id" class="form-control" onchange="this.form.submit()">
                 <option value="">Toutes catégories</option>
                 <?php $__currentLoopData = $categories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                    <option value="<?php echo e($cat->id); ?>" <?php echo e(request('category') == $cat->id ? 'selected' : ''); ?>><?php echo e($cat->name); ?></option>
+                    <option value="<?php echo e($cat->id); ?>" <?php echo e(request('category_id') == $cat->id ? 'selected' : ''); ?>><?php echo e($cat->name); ?></option>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </select>
             <select name="status" class="form-control" onchange="this.form.submit()">
                 <option value="">Tous statuts</option>
-                <option value="disponible" <?php echo e(request('status') == 'disponible' ? 'selected' : ''); ?>>Disponible</option>
-                <option value="affecte" <?php echo e(request('status') == 'affecte' ? 'selected' : ''); ?>>Affecté</option>
+                <option value="disponible"  <?php echo e(request('status') == 'disponible'  ? 'selected' : ''); ?>>Disponible</option>
+                <option value="affecte"     <?php echo e(request('status') == 'affecte'     ? 'selected' : ''); ?>>Affecté</option>
                 <option value="maintenance" <?php echo e(request('status') == 'maintenance' ? 'selected' : ''); ?>>Maintenance</option>
-                <option value="hors_service" <?php echo e(request('status') == 'hors_service' ? 'selected' : ''); ?>>Hors service</option>
+                <option value="hors_service"<?php echo e(request('status') == 'hors_service'? 'selected' : ''); ?>>Hors service</option>
             </select>
         </form>
     </div>
@@ -142,29 +142,41 @@ table.eq-table tr:hover td { background: #f8fafc; }
                 <tr>
                     <td class="mono"><?php echo e($eq->reference); ?></td>
                     <td style="font-weight:500"><?php echo e($eq->designation); ?></td>
-                    <td><span class="tag t-blue"><?php echo e($eq->category->name); ?></span></td>
+                    <td><span class="tag t-blue"><?php echo e($eq->category->name ?? '—'); ?></span></td>
                     <td><?php echo e($eq->brand ?? '—'); ?></td>
                     <td>
                         <?php
-                            $condTags = ['neuf' => 't-green', 'bon_etat' => 't-amber', 'usure_normale' => 't-gray', 'endommage' => 't-red', 'perdu' => 't-red'];
+                            $condTags   = ['neuf' => 't-green', 'bon_etat' => 't-amber', 'usure_normale' => 't-gray', 'endommage' => 't-red', 'perdu' => 't-red'];
                             $condLabels = ['neuf' => 'Neuf', 'bon_etat' => 'Bon état', 'usure_normale' => 'Usure normale', 'endommage' => 'Endommagé', 'perdu' => 'Perdu'];
                         ?>
                         <span class="tag <?php echo e($condTags[$eq->condition] ?? 't-gray'); ?>"><?php echo e($condLabels[$eq->condition] ?? $eq->condition); ?></span>
                     </td>
                     <td>
                         <?php
-                            $statusTags = ['disponible' => 't-green', 'affecte' => 't-blue', 'maintenance' => 't-amber', 'hors_service' => 't-red'];
+                            $statusTags   = ['disponible' => 't-green', 'affecte' => 't-blue', 'maintenance' => 't-amber', 'hors_service' => 't-red'];
                             $statusLabels = ['disponible' => 'Disponible', 'affecte' => 'Affecté', 'maintenance' => 'Maintenance', 'hors_service' => 'Hors service'];
                         ?>
                         <span class="tag <?php echo e($statusTags[$eq->status] ?? 't-gray'); ?>"><?php echo e($statusLabels[$eq->status] ?? $eq->status); ?></span>
                     </td>
-                    <td style="text-align:right"><?php echo e(number_format($eq->value, 0, ',', ' ')); ?></td>
-                    <td>
+                    <td style="text-align:right"><?php echo e(number_format($eq->value ?? 0, 0, ',', ' ')); ?></td>
+                    <td style="display:flex;gap:6px">
+                        <a href="<?php echo e(route('sirh.equipements.edit', $eq)); ?>"
+                           class="btn btn-ghost" style="padding:4px 10px;font-size:12px">Modifier</a>
+
                         <?php if($eq->status === 'disponible'): ?>
-                            <a href="<?php echo e(route('equipment.assign')); ?>" class="btn btn-ghost" style="padding:4px 10px;font-size:12px">Affecter</a>
-                        <?php elseif($eq->currentAssignment()): ?>
-                            <a href="<?php echo e(route('equipment.employee', $eq->currentAssignment()->employee_id)); ?>" class="btn btn-ghost" style="padding:4px 10px;font-size:12px">Voir</a>
+                            <a href="<?php echo e(route('sirh.equipements.affectations.create')); ?>?equipment_id=<?php echo e($eq->id); ?>"
+                               class="btn btn-ghost" style="padding:4px 10px;font-size:12px">Affecter</a>
+                        <?php elseif($eq->activeAssignment): ?>
+                            <a href="<?php echo e(route('sirh.equipements.affectations.par-employe', $eq->activeAssignment->employee_id)); ?>"
+                               class="btn btn-ghost" style="padding:4px 10px;font-size:12px">Voir affectation</a>
                         <?php endif; ?>
+
+                        <form method="POST" action="<?php echo e(route('sirh.equipements.destroy', $eq)); ?>"
+                              onsubmit="return confirm('Supprimer <?php echo e(addslashes($eq->reference)); ?> ?')" style="display:inline">
+                            <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
+                            <button type="submit" class="btn btn-ghost"
+                                    style="padding:4px 10px;font-size:12px;color:#dc2626">Supprimer</button>
+                        </form>
                     </td>
                 </tr>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>

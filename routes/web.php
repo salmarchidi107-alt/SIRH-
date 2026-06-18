@@ -40,8 +40,11 @@ use App\Http\Controllers\FormationController;
 use App\Http\Controllers\ReferentielController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\SuperAdmin\VerificationCodeController;
-use App\Http\Controllers\EquipmentController;
-
+use App\Http\Controllers\AffectationController;
+use App\Http\Controllers\DechargeController;
+use App\Http\Controllers\EquipementController;
+use App\Http\Controllers\RetourController;
+use App\Http\Controllers\Admin\VerificationCodeController as AdminVerifCodeController;
 
 // ═════════════════════════════════════════════════════════════════════════════
 // DEBUG TEMPORAIRE — À SUPPRIMER APRÈS TEST
@@ -286,11 +289,7 @@ Route::middleware(['web', 'auth', 'identify-tenant', '2fa'])->group(function () 
             Route::delete('/departments/{department}', [DepartmentController::class, 'destroy'])->name('departments.destroy');
         });
 
-        // ═════════════════════════════════════════════════════════════════
-        // LMS — DÉPLACÉ ICI ✅ (était hors du groupe identify-tenant)
-        // Le middleware identify-tenant initialise config('app.current_tenant_id')
-        // ce qui active TenantScope sur Formation, Formateur, etc.
-        // ═════════════════════════════════════════════════════════════════
+        // ── LMS
         Route::middleware(['role:admin,rh,employee'])->prefix('lms')->name('lms.')->group(function () {
             Route::get('/',                        [FormationController::class, 'index'])                ->name('index');
             Route::get('/planning',                [FormationController::class, 'planning'])             ->name('planning');
@@ -301,11 +300,7 @@ Route::middleware(['web', 'auth', 'identify-tenant', '2fa'])->group(function () 
             Route::get('/employees-by-department', [FormationController::class, 'employeesByDepartment'])->name('employeesByDepartment');
         });
 
-        // ═════════════════════════════════════════════════════════════════
-        // RÉFÉRENTIEL — DÉPLACÉ ICI ✅ (était hors du groupe identify-tenant)
-        // Le middleware identify-tenant initialise config('app.current_tenant_id')
-        // ce qui active TenantScope sur Formateur, CatalogueFormation, OrganismeFormation
-        // ═════════════════════════════════════════════════════════════════
+        // ── Référentiel
         Route::middleware(['role:admin,rh'])->prefix('referentiel')->name('referentiel.')->group(function () {
             Route::get('/', [ReferentielController::class, 'index'])->name('index');
 
@@ -326,7 +321,34 @@ Route::middleware(['web', 'auth', 'identify-tenant', '2fa'])->group(function () 
             Route::get('/api/organismes', [ReferentielController::class, 'organismesActifs'])->name('api.organismes');
         });
 
-    }); // fin tenant-user
+Route::middleware(['auth', 'role:admin,rh'])
+    ->prefix('admin/codes')
+    ->name('admin.codes.')
+    ->group(function () {
+
+        Route::get('/', [AdminVerifCodeController::class, 'index'])
+            ->name('index');
+
+        Route::get('/stats', [AdminVerifCodeController::class, 'stats'])
+            ->name('stats');
+
+        Route::post('/generate-missing', [AdminVerifCodeController::class, 'generateMissing'])
+            ->name('generate-missing');
+
+        Route::post('/renew-quarter', [AdminVerifCodeController::class, 'renewQuarter'])
+            ->name('renew-quarter');
+
+        Route::post('/force-renew', [AdminVerifCodeController::class, 'forceRenew'])
+            ->name('force-renew');
+
+        Route::post('/users/{user}/replace', [AdminVerifCodeController::class, 'replaceForUser'])
+            ->name('replace-user');
+
+        Route::delete('/{verificationCode}/revoke', [AdminVerifCodeController::class, 'revoke'])
+            ->name('revoke');
+    });
+
+ });
 
     // ── Dashboard employé ─────────────────────────────────────────────────
     Route::middleware(['employee'])->group(function () {
@@ -419,20 +441,4 @@ Route::prefix('badge')->name('badge.')->group(function () {
         Route::get('/result',    [BadgePointageController::class,  'result'])      ->name('result');
         Route::post('/geo/save', [BadgeAuthController::class,      'saveGeo'])     ->name('geo.save');
     });
-});
-Route::middleware('auth')->prefix('equipements')->name('equipment.')->group(function () {
-    Route::get('/', [EquipmentController::class, 'catalogue'])->name('catalogue');
-    Route::post('/', [EquipmentController::class, 'storeEquipment'])->name('catalogue.store');
-
-    Route::get('/affecter', [EquipmentController::class, 'assignForm'])->name('assign');
-    Route::post('/affecter', [EquipmentController::class, 'storeAssignment'])->name('assign.store');
-
-    Route::get('/salarie/{employee}', [EquipmentController::class, 'employeeShow'])->name('employee');
-
-    Route::get('/decharges/{discharge}', [EquipmentController::class, 'discharge'])->name('discharge');
-    Route::get('/decharges/{discharge}/pdf', [EquipmentController::class, 'dischargePdf'])->name('discharge.pdf');
-    Route::post('/decharges/{discharge}/signer', [EquipmentController::class, 'dischargeSign'])->name('discharge.sign');
-
-    Route::get('/retours', [EquipmentController::class, 'returns'])->name('returns');
-    Route::post('/retours/{assignment}', [EquipmentController::class, 'storeReturn'])->name('returns.store');
 });

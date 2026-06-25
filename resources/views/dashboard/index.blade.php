@@ -68,7 +68,7 @@
                 </svg>
             </div>
             <div style="flex: 1;">
-                <div style="font-weight: 600; font-size: 0.9rem;">🎂 Anniversaires ce mois-ci</div>
+                <div style="font-weight: 600; font-size: 0.9rem;"> Anniversaires aujourd'hui</div>
                 <div style="font-size: 0.8rem; opacity: 0.9;">
                     @foreach($birthdays->take(5) as $employee)
                         <span>{{ $employee->full_name }} ({{ $employee->birth_date->format('d') }})</span>@if(!$loop->last), @endif
@@ -391,7 +391,7 @@
 @if($birthdays->isNotEmpty())
 <div class="card mt-6">
     <div class="card-header">
-        <div class="card-title">🎂 Anniversaires du mois</div>
+        <div class="card-title"> Anniversaires aujourd'hui</div>
     </div>
     <div class="card-body" style="padding:0">
         <div style="padding:16px 24px">

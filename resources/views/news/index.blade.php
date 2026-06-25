@@ -10,158 +10,167 @@
         <a href="{{ route('news.create') }}" class="btn btn-primary">+ Nouvelle actualité</a>
     </div>
     <div class="card-body">
-        @if($news->isEmpty())
-            <div style="padding:32px;text-align:center;color:var(--text-muted)">
-                <div style="font-size:2rem;margin-bottom:8px">📰</div>
-                <div>Aucune actualité</div>
-        @else
-            <div class="news-grid">
-                @foreach($news as $item)
-                <div class="news-card">
-                    @if($item->image)
-                    <div class="news-image">
-                        <img src="{{ asset($item->image) }}" alt="{{ $item->title }}">
-                    </div>
-                    @endif
-                    <div class="news-content">
-                        <div class="news-type">
-                            <span class="badge bg-{{ $item->type === 'holiday' ? 'success' : ($item->type === 'promotion' ? 'warning' : 'primary') }}">
-                                {{ \App\Models\News::TYPES[$item->type] ?? $item->type }}
-                            </span>
-                            @if(!$item->is_active)
-                            <span class="badge bg-secondary">Inactif</span>
-                            @endif
-                        </div>
-                        <h3 class="news-title">{{ $item->title }}</h3>
-                        @if($item->description)
-                        <p class="news-description">{{ Str::limit($item->description, 100) }}</p>
-                        @endif
-                        <div class="news-date">📅 {{ $item->event_date->format('d/m/Y') }}</div>
-                        <div class="news-actions">
-                            <a href="{{ route('news.show', $item) }}" class="btn btn-ghost btn-sm">Voir</a>
-                            <a href="{{ route('news.edit', $item) }}" class="btn btn-ghost btn-sm">Modifier</a>
-                            <form action="{{ route('news.destroy', $item) }}" method="POST" style="display:inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Êtes-vous sûr?')">Supprimer</button>
-                            </form>
-                        </div>
-                </div>
-                @endforeach
-            </div>
-            {{ $news->links() }}
-        @endif
-    </div>
 
-{{-- ===================== CALENDRIER JOURS FÉRIÉS ===================== --}}
-<div class="card holiday-calendar-card" style="margin-top:24px">
-    <div class="card-header">
-        <div class="card-title"> Jours Fériés - Maroc</div>
-        <div class="calendar-nav">
-            <button class="btn btn-ghost btn-sm" id="prevMonth">&#8249;</button>
-            <span id="currentMonthLabel" style="font-weight:600;font-size:1rem;min-width:160px;text-align:center"></span>
-            <button class="btn btn-ghost btn-sm" id="nextMonth">&#8250;</button>
-        </div>
-    </div>
-    <div class="card-body">
-        <div id="calendarLoader" class="calendar-loader">
-            <div class="spinner"></div>
-            <span>Chargement des jours fériés...</span>
-        </div>
-        <div id="calendarError" class="calendar-error" style="display:none">
-            ⚠️ Impossible de charger les jours fériés.
-        </div>
-        <div id="calendarWrap" style="display:none">
-            <div class="calendar-grid-header">
-                <div>Lun</div><div>Mar</div><div>Mer</div>
-                <div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
+        <div class="main-layout">
+
+            {{-- ===== COLONNE GAUCHE : Calendrier (toujours affiché) ===== --}}
+            <div class="calendar-column">
+                <div class="card holiday-calendar-card">
+                    <div class="card-header">
+                        <div class="card-title">📅 Jours Fériés – Maroc</div>
+                        <div class="calendar-nav">
+                            <button class="btn btn-ghost btn-sm" id="prevMonth">&#8249;</button>
+                            <span id="currentMonthLabel" style="font-weight:600;font-size:.95rem;min-width:140px;text-align:center"></span>
+                            <button class="btn btn-ghost btn-sm" id="nextMonth">&#8250;</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="calendarLoader" class="calendar-loader">
+                            <div class="spinner"></div>
+                            <span>Chargement…</span>
+                        </div>
+                        <div id="calendarError" class="calendar-error" style="display:none">
+                            ⚠️ Impossible de charger les jours fériés.
+                        </div>
+                        <div id="calendarWrap" style="display:none">
+                            <div class="calendar-grid-header">
+                                <div>Lun</div><div>Mar</div><div>Mer</div>
+                                <div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
+                            </div>
+                            <div class="calendar-grid" id="calendarGrid"></div>
+                            <div id="holidayTooltip" class="holiday-tooltip" style="display:none"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="calendar-grid" id="calendarGrid"></div>
-            <div id="holidayTooltip" class="holiday-tooltip" style="display:none"></div>
-        </div>
+
+            {{-- ===== COLONNE DROITE : Actualités ===== --}}
+            <div class="news-column">
+                @if($news->isEmpty())
+                    <div style="padding:48px 32px;text-align:center;color:var(--text-muted);background:white;border-radius:16px;border:1px dashed #e2e8f0;">
+                        <div style="font-size:2.5rem;margin-bottom:12px">📰</div>
+                        <div style="font-weight:600;margin-bottom:4px">Aucune actualité</div>
+                        <div style="font-size:.875rem">Les actualités apparaîtront ici une fois créées.</div>
+                    </div>
+                @else
+                    <div class="news-grid">
+                        @foreach($news as $item)
+                        <div class="news-card">
+                            @if($item->image)
+                            <div class="news-image">
+                                <img src="{{ asset($item->image) }}" alt="{{ $item->title }}">
+                            </div>
+                            @endif
+                            <div class="news-content">
+                                <div class="news-type">
+                                    <span class="badge bg-{{ $item->type === 'holiday' ? 'success' : ($item->type === 'promotion' ? 'warning' : 'primary') }}">
+                                        {{ \App\Models\News::TYPES[$item->type] ?? $item->type }}
+                                    </span>
+                                    @if(!$item->is_active)
+                                    <span class="badge bg-secondary">Inactif</span>
+                                    @endif
+                                </div>
+                                <h3 class="news-title">{{ $item->title }}</h3>
+                                @if($item->description)
+                                <p class="news-description">{{ Str::limit($item->description, 100) }}</p>
+                                @endif
+                                <div class="news-date">📅 {{ $item->event_date->format('d/m/Y') }}</div>
+                                <div class="news-actions">
+                                    <a href="{{ route('news.show', $item) }}" class="btn btn-ghost btn-sm">Voir</a>
+                                    <a href="{{ route('news.edit', $item) }}" class="btn btn-ghost btn-sm">Modifier</a>
+                                    <form action="{{ route('news.destroy', $item) }}" method="POST" style="display:inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-danger btn-sm"
+                                            onclick="return confirm('Êtes-vous sûr?')">Supprimer</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                    <div style="margin-top:16px">{{ $news->links() }}</div>
+                @endif
+            </div>
+
+        </div>{{-- /main-layout --}}
     </div>
 </div>
 
 <style>
+/* ========== LAYOUT ========== */
+.main-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 24px;
+    align-items: start;
+}
+@media (max-width: 900px) {
+    .main-layout { grid-template-columns: 1fr; }
+    .calendar-column { order: -1; }
+}
+
 /* ========== NEWS ========== */
 .news-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 24px;
-    padding: 16px 0;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
 }
 .news-card {
     background: white;
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -1px rgba(0,0,0,.06);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,.08), 0 2px 4px -1px rgba(0,0,0,.04);
     transition: transform .2s, box-shadow .2s;
     border: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
 }
 .news-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -2px rgba(0,0,0,.05);
 }
-.news-image { width:100%; height:180px; overflow:hidden; background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); }
+.news-image {
+    width: 100%;
+    height: 160px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    flex-shrink: 0;
+}
 .news-image img { width:100%; height:100%; object-fit:cover; }
-.news-content { padding:20px; }
-.news-type { display:flex; gap:8px; margin-bottom:12px; }
-.news-title { font-size:1.25rem; font-weight:600; margin:0 0 8px; color:#1e293b; line-height:1.4; }
-.news-description { color:#64748b; font-size:.875rem; margin:0 0 12px; line-height:1.5; }
-.news-date { color:#94a3b8; font-size:.875rem; margin-bottom:16px; }
-.news-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.news-content { padding: 16px; display:flex; flex-direction:column; flex:1; }
+.news-type { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+.news-title { font-size:1.05rem; font-weight:600; margin:0 0 6px; color:#1e293b; line-height:1.4; }
+.news-description { color:#64748b; font-size:.8rem; margin:0 0 10px; line-height:1.5; flex:1; }
+.news-date { color:#94a3b8; font-size:.8rem; margin-bottom:12px; }
+.news-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:auto; }
 
 /* ========== CALENDAR ========== */
+.holiday-calendar-card {
+    position: sticky;
+    top: 16px;
+}
 .holiday-calendar-card .card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 12px;
-}
-
-
-
-
-
-
-
-.holiday-calendar-card .card-body {
-    padding: 12px;
-}
-
-.cal-day {
-    min-height: 24px !important;
-    font-size: .65rem !important;
-    padding: 2px !important;
-}
-
-.cal-day {
-    min-height: 32px;
-    font-size: .75rem;
-}
-.calendar-nav {
-    display: flex;
-    align-items: center;
     gap: 8px;
 }
+.holiday-calendar-card .card-body { padding: 12px; }
+.calendar-nav { display:flex; align-items:center; gap:6px; }
 .calendar-grid-header {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     text-align: center;
     font-weight: 600;
-    font-size: .75rem;
+    font-size: .7rem;
     text-transform: uppercase;
-    letter-spacing: .05em;
+    letter-spacing: .04em;
     color: #94a3b8;
-    margin-bottom: 8px;
-    padding: 0 4px;
+    margin-bottom: 6px;
 }
-.calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
-}
+.calendar-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
 .cal-day {
     position: relative;
     aspect-ratio: 1;
@@ -169,26 +178,22 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    border-radius: 10px;
-    font-size: .9rem;
+    border-radius: 8px;
+    font-size: .8rem;
     font-weight: 500;
     cursor: default;
     transition: background .15s, transform .15s;
     border: 2px solid transparent;
-    min-height: 44px;
+    min-height: 36px;
 }
-.cal-day.empty {
-    background: transparent;
-}
+.cal-day.empty { background:transparent; }
 .cal-day.today {
     background: #eff6ff;
     border-color: #3b82f6;
     color: #1d4ed8;
     font-weight: 700;
 }
-.cal-day.weekend {
-    color: #94a3b8;
-}
+.cal-day.weekend { color:#94a3b8; }
 .cal-day.holiday {
     background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
     border-color: #f59e0b;
@@ -197,22 +202,21 @@
     font-weight: 700;
 }
 .cal-day.holiday:hover {
-    transform: scale(1.08);
+    transform: scale(1.1);
     box-shadow: 0 4px 12px rgba(245,158,11,.3);
     z-index: 2;
 }
 .cal-day.holiday .holiday-dot {
-    width: 5px;
-    height: 5px;
-    background: #f59e0b;
-    border-radius: 50%;
-    position: absolute;
-    bottom: 5px;
+    width:5px; height:5px;
+    background:#f59e0b;
+    border-radius:50%;
+    position:absolute;
+    bottom:4px;
 }
 .cal-day.holiday.today {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    border-color: #f59e0b;
-    color: #92400e;
+    background: linear-gradient(135deg,#fef3c7 0%,#fde68a 100%);
+    border-color:#f59e0b;
+    color:#92400e;
 }
 .holiday-tooltip {
     position: fixed;
@@ -228,47 +232,35 @@
     line-height: 1.5;
 }
 .holiday-tooltip::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 6px solid transparent;
-    border-top-color: #1e293b;
+    content:'';
+    position:absolute;
+    top:100%; left:50%;
+    transform:translateX(-50%);
+    border:6px solid transparent;
+    border-top-color:#1e293b;
 }
-
-/* Loading */
 .calendar-loader {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 32px;
-    color: #64748b;
-    justify-content: center;
+    display:flex; align-items:center; gap:12px;
+    padding:24px; color:#64748b; justify-content:center;
 }
 .spinner {
-    width: 22px; height: 22px;
-    border: 3px solid #e2e8f0;
-    border-top-color: #3b82f6;
-    border-radius: 50%;
-    animation: spin .7s linear infinite;
+    width:20px; height:20px;
+    border:3px solid #e2e8f0;
+    border-top-color:#3b82f6;
+    border-radius:50%;
+    animation:spin .7s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin { to { transform:rotate(360deg); } }
 .calendar-error {
-    padding: 24px;
-    text-align: center;
-    color: #ef4444;
-    background: #fef2f2;
-    border-radius: 12px;
-    font-size: .9rem;
+    padding:16px; text-align:center;
+    color:#ef4444; background:#fef2f2;
+    border-radius:10px; font-size:.85rem;
 }
 </style>
 
 <script>
 (function () {
-    // Calls your Laravel proxy route: GET /index.php/holidays/{year}/{month}
     const PROXY_BASE = '{{ url("holidays") }}';
-
     let currentYear  = new Date().getFullYear();
     let currentMonth = new Date().getMonth() + 1;
     let holidaysCache = {};
@@ -301,25 +293,19 @@
         if (holidaysCache[key]) return holidaysCache[key];
         try {
             const res = await fetch(`${PROXY_BASE}/${year}/${month}`, {
-                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'Accept':'application/json','X-Requested-With':'XMLHttpRequest' }
             });
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const json = await res.json();
-            // Normalize: accept array OR { data: [] } OR { holidays: [] }
             const list = Array.isArray(json) ? json : (json.data ?? json.holidays ?? []);
             holidaysCache[key] = list;
             return list;
-        } catch {
-            return null;
-        }
+        } catch { return null; }
     }
 
     function getHolidayDates(holidays) {
         const map = {};
-        holidays.forEach(h => {
-            // API returns { day: 1, month: 1, date: "2025-01-01", description: "..." }
-            if (h.day) map[h.day] = h;
-        });
+        holidays.forEach(h => { if (h.day) map[h.day] = h; });
         return map;
     }
 
@@ -368,12 +354,10 @@
                 const dot = document.createElement('span');
                 dot.className = 'holiday-dot';
                 cell.appendChild(dot);
-
                 const h = holidayMap[d];
                 const name = h.description ?? h.name ?? 'Jour Férié';
-
                 cell.addEventListener('mouseenter', (e) => {
-                    tooltip.innerHTML = ` <strong>${name}</strong>`;
+                    tooltip.innerHTML = `<strong>${name}</strong>`;
                     tooltip.style.display = 'block';
                     positionTooltip(e);
                 });

@@ -137,6 +137,11 @@
     opacity: .6; transition: opacity .2s;
 }
 .toggle-password:hover { opacity: 1; }
+.field-feedback        { font-size: .75rem; display: block; margin-top: 3px; }
+.field-feedback.error  { color: var(--danger, #ef4444); }
+.field-feedback.success{ color: #10b981; }
+.form-control.is-invalid { border-color: var(--danger, #ef4444); }
+.form-control.is-valid   { border-color: #10b981; }
 </style>
 @endpush
 
@@ -196,46 +201,54 @@
                         <span style="color:var(--danger);font-size:.75rem">{{ $message }}</span>
                     @enderror
                 </div>
+
+                {{-- Téléphone --}}
                 <div class="form-group">
                     <label>Téléphone</label>
-                    <input type="tel" name="phone" class="form-control"
-                        value="{{ old('phone') }}"
-                        pattern="[0-9]{10}"
-                        maxlength="10"
-                        title="10 chiffres exacts requis"
-                        inputmode="numeric">
-                        @error('phone')
+                    <input type="tel" name="phone" id="phone_field" class="form-control"
+                           value="{{ old('phone') }}"
+                           inputmode="numeric"
+                           placeholder="Numéro de téléphone">
+                    <span id="phone_feedback" class="field-feedback"></span>
+                    @error('phone')
                         <span style="color:var(--danger);font-size:.75rem">{{ $message }}</span>
                     @enderror
                 </div>
+
                 <div class="form-group">
                     <label>Date de naissance</label>
                     <input type="date" name="birth_date" class="form-control" value="{{ old('birth_date') }}">
+                    @error('birth_date')
+                        <span style="color:var(--danger);font-size:.75rem">{{ $message }}</span>
+                    @enderror
                 </div>
+
+                {{-- ✅ CORRIGÉ : name="genre" (cohérent avec le modèle) --}}
                 <div class="form-group">
-    <label>Genre</label>
-    <select name="gender" class="form-control">
-        <option value="">Sélectionner...</option>
-        <option value="homme" {{ old('gender') == 'homme' ? 'selected' : '' }}>Homme</option>
-        <option value="femme" {{ old('gender') == 'femme' ? 'selected' : '' }}>Femme</option>
-    </select>
-    @error('gender')
-        <span style="color:var(--danger);font-size:.75rem">{{ $message }}</span>
-    @enderror
-</div>
+                    <label>Genre</label>
+                    <select name="genre" class="form-control">
+                        <option value="">Sélectionner...</option>
+                        <option value="homme" {{ old('genre') == 'homme' ? 'selected' : '' }}>Homme</option>
+                        <option value="femme" {{ old('genre') == 'femme' ? 'selected' : '' }}>Femme</option>
+                    </select>
+                    @error('genre')
+                        <span style="color:var(--danger);font-size:.75rem">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                {{-- CIN --}}
                 <div class="form-group">
                     <label>CIN</label>
-                    <input type="text" name="cin" class="form-control"
-                        value="{{ old('cin') }}"
-                        placeholder="AB123456"
-                        pattern="[A-Za-z]{1,2}[0-9]{5,6}"
-                        maxlength="8"
-                        title="Format CIN invalide (ex : AB123456)"
-                        oninput="this.value = this.value.toUpperCase()">
+                    <input type="text" name="cin" id="cin_field" class="form-control"
+                           value="{{ old('cin') }}"
+                           oninput="this.value = this.value.toUpperCase()"
+                           placeholder="Numéro CIN">
+                    <span id="cin_feedback" class="field-feedback"></span>
                     @error('cin')
                         <span style="color:var(--danger);font-size:.75rem">{{ $message }}</span>
                     @enderror
                 </div>
+
                 <div class="form-group">
                     <label>Situation familiale</label>
                     <select name="family_situation" class="form-control">
@@ -435,6 +448,9 @@
                     <label>N° CNSS</label>
                     <input type="text" name="cnss" class="form-control"
                            value="{{ old('cnss') }}" placeholder="1234567">
+                    @error('cnss')
+                        <span style="color:var(--danger);font-size:.75rem">{{ $message }}</span>
+                    @enderror
                 </div>
                 <div class="form-group">
                     <label>Nb. d'enfants</label>
@@ -576,7 +592,6 @@
             </span>
         </div>
 
-        {{-- Barre de sélection rapide --}}
         <div class="perm-toolbar">
             <span class="perm-toolbar-label">Sélection rapide :</span>
             <button type="button" class="perm-quick-btn" onclick="Perms.selectAll()">Tout cocher</button>
@@ -586,7 +601,6 @@
             <button type="button" class="perm-quick-btn" onclick="Perms.selectAdmin()">Profil Admin</button>
         </div>
 
-        {{-- En-têtes colonnes --}}
         <div class="perm-col-labels">
             <div>Module</div>
             <div>Voir</div>
@@ -597,7 +611,6 @@
 
         <div id="perm-table">
 
-            {{-- ── Principal ── --}}
             <div class="perm-group-label">Principal</div>
 
             @include('employees._perm_row', [
@@ -606,7 +619,6 @@
                 'actions' => ['view'],
             ])
 
-            {{-- ── Personnel ── --}}
             <div class="perm-group-label">Personnel</div>
 
             @include('employees._perm_row', [
@@ -627,7 +639,6 @@
                 'sub'     => true,
             ])
 
-            {{-- ── Temps & Présence ── --}}
             <div class="perm-group-label">Temps &amp; Présence</div>
 
             @include('employees._perm_row', [
@@ -648,7 +659,6 @@
                 'sub'     => true,
             ])
 
-            {{-- ── Absences & Congés ── --}}
             <div class="perm-group-label">Absences &amp; Congés</div>
 
             @include('employees._perm_row', [
@@ -669,7 +679,6 @@
                 'sub'     => true,
             ])
 
-            {{-- ── Formations (LMS) ── --}}
             <div class="perm-group-label">Formations (LMS)</div>
 
             @include('employees._perm_row', [
@@ -690,7 +699,6 @@
                 'sub'     => true,
             ])
 
-            {{-- ── Paie ── --}}
             <div class="perm-group-label">Paie</div>
 
             @include('employees._perm_row', [
@@ -698,14 +706,13 @@
                 'label'   => 'Salaires',
                 'actions' => ['view','create','edit','delete'],
             ])
-             @include('employees._perm_row', [
+            @include('employees._perm_row', [
                 'key'     => 'reporting',
                 'label'   => 'Rapport RH',
                 'actions' => ['view'],
                 'sub'     => true,
             ])
 
-            {{-- ── GED ── --}}
             <div class="perm-group-label">GED</div>
 
             @include('employees._perm_row', [
@@ -726,7 +733,6 @@
                 'sub'     => true,
             ])
 
-            {{-- ── Paramétrage & Rapports ── --}}
             <div class="perm-group-label">Paramétrage &amp; Rapports</div>
 
             @include('employees._perm_row', [
@@ -734,13 +740,14 @@
                 'label'   => 'Paramétrage',
                 'actions' => ['view','create','edit','delete'],
             ])
+
             <div class="perm-group-label">Équipements</div>
 
-@include('employees._perm_row', [
-    'key'     => 'equipment',
-    'label'   => 'Gestion des équipements',
-    'actions' => ['view','create','edit','delete'],
-])
+            @include('employees._perm_row', [
+                'key'     => 'equipment',
+                'label'   => 'Gestion des équipements',
+                'actions' => ['view','create','edit','delete'],
+            ])
 
         </div>{{-- #perm-table --}}
 
@@ -777,24 +784,22 @@
                            value="{{ old('contract_end_date') }}">
                 </div>
                 <div class="form-group">
-    <label>
-        Congés antérieurs (jours déjà consommés)
-    </label>
-    <input type="number"
-           name="conges_anterieurs"
-           class="form-control"
-           value="{{ old('conges_anterieurs', 0) }}"
-           min="0"
-           step="0"
-           placeholder="0"
-           title="Jours de congés déjà consommés avant la création du compte dans l'application">
-    <small style="color:#64748b;font-size:0.72rem;margin-top:4px;display:block;">
-        Ces jours seront automatiquement déduits du solde de congés calculé par le système.
-    </small>
-    @error('conges_anterieurs')
-        <span style="color:var(--danger);font-size:.75rem">{{ $message }}</span>
-    @enderror
-</div>
+                    <label>Congés antérieurs (jours déjà consommés)</label>
+                    <input type="number"
+                           name="conges_anterieurs"
+                           class="form-control"
+                           value="{{ old('conges_anterieurs', 0) }}"
+                           min="0"
+                           step="1"
+                           placeholder="0"
+                           title="Jours de congés déjà consommés avant la création du compte dans l'application">
+                    <small style="color:#64748b;font-size:0.72rem;margin-top:4px;display:block;">
+                        Ces jours seront automatiquement déduits du solde de congés calculé par le système.
+                    </small>
+                    @error('conges_anterieurs')
+                        <span style="color:var(--danger);font-size:.75rem">{{ $message }}</span>
+                    @enderror
+                </div>
                 <div class="form-group">
                     <label>Compteur de temps (heures)</label>
                     <input type="number" name="work_hours_counter" class="form-control"
@@ -827,7 +832,7 @@
 
     <div style="display:flex;gap:12px;justify-content:flex-end">
         <a href="{{ route('employees.index') }}" class="btn btn-ghost">Annuler</a>
-        <button type="submit"  id="saveBtn" class="btn btn-primary">
+        <button type="submit" id="saveBtn" class="btn btn-primary">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24"
                  stroke="currentColor" stroke-width="2.5">
                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
@@ -892,7 +897,86 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     togglePermCard();
     createAccountCb.addEventListener('change', togglePermCard);
+
+    /* ── Limiter les années des champs date à 4 chiffres ──── */
+    document.querySelectorAll('input[type="date"]').forEach(function(input) {
+        input.addEventListener('change', function () {
+            const val = this.value;
+            if (!val) return;
+            const parts = val.split('-');
+            if (parts[0] && parts[0].length > 4) {
+                parts[0] = parts[0].slice(0, 4);
+                this.value = parts.join('-');
+            }
+        });
+        input.addEventListener('input', function () {
+            const year = this.value.split('-')[0];
+            if (year && year.length > 4) {
+                const [y, m, d] = this.value.split('-');
+                this.value = `${y.slice(0, 4)}-${m || ''}-${d || ''}`;
+            }
+        });
+    });
+
+    /* ── Désactiver le bouton à la soumission ──────────────── */
+    document.querySelector('form').addEventListener('submit', function (e) {
+        // Valider les années des dates
+        let hasError = false;
+        document.querySelectorAll('input[type="date"]').forEach(function(d) {
+            const year = d.value.split('-')[0];
+            if (year && year.length > 4) {
+                d.setCustomValidity("L'année ne peut pas dépasser 4 chiffres.");
+                d.reportValidity();
+                hasError = true;
+            } else {
+                d.setCustomValidity('');
+            }
+        });
+        if (hasError) { e.preventDefault(); return; }
+
+        const btn = document.getElementById('saveBtn');
+        btn.disabled  = true;
+        btn.innerHTML = 'Enregistrement...';
+    });
+
+    /* ── Vérification unicité CIN / Téléphone ─────────────── */
+    checkUnique('cin_field',   'cin_feedback',   'cin');
+    checkUnique('phone_field', 'phone_feedback', 'phone');
 });
+
+function checkUnique(fieldId, feedbackId, param, ignoreId = null) {
+    const input    = document.getElementById(fieldId);
+    const feedback = document.getElementById(feedbackId);
+    if (!input || !feedback) return;
+    let timer;
+
+    input.addEventListener('input', function () {
+        clearTimeout(timer);
+        const val = this.value.trim();
+        feedback.textContent = '';
+        input.classList.remove('is-invalid', 'is-valid');
+        if (!val) return;
+
+        timer = setTimeout(() => {
+            const url = `/employees/check-unique?${param}=${encodeURIComponent(val)}`
+                      + (ignoreId ? `&ignore_id=${ignoreId}` : '');
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.taken) {
+                        feedback.textContent = data.message;
+                        feedback.className   = 'field-feedback error';
+                        input.classList.add('is-invalid');
+                    } else {
+                        feedback.textContent = '✓ Disponible';
+                        feedback.className   = 'field-feedback success';
+                        input.classList.add('is-valid');
+                    }
+                })
+                .catch(() => { feedback.textContent = ''; });
+        }, 500);
+    });
+}
 
 /* ═══════════════════════════════════════════════════════
    Gestionnaire de permissions
@@ -908,6 +992,7 @@ const Perms = {
             `#perm-table input[name*="[${action}]"]:not([disabled])`
         );
     },
+
     byModule(keys, actions = ['view','create','edit','delete']) {
         keys.forEach(key => {
             actions.forEach(action => {
@@ -948,7 +1033,7 @@ const Perms = {
                 'absences','absences_calendar','absences_counters',
                 'lms','referentiel','lms_planning',
                 'salary','ged','ged_modeles','ged_entete',
-                'reporting' ,'equipment' ,
+                'reporting','equipment',
             ],
             ['view','create','edit']
         );
@@ -958,43 +1043,6 @@ const Perms = {
         this.selectAll();
     },
 };
-/* ── Limiter les années des champs date à 4 chiffres ── */
-document.querySelectorAll('input[type="date"]').forEach(function(input) {
-    input.addEventListener('change', function () {
-        const val = this.value;
-        if (!val) return;
-        const parts = val.split('-');
-        if (parts[0] && parts[0].length > 4) {
-            parts[0] = parts[0].slice(0, 4);
-            this.value = parts.join('-');
-        }
-    });
-    input.addEventListener('input', function () {
-        const year = this.value.split('-')[0];
-        if (year && year.length > 4) {
-            const [y, m, d] = this.value.split('-');
-            this.value = `${y.slice(0, 4)}-${m || ''}-${d || ''}`;
-        }
-    });
-    // Bloquer la soumission si l'année dépasse 4 chiffres
-    input.closest('form')?.addEventListener('submit', function(e) {
-        document.querySelectorAll('input[type="date"]').forEach(function(d) {
-            const year = d.value.split('-')[0];
-            if (year && year.length > 4) {
-                e.preventDefault();
-                d.setCustomValidity("L'année ne peut pas dépasser 4 chiffres.");
-                d.reportValidity();
-            } else {
-                d.setCustomValidity('');
-            }
-        });
-    }, { once: false });
-});
-document.querySelector("form").addEventListener("submit", function () {
-    const btn = document.getElementById("saveBtn");
-    btn.disabled = true;
-    btn.innerHTML = "Enregistrement...";
-});
 </script>
 @endpush
 @endsection

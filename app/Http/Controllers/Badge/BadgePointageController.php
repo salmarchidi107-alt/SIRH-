@@ -1,4 +1,7 @@
 <?php
+// ============================================================
+//  app/Http/Controllers/Badge/BadgePointageController.php
+// ============================================================
 
 namespace App\Http\Controllers\Badge;
 
@@ -176,7 +179,7 @@ class BadgePointageController extends Controller
             [
                 'employee_id'        => $employee->id,
                 'type'               => $type,
-                'shift_type'         => $shiftType,         // ← normal ou garde
+                'shift_type'         => $shiftType,
                 // Géolocalisation
                 'latitude'           => $geoData['latitude']  ?? null,
                 'longitude'          => $geoData['longitude'] ?? null,
@@ -203,7 +206,7 @@ class BadgePointageController extends Controller
                 'statut'     => 'present',
                 'valide'     => false,
                 'source'     => 'badge',
-                'shift_type' => $shiftType,                 // ← enregistré aussi dans Pointage
+                'shift_type' => $shiftType,
                 'tenant_id'  => $this->resolveTenantId($employee),
             ]
         );
@@ -254,20 +257,25 @@ class BadgePointageController extends Controller
         $entrees = $shift->where('type', 'entree')->values();
         $sorties = $shift->where('type', 'sortie')->values();
         $pauses  = $shift->where('type', 'pause')->values();
+        $retours = $shift->where('type', 'retour_pause')->values();
 
         return [
             'first_entree'  => $entrees->first()?->created_at?->setTimezone(self::TZ)->format('H:i'),
             'last_sortie'   => $sorties->last()?->created_at?->setTimezone(self::TZ)->format('H:i'),
             'pause_display' => $pauses->count() ? $pauses->count() . ' pause(s)' : null,
-            'total_human'   => $this->calcTotalTime($entrees, $sorties),
+            'total_human'   => $this->calcTotalTime($entrees, $sorties, $pauses, $retours),
             'shift_type'    => $shift->last()?->shift_type ?? 'normal',
         ];
     }
 
-    private function calcTotalTime($entrees, $sorties): string
+    /**
+     * Calcule le temps de travail net = (Sortie - Entrée) - durée_pause
+     */
+    private function calcTotalTime($entrees, $sorties, $pauses = null, $retours = null): string
     {
         if ($entrees->isEmpty() || $sorties->isEmpty()) return '0h 0m';
 
+        // ── Temps brut (Sortie - Entrée) ─────────────────────────────────
         $total = 0;
         $count = min($entrees->count(), $sorties->count());
 
@@ -275,6 +283,17 @@ class BadgePointageController extends Controller
             $diff = $sorties[$i]->created_at->timestamp - $entrees[$i]->created_at->timestamp;
             if ($diff > 0) $total += $diff;
         }
+
+        // ── Déduction des pauses ──────────────────────────────────────────
+        if ($pauses && $retours && $pauses->isNotEmpty() && $retours->isNotEmpty()) {
+            $pauseCount = min($pauses->count(), $retours->count());
+            for ($i = 0; $i < $pauseCount; $i++) {
+                $pauseDiff = $retours[$i]->created_at->timestamp - $pauses[$i]->created_at->timestamp;
+                if ($pauseDiff > 0) $total -= $pauseDiff;
+            }
+        }
+
+        if ($total < 0) $total = 0;
 
         return floor($total / 3600) . 'h ' . floor(($total % 3600) / 60) . 'm';
     }

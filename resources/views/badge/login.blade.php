@@ -203,8 +203,8 @@
   min-height: 90px; display: flex; flex-direction: column;
   justify-content: center; align-items: flex-start;
   gap: 6px; cursor: pointer; transition: all .25s;
-  border: 1px dashed rgba(255,255,255,.2);
-  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(239,68,68,.35);
+  background: rgba(239,68,68,.06);
   position: relative; overflow: hidden;
 }
 .cam-square:hover {
@@ -218,11 +218,22 @@
 .cam-square-icon  { font-size: 20px; line-height: 1; }
 .cam-square-title {
   font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .07em; color: rgba(255,255,255,.6); line-height: 1.2;
+  letter-spacing: .07em; color: #fca5a5; line-height: 1.2;
 }
 .cam-square.has-photo .cam-square-title { color: var(--teal2); }
-.cam-square-sub { font-size: 10px; color: rgba(255,255,255,.35); line-height: 1.3; }
+.cam-square-sub { font-size: 10px; color: rgba(255,100,100,.5); line-height: 1.3; }
 .cam-square.has-photo .cam-square-sub { color: rgba(94,234,212,.65); }
+
+/* Badge "Requis" sur le carré caméra */
+.cam-required-badge {
+  position: absolute; top: 8px; right: 8px;
+  background: rgba(239,68,68,.25); border: 1px solid rgba(239,68,68,.45);
+  border-radius: 99px; padding: 2px 7px;
+  font-size: 9px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .07em; color: #fca5a5;
+  transition: opacity .3s;
+}
+.cam-square.has-photo .cam-required-badge { opacity: 0; }
 
 .cam-thumb {
   position: absolute; inset: 0;
@@ -372,7 +383,7 @@
     <div class="login-title">
       {{ $intent === 'entree' ? 'Pointage Entrée' : 'Pointage Sortie' }}
     </div>
-    <div class="login-sub">Authentifiez-vous avec votre PIN et signature</div>
+    <div class="login-sub">Authentifiez-vous avec votre PIN, signature et photo</div>
 
     @if($errors->any())
       <div class="alert-error">⚠ {{ $errors->first() }}</div>
@@ -463,18 +474,17 @@
         {{-- Carré Géolocalisation --}}
         <div class="geo-square loading" id="geoSquare">
           <div class="geo-dot"></div>
-          <div class="geo-square-icon"></div>
           <div class="geo-square-title" id="geoSquareTitle">Localisation…</div>
           <div class="geo-square-sub"   id="geoSquareSub"></div>
         </div>
 
-        {{-- Carré Caméra --}}
-        <div class="cam-square" id="camSquare" role="button" tabindex="0" title="Capture faciale">
+        {{-- Carré Caméra — OBLIGATOIRE --}}
+        <div class="cam-square" id="camSquare" role="button" tabindex="0" title="Capture faciale obligatoire">
           <img class="cam-thumb" id="camThumb" src="" alt="">
           <div class="cam-check" id="camCheck">✓</div>
-          <div class="cam-square-icon"></div>
+          <div class="cam-required-badge">Requis</div>
           <div class="cam-square-title" id="camSquareTitle">Capture faciale</div>
-          <div class="cam-square-sub"   id="camSquareSub">Optionnel · Cliquez pour activer</div>
+          <div class="cam-square-sub"   id="camSquareSub">Obligatoire · Cliquez pour activer</div>
         </div>
 
       </div>
@@ -544,8 +554,8 @@
 <script>
 /* ── Horloge ─────────────────────────────────────────────── */
 (function(){
-  const el = document.getElementById('bgClock');
-  const tick = () => {
+  var el = document.getElementById('bgClock');
+  var tick = function() {
     if (el) el.textContent = new Date().toLocaleTimeString('fr-FR', {
       hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Casablanca'
     });
@@ -555,10 +565,10 @@
 
 /* ── Sélecteur type de shift ─────────────────────────────── */
 (function(){
-  const inp = document.getElementById('shiftTypeInput');
-  document.querySelectorAll('.shift-radio-opt').forEach(el => {
-    el.addEventListener('click', () => {
-      document.querySelectorAll('.shift-radio-opt').forEach(o => o.classList.remove('active'));
+  var inp = document.getElementById('shiftTypeInput');
+  document.querySelectorAll('.shift-radio-opt').forEach(function(el) {
+    el.addEventListener('click', function() {
+      document.querySelectorAll('.shift-radio-opt').forEach(function(o) { o.classList.remove('active'); });
       el.classList.add('active');
       inp.value = el.dataset.value;
     });
@@ -567,10 +577,10 @@
 
 /* ── Signature ──────────────────────────────────────────── */
 (function(){
-  const canvas = document.getElementById('sigCanvas');
-  const ctx    = canvas.getContext('2d');
-  const inp    = document.getElementById('signatureData');
-  let   dr     = false;
+  var canvas = document.getElementById('sigCanvas');
+  var ctx    = canvas.getContext('2d');
+  var inp    = document.getElementById('signatureData');
+  var dr     = false;
 
   function resize(){
     canvas.width  = canvas.offsetWidth;
@@ -582,13 +592,13 @@
   resize();
   new ResizeObserver(resize).observe(canvas);
 
-  const p = e => {
-    const r = canvas.getBoundingClientRect(), s = e.touches ? e.touches[0] : e;
+  var p = function(e) {
+    var r = canvas.getBoundingClientRect(), s = e.touches ? e.touches[0] : e;
     return { x: s.clientX - r.left, y: s.clientY - r.top };
   };
-  const start = e => { e.preventDefault(); dr = true; const {x,y} = p(e); ctx.beginPath(); ctx.moveTo(x, y); };
-  const move  = e => { e.preventDefault(); if (!dr) return; const {x,y} = p(e); ctx.lineTo(x, y); ctx.stroke(); inp.value = canvas.toDataURL(); canvas.classList.add('has-sig'); checkReady(); };
-  const stop  = e => { e.preventDefault(); dr = false; };
+  var start = function(e) { e.preventDefault(); dr = true; var pt = p(e); ctx.beginPath(); ctx.moveTo(pt.x, pt.y); };
+  var move  = function(e) { e.preventDefault(); if (!dr) return; var pt = p(e); ctx.lineTo(pt.x, pt.y); ctx.stroke(); inp.value = canvas.toDataURL(); canvas.classList.add('has-sig'); checkReady(); };
+  var stop  = function(e) { e.preventDefault(); dr = false; };
 
   canvas.addEventListener('mousedown',  start);
   canvas.addEventListener('mousemove',  move);
@@ -597,17 +607,20 @@
   canvas.addEventListener('touchstart', start, {passive: false});
   canvas.addEventListener('touchmove',  move,  {passive: false});
   canvas.addEventListener('touchend',   stop,  {passive: false});
-  canvas.addEventListener('dblclick', () => {
+  canvas.addEventListener('dblclick', function() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     inp.value = ''; canvas.classList.remove('has-sig'); checkReady();
   });
 })();
 
 /* ── Vérification bouton ────────────────────────────────── */
+/* PHOTO OBLIGATOIRE : les 3 conditions doivent être vraies  */
 function checkReady(){
-  const ok = document.getElementById('pin').value.length === 6
-          && document.getElementById('signatureData').value.length > 0;
-  const btn = document.getElementById('submitBtn');
+  var pinOk   = document.getElementById('pin').value.length === 6;
+  var sigOk   = document.getElementById('signatureData').value.length > 0;
+  var photoOk = document.getElementById('facePhotoData').value.length > 0;
+  var ok = pinOk && sigOk && photoOk;
+  var btn = document.getElementById('submitBtn');
   btn.disabled = !ok;
   btn.classList.toggle('ready', ok);
 }
@@ -615,12 +628,12 @@ function checkReady(){
 /* ══════════════════════════════════════════════════════════
    GÉOLOCALISATION
 ══════════════════════════════════════════════════════════ */
-let geoResolved   = false;
-let pendingSubmit = false;
-let geoTimer      = null;
+var geoResolved   = false;
+var pendingSubmit = false;
+var geoTimer      = null;
 
 function setGeoSquare(state, title, sub){
-  const sq = document.getElementById('geoSquare');
+  var sq = document.getElementById('geoSquare');
   if (!sq) return;
   sq.className = 'geo-square ' + state;
   document.getElementById('geoSquareTitle').textContent = title;
@@ -656,48 +669,48 @@ function reverseGeocode(lat, lng){
     'https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lng + '&format=json&zoom=18&accept-language=fr',
     { headers: { 'Accept-Language': 'fr', 'User-Agent': 'HospitalRH-Badge/1.0' } }
   )
-  .then(r => r.ok ? r.json() : null)
-  .then(data => {
+  .then(function(r) { return r.ok ? r.json() : null; })
+  .then(function(data) {
     if (!data) return null;
-    const a       = data.address || {};
-    const road    = a.road || a.pedestrian || a.footway || null;
-    const num     = a.house_number || null;
-    const quarter = a.quarter || a.neighbourhood || a.suburb || null;
-    const city    = a.city || a.town || a.village || null;
-    const state   = a.state || a.region || null;
-    const country = a.country || null;
-    const street  = road ? (num ? num + ' ' + road : road) : null;
-    const parts   = [street, quarter, city, state, country].filter(Boolean);
+    var a       = data.address || {};
+    var road    = a.road || a.pedestrian || a.footway || null;
+    var num     = a.house_number || null;
+    var quarter = a.quarter || a.neighbourhood || a.suburb || null;
+    var city    = a.city || a.town || a.village || null;
+    var state   = a.state || a.region || null;
+    var country = a.country || null;
+    var street  = road ? (num ? num + ' ' + road : road) : null;
+    var parts   = [street, quarter, city, state, country].filter(Boolean);
     return parts.length ? parts.join(', ') : (data.display_name || null);
   })
-  .catch(() => null);
+  .catch(function() { return null; });
 }
 
-const isSecure = location.protocol === 'https:'
-              || location.hostname === 'localhost'
-              || location.hostname === '127.0.0.1'
-              || location.hostname.endsWith('.local');
+var isSecure = location.protocol === 'https:'
+            || location.hostname === 'localhost'
+            || location.hostname === '127.0.0.1'
+            || location.hostname.endsWith('.local');
 
 if (!isSecure) {
   resolveGeo(false, null, null, null, null, '⚠ HTTPS requis', 'Activez HTTPS pour le GPS');
 } else if (!('geolocation' in navigator)) {
   resolveGeo(false, null, null, null, null, 'Non supporté', '');
 } else {
-  geoTimer = setTimeout(() => {
+  geoTimer = setTimeout(function() {
     resolveGeo(false, null, null, null, null, 'Délai dépassé', 'Sans coordonnées GPS');
   }, 15000);
 
   navigator.geolocation.getCurrentPosition(
     function(pos){
-      const lat = pos.coords.latitude, lng = pos.coords.longitude, acc = Math.round(pos.coords.accuracy);
+      var lat = pos.coords.latitude, lng = pos.coords.longitude, acc = Math.round(pos.coords.accuracy);
       setGeoSquare('loading', 'Adresse en cours…', lat.toFixed(4) + '° · ' + Math.abs(lng).toFixed(4) + '°');
-      reverseGeocode(lat, lng).then(addr => {
-        const sub = addr || (lat.toFixed(5) + '° · ' + Math.abs(lng).toFixed(5) + '° · ±' + acc + 'm');
+      reverseGeocode(lat, lng).then(function(addr) {
+        var sub = addr || (lat.toFixed(5) + '° · ' + Math.abs(lng).toFixed(5) + '° · ±' + acc + 'm');
         resolveGeo(true, lat, lng, acc, addr, 'Position enregistrée', sub);
       });
     },
     function(err){
-      const msgs = {1: 'Géoloc refusée', 2: 'Position indisponible', 3: 'Délai dépassé'};
+      var msgs = {1: 'Géoloc refusée', 2: 'Position indisponible', 3: 'Délai dépassé'};
       resolveGeo(false, null, null, null, null, msgs[err.code] || 'Localisation impossible', '');
     },
     { enableHighAccuracy: true, timeout: 13000, maximumAge: 0 }
@@ -706,10 +719,22 @@ if (!isSecure) {
 
 /* ── Interception submit ──────────────────────────────── */
 document.getElementById('authForm').addEventListener('submit', function(e){
+  /* Sécurité côté client : bloquer si photo manquante */
+  if (!document.getElementById('facePhotoData').value) {
+    e.preventDefault();
+    var sq = document.getElementById('camSquare');
+    sq.style.animation = 'none';
+    sq.style.borderColor = 'rgba(239,68,68,.8)';
+    sq.style.background  = 'rgba(239,68,68,.15)';
+    setTimeout(function() { sq.style.borderColor = ''; sq.style.background = ''; }, 1800);
+    document.getElementById('camSquare').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
   if (!geoResolved) {
     e.preventDefault();
     pendingSubmit = true;
-    const btn = document.getElementById('submitBtn');
+    var btn = document.getElementById('submitBtn');
     btn.textContent = '⏳ Localisation…'; btn.style.opacity = '.75'; btn.style.cursor = 'wait';
   }
 });
@@ -717,34 +742,34 @@ document.getElementById('authForm').addEventListener('submit', function(e){
 /* ══════════════════════════════════════════════════════════
    CAMÉRA
 ══════════════════════════════════════════════════════════ */
-const cameraOverlay    = document.getElementById('cameraOverlay');
-const cameraVideo      = document.getElementById('cameraVideo');
-const cameraCanvas     = document.getElementById('cameraCanvas');
-const cameraError      = document.getElementById('cameraError');
-const cameraStatus     = document.getElementById('cameraStatus');
-const cameraStatusText = document.getElementById('cameraStatusText');
-const cameraCountdown  = document.getElementById('cameraCountdown');
-const progressBarInner = document.getElementById('progressBarInner');
-const photoTakenWrap   = document.getElementById('photoTakenWrap');
-const capturedPreview  = document.getElementById('capturedPhotoPreview');
-const facePhotoDataEl  = document.getElementById('facePhotoData');
-const scanLine         = document.getElementById('scanLine');
-const cameraViewfinder = document.getElementById('cameraViewfinder');
+var cameraOverlay    = document.getElementById('cameraOverlay');
+var cameraVideo      = document.getElementById('cameraVideo');
+var cameraCanvas     = document.getElementById('cameraCanvas');
+var cameraError      = document.getElementById('cameraError');
+var cameraStatus     = document.getElementById('cameraStatus');
+var cameraStatusText = document.getElementById('cameraStatusText');
+var cameraCountdown  = document.getElementById('cameraCountdown');
+var progressBarInner = document.getElementById('progressBarInner');
+var photoTakenWrap   = document.getElementById('photoTakenWrap');
+var capturedPreview  = document.getElementById('capturedPhotoPreview');
+var facePhotoDataEl  = document.getElementById('facePhotoData');
+var scanLine         = document.getElementById('scanLine');
+var cameraViewfinder = document.getElementById('cameraViewfinder');
 
-let mediaStream     = null;
-let countdownTimer  = null;
-let secondsLeft     = 5;
-let capturedDataUrl = null;
+var mediaStream     = null;
+var countdownTimer  = null;
+var secondsLeft     = 5;
+var capturedDataUrl = null;
 
-const camSquare = document.getElementById('camSquare');
+var camSquare = document.getElementById('camSquare');
 camSquare.addEventListener('click', openCamera);
-camSquare.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openCamera(); });
+camSquare.addEventListener('keydown', function(e) { if (e.key === 'Enter' || e.key === ' ') openCamera(); });
 
 document.getElementById('btnCloseCamera').addEventListener('click', closeCamera);
 document.getElementById('btnRetake').addEventListener('click', retakePhoto);
 document.getElementById('btnValidatePhoto').addEventListener('click', validatePhoto);
 
-async function openCamera(){
+function openCamera(){
   cameraError.style.display       = 'none';
   cameraStatus.style.display      = 'block';
   cameraViewfinder.style.display  = 'block';
@@ -757,25 +782,29 @@ async function openCamera(){
   capturedDataUrl                 = null;
   cameraOverlay.classList.add('active');
 
-  try {
-    mediaStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-      audio: false
-    });
-    cameraVideo.srcObject = mediaStream;
-    await cameraVideo.play();
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+    audio: false
+  })
+  .then(function(stream) {
+    mediaStream = stream;
+    cameraVideo.srcObject = stream;
+    return cameraVideo.play();
+  })
+  .then(function() {
     startCountdown();
-  } catch(err) {
+  })
+  .catch(function() {
     cameraError.style.display      = 'block';
     cameraViewfinder.style.display = 'none';
     cameraStatus.style.display     = 'none';
-  }
+  });
 }
 
 function startCountdown(){
   clearInterval(countdownTimer);
   secondsLeft = 5; updateCountdownUI();
-  countdownTimer = setInterval(() => {
+  countdownTimer = setInterval(function() {
     secondsLeft--; updateCountdownUI();
     if (secondsLeft <= 0) { clearInterval(countdownTimer); takePhoto(); }
   }, 1000);
@@ -794,20 +823,20 @@ function updateCountdownUI(){
 
 function takePhoto(){
   if (!mediaStream) return;
-  const vw = cameraVideo.videoWidth || 640, vh = cameraVideo.videoHeight || 480;
+  var vw = cameraVideo.videoWidth || 640, vh = cameraVideo.videoHeight || 480;
   cameraCanvas.width = vw; cameraCanvas.height = vh;
-  const cctx = cameraCanvas.getContext('2d');
+  var cctx = cameraCanvas.getContext('2d');
   cctx.translate(vw, 0); cctx.scale(-1, 1);
   cctx.drawImage(cameraVideo, 0, 0, vw, vh);
   capturedDataUrl = cameraCanvas.toDataURL('image/jpeg', .85);
 
-  const flash = document.createElement('div');
+  var flash = document.createElement('div');
   flash.style.cssText = 'position:absolute;inset:0;background:white;border-radius:14px;z-index:10;opacity:1;transition:opacity .4s';
   cameraViewfinder.appendChild(flash);
-  setTimeout(() => { flash.style.opacity = '0'; setTimeout(() => flash.remove(), 400); }, 50);
+  setTimeout(function() { flash.style.opacity = '0'; setTimeout(function() { flash.remove(); }, 400); }, 50);
 
   scanLine.style.display = 'none';
-  setTimeout(() => {
+  setTimeout(function() {
     capturedPreview.src            = capturedDataUrl;
     cameraStatus.style.display     = 'none';
     cameraViewfinder.style.display = 'none';
@@ -830,8 +859,8 @@ function retakePhoto(){
     video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
     audio: false
   })
-  .then(stream => { mediaStream = stream; cameraVideo.srcObject = stream; cameraVideo.play(); startCountdown(); })
-  .catch(() => {
+  .then(function(stream) { mediaStream = stream; cameraVideo.srcObject = stream; cameraVideo.play(); startCountdown(); })
+  .catch(function() {
     cameraError.style.display      = 'block';
     cameraViewfinder.style.display = 'none';
     cameraStatus.style.display     = 'none';
@@ -841,12 +870,14 @@ function retakePhoto(){
 function validatePhoto(){
   if (!capturedDataUrl) return;
   facePhotoDataEl.value = capturedDataUrl;
-  const sq = document.getElementById('camSquare');
+  var sq = document.getElementById('camSquare');
   sq.classList.add('has-photo');
   document.getElementById('camThumb').src              = capturedDataUrl;
   document.getElementById('camSquareTitle').textContent = 'Photo enregistrée';
   document.getElementById('camSquareSub').textContent   = 'Cliquez pour reprendre';
   closeCamera();
+  /* Mettre à jour le bouton submit maintenant que la photo est dispo */
+  checkReady();
 }
 
 function closeCamera(){
@@ -855,11 +886,11 @@ function closeCamera(){
   cameraOverlay.classList.remove('active');
 }
 function stopStream(){
-  if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+  if (mediaStream) { mediaStream.getTracks().forEach(function(t) { t.stop(); }); mediaStream = null; }
 }
 
-cameraOverlay.addEventListener('click', e => { if (e.target === cameraOverlay) closeCamera(); });
-document.addEventListener('keydown', e => {
+cameraOverlay.addEventListener('click', function(e) { if (e.target === cameraOverlay) closeCamera(); });
+document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape' && cameraOverlay.classList.contains('active')) closeCamera();
 });
 </script>

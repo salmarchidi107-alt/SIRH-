@@ -15,13 +15,14 @@ class StoreAbsenceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'employee_id' => 'required|exists:employees,id',
-            'type' => 'required|in:' . implode(',', array_keys(Absence::TYPES)),
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'reason' => 'nullable|string',
+            'employee_id'    => 'required|exists:employees,id',
+            'type'           => 'required|in:' . implode(',', array_keys(Absence::TYPES)) . ',autre',
+            'type_autre'     => 'required_if:type,autre|nullable|string|max:255',
+            'start_date'     => 'required|date',
+            'end_date'       => 'required|date|after_or_equal:start_date',
+            'reason'         => 'nullable|string',
             'replacement_id' => 'nullable|exists:employees,id',
-            'notes' => 'nullable|string',
+            'notes'          => 'nullable|string',
         ];
     }
 }

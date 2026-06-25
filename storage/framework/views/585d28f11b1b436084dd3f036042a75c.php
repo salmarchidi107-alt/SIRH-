@@ -187,7 +187,7 @@
         <div class="stat-val red" id="statRevoked">0</div>
     </div>
     <div class="stat-card c-amber">
-        <div class="stat-label">Sans code ce trimestre</div>
+        <div class="stat-label">Expiré</div>
         <div class="stat-val amber" id="statMissing"><?php echo e($stats['missing_count']); ?></div>
     </div>
 </div>
@@ -435,7 +435,7 @@
 </div>
 
 
-<div class="overlay" id="vModal">
+<div class="overlay" id="vModal" style="display:none;">
     <div class="modal">
         <div class="modal-title" id="vModalTitle">Confirmer</div>
         <div class="modal-body"  id="vModalBody">Cette action est irréversible.</div>

@@ -12,83 +12,88 @@ class NotificationController extends Controller
 {
     public function index()
     {
-
+        $tenantId = Auth::user()?->tenant_id;
 
         $pendingAbsences = Absence::with('employee')
+            ->where('tenant_id', $tenantId)          // ← FIX
             ->where('status', 'pending')
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
 
-        $pendingCount = Absence::where('status', 'pending')->count();
+        $pendingCount = Absence::where('tenant_id', $tenantId)
+            ->where('status', 'pending')
+            ->count();
 
-        $recentNews = News::orderBy('created_at', 'desc')
+
+        $recentNews = News::where('tenant_id', $tenantId)
+            ->whereDate('event_date', '>=', today())
+            ->orderBy('event_date', 'asc')
             ->limit(5)
             ->get();
 
-
-$totalCount = Absence::where('status', 'pending')->count() + News::count();
-        $pendingCount = Absence::where('status', 'pending')->count();
-        $newsCount = News::count();
-
+        $newsCount = News::where('tenant_id', $tenantId)->count();
 
         $employees = Employee::active()->orderBy('first_name')->get();
 
-        return view('notifications.index', compact('pendingAbsences', 'recentNews', 'pendingCount', 'newsCount', 'employees'));
+        return view('notifications.index', compact(
+            'pendingAbsences', 'recentNews', 'pendingCount', 'newsCount', 'employees'
+        ));
     }
-
 
     public function data()
     {
-
+        $tenantId = Auth::user()?->tenant_id;
 
         $pendingAbsences = Absence::with('employee')
+            ->where('tenant_id', $tenantId)          // ← FIX
             ->where('status', 'pending')
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
 
-        $pendingCount = Absence::where('status', 'pending')->count();
+        $pendingCount = Absence::where('tenant_id', $tenantId)  // ← FIX
+            ->where('status', 'pending')
+            ->count();
 
-        $recentNews = News::orderBy('created_at', 'desc')
+        $recentNews = News::where('tenant_id', $tenantId)       // ← FIX
+            ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
 
-        $totalCount = $pendingCount + News::count();
+        $newsCount = News::where('tenant_id', $tenantId)->count(); // ← FIX
 
+        $totalCount = $pendingCount + $newsCount;
 
         return response()->json([
-            'absences' => $pendingAbsences->map(function($absence) {
+            'absences' => $pendingAbsences->map(function ($absence) {
                 return [
-                    'id' => $absence->id,
-                    'type' => 'absence',
-                    'title' => 'Demande de congé',
-                    'employee' => $absence->employee ? $absence->employee->full_name : 'Inconnu',
-                    'message' => $absence->employee ? $absence->employee->full_name . ' a demandé un congé' : 'Demande de congé',
-                    'date' => $absence->start_date,
-                    'status' => $absence->status,
+                    'id'         => $absence->id,
+                    'type'       => 'absence',
+                    'title'      => 'Demande de congé',
+                    'employee'   => $absence->employee ? $absence->employee->full_name : 'Inconnu',
+                    'message'    => $absence->employee
+                        ? $absence->employee->full_name . ' a demandé un congé'
+                        : 'Demande de congé',
+                    'date'       => $absence->start_date,
+                    'status'     => $absence->status,
                     'created_at' => $absence->created_at->format('d/m/Y H:i'),
-                    'url' => route('absences.show', $absence->id),
+                    'url'        => route('absences.show', $absence->id),
                 ];
             }),
-            'news' => $recentNews->map(function($news) {
+            'news' => $recentNews->map(function ($news) {
                 return [
-                    'id' => $news->id,
-                    'type' => 'news',
-                    'title' => $news->title,
-
-
-            'message' => substr($news->content, 0, 50) . (strlen($news->content) > 50 ? '...' : ''),
-
-
-                    'date' => $news->created_at,
+                    'id'         => $news->id,
+                    'type'       => 'news',
+                    'title'      => $news->title,
+                    'message'    => substr($news->content, 0, 50) . (strlen($news->content) > 50 ? '...' : ''),
+                    'date'       => $news->created_at,
                     'created_at' => $news->created_at->format('d/m/Y H:i'),
-                    'url' => route('news.show', $news->id),
+                    'url'        => route('news.show', $news->id),
                 ];
             }),
-            'totalCount' => $totalCount,
+            'totalCount'   => $totalCount,
             'pendingCount' => $pendingAbsences->count(),
         ]);
     }
 }
-

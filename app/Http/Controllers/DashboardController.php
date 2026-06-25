@@ -26,13 +26,18 @@ class DashboardController extends Controller
         $tenantId    = $user?->tenant_id;
         $isAdminOrRH = $user && ($user->isAdmin() || $user->isRh());
 
-        // ── Stats ─────────────────────────────────────────────────────────
+        $absentTodayIds = Absence::where('tenant_id', $tenantId)
+            ->where('status', 'approved')
+            ->whereDate('start_date', '<=', today())
+            ->whereDate('end_date',   '>=', today())
+            ->pluck('employee_id')
+            ->unique()
+            ->toArray();
+
         $stats = [
             'total_employees'  => Employee::where('tenant_id', $tenantId)->count(),
             'active_employees' => Employee::where('tenant_id', $tenantId)->where('status', 'active')->count(),
-            'today_present'    => Planning::where('tenant_id', $tenantId)
-                ->whereDate('date', today())
-                ->count(),
+            'today_present'    => 0,
         ];
 
         $recent_absences = collect();
@@ -56,32 +61,28 @@ class DashboardController extends Controller
                 ->pluck('total', 'contract_type');
         }
 
-        // ── Départements ──────────────────────────────────────────────────
         $departments = Employee::where('tenant_id', $tenantId)
             ->groupBy('department')
             ->selectRaw('department, count(*) as total')
             ->pluck('total', 'department');
 
-        // ── Planning aujourd'hui ──────────────────────────────────────────
         $today_planning = Planning::with('employee')
             ->where(function ($q) use ($tenantId) {
                 $q->where('tenant_id', $tenantId)
                   ->orWhereNull('tenant_id');
             })
             ->whereDate('date', today())
+            ->whereNotIn('employee_id', $absentTodayIds)
             ->orderBy('shift_start')
             ->get()
             ->filter(fn($p) => $p->employee !== null);
 
         $stats['today_present'] = $today_planning->count();
 
-        // ── Absences annuelles ────────────────────────────────────────────
-        // Affiche janvier → mois actuel, + mois suivant si des demandes existent
         $currentYear  = now()->year;
         $currentMonth = now()->month;
         $nextMonth    = $currentMonth + 1;
 
-        // Vérifier s'il y a des absences le mois prochain (toutes statuts)
         $hasNextMonth = $nextMonth <= 12 && Absence::where('tenant_id', $tenantId)
             ->whereYear('start_date', $currentYear)
             ->whereMonth('start_date', $nextMonth)
@@ -105,11 +106,12 @@ class DashboardController extends Controller
             ];
         })->toArray();
 
-        // ── Anniversaires du mois ─────────────────────────────────────────
+        // ── Anniversaires : UNIQUEMENT aujourd'hui ────────────────────────────
         $birthdays = Employee::with('user')
             ->where('tenant_id', $tenantId)
             ->whereNotNull('birth_date')
-            ->whereMonth('birth_date', $currentMonth)
+            ->whereMonth('birth_date', now()->month)
+            ->whereDay('birth_date', now()->day)       // ← CHANGEMENT : jour exact uniquement
             ->where('status', 'active')
             ->get()
             ->map(function ($employee) use ($currentYear) {
@@ -122,16 +124,20 @@ class DashboardController extends Controller
             })
             ->sortBy('birthday_this_year');
 
-        // ── Actualités ────────────────────────────────────────────────────
-        $upcomingNews = News::active()->upcoming()->take(5)->get();
+        // ── Actualités : à venir (date >= aujourd'hui) ────────────────────────
+        $upcomingNews = News::active()
+            ->whereDate('event_date', '>=', today())   // ← CHANGEMENT : exclut les passées
+            ->orderBy('event_date', 'asc')             // ← CHANGEMENT : plus proche en premier
+            ->take(5)
+            ->get();
 
+        // ── Actualités récentes : uniquement aujourd'hui ──────────────────────
         $recentNews = News::active()
-            ->where('event_date', '>=', now()->subDays(7))
+            ->whereDate('event_date', today())         // ← CHANGEMENT : uniquement aujourd'hui
             ->orderBy('event_date', 'desc')
             ->take(3)
             ->get();
 
-        // ── Conflits d'absences ───────────────────────────────────────────
         $approvedAbsences = Absence::with(['employee' => fn($q) => $q->withoutGlobalScopes()])
             ->where('tenant_id', $tenantId)
             ->where('status', 'approved')
@@ -188,7 +194,6 @@ class DashboardController extends Controller
             $processConflicts($employeeAbsences, $currentEmployeeId);
         }
 
-        // ── Employé connecté ──────────────────────────────────────────────
         $employee = null;
 
         if ($user) {
@@ -211,7 +216,6 @@ class DashboardController extends Controller
             }
         }
 
-        // ── Widgets temps & droits ────────────────────────────────────────
         $tempsWidget  = null;
         $droitsWidget = null;
 
@@ -252,7 +256,7 @@ class DashboardController extends Controller
                 'on_leave'        => Absence::where('tenant_id', $tenantId)
                     ->where('status', 'approved')
                     ->whereDate('start_date', '<=', today())
-                    ->whereDate('end_date', '>=', today())
+                    ->whereDate('end_date',   '>=', today())
                     ->count(),
             ]);
         } catch (\Exception $e) {

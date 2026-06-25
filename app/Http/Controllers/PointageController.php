@@ -232,7 +232,7 @@ class PointageController extends Controller
     }
 
     // =========================================================================
-    // EXPORT EXCEL  ← MÉTHODE AJOUTÉE
+    // EXPORT EXCEL
     // =========================================================================
     public function export(Request $request)
     {
@@ -668,15 +668,61 @@ class PointageController extends Controller
     public function regenererTousPins(Request $request): JsonResponse
     {
         $query = Employee::active();
-        if ($request->filled('department')) $query->where('department', $request->department);
+        if ($request->filled('department')) {
+            $query->where('department', $request->department);
+        }
         $employees = $query->get();
         $updated   = [];
+
         foreach ($employees as $emp) {
             $pin = $this->generateUniquePin($updated);
             $emp->update(['plain_pin' => $pin]);
             $updated[] = ['id' => $emp->id, 'pin' => $pin];
         }
+
         return response()->json(['success' => true, 'count' => count($updated), 'pins' => $updated]);
+    }
+
+    // =========================================================================
+    // exportBadgesPinPdf
+    // =========================================================================
+    public function exportBadgesPinPdf(Request $request)
+    {
+        try {
+            $employees = Employee::active()
+                ->when($request->filled('search'),     fn($q) => $q->search($request->search))
+                ->when($request->filled('department'), fn($q) => $q->department($request->department))
+                ->defaultOrder()
+                ->get(['id', 'first_name', 'last_name', 'matricule', 'plain_pin', 'department']);
+
+            if ($employees->isEmpty()) {
+                return back()->with('error', 'Aucun employé trouvé.');
+            }
+
+            $byDept = $employees->groupBy('department');
+            $generatedAt = now()->format('d/m/Y H:i');
+            $deptFilter = $request->get('department', 'Tous');
+
+            $filename = 'badges-pin_' . now()->format('Y-m-d_H-i-s')
+                      . ($deptFilter !== 'Tous' ? '_' . \Illuminate\Support\Str::slug($deptFilter) : '')
+                      . '.pdf';
+
+            return Pdf::loadView('pdf.badges-pin', compact('byDept', 'generatedAt', 'deptFilter'))
+                ->setPaper('a4', 'portrait')
+                ->setOptions([
+                    'isRemoteEnabled' => true,
+                    'defaultFont'     => 'DejaVu Sans',
+                    'margin_left'     => 10,
+                    'margin_right'    => 10,
+                    'margin_top'      => 10,
+                    'margin_bottom'   => 10,
+                ])
+                ->download($filename);
+
+        } catch (Exception $e) {
+            Log::error('Badges PIN PDF error', ['error' => $e->getMessage()]);
+            return back()->with('error', 'Erreur PDF: ' . $e->getMessage());
+        }
     }
 
     private function generateUniquePin(array $alreadyUsed = []): string

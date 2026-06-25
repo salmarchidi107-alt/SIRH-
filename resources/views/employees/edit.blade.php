@@ -147,6 +147,23 @@
     opacity: 0.5; transition: opacity .2s; color: var(--text-primary);
 }
 .toggle-password:hover { opacity: 1; }
+
+/* CIN / Téléphone feedback */
+.field-feedback        { font-size: .75rem; display: block; margin-top: 3px; }
+.field-feedback.error  { color: var(--danger, #ef4444); }
+.field-feedback.success{ color: #10b981; }
+.form-control.is-invalid { border-color: var(--danger, #ef4444); }
+.form-control.is-valid   { border-color: #10b981; }
+
+/* Champ mot de passe actuel */
+.current-pwd-field {
+    background: #f8fafc !important;
+    color: #475569 !important;
+    cursor: default !important;
+    font-family: monospace !important;
+    letter-spacing: 2px !important;
+    border-color: #e2e8f0 !important;
+}
 </style>
 @endpush
 
@@ -181,42 +198,45 @@
         <div class="card-header"><div class="card-title">Informations Personnelles</div></div>
         <div class="card-body">
             <div class="form-grid">
+
                 <div class="form-group">
                     <label>Prénom *</label>
                     <input type="text" name="first_name" class="form-control"
                            value="{{ old('first_name', $employee->first_name) }}" required>
                     @error('first_name') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
+
                 <div class="form-group">
                     <label>Nom *</label>
                     <input type="text" name="last_name" class="form-control"
                            value="{{ old('last_name', $employee->last_name) }}" required>
                     @error('last_name') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
+
                 <div class="form-group">
                     <label>Email *</label>
                     <input type="email" name="email" class="form-control"
                            value="{{ old('email', $employee->email) }}" required>
                     @error('email') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
-                 <div class="form-group">
+
+                <div class="form-group">
                     <label>Téléphone</label>
-                    <input type="tel" name="phone" class="form-control"
-                        value="{{ old('phone') }}"
-                        pattern="[0-9]{10}"
-                        maxlength="10"
-                        title="10 chiffres exacts requis"
-                        inputmode="numeric">
-                        @error('phone')
-                        <span style="color:var(--danger);font-size:.75rem">{{ $message }}</span>
-                    @enderror
+                    <input type="tel" name="phone" id="phone_field" class="form-control"
+                           value="{{ old('phone', $employee->phone) }}"
+                           inputmode="numeric"
+                           placeholder="Numéro de téléphone">
+                    <span id="phone_feedback" class="field-feedback"></span>
+                    @error('phone') <span style="color:var(--danger);font-size:.75rem">{{ $message }}</span> @enderror
                 </div>
+
                 <div class="form-group">
                     <label>Date de naissance</label>
                     <input type="date" name="birth_date" class="form-control"
                            value="{{ old('birth_date', $employee->birth_date?->format('Y-m-d')) }}">
+                    @error('birth_date') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
-                {{-- Genre — du fichier 1 (absent du fichier 2) --}}
+
                 <div class="form-group">
                     <label>Genre</label>
                     <select name="genre" class="form-control">
@@ -226,19 +246,17 @@
                     </select>
                     @error('genre') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
+
                 <div class="form-group">
                     <label>CIN</label>
-                    <input type="text" name="cin" class="form-control"
-                        value="{{ old('cin') }}"
-                        placeholder="AB123456"
-                        pattern="[A-Za-z]{1,2}[0-9]{5,6}"
-                        maxlength="8"
-                        title="Format CIN invalide (ex : AB123456)"
-                        oninput="this.value = this.value.toUpperCase()">
-                    @error('cin')
-                        <span style="color:var(--danger);font-size:.75rem">{{ $message }}</span>
-                    @enderror
+                    <input type="text" name="cin" id="cin_field" class="form-control"
+                           value="{{ old('cin', $employee->cin) }}"
+                           oninput="this.value = this.value.toUpperCase()"
+                           placeholder="Numéro CIN">
+                    <span id="cin_feedback" class="field-feedback"></span>
+                    @error('cin') <span style="color:var(--danger);font-size:.75rem">{{ $message }}</span> @enderror
                 </div>
+
                 <div class="form-group">
                     <label>Situation familiale</label>
                     <select name="family_situation" class="form-control">
@@ -250,14 +268,23 @@
                         @endforeach
                     </select>
                 </div>
+
                 <div class="form-group full">
                     <label>Adresse</label>
                     <textarea name="address" class="form-control" rows="2">{{ old('address', $employee->address) }}</textarea>
                 </div>
+
                 <div class="form-group">
                     <label>Photo (laisser vide pour conserver)</label>
                     <input type="file" name="photo" class="form-control" accept="image/*">
+                    @if($employee->photo)
+                        <small style="color:#64748b;font-size:0.72rem;margin-top:4px;display:block;">
+                            Photo actuelle :
+                            <a href="{{ asset('storage/'.$employee->photo) }}" target="_blank" style="color:#0d9488;">voir</a>
+                        </small>
+                    @endif
                 </div>
+
             </div>
         </div>
     </div>
@@ -269,6 +296,7 @@
         <div class="card-header"><div class="card-title">Informations Professionnelles</div></div>
         <div class="card-body">
             <div class="form-grid">
+
                 <div class="form-group">
                     <label>Service / Département *</label>
                     <select name="department" class="form-control" required>
@@ -291,31 +319,34 @@
                         </small>
                     @endif
                 </div>
+
                 <div class="form-group">
                     <label>Poste *</label>
                     <input type="text" name="position" class="form-control"
                            value="{{ old('position', $employee->position) }}" required>
                     @error('position') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
+
                 <div class="form-group">
                     <label>Type de diplôme</label>
                     <input type="text" name="diploma_type" class="form-control"
                            value="{{ old('diploma_type', $employee->diploma_type) }}"
                            placeholder="ex: Bac+5, Doctorat...">
                 </div>
+
                 <div class="form-group">
                     <label>Site de travail</label>
                     <input type="text" name="work_site" class="form-control"
-                           value="{{ old('work_site', $employee->work_site) }}"
-                           placeholder="ex: Hôpital Central">
+                           value="{{ old('work_site', $employee->work_site) }}">
                     @error('work_site') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
+
                 <div class="form-group">
                     <label>Compétences</label>
                     <input type="text" name="skills" class="form-control"
                            value="{{ old('skills', $employee->skills) }}">
                 </div>
-                {{-- contract_type — select du fichier 1 (meilleur que l'input texte du fichier 2) --}}
+
                 <div class="form-group">
                     <label>Contrat *</label>
                     <select name="contract_type" class="form-control" required>
@@ -327,11 +358,13 @@
                     </select>
                     @error('contract_type') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
+
                 <div class="form-group">
                     <label>Date d'embauche *</label>
                     <input type="date" name="hire_date" class="form-control"
                            value="{{ old('hire_date', $employee->hire_date->format('Y-m-d')) }}" required>
                 </div>
+
                 <div class="form-group">
                     <label>Statut</label>
                     <select name="status" class="form-control">
@@ -340,7 +373,7 @@
                         <option value="leave"    {{ old('status', $employee->status) == 'leave'    ? 'selected' : '' }}>En congé</option>
                     </select>
                 </div>
-                {{-- Responsable direct — du fichier 2 --}}
+
                 <div class="form-group">
                     <label>Responsable direct</label>
                     <select name="manager_id" class="form-control">
@@ -353,6 +386,7 @@
                         @endforeach
                     </select>
                 </div>
+
             </div>
         </div>
     </div>
@@ -368,7 +402,7 @@
                     'doc_casier'   => 'Casier judiciaire',
                     'doc_rib'      => 'Relevé bancaire (RIB)',
                     'doc_diplomes' => 'Copies des diplômes',
-                    'doc_cin'      => 'Copie CIN / Carte d\'identité',
+                    'doc_cin'      => "Copie CIN / Carte d'identité",
                 ] as $field => $docLabel)
                     <div class="form-group">
                         <label>
@@ -407,21 +441,26 @@
         <div class="card-header"><div class="card-title">Rémunération &amp; Informations Sociales</div></div>
         <div class="card-body">
             <div class="form-grid">
+
                 <div class="form-group">
                     <label>Salaire de base (MAD)</label>
                     <input type="number" name="base_salary" class="form-control"
                            value="{{ old('base_salary', $employee->base_salary) }}" min="0" step="50">
                 </div>
+
                 <div class="form-group">
                     <label>N° CNSS</label>
                     <input type="text" name="cnss" class="form-control"
-                           value="{{ old('cnss', $employee->cnss) }}">
+                           value="{{ old('cnss', $employee->cnss) }}" placeholder="1234567">
+                    @error('cnss') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
+
                 <div class="form-group">
                     <label>Nb. d'enfants</label>
                     <input type="number" name="children_count" class="form-control"
                            value="{{ old('children_count', $employee->children_count ?? 0) }}" min="0">
                 </div>
+
                 <div class="form-group">
                     <label>Mode de paiement</label>
                     <select name="payment_method" class="form-control">
@@ -433,6 +472,7 @@
                         @endforeach
                     </select>
                 </div>
+
                 <div class="form-group">
                     <label>Banque</label>
                     <select name="bank" class="form-control">
@@ -451,26 +491,31 @@
                         <option value="Autre">Autre...</option>
                     </select>
                 </div>
+
                 <div class="form-group">
                     <label>RIB</label>
                     <input type="text" name="rib" class="form-control"
                            value="{{ old('rib', $employee->rib) }}"
                            placeholder="XX 12 3456 7890 1234 5678 90">
                 </div>
+
                 <div class="form-group full">
                     <label>Avantages contractuels</label>
                     <textarea name="contractual_benefits" class="form-control" rows="2">{{ old('contractual_benefits', $employee->contractual_benefits) }}</textarea>
                 </div>
+
                 <div class="form-group">
                     <label>Contact d'urgence</label>
                     <input type="text" name="emergency_contact" class="form-control"
                            value="{{ old('emergency_contact', $employee->emergency_contact) }}">
                 </div>
+
                 <div class="form-group">
                     <label>Téléphone urgence</label>
                     <input type="text" name="emergency_phone" class="form-control"
                            value="{{ old('emergency_phone', $employee->emergency_phone) }}">
                 </div>
+
             </div>
         </div>
     </div>
@@ -482,6 +527,7 @@
         <div class="card-header"><div class="card-title">Détails du Contrat de Travail</div></div>
         <div class="card-body">
             <div class="form-grid">
+
                 <div class="form-group">
                     <label>Temps de travail (h/semaine)</label>
                     <input type="number" name="work_hours" class="form-control"
@@ -489,46 +535,47 @@
                            min="0" step="0.5" placeholder="ex: 40">
                     @error('work_hours') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
                 </div>
+
                 <div class="form-group">
                     <label>Début du contrat</label>
                     <input type="date" name="contract_start_date" class="form-control"
                            value="{{ old('contract_start_date', $employee->contract_start_date?->format('Y-m-d')) }}" readonly>
                 </div>
+
                 <div class="form-group">
                     <label>Date de fin (si CDD)</label>
                     <input type="date" name="contract_end_date" class="form-control"
                            value="{{ old('contract_end_date', $employee->contract_end_date?->format('Y-m-d')) }}">
                 </div>
+
                 <div class="form-group">
-    <label>
-        Congés antérieurs (jours déjà consommés)
-    </label>
-    <input type="number"
-           name="conges_anterieurs"
-           class="form-control"
-           value="{{ old('conges_anterieurs', $employee->conges_anterieurs ?? 0) }}"
-           min="0"
-           step="0"
-           {{ auth()->user()->isAdmin() ? '' : 'readonly' }}
-           style="{{ auth()->user()->isAdmin() ? '' : 'background:#f8fafc;color:#94a3b8;cursor:not-allowed;' }}"
-           title="Jours de congés consommés avant création du compte">
-    <small style="color:#64748b;font-size:0.72rem;margin-top:4px;display:block;">
-        Ces jours sont déduits automatiquement du solde total.
-        @unless(auth()->user()->isAdmin())
-            Contactez un administrateur pour modifier cette valeur.
-        @endunless
-    </small>
-    @error('conges_anterieurs')
-        <span style="color:var(--danger);font-size:.75rem">{{ $message }}</span>
-    @enderror
-</div>
+                    <label>Congés antérieurs (jours déjà consommés)</label>
+                    <input type="number"
+                           name="conges_anterieurs"
+                           class="form-control"
+                           value="{{ old('conges_anterieurs', $employee->conges_anterieurs ?? 0) }}"
+                           min="0" step="1"
+                           {{ auth()->user()->isAdmin() ? '' : 'readonly' }}
+                           style="{{ auth()->user()->isAdmin() ? '' : 'background:#f8fafc;color:#94a3b8;cursor:not-allowed;' }}"
+                           title="Jours de congés consommés avant création du compte">
+                    <small style="color:#64748b;font-size:0.72rem;margin-top:4px;display:block;">
+                        Ces jours sont déduits automatiquement du solde total.
+                        @unless(auth()->user()->isAdmin())
+                            Contactez un administrateur pour modifier cette valeur.
+                        @endunless
+                    </small>
+                    @error('conges_anterieurs') <span style="color:var(--danger);font-size:.75rem">{{ $message }}</span> @enderror
+                </div>
+
                 <div class="form-group">
                     <label>Compteur de temps (heures)</label>
                     <input type="number" name="work_hours_counter" class="form-control"
                            value="{{ old('work_hours_counter', $employee->work_hours_counter ?? 0) }}"
                            min="0" step="0.5">
                 </div>
+
             </div>
+
             <div class="form-group full" style="margin-top:16px;">
                 <label style="font-weight:600;margin-bottom:12px;display:block;">Jours de travail habituels</label>
                 @php
@@ -601,7 +648,6 @@
 
     {{-- ══════════════════════════════════════
          Gestion des permissions
-         (visible seulement si compte lié)
     ══════════════════════════════════════ --}}
     @if($linkedUser)
     @php
@@ -614,7 +660,6 @@
                 'delete' => (bool) $perm->can_delete,
             ];
         }
-
         $checked = function(string $module, string $action) use ($currentPerms): bool {
             if (request()->hasSession() && request()->session()->hasOldInput('permissions')) {
                 $oldPerms = old('permissions', []);
@@ -668,228 +713,153 @@
         </div>
 
         <div class="perm-col-labels">
-            <div>Module</div>
-            <div>Voir</div>
-            <div>Créer</div>
-            <div>Modifier</div>
-            <div>Supprimer</div>
+            <div>Module</div><div>Voir</div><div>Créer</div><div>Modifier</div><div>Supprimer</div>
         </div>
 
         <div id="perm-table">
 
             <div class="perm-group-label">Principal</div>
-
             <div class="perm-row">
                 <div class="perm-mod-name">Tableau de bord</div>
-                <div class="perm-cell">
-                    <input type="checkbox" name="permissions[dashboard][view]"
-                           {{ $checked('dashboard','view') ? 'checked' : '' }}>
-                </div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[dashboard][view]" {{ $checked('dashboard','view') ? 'checked' : '' }}></div>
                 <div class="perm-cell"><span class="perm-na">—</span></div>
                 <div class="perm-cell"><span class="perm-na">—</span></div>
                 <div class="perm-cell"><span class="perm-na">—</span></div>
             </div>
 
             <div class="perm-group-label">Personnel</div>
-
             <div class="perm-row">
                 <div class="perm-mod-name">Employés</div>
                 @foreach(['view','create','edit','delete'] as $a)
-                <div class="perm-cell">
-                    <input type="checkbox" name="permissions[employees][{{ $a }}]"
-                           {{ $checked('employees',$a) ? 'checked' : '' }}>
-                </div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[employees][{{ $a }}]" {{ $checked('employees',$a) ? 'checked' : '' }}></div>
                 @endforeach
             </div>
-
             <div class="perm-row perm-row--sub">
-                <div class="perm-mod-name perm-row--sub">Trombinoscope</div>
-                <div class="perm-cell">
-                    <input type="checkbox" name="permissions[trombinoscope][view]"
-                           {{ $checked('trombinoscope','view') ? 'checked' : '' }}>
-                </div>
+                <div class="perm-mod-name">Trombinoscope</div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[trombinoscope][view]" {{ $checked('trombinoscope','view') ? 'checked' : '' }}></div>
                 <div class="perm-cell"><span class="perm-na">—</span></div>
                 <div class="perm-cell"><span class="perm-na">—</span></div>
                 <div class="perm-cell"><span class="perm-na">—</span></div>
             </div>
-
             <div class="perm-row perm-row--sub">
-                <div class="perm-mod-name perm-row--sub">Actualités</div>
+                <div class="perm-mod-name">Actualités</div>
                 @foreach(['view','create','edit','delete'] as $a)
-                <div class="perm-cell">
-                    <input type="checkbox" name="permissions[news][{{ $a }}]"
-                           {{ $checked('news',$a) ? 'checked' : '' }}>
-                </div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[news][{{ $a }}]" {{ $checked('news',$a) ? 'checked' : '' }}></div>
                 @endforeach
             </div>
 
             <div class="perm-group-label">Temps &amp; Présence</div>
-
             <div class="perm-row">
                 <div class="perm-mod-name">Planning</div>
                 @foreach(['view','create','edit','delete'] as $a)
-                <div class="perm-cell">
-                    <input type="checkbox" name="permissions[planning][{{ $a }}]"
-                           {{ $checked('planning',$a) ? 'checked' : '' }}>
-                </div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[planning][{{ $a }}]" {{ $checked('planning',$a) ? 'checked' : '' }}></div>
                 @endforeach
             </div>
-
             <div class="perm-row perm-row--sub">
-                <div class="perm-mod-name perm-row--sub">Vue d'ensemble</div>
-                <div class="perm-cell">
-                    <input type="checkbox" name="permissions[temps_vue][view]"
-                           {{ $checked('temps_vue','view') ? 'checked' : '' }}>
-                </div>
+                <div class="perm-mod-name">Vue d'ensemble</div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[temps_vue][view]" {{ $checked('temps_vue','view') ? 'checked' : '' }}></div>
                 <div class="perm-cell"><span class="perm-na">—</span></div>
                 <div class="perm-cell"><span class="perm-na">—</span></div>
                 <div class="perm-cell"><span class="perm-na">—</span></div>
             </div>
-
             <div class="perm-row perm-row--sub">
-                <div class="perm-mod-name perm-row--sub">Pointage</div>
+                <div class="perm-mod-name">Pointage</div>
                 @foreach(['view','create','edit','delete'] as $a)
-                <div class="perm-cell">
-                    <input type="checkbox" name="permissions[pointage][{{ $a }}]"
-                           {{ $checked('pointage',$a) ? 'checked' : '' }}>
-                </div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[pointage][{{ $a }}]" {{ $checked('pointage',$a) ? 'checked' : '' }}></div>
                 @endforeach
             </div>
 
             <div class="perm-group-label">Absences &amp; Congés</div>
-
             <div class="perm-row">
                 <div class="perm-mod-name">Demandes d'absences</div>
                 @foreach(['view','create','edit','delete'] as $a)
-                <div class="perm-cell">
-                    <input type="checkbox" name="permissions[absences][{{ $a }}]"
-                           {{ $checked('absences',$a) ? 'checked' : '' }}>
-                </div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[absences][{{ $a }}]" {{ $checked('absences',$a) ? 'checked' : '' }}></div>
                 @endforeach
             </div>
-
             <div class="perm-row perm-row--sub">
-                <div class="perm-mod-name perm-row--sub">État visuel absences</div>
-                <div class="perm-cell">
-                    <input type="checkbox" name="permissions[absences_calendar][view]"
-                           {{ $checked('absences_calendar','view') ? 'checked' : '' }}>
-                </div>
+                <div class="perm-mod-name">État visuel absences</div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[absences_calendar][view]" {{ $checked('absences_calendar','view') ? 'checked' : '' }}></div>
                 <div class="perm-cell"><span class="perm-na">—</span></div>
                 <div class="perm-cell"><span class="perm-na">—</span></div>
                 <div class="perm-cell"><span class="perm-na">—</span></div>
             </div>
-
             <div class="perm-row perm-row--sub">
-                <div class="perm-mod-name perm-row--sub">Compteurs &amp; droits</div>
-                <div class="perm-cell">
-                    <input type="checkbox" name="permissions[absences_counters][view]"
-                           {{ $checked('absences_counters','view') ? 'checked' : '' }}>
-                </div>
+                <div class="perm-mod-name">Compteurs &amp; droits</div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[absences_counters][view]" {{ $checked('absences_counters','view') ? 'checked' : '' }}></div>
                 <div class="perm-cell"><span class="perm-na">—</span></div>
-                <div class="perm-cell">
-                    <input type="checkbox" name="permissions[absences_counters][edit]"
-                           {{ $checked('absences_counters','edit') ? 'checked' : '' }}>
-                </div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[absences_counters][edit]" {{ $checked('absences_counters','edit') ? 'checked' : '' }}></div>
                 <div class="perm-cell"><span class="perm-na">—</span></div>
             </div>
 
             <div class="perm-group-label">Formations (LMS)</div>
-
             <div class="perm-row">
                 <div class="perm-mod-name">Formations</div>
                 @foreach(['view','create','edit','delete'] as $a)
-                <div class="perm-cell">
-                    <input type="checkbox" name="permissions[lms][{{ $a }}]"
-                           {{ $checked('lms',$a) ? 'checked' : '' }}>
-                </div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[lms][{{ $a }}]" {{ $checked('lms',$a) ? 'checked' : '' }}></div>
                 @endforeach
             </div>
-
             <div class="perm-row perm-row--sub">
-                <div class="perm-mod-name perm-row--sub">Référentiel formations</div>
+                <div class="perm-mod-name">Référentiel formations</div>
                 @foreach(['view','create','edit','delete'] as $a)
-                <div class="perm-cell">
-                    <input type="checkbox" name="permissions[referentiel][{{ $a }}]"
-                           {{ $checked('referentiel',$a) ? 'checked' : '' }}>
-                </div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[referentiel][{{ $a }}]" {{ $checked('referentiel',$a) ? 'checked' : '' }}></div>
                 @endforeach
             </div>
-
             <div class="perm-row perm-row--sub">
-                <div class="perm-mod-name perm-row--sub">Planning formations</div>
+                <div class="perm-mod-name">Planning formations</div>
                 @foreach(['view','create','edit','delete'] as $a)
-                <div class="perm-cell">
-                    <input type="checkbox" name="permissions[lms_planning][{{ $a }}]"
-                           {{ $checked('lms_planning',$a) ? 'checked' : '' }}>
-                </div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[lms_planning][{{ $a }}]" {{ $checked('lms_planning',$a) ? 'checked' : '' }}></div>
                 @endforeach
             </div>
 
             <div class="perm-group-label">Paie</div>
-
             <div class="perm-row">
                 <div class="perm-mod-name">Salaires</div>
                 @foreach(['view','create','edit','delete'] as $a)
-                <div class="perm-cell">
-                    <input type="checkbox" name="permissions[salary][{{ $a }}]"
-                           {{ $checked('salary',$a) ? 'checked' : '' }}>
-                </div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[salary][{{ $a }}]" {{ $checked('salary',$a) ? 'checked' : '' }}></div>
                 @endforeach
+            </div>
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name">Rapport RH</div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[reporting][view]" {{ $checked('reporting','view') ? 'checked' : '' }}></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
+                <div class="perm-cell"><span class="perm-na">—</span></div>
             </div>
 
             <div class="perm-group-label">GED</div>
-
             <div class="perm-row">
                 <div class="perm-mod-name">Documents</div>
                 @foreach(['view','create','edit','delete'] as $a)
-                <div class="perm-cell">
-                    <input type="checkbox" name="permissions[ged][{{ $a }}]"
-                           {{ $checked('ged',$a) ? 'checked' : '' }}>
-                </div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[ged][{{ $a }}]" {{ $checked('ged',$a) ? 'checked' : '' }}></div>
                 @endforeach
             </div>
-
             <div class="perm-row perm-row--sub">
-                <div class="perm-mod-name perm-row--sub">Modèles</div>
+                <div class="perm-mod-name">Modèles</div>
                 @foreach(['view','create','edit','delete'] as $a)
-                <div class="perm-cell">
-                    <input type="checkbox" name="permissions[ged_modeles][{{ $a }}]"
-                           {{ $checked('ged_modeles',$a) ? 'checked' : '' }}>
-                </div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[ged_modeles][{{ $a }}]" {{ $checked('ged_modeles',$a) ? 'checked' : '' }}></div>
                 @endforeach
             </div>
-
             <div class="perm-row perm-row--sub">
-                <div class="perm-mod-name perm-row--sub">Entêtes</div>
+                <div class="perm-mod-name">Entêtes</div>
                 @foreach(['view','create','edit','delete'] as $a)
-                <div class="perm-cell">
-                    <input type="checkbox" name="permissions[ged_entete][{{ $a }}]"
-                           {{ $checked('ged_entete',$a) ? 'checked' : '' }}>
-                </div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[ged_entete][{{ $a }}]" {{ $checked('ged_entete',$a) ? 'checked' : '' }}></div>
                 @endforeach
             </div>
 
             <div class="perm-group-label">Paramétrage &amp; Rapports</div>
-
             <div class="perm-row">
                 <div class="perm-mod-name">Paramétrage</div>
                 @foreach(['view','create','edit','delete'] as $a)
-                <div class="perm-cell">
-                    <input type="checkbox" name="permissions[parametrage][{{ $a }}]"
-                           {{ $checked('parametrage',$a) ? 'checked' : '' }}>
-                </div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[parametrage][{{ $a }}]" {{ $checked('parametrage',$a) ? 'checked' : '' }}></div>
                 @endforeach
             </div>
 
-            <div class="perm-row perm-row--sub">
-                <div class="perm-mod-name perm-row--sub">Rapport RH</div>
-                <div class="perm-cell">
-                    <input type="checkbox" name="permissions[reporting][view]"
-                           {{ $checked('reporting','view') ? 'checked' : '' }}>
-                </div>
-                <div class="perm-cell"><span class="perm-na">—</span></div>
-                <div class="perm-cell"><span class="perm-na">—</span></div>
-                <div class="perm-cell"><span class="perm-na">—</span></div>
+            <div class="perm-group-label">Équipements</div>
+            <div class="perm-row">
+                <div class="perm-mod-name">Gestion des équipements</div>
+                @foreach(['view','create','edit','delete'] as $a)
+                <div class="perm-cell"><input type="checkbox" name="permissions[equipment][{{ $a }}]" {{ $checked('equipment',$a) ? 'checked' : '' }}></div>
+                @endforeach
             </div>
 
         </div>{{-- #perm-table --}}
@@ -897,13 +867,12 @@
         <div class="perm-footer-note">
             Les colonnes grisées (—) indiquent qu'une action n'est pas applicable pour ce module.
         </div>
-        @endif {{-- fin !isFullAccessRole --}}
-    </div>{{-- #perm-card --}}
-    @endif {{-- fin $linkedUser --}}
+        @endif
+    </div>
+    @endif
 
     {{-- ══════════════════════════════════════
-         Modifier le mot de passe
-         (visible seulement si compte lié)
+         Mot de passe du compte
     ══════════════════════════════════════ --}}
     @if($employee->user)
     <div class="card mb-4">
@@ -915,6 +884,7 @@
             </div>
         </div>
         <div class="card-body">
+
             {{-- Toggle switch --}}
             <div style="display:flex;align-items:center;gap:12px;cursor:pointer;" id="toggle-pwd-label">
                 <div style="position:relative;width:44px;height:24px;flex-shrink:0;">
@@ -935,9 +905,45 @@
                 <span style="font-size:0.88rem;font-weight:500;user-select:none;">Modifier le mot de passe</span>
             </div>
 
-            {{-- Champs (cachés par défaut) --}}
+            {{-- Champs mot de passe (visibles après activation du toggle) --}}
             <div id="password-fields" style="margin-top:20px;display:{{ old('change_password') ? 'block' : 'none' }};">
                 <div class="form-grid">
+
+                    {{-- ✅ Mot de passe actuel — visible uniquement après activation du toggle --}}
+                    <div class="form-group">
+                        <label style="display:flex;align-items:center;gap:6px;">
+                            Mot de passe actuel
+                            <span style="font-size:0.7rem;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;border-radius:10px;padding:1px 8px;font-weight:400;">
+                                lecture seule
+                            </span>
+                        </label>
+                        <div class="password-group">
+                            <input type="password"
+                                   id="current_password_display"
+                                   class="form-control current-pwd-field"
+                                   value="{{ $employee->user->plain_password ?? '' }}"
+                                   readonly
+                                   tabindex="-1"
+                                   autocomplete="off">
+                            <button type="button"
+                                    class="toggle-password"
+                                    data-target="current_password_display"
+                                    title="Afficher / masquer le mot de passe actuel">
+                                <svg width="16" height="16" fill="none" viewBox="0 0 24 24"
+                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+                        </div>
+                        @if(!$employee->user->plain_password)
+                            <small style="color:#f59e0b;font-size:0.72rem;margin-top:4px;display:block;">
+                                ⚠️ Non disponible — défini avant l'activation du stockage en clair.
+                            </small>
+                        @endif
+                    </div>
+
+                    {{-- Nouveau mot de passe --}}
                     <div class="form-group">
                         <label>Nouveau mot de passe *</label>
                         <div class="password-group">
@@ -945,12 +951,16 @@
                                    class="form-control" autocomplete="new-password"
                                    placeholder="Min. 8 caractères">
                             <button type="button" class="toggle-password" data-target="new_password" title="Afficher/masquer">
-                                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                                <svg width="16" height="16" fill="none" viewBox="0 0 24 24"
+                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
                                 </svg>
                             </button>
                         </div>
-                        @error('new_password') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+                        @error('new_password')
+                            <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span>
+                        @enderror
                         <div style="margin-top:8px;">
                             <div style="display:flex;gap:4px;margin-bottom:4px;">
                                 <div class="pwd-bar" style="height:4px;flex:1;border-radius:2px;background:var(--border);transition:background .3s;"></div>
@@ -961,6 +971,8 @@
                             <span id="pwd-strength-label" style="font-size:0.72rem;color:var(--text-muted);"></span>
                         </div>
                     </div>
+
+                    {{-- Confirmation mot de passe --}}
                     <div class="form-group">
                         <label>Confirmer le mot de passe *</label>
                         <div class="password-group">
@@ -968,25 +980,27 @@
                                    class="form-control" autocomplete="new-password"
                                    placeholder="Répéter le mot de passe">
                             <button type="button" class="toggle-password" data-target="new_password_confirmation" title="Afficher/masquer">
-                                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                                <svg width="16" height="16" fill="none" viewBox="0 0 24 24"
+                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
                                 </svg>
                             </button>
                         </div>
                         <span id="pwd-match-label" style="font-size:0.72rem;margin-top:4px;display:none;"></span>
                     </div>
+
                 </div>
             </div>
+
         </div>
     </div>
     @endif
 
-    {{-- ══════════════════════════════════════
-         Boutons
-    ══════════════════════════════════════ --}}
+    {{-- Boutons --}}
     <div style="display:flex;gap:12px;justify-content:flex-end;margin-bottom:32px;">
         <a href="{{ route('employees.show', $employee) }}" class="btn btn-ghost">Annuler</a>
-        <button type="submit" class="btn btn-primary">
+        <button type="submit" id="saveBtn" class="btn btn-primary">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24"
                  stroke="currentColor" stroke-width="2.5">
                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
@@ -1011,153 +1025,196 @@ document.addEventListener('DOMContentLoaded', function () {
         startDate.addEventListener('input', () => hireDate.value  = startDate.value);
     }
 
+    // ── Désactiver le bouton à la soumission ─────────────────
+    const form    = document.querySelector('form');
+    const saveBtn = document.getElementById('saveBtn');
+    if (form && saveBtn) {
+        form.addEventListener('submit', function () {
+            saveBtn.disabled    = true;
+            saveBtn.textContent = 'Enregistrement...';
+        });
+    }
+
     // ── Toggle switch mot de passe ───────────────────────────
     const checkbox = document.getElementById('change_password');
-    if (!checkbox) return;
+    if (checkbox) {
+        const fields  = document.getElementById('password-fields');
+        const track   = document.getElementById('pwd-toggle-track');
+        const thumb   = document.getElementById('pwd-toggle-thumb');
+        const wrapper = document.getElementById('toggle-pwd-label');
 
-    const fields  = document.getElementById('password-fields');
-    const track   = document.getElementById('pwd-toggle-track');
-    const thumb   = document.getElementById('pwd-toggle-thumb');
-    const wrapper = document.getElementById('toggle-pwd-label');
+        wrapper.addEventListener('click', function (e) {
+            if (e.target === checkbox) return;
+            checkbox.checked = !checkbox.checked;
+            applyToggle();
+        });
+        checkbox.addEventListener('change', applyToggle);
 
-    wrapper.addEventListener('click', function (e) {
-        if (e.target === checkbox) return;
-        checkbox.checked = !checkbox.checked;
-        applyToggle();
-    });
-    checkbox.addEventListener('change', applyToggle);
+        function applyToggle() {
+            const on = checkbox.checked;
+            fields.style.display   = on ? 'block' : 'none';
+            track.style.background = on ? '#16a34a' : 'var(--border)';
+            thumb.style.left       = on ? '23px' : '3px';
 
-    function applyToggle() {
-        const on = checkbox.checked;
-        fields.style.display   = on ? 'block' : 'none';
-        track.style.background = on ? '#16a34a' : 'var(--border)';
-        thumb.style.left       = on ? '23px' : '3px';
-        if (!on) {
-            document.getElementById('new_password').value              = '';
-            document.getElementById('new_password_confirmation').value = '';
-            document.querySelectorAll('.pwd-bar').forEach(b => b.style.background = 'var(--border)');
-            document.getElementById('pwd-strength-label').textContent  = '';
-            document.getElementById('pwd-match-label').style.display   = 'none';
+            if (!on) {
+                // ✅ On vide uniquement les champs modifiables, pas le mot de passe actuel
+                const newPwd  = document.getElementById('new_password');
+                const confPwd = document.getElementById('new_password_confirmation');
+                if (newPwd)  newPwd.value  = '';
+                if (confPwd) confPwd.value = '';
+                document.querySelectorAll('.pwd-bar').forEach(b => b.style.background = 'var(--border)');
+                const sl = document.getElementById('pwd-strength-label');
+                const ml = document.getElementById('pwd-match-label');
+                if (sl) sl.textContent   = '';
+                if (ml) ml.style.display = 'none';
+            }
         }
     }
 
     // ── Toggle visibilité mot de passe ───────────────────────
-    document.querySelectorAll('.toggle-password').forEach(btn => {
-        btn.addEventListener('click', function () {
-            const input = document.getElementById(this.dataset.target);
-            input.type  = input.type === 'text' ? 'password' : 'text';
-            this.style.opacity = input.type === 'text' ? '1' : '0.5';
-        });
+    // ✅ Utilise la délégation d'événement pour couvrir les boutons
+    //    dans #password-fields même quand ils sont cachés au chargement
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.toggle-password');
+        if (!btn) return;
+        const targetId = btn.dataset.target;
+        if (!targetId) return;
+        const input = document.getElementById(targetId);
+        if (!input) return;
+        input.type = input.type === 'text' ? 'password' : 'text';
+        btn.style.opacity = input.type === 'text' ? '1' : '0.5';
     });
 
-    // ── Indicateur de force ──────────────────────────────────
+    // ── Indicateur de force du mot de passe ─────────────────
     const pwdInput      = document.getElementById('new_password');
     const confirmInput  = document.getElementById('new_password_confirmation');
     const bars          = document.querySelectorAll('.pwd-bar');
     const strengthLabel = document.getElementById('pwd-strength-label');
     const matchLabel    = document.getElementById('pwd-match-label');
 
-    if (!pwdInput) return;
+    if (pwdInput && confirmInput) {
+        const levels = [
+            { color:'#ef4444', label:'Très faible' },
+            { color:'#f97316', label:'Faible'      },
+            { color:'#eab308', label:'Moyen'        },
+            { color:'#16a34a', label:'Fort'         },
+        ];
 
-    const levels = [
-        { color:'#ef4444', label:'Très faible' },
-        { color:'#f97316', label:'Faible'      },
-        { color:'#eab308', label:'Moyen'        },
-        { color:'#16a34a', label:'Fort'         },
-    ];
+        pwdInput.addEventListener('input', function () {
+            const v   = this.value;
+            let score = 0;
+            if (v.length >= 8)          score++;
+            if (/[A-Z]/.test(v))        score++;
+            if (/[0-9]/.test(v))        score++;
+            if (/[^A-Za-z0-9]/.test(v)) score++;
 
-    pwdInput.addEventListener('input', function () {
-        const v   = this.value;
-        let score = 0;
-        if (v.length >= 8)          score++;
-        if (/[A-Z]/.test(v))        score++;
-        if (/[0-9]/.test(v))        score++;
-        if (/[^A-Za-z0-9]/.test(v)) score++;
-
-        bars.forEach((bar, i) => {
-            bar.style.background = i < score ? levels[score - 1].color : 'var(--border)';
+            bars.forEach((bar, i) => {
+                bar.style.background = i < score ? levels[score - 1].color : 'var(--border)';
+            });
+            if (strengthLabel) {
+                strengthLabel.textContent = v.length ? (levels[score - 1]?.label ?? '') : '';
+                strengthLabel.style.color = score > 0 ? levels[score - 1].color : 'var(--text-muted)';
+            }
+            checkMatch();
         });
-        strengthLabel.textContent = v.length ? (levels[score - 1]?.label ?? '') : '';
-        strengthLabel.style.color = score > 0 ? levels[score - 1].color : 'var(--text-muted)';
-        checkMatch();
-    });
 
-    confirmInput.addEventListener('input', checkMatch);
+        confirmInput.addEventListener('input', checkMatch);
 
-    function checkMatch() {
-        const pwd     = pwdInput.value;
-        const confirm = confirmInput.value;
-        if (!confirm) { matchLabel.style.display = 'none'; return; }
-        matchLabel.style.display = 'inline';
-        if (pwd === confirm) {
-            matchLabel.textContent = '✓ Les mots de passe correspondent';
-            matchLabel.style.color = '#16a34a';
-        } else {
-            matchLabel.textContent = '✗ Les mots de passe ne correspondent pas';
-            matchLabel.style.color = '#ef4444';
+        function checkMatch() {
+            if (!matchLabel) return;
+            const pwd     = pwdInput.value;
+            const confirm = confirmInput.value;
+            if (!confirm) { matchLabel.style.display = 'none'; return; }
+            matchLabel.style.display = 'inline';
+            if (pwd === confirm) {
+                matchLabel.textContent = '✓ Les mots de passe correspondent';
+                matchLabel.style.color = '#16a34a';
+            } else {
+                matchLabel.textContent = '✗ Les mots de passe ne correspondent pas';
+                matchLabel.style.color = '#ef4444';
+            }
         }
     }
+
+    // ── Vérification unicité CIN / Téléphone ────────────────
+    checkUnique('cin_field',   'cin_feedback',   'cin',   {{ $employee->id }});
+    checkUnique('phone_field', 'phone_feedback', 'phone', {{ $employee->id }});
 });
+
+function checkUnique(fieldId, feedbackId, param, ignoreId) {
+    const input    = document.getElementById(fieldId);
+    const feedback = document.getElementById(feedbackId);
+    if (!input || !feedback) return;
+    let timer;
+
+    input.addEventListener('input', function () {
+        clearTimeout(timer);
+        const val = this.value.trim();
+        feedback.textContent = '';
+        input.classList.remove('is-invalid', 'is-valid');
+        if (!val) return;
+
+        timer = setTimeout(() => {
+            const url = `/employees/check-unique?${param}=${encodeURIComponent(val)}`
+                      + (ignoreId ? `&ignore_id=${ignoreId}` : '');
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.taken) {
+                        feedback.textContent = data.message;
+                        feedback.className   = 'field-feedback error';
+                        input.classList.add('is-invalid');
+                    } else {
+                        feedback.textContent = '✓ Disponible';
+                        feedback.className   = 'field-feedback success';
+                        input.classList.add('is-valid');
+                    }
+                })
+                .catch(() => { feedback.textContent = ''; });
+        }, 500);
+    });
+}
 
 /* ═══════════════════════════════════════════════════════
    Gestionnaire de permissions
 ═══════════════════════════════════════════════════════ */
 const Perms = {
-
     all() {
         return document.querySelectorAll('#perm-table input[type=checkbox]:not([disabled])');
     },
-
     byAction(action) {
-        return document.querySelectorAll(
-            `#perm-table input[name*="[${action}]"]:not([disabled])`
-        );
+        return document.querySelectorAll(`#perm-table input[name*="[${action}]"]:not([disabled])`);
     },
-
     byModule(keys, actions = ['view','create','edit','delete']) {
         keys.forEach(key => {
             actions.forEach(action => {
-                const cb = document.querySelector(
-                    `#perm-table input[name="permissions[${key}][${action}]"]`
-                );
+                const cb = document.querySelector(`#perm-table input[name="permissions[${key}][${action}]"]`);
                 if (cb) cb.checked = true;
             });
         });
     },
-
     selectAll()   { this.all().forEach(c => c.checked = true);  },
     deselectAll() { this.all().forEach(c => c.checked = false); },
-
     selectView() {
         this.deselectAll();
         this.byAction('view').forEach(c => c.checked = true);
     },
-
     selectEmployee() {
         this.deselectAll();
-        this.byModule(
-            ['dashboard','trombinoscope','absences','lms','salary'],
-            ['view']
-        );
-        const abCreate = document.querySelector(
-            '#perm-table input[name="permissions[absences][create]"]'
-        );
+        this.byModule(['dashboard','trombinoscope','absences','lms','salary'], ['view']);
+        const abCreate = document.querySelector('#perm-table input[name="permissions[absences][create]"]');
         if (abCreate) abCreate.checked = true;
     },
-
     selectRH() {
         this.deselectAll();
-        this.byModule(
-            [
-                'dashboard','employees','trombinoscope','news',
-                'planning','temps_vue','pointage',
-                'absences','absences_calendar','absences_counters',
-                'lms','referentiel','lms_planning',
-                'salary','ged','ged_modeles','ged_entete',
-                'reporting'
-            ],
-            ['view','create','edit']
-        );
+        this.byModule([
+            'dashboard','employees','trombinoscope','news',
+            'planning','temps_vue','pointage',
+            'absences','absences_calendar','absences_counters',
+            'lms','referentiel','lms_planning',
+            'salary','ged','ged_modeles','ged_entete',
+            'reporting','equipment',
+        ], ['view','create','edit']);
     },
 };
 </script>

@@ -3,7 +3,7 @@
 @section('title', 'Gestion de la Paie')
 @section('page-title', 'Paie')
 
-@push('styles')
+@section('content')
 <style>
 .period-filter-bar {
     display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -27,10 +27,35 @@
     color: #0d9488; text-decoration: none; font-size: 15px; line-height: 1;
 }
 .period-active-tag a:hover { color: #dc2626; }
-</style>
-@endpush
 
-@section('content')
+/* ── Switcher devise ── */
+.currency-switcher {
+    display: inline-flex;
+    border: 1.5px solid #0d9488;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-card);
+    flex-shrink: 0;
+}
+.currency-switcher button {
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    background: transparent;
+    color: #0d9488;
+    transition: background .15s, color .15s;
+    letter-spacing: .03em;
+}
+.currency-switcher button.active {
+    background: #0d9488;
+    color: #fff;
+}
+.currency-switcher button:first-child {
+    border-right: 1.5px solid #0d9488;
+}
+</style>
 
 <div class="page-header">
     <div class="page-header-left">
@@ -46,9 +71,19 @@
         </p>
     </div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+
+        {{-- ── Switcher MAD / MRU ── --}}
+        <div class="currency-switcher" id="currencySwitcher">
+            <button id="btnMAD" class="active" onclick="setCurrency('MAD')">
+                <span style="font-size:10px;opacity:.7;margin-right:2px;">MA</span>MAD
+            </button>
+            <button id="btnMRU" onclick="setCurrency('MRU')">
+                <span style="font-size:10px;opacity:.7;margin-right:2px;">MR</span>MRU
+            </button>
+        </div>
+
         <form method="GET" action="{{ route('salary.index') }}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
 
-            {{-- Sélecteurs mois / année (utilisés quand pas de filtre custom) --}}
             <select name="month" class="form-control" style="width:130px">
                 @for($m=1; $m<=12; $m++)
                     <option value="{{ $m }}" {{ $m==$month?'selected':'' }}>
@@ -62,7 +97,6 @@
                 @endfor
             </select>
 
-            {{-- Département --}}
             <select name="department" style="padding:10px 12px;border:1px solid var(--border);border-radius:8px;min-width:160px">
                 <option value="">Départements</option>
                 @foreach($departments as $dept)
@@ -70,22 +104,13 @@
                 @endforeach
             </select>
 
-            {{-- ── Filtre par plage de dates ── --}}
             <div style="height:22px;width:1px;background:var(--border);margin:0 2px;flex-shrink:0;"></div>
 
             <div class="period-filter-bar">
                 <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;">Du</span>
-                <input type="date"
-                       name="date_debut"
-                       value="{{ $dateDebut ?? '' }}"
-                       placeholder="jj/mm/aaaa"
-                       title="Date de début">
+                <input type="date" name="date_debut" value="{{ $dateDebut ?? '' }}" placeholder="jj/mm/aaaa" title="Date de début">
                 <span style="font-size:13px;color:var(--text-muted);font-weight:600;">au</span>
-                <input type="date"
-                       name="date_fin"
-                       value="{{ $dateFin ?? '' }}"
-                       placeholder="jj/mm/aaaa"
-                       title="Date de fin">
+                <input type="date" name="date_fin" value="{{ $dateFin ?? '' }}" placeholder="jj/mm/aaaa" title="Date de fin">
             </div>
 
             @if($search || $department || $dateDebut)
@@ -94,37 +119,26 @@
             <button type="submit" class="btn btn-ghost">Filtrer</button>
         </form>
 
-        <form method="POST" action="{{ route('salary.generate-all') }}">
-            @csrf
-            <input type="hidden" name="month" value="{{ $month }}">
-            <input type="hidden" name="year"  value="{{ $year }}">
-            <button type="submit" class="btn btn-primary"
-                    onclick="return confirm('Générer la paie pour tous les employés ?')">
-                Générer tout le mois
-            </button>
-        </form>
+
         <a href="{{ route('variables.index', ['month'=>$month,'year'=>$year]) }}" class="btn btn-ghost">
             Éléments variables
         </a>
-        <a href="{{ route('salary.export-pdf', request()->query()) }}"
-   class="btn btn-ghost" target="_blank">
-    <svg width="14" height="14" ...>...</svg>
-    Export PDF
-</a>
+        <a href="{{ route('salary.export-pdf', request()->query()) }}" class="btn btn-ghost" target="_blank">
+            <svg width="14" height="14" ...>...</svg>
+            Export PDF
+        </a>
     </div>
 </div>
 
-{{-- ── Badge filtre actif ─────────────────────────────────────── --}}
+{{-- ── Badge filtre actif ── --}}
 @if($dateDebut && $dateFin)
 <div style="margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
     <span class="period-active-tag">
-         {{ \Carbon\Carbon::parse($dateDebut)->format('d/m/Y') }} → {{ \Carbon\Carbon::parse($dateFin)->format('d/m/Y') }}
+        {{ \Carbon\Carbon::parse($dateDebut)->format('d/m/Y') }} → {{ \Carbon\Carbon::parse($dateFin)->format('d/m/Y') }}
         <a href="{{ route('salary.index', array_filter(['month' => $month, 'year' => $year, 'department' => $department, 'search' => $search, 'status' => request('status')])) }}"
            title="Réinitialiser la période">✕</a>
     </span>
-    @php
-        $moisConcernes = $periodesMois ?? [];
-    @endphp
+    @php $moisConcernes = $periodesMois ?? []; @endphp
     @if(count($moisConcernes) > 0)
         <span style="font-size:12px;color:var(--text-muted);">
             Bulletins couverts :
@@ -140,15 +154,20 @@
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">
     <div class="salary-card">
         <div class="salary-label">Masse salariale brute</div>
-        <div class="salary-net">{{ number_format($summary['total_gross'],0,',',' ') }} MAD</div>
+        <div class="salary-net">
+            {{ number_format($summary['total_gross'],0,',',' ') }}
+            <span class="cur-label">MAD</span>
+        </div>
         <div style="font-size:0.75rem;opacity:0.6;margin-top:4px">
-            Coût employeur : {{ number_format($summary['total_employer_cost'] ?? 0,0,',',' ') }} MAD
+            Coût employeur : {{ number_format($summary['total_employer_cost'] ?? 0,0,',',' ') }}
+            <span class="cur-label">MAD</span>
         </div>
     </div>
     <div class="salary-card">
         <div class="salary-label">Charges salariales</div>
         <div class="salary-net" style="font-size:1.4rem">
-            {{ number_format($summary['total_cnss_sal']+$summary['total_amo_sal'],0,',',' ') }} MAD
+            {{ number_format($summary['total_cnss_sal']+$summary['total_amo_sal'],0,',',' ') }}
+            <span class="cur-label">MAD</span>
         </div>
         <div style="font-size:0.75rem;opacity:0.6;margin-top:4px">
             CNSS : {{ number_format($summary['total_cnss_sal'],0,',',' ') }} |
@@ -158,13 +177,17 @@
     <div class="salary-card">
         <div class="salary-label">IR retenu à la source</div>
         <div class="salary-net" style="font-size:1.4rem">
-            {{ number_format($summary['total_ir'],0,',',' ') }} MAD
+            {{ number_format($summary['total_ir'],0,',',' ') }}
+            <span class="cur-label">MAD</span>
         </div>
         <div style="font-size:0.75rem;opacity:0.6;margin-top:4px">DGI — déclaration mensuelle</div>
     </div>
     <div class="salary-card">
         <div class="salary-label">Net à payer total</div>
-        <div class="salary-net">{{ number_format($summary['total_net'],0,',',' ') }} MAD</div>
+        <div class="salary-net">
+            {{ number_format($summary['total_net'],0,',',' ') }}
+            <span class="cur-label">MAD</span>
+        </div>
         <div style="font-size:0.75rem;opacity:0.6;margin-top:4px">
             <span style="color:var(--success)">{{ $summary['count_validated'] }} validés</span> /
             {{ $summary['count'] }} bulletins
@@ -229,7 +252,6 @@
                 </thead>
                 <tbody>
                     @forelse($employees as $emp)
-                        {{-- En mode multi-mois, un employé peut avoir plusieurs lignes (une par bulletin) --}}
                         @php $salList = $emp->salaries; @endphp
                         @if($salList->isEmpty())
                             <tr>
@@ -260,7 +282,6 @@
                                 </td>
                                 <td>{{ $emp->department }}</td>
 
-                                {{-- Colonne période (multi-mois) --}}
                                 @if($dateDebut && $dateFin)
                                 <td style="font-size:0.82rem;color:var(--text-muted);white-space:nowrap;">
                                     {{ \Carbon\Carbon::create($sal->year, $sal->month)->locale('fr')->isoFormat('MMMM YYYY') }}
@@ -276,22 +297,22 @@
                                 </td>
                                 <td>{{ number_format($emp->base_salary,0,',',' ') }}</td>
                                 <td class="font-semibold">
-                                    {{ number_format($sal->gross_salary,0,',',' ') }} {{ $cur }}
+                                    {{ number_format($sal->gross_salary,0,',',' ') }}
+                                    <span class="cur-label">MAD</span>
                                 </td>
                                 <td class="deduction" style="font-size:0.85rem">
-                                    {{ number_format($sal->cnss_deduction + $sal->amo_deduction,0,',',' ') }} {{ $cur }}
+                                    {{ number_format($sal->cnss_deduction + $sal->amo_deduction,0,',',' ') }}
+                                    <span class="cur-label">MAD</span>
                                 </td>
                                 <td class="deduction" style="font-size:0.85rem">
-                                    {{ number_format($sal->ir_deduction,0,',',' ') }} {{ $cur }}
+                                    {{ number_format($sal->ir_deduction,0,',',' ') }}
+                                    <span class="cur-label">MAD</span>
                                 </td>
                                 <td class="font-semibold" style="color:var(--success)">
-                                    {{ number_format($sal->net_salary,0,',',' ') }} {{ $cur }}
-                                    @if($cur !== 'MAD')
-                                        <div style="font-size:0.7rem;color:var(--text-muted)">({{ $cur }})</div>
-                                    @endif
+                                    {{ number_format($sal->net_salary,0,',',' ') }}
+                                    <span class="cur-label">MAD</span>
                                 </td>
 
-                                {{-- Statut --}}
                                 <td>
                                     <div style="display:flex;flex-direction:column;gap:4px;">
                                         <span class="badge badge-{{ $sal->status_color }}">
@@ -359,7 +380,6 @@
                 </tbody>
             </table>
         </div>
-        {{-- Pagination --}}
         @if($employees->hasPages())
         <div style="padding:16px 20px;">
             {{ $employees->appends(request()->query())->links() }}
@@ -367,5 +387,27 @@
         @endif
     </div>
 </div>
+
+<script>
+var currentCurrency = localStorage.getItem('paie_currency') || 'MAD';
+
+function setCurrency(cur) {
+    currentCurrency = cur;
+    localStorage.setItem('paie_currency', cur);
+    applyLabels();
+}
+
+function applyLabels() {
+    var labels = document.querySelectorAll('.cur-label');
+    for (var i = 0; i < labels.length; i++) {
+        labels[i].textContent = currentCurrency;
+    }
+    document.getElementById('btnMAD').classList.toggle('active', currentCurrency === 'MAD');
+    document.getElementById('btnMRU').classList.toggle('active', currentCurrency === 'MRU');
+}
+
+// Applique au chargement
+applyLabels();
+</script>
 
 @endsection

@@ -213,12 +213,14 @@ Route::middleware(['web', 'auth', 'identify-tenant', '2fa'])->group(function () 
             ->name('temps.vue-ensemble');
 
         // ── Pointage — rh + admin
+
         Route::middleware(['role:admin,rh'])->group(function () {
             Route::get('/pointage',                            [PointageController::class, 'index'])             ->name('pointage.index');
             Route::get('/pointage/pdf',                        [PointageController::class, 'exportPdf'])         ->name('pointage.pdf');
             Route::get('/pointage/badges-pin',                 [PointageController::class, 'badgesPin'])         ->name('pointage.badges-pin');
             Route::post('/pointage/regenerer-pin',             [PointageController::class, 'regenererPin'])      ->name('pointage.regenerer-pin');
             Route::post('/pointage/regenerer-tous-pins',       [PointageController::class, 'regenererTousPins']) ->name('pointage.regenerer-tous-pins');
+            Route::get('/pointage/badges-pin/export-pdf',      [PointageController::class, 'exportBadgesPinPdf'])->name('pointage.export-badges-pin-pdf');
             Route::post('/pointage/valider-journee',           [PointageController::class, 'validerJournee'])    ->name('pointage.valider-journee');
             Route::post('/pointage/{pointage}/toggle-valider', [PointageController::class, 'toggleValider'])     ->name('pointage.toggle-valider');
             Route::post('/pointage/{pointage}/toggle-ignore',  [PointageController::class, 'toggleIgnore'])      ->name('pointage.toggle-ignore');
@@ -350,6 +352,19 @@ Route::middleware(['auth', 'role:admin,rh'])
 
  });
 
+ // ══ MODULE ÉQUIPEMENTS ══
+        Route::middleware(['role:admin,rh'])->prefix('equipements')->name('equipements.')->group(function () {
+            Route::get('/',                               [\App\Http\Controllers\EquipementController::class, 'index'])        ->name('index');
+            Route::post('/store',                         [\App\Http\Controllers\EquipementController::class, 'store'])        ->name('store');
+            Route::put('/{equipement}',                   [\App\Http\Controllers\EquipementController::class, 'update'])       ->name('update');
+            Route::post('/affecter',                      [\App\Http\Controllers\EquipementController::class, 'affecter'])     ->name('affecter');
+            Route::post('/restituer/{affectation}',       [\App\Http\Controllers\EquipementController::class, 'restituer'])    ->name('restituer');
+            Route::post('/valider-sortie/{employeeId}',   [\App\Http\Controllers\EquipementController::class, 'validerSortie'])->name('valider_sortie');
+            Route::post('/declarer-perte/{affectation}',  [\App\Http\Controllers\EquipementController::class, 'declarerPerte'])->name('declarer_perte');
+            Route::post('/signer-decharge/{affectation}', [\App\Http\Controllers\EquipementController::class, 'signerDecharge'])->name('signer_decharge');
+            Route::get('/salarie/{employeeId}',           [\App\Http\Controllers\EquipementController::class, 'ficheSalarie']) ->name('fiche_salarie');
+        });
+
     // ── Dashboard employé ─────────────────────────────────────────────────
     Route::middleware(['employee'])->group(function () {
         Route::get('/employer/dashboard', [EmployeeDashboardController::class, 'index'])->name('employee.dashboard');
@@ -372,6 +387,8 @@ Route::middleware(['auth', 'role:admin,rh'])
         Route::post('employees/reorder',                      [EmployeeController::class, 'reorder'])        ->name('employees.reorder');
         Route::get('employees/ajax',                          [EmployeeController::class, 'ajax'])           ->name('employees.ajax');
         Route::post('employees/{employee}/regenerate-pin',    [EmployeeController::class, 'regeneratePin'])  ->name('employees.regeneratePin');
+        Route::get('/employees/check-unique',                 [EmployeeController::class, 'checkUnique'])->middleware(['auth', 'identify-tenant'])
+    ->name('employees.check-unique');
         Route::resource('employees', EmployeeController::class)->only(['edit', 'update', 'destroy']);
 
         // ── Planning — écriture

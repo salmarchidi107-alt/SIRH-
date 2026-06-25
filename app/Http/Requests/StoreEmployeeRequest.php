@@ -30,21 +30,23 @@ class StoreEmployeeRequest extends FormRequest
             ],
 
             'phone' => [
-                'nullable',
-                'digits:10',
-                Rule::unique('employees', 'phone')
-                    ->where('tenant_id', $tenantId),
-            ],
+    'nullable',
+    'string',
+    'max:20',
+    Rule::unique('employees', 'phone')
+        ->where('tenant_id', $tenantId),
+],
 
             'birth_date'       => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
             'genre'            => 'nullable|in:homme,femme',
 
             'cin' => [
-                'nullable',
-                'regex:/^[A-Za-z]{1,2}[0-9]{5,6}$/',
-                Rule::unique('employees', 'cin')
-                    ->where('tenant_id', $tenantId),
-            ],
+    'nullable',
+    'string',
+    'max:20',
+    Rule::unique('employees', 'cin')
+        ->where('tenant_id', $tenantId),
+],
 
             'address'          => 'nullable|string',
             'family_situation' => 'nullable|string|max:50',
@@ -153,12 +155,6 @@ class StoreEmployeeRequest extends FormRequest
             'email.unique'  => 'Cette adresse email est déjà utilisée par un autre employé.',
             'phone.unique'  => 'Ce numéro de téléphone est déjà utilisé par un autre employé.',
             'cin.unique'    => 'Ce numéro CIN est déjà associé à un autre employé.',
-
-            // Format téléphone
-            'phone.digits'  => 'Le numéro de téléphone doit contenir exactement 10 chiffres (ex : 0612345678).',
-
-            // Format CIN
-            'cin.regex'     => 'Le format du CIN est invalide (ex : AB123456 — 1 ou 2 lettres suivies de 5 ou 6 chiffres).',
 
             // Dates
             'hire_date.regex'             => 'L\'année de la date d\'embauche doit contenir exactement 4 chiffres.',

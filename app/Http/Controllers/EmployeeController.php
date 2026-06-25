@@ -52,7 +52,7 @@ class EmployeeController extends Controller
     }
 
     // =========================================================================
-    // ajaxIndex — utilisé par la recherche AJAX et le bouton "Charger plus"
+    // ajaxIndex
     // =========================================================================
     public function ajaxIndex(Request $request)
     {
@@ -79,7 +79,6 @@ class EmployeeController extends Controller
                     'csrf_token'    => csrf_token(),
                     '_method'       => 'DELETE',
                     'base_salary'   => $e->base_salary ? number_format($e->base_salary, 0) : '0',
-                    // ── Photo : nécessaire pour afficher l'avatar correct côté JS ──
                     'photo'         => $e->photo,
                     'photo_url'     => $e->photo ? asset('storage/' . $e->photo) : null,
                 ]),
@@ -188,7 +187,15 @@ class EmployeeController extends Controller
 
                 $validated = $request->validated();
 
-                // ── Stocker les pièces jointes PDF ──────────────────────
+                // ── Photo ────────────────────────────────────────────────
+                if ($request->hasFile('photo')) {
+                    $validated['photo'] = $request->file('photo')
+                        ->store('employees/photos', 'public');
+                } else {
+                    unset($validated['photo']);
+                }
+
+                // ── Pièces jointes PDF ───────────────────────────────────
                 $docFields = ['doc_casier', 'doc_rib', 'doc_diplomes', 'doc_cin', 'doc_contrat'];
                 foreach ($docFields as $field) {
                     if ($request->hasFile($field)) {
@@ -225,7 +232,6 @@ class EmployeeController extends Controller
 
                     $employee->update(['user_id' => $user->id]);
 
-                    // ── Sauvegarder les permissions ──────────────────────
                     $this->savePermissions($user, $request->input('permissions', []));
                 }
             });
@@ -303,14 +309,27 @@ class EmployeeController extends Controller
     }
 
     // =========================================================================
-    // update
+    // update — ✅ CORRIGÉ : ordre logique, photo gérée, Hash::make appliqué
     // =========================================================================
     public function update(UpdateEmployeeRequest $request, Employee $employee)
     {
         try {
             $validated = $request->validated();
 
-            // ── Pièces jointes PDF ───────────────────────────────────────
+            // ── 1. Photo ─────────────────────────────────────────────────────
+            if ($request->hasFile('photo')) {
+                // Supprimer l'ancienne photo si elle existe
+                if ($employee->photo && Storage::disk('public')->exists($employee->photo)) {
+                    Storage::disk('public')->delete($employee->photo);
+                }
+                $validated['photo'] = $request->file('photo')
+                    ->store('employees/photos', 'public');
+            } else {
+                // Ne pas écraser la photo existante avec null
+                unset($validated['photo']);
+            }
+
+            // ── 2. Pièces jointes PDF ─────────────────────────────────────────
             $docFields = ['doc_casier', 'doc_rib', 'doc_diplomes', 'doc_cin', 'doc_contrat'];
             foreach ($docFields as $field) {
                 if ($request->hasFile($field)) {
@@ -324,26 +343,28 @@ class EmployeeController extends Controller
                 unset($validated[$field]);
             }
 
-            // ── Nettoyage des champs mot de passe avant update employé ───
-            unset($validated['change_password'], $validated['new_password'], $validated['new_password_confirmation']);
-
-            $this->employeeService->update($employee, $validated);
-
-            if (isset($validated['conges_anterieurs']) && !auth()->user()->isAdmin()) {
+            // ── 3. Bloquer conges_anterieurs pour non-admins AVANT l'update ───
+            if (!auth()->user()->isAdmin()) {
                 unset($validated['conges_anterieurs']);
             }
 
-            // ── Mise à jour du mot de passe ──────────────────────────────
+            // ── 4. Nettoyer les champs mot de passe avant l'update employé ────
+            unset(
+                $validated['change_password'],
+                $validated['new_password'],
+                $validated['new_password_confirmation']
+            );
+
+            // ── 5. Mettre à jour l'employé ────────────────────────────────────
+            $this->employeeService->update($employee, $validated);
+
+            // ── 6. Mise à jour du mot de passe ────────────────────────────────
+            $user = null;
             if ($request->boolean('change_password') && $request->filled('new_password')) {
-
-                $user = $employee->user;
-
-                if (! $user && $employee->user_id) {
-                    $user = User::find($employee->user_id);
-                }
+                $user = $employee->user ?? ($employee->user_id ? User::find($employee->user_id) : null);
 
                 if ($user) {
-                    $user->password       = $request->new_password;
+                    $user->password       = Hash::make($request->new_password); // ✅ Hash::make ajouté
                     $user->plain_password = $request->new_password;
                     $user->save();
 
@@ -352,13 +373,13 @@ class EmployeeController extends Controller
                         'employee_id' => $employee->id,
                     ]);
                 } else {
-                    Log::warning('Tentative de mise à jour du mot de passe sans compte utilisateur lié', [
+                    Log::warning('Tentative MàJ mot de passe sans compte lié', [
                         'employee_id' => $employee->id,
                     ]);
                 }
             }
 
-            // ── Permissions ──────────────────────────────────────────────
+            // ── 7. Permissions ────────────────────────────────────────────────
             if ($request->has('permissions') && $employee->user_id) {
                 $user = $user ?? User::find($employee->user_id);
                 if ($user) {
@@ -371,8 +392,13 @@ class EmployeeController extends Controller
                 ->with('success', 'Employé mis à jour avec succès.');
 
         } catch (Exception $e) {
-            Log::error('Employee update error', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            return back()->withErrors(['error' => 'Erreur mise à jour : ' . $e->getMessage()])->withInput();
+            Log::error('Employee update error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return back()
+                ->withErrors(['error' => 'Erreur mise à jour : ' . $e->getMessage()])
+                ->withInput();
         }
     }
 
@@ -387,6 +413,10 @@ class EmployeeController extends Controller
                 if ($employee->$field && Storage::disk('public')->exists($employee->$field)) {
                     Storage::disk('public')->delete($employee->$field);
                 }
+            }
+
+            if ($employee->photo && Storage::disk('public')->exists($employee->photo)) {
+                Storage::disk('public')->delete($employee->photo);
             }
 
             $tenantId = auth()->user()->tenant_id;
@@ -482,7 +512,39 @@ class EmployeeController extends Controller
     }
 
     // =========================================================================
-    // exportPdfByDept — PDF d'un département spécifique
+    // checkUnique — CIN / Téléphone
+    // =========================================================================
+    public function checkUnique(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $tenantId = config('app.current_tenant_id') ?? auth()->user()->tenant_id;
+        $ignoreId = $request->integer('ignore_id') ?: null;
+
+        foreach (['cin', 'phone'] as $field) {
+            if ($request->has($field)) {
+                $value = trim($request->input($field));
+                if (!$value) return response()->json(['taken' => false]);
+
+                $taken = Employee::where('tenant_id', $tenantId)
+                    ->where($field, $value)
+                    ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
+                    ->exists();
+
+                $label = $field === 'cin' ? 'CIN' : 'téléphone';
+
+                return response()->json([
+                    'taken'   => $taken,
+                    'message' => $taken
+                        ? "Ce numéro de {$label} est déjà utilisé par un autre employé."
+                        : null,
+                ]);
+            }
+        }
+
+        return response()->json(['taken' => false]);
+    }
+
+    // =========================================================================
+    // exportPdfByDept
     // =========================================================================
     public function exportPdfByDept(Request $request, string $department)
     {
@@ -520,7 +582,6 @@ class EmployeeController extends Controller
 
     /**
      * Persiste les permissions du formulaire pour un utilisateur donné.
-     * Efface et recrée toutes les permissions en une seule opération.
      */
     private function savePermissions(User $user, array $rawPerms): void
     {

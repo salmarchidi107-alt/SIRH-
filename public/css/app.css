@@ -171,8 +171,7 @@ button, input, select, textarea { font-family: inherit; }
 
 .nav-item.active {
   background: linear-gradient(135deg, rgba(26,143,165,0.25), rgba(0,201,167,0.15));
-  color: var(--accent-light);
-  border: 1px solid rgba(0,201,167,0.2);
+a  border: 1px solid rgba(0,201,167,0.2);
 }
 
 .nav-item.active .nav-icon { color: var(--accent); }
@@ -222,7 +221,7 @@ button, input, select, textarea { font-family: inherit; }
 }
 
 .user-info { flex: 1; min-width: 0; }
-.user-name { font-size: 0.8rem; font-weight: 600; color: rgba(255,255,255,.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-name { font-size: 0.8rem; font-weight: 600; color: white !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .user-role { font-size: 0.65rem; color: rgba(255,255,255,.35); }
 
 /* ============ MAIN CONTENT ============ */

@@ -40,24 +40,21 @@ class VariableElementController extends Controller
             'month'       => 'required|integer|min:1|max:12',
             'year'        => 'required|integer',
             'category'    => 'required|in:gain,retenue',
-            'rubrique'    => 'nullable|string|max:100', // ajouté
+            'rubrique'    => 'nullable|string|max:100',
             'label'       => 'required|string|max:150',
             'amount'      => 'required|numeric|min:0',
-            'unit'        => 'nullable|string|max:20',  //  ajouté
+            'unit'        => 'nullable|string|max:20',
         ]);
 
         VariableElement::create([
             'employee_id' => $validated['employee_id'],
             'month'       => $validated['month'],
             'year'        => $validated['year'],
-            'category'    => $validated['category'],                          //  sauvegardé
-            'rubrique'    => $validated['rubrique'] ?? null,                  //  sauvegardé
+            'type'        => $validated['category'], // ✅ 'gain' ou 'retenue' — valeurs valides de l'enum
+            'rubrique'    => $validated['rubrique'] ?? null,
             'label'       => $validated['label'],
             'amount'      => $validated['amount'],
-            'unit'        => $validated['unit'] ?? 'MAD',                    //  sauvegardé
-            'type'        => $validated['category'] === 'retenue'
-                                ? 'deduction'
-                                : 'gain',
+            'unit'        => $validated['unit'] ?? 'MAD',
         ]);
 
         return redirect()

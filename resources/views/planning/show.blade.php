@@ -58,13 +58,13 @@
                          MATIN
                     </td>
                     @foreach($weekDays as $date => $day)
-                    @php 
+                    @php
                         $dayPlanning = $plannings->get($date);
                         $isMatin = $dayPlanning && in_array($dayPlanning->shift_type, ['matin', 'journee']);
                     @endphp
                     <td style="padding:12px;text-align:center;vertical-align:middle">
                         @if($isMatin)
-                        <div onclick="openEditModal({{ $dayPlanning->id }}, '{{ $dayPlanning->shift_type }}', '{{ $dayPlanning->shift_start }}', '{{ $dayPlanning->shift_end }}', '{{ $dayPlanning->notes ?? '' }}')" 
+                        <div onclick="openEditModal({{ $dayPlanning->id }}, '{{ $dayPlanning->shift_type }}', '{{ $dayPlanning->shift_start }}', '{{ $dayPlanning->shift_end }}', '{{ $dayPlanning->notes ?? '' }}')"
                              style="background:linear-gradient(135deg, #0ea5e9, #38bdf8);color:white;padding:16px 12px;border-radius:10px;box-shadow:0 4px 12px rgba(14, 165, 233, 0.3);cursor:pointer;position:relative" title="Cliquez pour modifier">
                             <div style="font-weight:700;font-size:1.1rem">{{ $dayPlanning->shift_start }}</div>
                             <div style="font-size:0.75rem;opacity:0.9">Debut</div>
@@ -80,20 +80,20 @@
                     </td>
                     @endforeach
                 </tr>
-                
+
                 <!-- Afternoon Row -->
                 <tr style="border-bottom:1px solid var(--border);background:rgba(245, 158, 11, 0.03)">
                     <td style="padding:16px;position:sticky;left:0;background:rgba(245, 158, 11, 0.05);z-index:5;font-weight:600;color:#f59e0b">
                          APRÈS-MIDI
                     </td>
                     @foreach($weekDays as $date => $day)
-                    @php 
+                    @php
                         $dayPlanning = $plannings->get($date);
                         $isApresMidi = $dayPlanning && in_array($dayPlanning->shift_type, ['apres_midi', 'journee']);
                     @endphp
                     <td style="padding:12px;text-align:center;vertical-align:middle">
                         @if($isApresMidi)
-                        <div onclick="openEditModal({{ $dayPlanning->id }}, '{{ $dayPlanning->shift_type }}', '{{ $dayPlanning->shift_start }}', '{{ $dayPlanning->shift_end }}', '{{ $dayPlanning->notes ?? '' }}')" 
+                        <div onclick="openEditModal({{ $dayPlanning->id }}, '{{ $dayPlanning->shift_type }}', '{{ $dayPlanning->shift_start }}', '{{ $dayPlanning->shift_end }}', '{{ $dayPlanning->notes ?? '' }}')"
                              style="background:linear-gradient(135deg, #f59e0b, #fbbf24);color:white;padding:16px 12px;border-radius:10px;box-shadow:0 4px 12px rgba(245, 158, 11, 0.3);cursor:pointer;position:relative" title="Cliquez pour modifier">
                             <div style="font-weight:700;font-size:1.1rem">{{ $dayPlanning->shift_end }}</div>
                             <div style="font-size:0.75rem;opacity:0.9">Fin</div>
@@ -109,49 +109,22 @@
                     </td>
                     @endforeach
                 </tr>
-                
-                <!-- Night Row -->
-                <tr style="border-bottom:1px solid var(--border);background:rgba(99, 102, 241, 0.03)">
-                    <td style="padding:16px;position:sticky;left:0;background:rgba(99, 102, 241, 0.05);z-index:5;font-weight:600;color:#6366f1">
-                        NUIT
-                    </td>
-                    @foreach($weekDays as $date => $day)
-                    @php 
-                        $dayPlanning = $plannings->get($date);
-                        $isNuit = $dayPlanning && $dayPlanning->shift_type === 'nuit';
-                    @endphp
-                    <td style="padding:12px;text-align:center;vertical-align:middle">
-                        @if($isNuit)
-                        <div onclick="openEditModal({{ $dayPlanning->id }}, '{{ $dayPlanning->shift_type }}', '{{ $dayPlanning->shift_start }}', '{{ $dayPlanning->shift_end }}', '{{ $dayPlanning->notes ?? '' }}')" 
-                             style="background:linear-gradient(135deg, #6366f1, #818cf8);color:white;padding:16px 12px;border-radius:10px;box-shadow:0 4px 12px rgba(99, 102, 241, 0.3);cursor:pointer;position:relative" title="Cliquez pour modifier">
-                            <div style="font-weight:700;font-size:1rem">{{ $dayPlanning->shift_start }} - {{ $dayPlanning->shift_end }}</div>
-                            <div style="font-size:0.75rem;opacity:0.9">Nuit complète</div>
-                            @if($dayPlanning->notes)
-                            <div style="margin-top:8px;font-size:0.7rem;opacity:0.8;border-top:1px solid rgba(255,255,255,0.3);padding-top:8px">
-                                {{ $dayPlanning->notes }}
-                            </div>
-                            @endif
-                        </div>
-                        @else
-                        <div onclick="openAddModal('{{ $date }}', 'nuit')" style="color:var(--text-muted);font-size:0.8rem;cursor:pointer;padding:8px;border:2px dashed var(--border);border-radius:8px" title="Cliquez pour ajouter">+ Ajouter</div>
-                        @endif
-                    </td>
-                    @endforeach
-                </tr>
-                
+
+
+
                 <!-- Garde Row -->
                 <tr style="background:rgba(239, 68, 68, 0.03)">
                     <td style="padding:16px;position:sticky;left:0;background:rgba(239, 68, 68, 0.05);z-index:5;font-weight:600;color:#ef4444">
                          GARDE
                     </td>
                     @foreach($weekDays as $date => $day)
-                    @php 
+                    @php
                         $dayPlanning = $plannings->get($date);
                         $isGarde = $dayPlanning && $dayPlanning->shift_type === 'garde';
                     @endphp
                     <td style="padding:12px;text-align:center;vertical-align:middle">
                         @if($isGarde)
-                        <div onclick="openEditModal({{ $dayPlanning->id }}, '{{ $dayPlanning->shift_type }}', '{{ $dayPlanning->shift_start }}', '{{ $dayPlanning->shift_end }}', '{{ $dayPlanning->notes ?? '' }}')" 
+                        <div onclick="openEditModal({{ $dayPlanning->id }}, '{{ $dayPlanning->shift_type }}', '{{ $dayPlanning->shift_start }}', '{{ $dayPlanning->shift_end }}', '{{ $dayPlanning->notes ?? '' }}')"
                              style="background:linear-gradient(135deg, #ef4444, #f87171);color:white;padding:16px 12px;border-radius:10px;box-shadow:0 4px 12px rgba(239, 68, 68, 0.3);cursor:pointer;position:relative" title="Cliquez pour modifier">
                             <div style="font-weight:700;font-size:1rem">{{ $dayPlanning->shift_start }} - {{ $dayPlanning->shift_end }}</div>
                             <div style="font-size:0.75rem;opacity:0.9">Garde</div>
@@ -179,25 +152,24 @@
             <h2 style="margin:0;font-size:1.25rem">Modifier le shift</h2>
             <button type="button" onclick="closeEditModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-muted)">×</button>
         </div>
-        
+
         <form id="editForm" method="POST">
             @csrf
             @method('PUT')
-            
+
             <input type="hidden" name="employee_id" value="{{ $employee->id }}">
             <input type="hidden" name="date" id="editDate">
-            
+
             <div style="margin-bottom:16px">
                 <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Type de shift</label>
                 <select name="shift_type" id="editShiftType" required style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;background:white">
                     <option value="matin"> Matin</option>
                     <option value="apres_midi"> Après-midi</option>
                     <option value="journee"> Journée complète</option>
-                    <option value="nuit"> Nuit</option>
                     <option value="garde"> Garde</option>
                 </select>
             </div>
-            
+
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
                 <div>
                     <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Heure de début</label>
@@ -208,12 +180,12 @@
                     <input type="time" name="shift_end" id="editShiftEnd" required style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem">
                 </div>
             </div>
-            
+
             <div style="margin-bottom:20px">
                 <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Notes (optionnel)</label>
                 <textarea name="notes" id="editNotes" rows="2" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;resize:vertical"></textarea>
             </div>
-            
+
             <div style="display:flex;gap:12px;justify-content:space-between">
                 <button type="button" onclick="deletePlanning()" class="btn btn-outline" style="color:var(--danger);border-color:var(--danger)">Supprimer</button>
                 <div style="display:flex;gap:12px">
@@ -232,14 +204,14 @@
             <h2 style="margin:0;font-size:1.25rem">Ajouter un shift</h2>
             <button type="button" onclick="closeAddModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-muted)">×</button>
         </div>
-        
+
         <form method="POST" action="{{ route('planning.store') }}">
             @csrf
-            
+
             <input type="hidden" name="employee_id" value="{{ $employee->id }}">
             <input type="hidden" name="date" id="addDate">
             <input type="hidden" name="shift_type" id="addShiftType">
-            
+
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
                 <div>
                     <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Heure de début</label>
@@ -250,12 +222,12 @@
                     <input type="time" name="shift_end" id="addShiftEnd" required style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem">
                 </div>
             </div>
-            
+
             <div style="margin-bottom:20px">
                 <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Notes (optionnel)</label>
                 <textarea name="notes" rows="2" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;resize:vertical"></textarea>
             </div>
-            
+
             <div style="display:flex;gap:12px;justify-content:flex-end">
                 <button type="button" onclick="closeAddModal()" class="btn btn-outline">Annuler</button>
                 <button type="submit" class="btn btn-primary">Ajouter</button>
@@ -348,15 +320,6 @@ window.onclick = function(event) {
             <div>
                 <div style="font-size:1.5rem;font-weight:700">{{ $shiftCounts->get('apres_midi', 0) + $shiftCounts->get('journee', 0) }}</div>
                 <div style="font-size:0.75rem;color:var(--text-muted)">Jours Apres-midi</div>
-            </div>
-        </div>
-    </div>
-    <div class="stat-card" style="padding:16px;background:var(--surface-2);border-radius:var(--radius-sm);border:1px solid var(--border)">
-        <div style="display:flex;align-items:center;gap:12px">
-            <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg, #6366f1, #818cf8);color:white;display:flex;align-items:center;justify-content:center;font-size:1.2rem"></div>
-            <div>
-                <div style="font-size:1.5rem;font-weight:700">{{ $shiftCounts->get('nuit', 0) }}</div>
-                <div style="font-size:0.75rem;color:var(--text-muted)">Jours Nuit</div>
             </div>
         </div>
     </div>

@@ -39,13 +39,11 @@ class BadgeAuthController extends Controller
         ]);
 
         // ── 1. Vérifier le PIN ──────────────────────────────────────────
+        // ✅ FIX: Utiliser plain_pin au lieu de pin
         $employees = Employee::where('status', 'active')->get();
         $employee  = $employees->first(function ($emp) use ($request) {
-            if (empty($emp->pin)) return false;
-            try {
-                if (Hash::check($request->pin, $emp->pin)) return true;
-            } catch (\Exception $e) {}
-            return $emp->pin === $request->pin;
+            if (empty($emp->plain_pin)) return false;
+            return $emp->plain_pin === $request->pin;
         });
 
         if (! $employee) {

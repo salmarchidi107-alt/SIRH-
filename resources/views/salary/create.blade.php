@@ -142,6 +142,8 @@ const EXISTING = {
     ir_override:              {{ $existing && $existing->ir_deduction > 0 ? 1 : 0 }},
 };
 const GARDE_SHIFTS    = @json($workingData['garde_shifts']    ?? []);
+const VAR_GAINS    = {{ $variableElements->where('type','gain')->sum('amount') }};
+const VAR_RETENUES = {{ $variableElements->where('type','retenue')->sum('amount') }};
 const WORKING_SHIFTS  = @json($workingData['pointage_shifts'] ?? []);
 const OVERTIME_SHIFTS = @json($workingData['overtime_shifts'] ?? []);
 const ABSENCE_SHIFTS  = @json($workingData['absence_shifts']  ?? []);
@@ -492,37 +494,21 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
                         </td>
                     </tr>
-
-                    @if($variableElements->where('category','gain')->count())
-                    <tr style="background:#f0fff4">
-                        <td colspan="2" style="padding:9px 14px">
-                            <div style="font-weight:600;font-size:0.78rem;color:#065f46;margin-bottom:5px">Éléments variables (gains)</div>
-                            @foreach($variableElements->where('category','gain') as $ve)
-                            <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;padding:3px 0;gap:8px">
-                                <span>{{ $ve->label }}</span>
-                                @if(str_contains(strtolower($ve->label), 'garde'))
-                                <div style="display:flex;align-items:center;gap:5px">
-                                    <input type="number"
-                                           id="ve_garde_input"
-                                           name="ve_garde_amount"
-                                           class="form-control"
-                                           value="{{ number_format($ve->amount, 2, '.', '') }}"
-                                           step="0.01" min="0"
-                                           data-ve-id="{{ $ve->id }}"
-                                           style="width:110px;text-align:right;font-size:0.8rem;border-color:#0f766e;background:#f0fdfa"
-                                           oninput="onVeGardeChange()">
-                                    <span class="cur-label" style="color:#059669;font-weight:600;white-space:nowrap">MAD</span>
-                                </div>
-                                @else
-                                <span class="bonus font-semibold" style="white-space:nowrap">
-                                    +{{ number_format($ve->amount,2,',',' ') }} <span class="cur-label">MAD</span>
-                                </span>
-                                @endif
-                            </div>
-                            @endforeach
-                        </td>
-                    </tr>
-                    @endif
+@if($variableElements->where('type','gain')->count())
+<tr style="background:#f0fff4">
+    <td colspan="2" style="padding:9px 14px">
+        <div style="font-weight:600;font-size:0.78rem;color:#065f46;margin-bottom:5px">Éléments variables (gains)</div>
+        @foreach($variableElements->where('type','gain') as $ve)
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;padding:3px 0;gap:8px">
+            <span>{{ $ve->label }}</span>
+            <span class="bonus font-semibold" style="white-space:nowrap">
+                +{{ number_format($ve->amount,2,',',' ') }} <span class="cur-label">MAD</span>
+            </span>
+        </div>
+        @endforeach
+    </td>
+</tr>
+@endif
 
                     <tr style="background:#d1fae5">
                         <td style="padding:11px 14px;font-weight:700;color:#065f46">SALAIRE BRUT</td>
@@ -704,19 +690,19 @@ const DELAY_SHIFTS    = @json($workingData['delay_shifts']    ?? []);
                         <td style="padding:9px 14px"><div style="font-weight:600">Autres retenues</div></td>
                         <td style="padding:9px 14px"><input type="number" name="other_deductions" id="other_deductions" class="form-control" value="{{ old('other_deductions', $existing?->other_deductions ?? 0) }}" step="0.01" min="0" style="text-align:right" oninput="calculate()"></td>
                     </tr>
-                    @if($variableElements->where('category','retenue')->count())
-                    <tr style="background:#fff0f0">
-                        <td colspan="2" style="padding:9px 14px">
-                            <div style="font-weight:600;font-size:0.78rem;color:#991b1b;margin-bottom:5px">Éléments variables (retenues)</div>
-                            @foreach($variableElements->where('category','retenue') as $ve)
-                            <div style="display:flex;justify-content:space-between;font-size:0.8rem;padding:2px 0">
-                                <span>{{ $ve->label }}</span>
-                                <span class="deduction font-semibold">−{{ number_format($ve->amount,2,',',' ') }} <span class="cur-label">MAD</span></span>
-                            </div>
-                            @endforeach
-                        </td>
-                    </tr>
-                    @endif
+                    @if($variableElements->where('type','retenue')->count())
+<tr style="background:#fff0f0">
+    <td colspan="2" style="padding:9px 14px">
+        <div style="font-weight:600;font-size:0.78rem;color:#991b1b;margin-bottom:5px">Éléments variables (retenues)</div>
+        @foreach($variableElements->where('type','retenue') as $ve)
+        <div style="display:flex;justify-content:space-between;font-size:0.8rem;padding:2px 0">
+            <span>{{ $ve->label }}</span>
+            <span class="deduction font-semibold">−{{ number_format($ve->amount,2,',',' ') }} <span class="cur-label">MAD</span></span>
+        </div>
+        @endforeach
+    </td>
+</tr>
+@endif
                     <tr style="background:#fecaca;border-top:2px solid #f87171">
                         <td style="padding:11px 14px;font-weight:700;color:#991b1b">TOTAL RETENUES</td>
                         <td style="padding:11px 14px;text-align:right;font-weight:700;color:#991b1b;font-size:1rem" id="ret-total-display">0,00 <span class="cur-label">MAD</span></td>
@@ -1275,11 +1261,12 @@ function calculate() {
     var responsibility = getVal('responsibility_allowance');
     var otherGains     = getVal('other_gains');
 
-    var grossSalary = Math.max(0,
-        baseSalary + seniority + totalOT + gardeAmt
-        + perfBonus + transport + meal + housing + responsibility + otherGains
-        - absDeduction
-    );
+   var grossSalary = Math.max(0,
+    baseSalary + seniority + totalOT + gardeAmt
+    + perfBonus + transport + meal + housing + responsibility + otherGains
+    + VAR_GAINS
+    - absDeduction
+);
     setText('gross-display', fmt(grossSalary));
 
     if (currentSystem==='MAD') setText('cnss-sub','4,48% x min('+fmt(grossSalary)+', 6 000) = '+fmt(Math.min(grossSalary,6000)*0.0448)+' MAD');
@@ -1332,8 +1319,10 @@ function calculate() {
     }
     updateIrDisplay(irMensuel);
 
-    var totalRet=getVal('advance_deduction')+getVal('loan_deduction')+getVal('garnishment_deduction')+getVal('other_deductions');
-    setHTML('ret-total-display',fmt(totalRet));
+var totalRet = getVal('advance_deduction') + getVal('loan_deduction')
+             + getVal('garnishment_deduction') + getVal('other_deductions')
+             + VAR_RETENUES;
+                 setHTML('ret-total-display',fmt(totalRet));
 
     var netSalary=Math.max(0,grossSalary-totalCot-fp-irMensuel-totalRet);
     setText('net-display',fmt(netSalary));

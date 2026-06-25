@@ -118,21 +118,21 @@
             <div class="salary-card" style="padding:12px 16px">
                 <div class="salary-label">Total gains ajoutés</div>
                 <div class="salary-net bonus" style="font-size:1.3rem">
-                    +{{ number_format($elements->where('category','gain')->sum('amount'),0,',',' ') }} MAD
+                    +{{ number_format($elements->where('type','gain')->sum('amount'),0,',',' ') }} MAD
                 </div>
-                <div style="font-size:0.75rem;opacity:0.6">{{ $elements->where('category','gain')->count() }} éléments</div>
+                <div style="font-size:0.75rem;opacity:0.6">{{ $elements->where('type','gain')->count() }} éléments</div>
             </div>
             <div class="salary-card" style="padding:12px 16px">
                 <div class="salary-label">Total retenues ajoutées</div>
                 <div class="salary-net deduction" style="font-size:1.3rem">
-                    -{{ number_format($elements->where('category','retenue')->sum('amount'),0,',',' ') }} MAD
+                    -{{ number_format($elements->where('type','retenue')->sum('amount'),0,',',' ') }} MAD
                 </div>
-                <div style="font-size:0.75rem;opacity:0.6">{{ $elements->where('category','retenue')->count() }} éléments</div>
+                <div style="font-size:0.75rem;opacity:0.6">{{ $elements->where('type','retenue')->count() }} éléments</div>
             </div>
             <div class="salary-card" style="padding:12px 16px">
                 <div class="salary-label">Impact net sur la paie</div>
                 <div class="salary-net" style="font-size:1.3rem">
-                    {{ number_format($elements->where('category','gain')->sum('amount') - $elements->where('category','retenue')->sum('amount'),0,',',' ') }} MAD
+                    {{ number_format($elements->where('type','gain')->sum('amount') - $elements->where('type','retenue')->sum('amount'),0,',',' ') }} MAD
                 </div>
             </div>
         </div>
@@ -167,15 +167,14 @@
                             <tr>
                                 <td class="font-semibold">{{ $el->employee->full_name }}</td>
                                 <td>
-                                    {{-- ✅ FIX : category_label n'existe pas --}}
-                                    <span class="badge badge-{{ $el->category === 'gain' ? 'success' : 'danger' }}">
-                                        {{ $el->category === 'gain' ? 'Gain' : 'Retenue' }}
+                                    <span class="badge badge-{{ $el->type->value === 'gain' ? 'success' : 'danger' }}">
+                                        {{ $el->type->label() }}
                                     </span>
                                 </td>
                                 <td style="font-size:0.82rem;color:var(--text-muted)">{{ $el->rubrique ?? '—' }}</td>
                                 <td>{{ $el->label }}</td>
-                                <td class="{{ $el->category === 'gain' ? 'bonus' : 'deduction' }} font-semibold">
-                                    {{ $el->category === 'gain' ? '+' : '-' }}{{ number_format($el->amount, 2, ',', ' ') }}
+                                <td class="{{ $el->type->value === 'gain' ? 'bonus' : 'deduction' }} font-semibold">
+                                    {{ $el->type->value === 'gain' ? '+' : '-' }}{{ number_format($el->amount, 2, ',', ' ') }}
                                 </td>
                                 <td style="font-size:0.82rem">{{ $el->unit ?? 'MAD' }}</td>
                                 <td>

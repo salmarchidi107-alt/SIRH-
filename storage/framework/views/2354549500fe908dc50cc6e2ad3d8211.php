@@ -419,6 +419,20 @@
             <?php endif; ?>
 
             
+            <?php if($u->canView('equipements')): ?>
+            <div class="nav-section-label">Équipements</div>
+
+            <a href="<?php echo e(route('equipements.index', ['tab' => 'salarie', 'employee_id_view' => $u->employee_id ?? 0])); ?>"
+               class="nav-item <?php echo e(request()->routeIs('equipements.*') ? 'active' : ''); ?>">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="14" rx="2"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M12 17v4"/>
+                </svg>
+                <span>Mes équipements</span>
+            </a>
+            <?php endif; ?>
+
+            
             <?php if($u->canView('ged') || $u->canView('ged_modeles') || $u->canView('ged_entete')): ?>
             <div class="nav-section-label">GED</div>
 
@@ -755,6 +769,39 @@
             <?php endif; ?>
             <?php endif; ?>
 
+
+            <?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh'])): ?>
+            <?php $navUser = Auth::user(); ?>
+
+            <?php if($navUser->canView('equipements')): ?>
+            <div class="nav-section-label">Équipements</div>
+
+            <?php
+                $equipAlertes = 0;
+                try {
+                    $eqTenantId = auth()->user()->tenant_id;
+                    $equipAlertes = \App\Models\AffectationEquipement::where('tenant_id', $eqTenantId)
+                        ->where('statut', 'Actif')
+                        ->whereHas('employee', fn($q) => $q->where('statut', 'Inactif'))
+                        ->count();
+                } catch (\Exception $e) {
+                    $equipAlertes = 0;
+                }
+            ?>
+
+            <a href="<?php echo e(route('equipements.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('equipements.*') ? 'active' : ''); ?>">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="14" rx="2"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M12 17v4"/>
+                </svg>
+                <span>Équipements</span>
+                <?php if($equipAlertes > 0): ?>
+                <span class="nav-badge-live"><?php echo e($equipAlertes); ?></span>
+                <?php endif; ?>
+            </a>
+            <?php endif; ?>
+            <?php endif; ?>
             
             <?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh'])): ?>
             <?php $navUser = Auth::user(); ?>
@@ -778,6 +825,14 @@
                 </svg>
                 <span>Paramétrage</span>
             </a>
+            <a href="<?php echo e(route('admin.codes.index')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('admin.codes.*') ? 'active' : ''); ?>">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <rect x="5" y="11" width="14" height="10" rx="2"/>
+        <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+    </svg>
+    <span>Codes de vérification</span>
+</a>
             <?php endif; ?>
             <?php endif; ?>
 

@@ -66,7 +66,7 @@
                 </svg>
             </div>
             <div style="flex: 1;">
-                <div style="font-weight: 600; font-size: 0.9rem;">🎂 Anniversaires ce mois-ci</div>
+                <div style="font-weight: 600; font-size: 0.9rem;"> Anniversaires aujourd'hui</div>
                 <div style="font-size: 0.8rem; opacity: 0.9;">
                     <?php $__currentLoopData = $birthdays->take(5); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $employee): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                         <span><?php echo e($employee->full_name); ?> (<?php echo e($employee->birth_date->format('d')); ?>)</span><?php if(!$loop->last): ?>, <?php endif; ?>
@@ -394,7 +394,7 @@
 <?php if($birthdays->isNotEmpty()): ?>
 <div class="card mt-6">
     <div class="card-header">
-        <div class="card-title">🎂 Anniversaires du mois</div>
+        <div class="card-title"> Anniversaires aujourd'hui</div>
     </div>
     <div class="card-body" style="padding:0">
         <div style="padding:16px 24px">

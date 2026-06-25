@@ -25,26 +25,30 @@ class NewsController extends Controller
             \Log::error('Calendar API Error: ' . $e->getMessage());
         }
 
-       
         if (empty($holidays)) {
             $currentYear = date('Y');
             $holidays = [
-                ['name' => 'Nouvel An', 'date' => $currentYear . '-01-01'],
-                ['name' => 'Manifeste de l\'Indépendance', 'date' => $currentYear . '-01-11'],
-                ['name' => 'Fête du Travail', 'date' => $currentYear . '-05-01'],
-                ['name' => 'Fête de la Throne', 'date' => $currentYear . '-07-30'],
-                ['name' => 'Fête de la Révolution', 'date' => $currentYear . '-08-14'],
-                ['name' => 'Fête de la Jeunesse', 'date' => $currentYear . '-08-21'],
-                ['name' => 'Mort du Roi Hassan II', 'date' => $currentYear . '-07-30'],
-                ['name' => 'Anniversaire du Roi', 'date' => $currentYear . '-08-21'],
-                ['name' => 'Aïd al-Fitr', 'date' => ''],
-                ['name' => 'Aïd al-Adha', 'date' => ''],
-                ['name' => 'Nouvel An Hégirien', 'date' => ''],
-                ['name' => 'Fête de l\'Indépendance', 'date' => $currentYear . '-11-18'],
+                ['name' => 'Nouvel An',                      'date' => $currentYear . '-01-01'],
+                ['name' => 'Manifeste de l\'Indépendance',   'date' => $currentYear . '-01-11'],
+                ['name' => 'Fête du Travail',                'date' => $currentYear . '-05-01'],
+                ['name' => 'Fête de la Throne',              'date' => $currentYear . '-07-30'],
+                ['name' => 'Fête de la Révolution',          'date' => $currentYear . '-08-14'],
+                ['name' => 'Fête de la Jeunesse',            'date' => $currentYear . '-08-21'],
+                ['name' => 'Mort du Roi Hassan II',          'date' => $currentYear . '-07-30'],
+                ['name' => 'Anniversaire du Roi',            'date' => $currentYear . '-08-21'],
+                ['name' => 'Aïd al-Fitr',                   'date' => ''],
+                ['name' => 'Aïd al-Adha',                   'date' => ''],
+                ['name' => 'Nouvel An Hégirien',             'date' => ''],
+                ['name' => 'Fête de l\'Indépendance',        'date' => $currentYear . '-11-18'],
             ];
         }
 
-        $news = News::orderBy('event_date', 'desc')->paginate(10);
+        // ── CHANGEMENTS : exclut les passées + tri par date croissante ────────
+        $news = News::where('is_active', true)
+                    ->whereDate('event_date', '>=', today())  // ← exclut les dates passées
+                    ->orderBy('event_date', 'asc')            // ← plus proche en premier
+                    ->paginate(10);
+
         return view('news.index', compact('news', 'holidays'));
     }
 
@@ -56,17 +60,17 @@ class NewsController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'type' => 'required',
+            'title'      => 'required|string|max:255',
+            'description'=> 'nullable|string',
+            'type'       => 'required',
             'event_date' => 'required|date',
-            'is_active' => 'boolean',
+            'is_active'  => 'boolean',
         ]);
 
         $data = $request->all();
-        
+
         if ($request->hasFile('image')) {
-            $image = $request->file('image');
+            $image     = $request->file('image');
             $imageName = time() . '_' . preg_replace('/\s+/', '_', $image->getClientOriginalName());
             $image->move(public_path('images/news'), $imageName);
             $data['image'] = 'images/news/' . $imageName;
@@ -89,20 +93,20 @@ class NewsController extends Controller
     public function update(Request $request, News $news)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'type' => 'required',
+            'title'      => 'required|string|max:255',
+            'description'=> 'nullable|string',
+            'type'       => 'required',
             'event_date' => 'required|date',
-            'is_active' => 'boolean',
+            'is_active'  => 'boolean',
         ]);
 
         $data = $request->all();
-        
+
         if ($request->hasFile('image')) {
             if ($news->image && file_exists(public_path($news->image))) {
                 unlink(public_path($news->image));
             }
-            $image = $request->file('image');
+            $image     = $request->file('image');
             $imageName = time() . '_' . preg_replace('/\s+/', '_', $image->getClientOriginalName());
             $image->move(public_path('images/news'), $imageName);
             $data['image'] = 'images/news/' . $imageName;

@@ -49,7 +49,7 @@ class ReferentielController extends Controller
         ]);
 
         Formateur::create($data);
-        Formation::clearCacheFormateurs(); // invalide le cache LMS
+        Formation::clearCacheFormateurs();
 
         return redirect()->route('referentiel.index', ['onglet' => 'formateurs'])
             ->with('success', 'Formateur ajouté avec succès.');

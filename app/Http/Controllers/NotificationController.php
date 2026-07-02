@@ -15,7 +15,7 @@ class NotificationController extends Controller
         $tenantId = Auth::user()?->tenant_id;
 
         $pendingAbsences = Absence::with('employee')
-            ->where('tenant_id', $tenantId)          // ← FIX
+            ->where('tenant_id', $tenantId)
             ->where('status', 'pending')
             ->orderBy('created_at', 'desc')
             ->limit(10)
@@ -46,22 +46,22 @@ class NotificationController extends Controller
         $tenantId = Auth::user()?->tenant_id;
 
         $pendingAbsences = Absence::with('employee')
-            ->where('tenant_id', $tenantId)          // ← FIX
+            ->where('tenant_id', $tenantId)
             ->where('status', 'pending')
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
 
-        $pendingCount = Absence::where('tenant_id', $tenantId)  // ← FIX
+        $pendingCount = Absence::where('tenant_id', $tenantId)
             ->where('status', 'pending')
             ->count();
 
-        $recentNews = News::where('tenant_id', $tenantId)       // ← FIX
+        $recentNews = News::where('tenant_id', $tenantId)
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
 
-        $newsCount = News::where('tenant_id', $tenantId)->count(); // ← FIX
+        $newsCount = News::where('tenant_id', $tenantId)->count();
 
         $totalCount = $pendingCount + $newsCount;
 

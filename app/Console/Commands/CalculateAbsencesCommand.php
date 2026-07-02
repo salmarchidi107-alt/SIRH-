@@ -16,7 +16,7 @@ class CalculateAbsencesCommand extends Command
     public function handle()
     {
         $annee = now()->year;
-        $this->info("🧮 Calcul droits absence & compteurs - Année {$annee}");
+        $this->info("Calcul droits absence & compteurs - Année {$annee}");
 
         $employees = Employee::active()->cursor();
 
@@ -67,7 +67,7 @@ $baseDroits = min(1.5 * $moisTravaillesAnnee, 25); // 1.5j/mois année courante
             $this->line("✅ {$employee->full_name}: {$droits->jours_acquis}j acquis, solde {$droits->jours_solde}j");
         }
 
-        $this->info('🎉 Calculs terminés !');
+        $this->info(' Calculs terminés !');
     }
 }
 

@@ -1,9 +1,7 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Parametrage'); ?>
+<?php $__env->startSection('page-title', 'Parametrage'); ?>
 
-@section('title', 'Parametrage')
-@section('page-title', 'Parametrage')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 
 <style>
 .param-tabs{display:flex;gap:4px;background:#f3f4f6;padding:6px;border-radius:12px;margin-bottom:28px;width:fit-content;}
@@ -90,61 +88,61 @@
     </div>
 </div>
 
-@if(session('success'))
-<div class="param-alert success" style="max-width:700px;margin-bottom:20px;">{{ session('success') }}</div>
-@endif
-@if(session('error'))
-<div class="param-alert error" style="max-width:700px;margin-bottom:20px;">{{ session('error') }}</div>
-@endif
+<?php if(session('success')): ?>
+<div class="param-alert success" style="max-width:700px;margin-bottom:20px;"><?php echo e(session('success')); ?></div>
+<?php endif; ?>
+<?php if(session('error')): ?>
+<div class="param-alert error" style="max-width:700px;margin-bottom:20px;"><?php echo e(session('error')); ?></div>
+<?php endif; ?>
 
-@php $activeTab = request('tab', 'rooms'); @endphp
+<?php $activeTab = request('tab', 'rooms'); ?>
 
 <div class="param-tabs">
-    <a href="{{ route('parametrage.index', ['tab'=>'rooms']) }}" class="param-tab {{ $activeTab=='rooms' ? 'active' : '' }}">
-        Salles <span style="background:#e0f2fe;color:#0369a1;font-size:0.7rem;font-weight:700;padding:1px 7px;border-radius:10px;">{{ $rooms->count() }}</span>
+    <a href="<?php echo e(route('parametrage.index', ['tab'=>'rooms'])); ?>" class="param-tab <?php echo e($activeTab=='rooms' ? 'active' : ''); ?>">
+        Salles <span style="background:#e0f2fe;color:#0369a1;font-size:0.7rem;font-weight:700;padding:1px 7px;border-radius:10px;"><?php echo e($rooms->count()); ?></span>
     </a>
-    <a href="{{ route('parametrage.index', ['tab'=>'departments']) }}" class="param-tab {{ $activeTab=='departments' ? 'active' : '' }}">
-        Departements <span style="background:#dcfce7;color:#15803d;font-size:0.7rem;font-weight:700;padding:1px 7px;border-radius:10px;">{{ $departments->count() }}</span>
+    <a href="<?php echo e(route('parametrage.index', ['tab'=>'departments'])); ?>" class="param-tab <?php echo e($activeTab=='departments' ? 'active' : ''); ?>">
+        Departements <span style="background:#dcfce7;color:#15803d;font-size:0.7rem;font-weight:700;padding:1px 7px;border-radius:10px;"><?php echo e($departments->count()); ?></span>
     </a>
-    <a href="{{ route('parametrage.index', ['tab'=>'documents']) }}" class="param-tab {{ $activeTab=='documents' ? 'active' : '' }}">
+    <a href="<?php echo e(route('parametrage.index', ['tab'=>'documents'])); ?>" class="param-tab <?php echo e($activeTab=='documents' ? 'active' : ''); ?>">
         Pieces jointes <span style="background:#fef3c7;color:#d97706;font-size:0.7rem;font-weight:700;padding:1px 7px;border-radius:10px;"></span>
     </a>
-    <a href="{{ route('parametrage.index', ['tab'=>'localisation']) }}" class="param-tab {{ $activeTab=='localisation' ? 'active' : '' }}">
+    <a href="<?php echo e(route('parametrage.index', ['tab'=>'localisation'])); ?>" class="param-tab <?php echo e($activeTab=='localisation' ? 'active' : ''); ?>">
          Localisation
     </a>
 </div>
 
-{{-- SALLES --}}
-<div class="param-panel {{ $activeTab=='rooms' ? 'active' : '' }}">
+
+<div class="param-panel <?php echo e($activeTab=='rooms' ? 'active' : ''); ?>">
     <div class="param-grid">
         <div class="param-form-card">
             <div class="param-form-card-header"><h3>Nouvelle salle</h3></div>
             <div class="param-form-card-body">
-                <form method="POST" action="{{ route('rooms.store') }}">
-                    @csrf
-                    @if($errors->has('name') || $errors->has('department_id'))
-                    <div class="param-alert error">{{ $errors->first() }}</div>
-                    @endif
+                <form method="POST" action="<?php echo e(route('rooms.store')); ?>">
+                    <?php echo csrf_field(); ?>
+                    <?php if($errors->has('name') || $errors->has('department_id')): ?>
+                    <div class="param-alert error"><?php echo e($errors->first()); ?></div>
+                    <?php endif; ?>
                     <div class="param-input-group">
                         <label class="param-label">Nom de la salle</label>
-                        <input type="text" name="name" class="param-input" value="{{ old('name') }}" placeholder="Ex: Salle des urgences A" required>
+                        <input type="text" name="name" class="param-input" value="<?php echo e(old('name')); ?>" placeholder="Ex: Salle des urgences A" required>
                     </div>
                     <div class="param-input-group">
                         <label class="param-label">Departement</label>
                         <select name="department_id" class="param-input" required>
                             <option value="">Selectionner...</option>
-                            @foreach($departments as $dept)
-                            <option value="{{ $dept->id }}" {{ old('department_id')==$dept->id ? 'selected' : '' }}>{{ $dept->name }}</option>
-                            @endforeach
+                            <?php $__currentLoopData = $departments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dept): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($dept->id); ?>" <?php echo e(old('department_id')==$dept->id ? 'selected' : ''); ?>><?php echo e($dept->name); ?></option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                     </div>
                     <div class="param-input-group">
                         <label class="param-label">Capacite (optionnel)</label>
-                        <input type="number" name="capacity" class="param-input" value="{{ old('capacity') }}" min="1">
+                        <input type="number" name="capacity" class="param-input" value="<?php echo e(old('capacity')); ?>" min="1">
                     </div>
                     <div class="param-input-group">
                         <label class="param-label">Description (optionnel)</label>
-                        <textarea name="description" class="param-input" rows="2" style="resize:vertical;">{{ old('description') }}</textarea>
+                        <textarea name="description" class="param-input" rows="2" style="resize:vertical;"><?php echo e(old('description')); ?></textarea>
                     </div>
                     <button type="submit" class="btn-submit">Creer la salle</button>
                 </form>
@@ -152,56 +150,56 @@
         </div>
         <div class="param-list-card">
             <div class="param-list-header">
-                <h3>Toutes les salles <span class="param-count-badge">{{ $rooms->count() }}</span></h3>
+                <h3>Toutes les salles <span class="param-count-badge"><?php echo e($rooms->count()); ?></span></h3>
                 <input type="text" class="param-search" placeholder="Rechercher..." oninput="filterList(this,'rooms-list')">
             </div>
             <div id="rooms-list">
-                @forelse($rooms as $room)
-                <div class="param-item" data-search="{{ strtolower($room->name.' '.($room->department?->name ?? '')) }}">
+                <?php $__empty_1 = true; $__currentLoopData = $rooms; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $room): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                <div class="param-item" data-search="<?php echo e(strtolower($room->name.' '.($room->department?->name ?? ''))); ?>">
                     <div class="param-item-left">
                         <div>
-                            <div class="param-item-name">{{ $room->name }}</div>
-                            <div class="param-item-sub">{{ $room->department?->name ?? '—' }}@if($room->capacity) · {{ $room->capacity }} places @endif</div>
+                            <div class="param-item-name"><?php echo e($room->name); ?></div>
+                            <div class="param-item-sub"><?php echo e($room->department?->name ?? '—'); ?><?php if($room->capacity): ?> · <?php echo e($room->capacity); ?> places <?php endif; ?></div>
                         </div>
                     </div>
                     <div class="param-item-actions">
-                        <button class="btn-sm" onclick="openRoomModal({{ $room->id }},'{{ addslashes($room->name) }}',{{ $room->department_id }},{{ $room->capacity ?? 'null' }},'{{ addslashes($room->description ?? '') }}')">Modifier</button>
-                        <form method="POST" action="{{ route('rooms.destroy',$room) }}" style="display:inline;" onsubmit="return confirm('Supprimer ?')">
-                            @csrf @method('DELETE')
+                        <button class="btn-sm" onclick="openRoomModal(<?php echo e($room->id); ?>,'<?php echo e(addslashes($room->name)); ?>',<?php echo e($room->department_id); ?>,<?php echo e($room->capacity ?? 'null'); ?>,'<?php echo e(addslashes($room->description ?? '')); ?>')">Modifier</button>
+                        <form method="POST" action="<?php echo e(route('rooms.destroy',$room)); ?>" style="display:inline;" onsubmit="return confirm('Supprimer ?')">
+                            <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
                             <button type="submit" class="btn-sm danger">Supprimer</button>
                         </form>
                     </div>
                 </div>
-                @empty
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                 <div class="param-empty"><p>Aucune salle creee.</p></div>
-                @endforelse
+                <?php endif; ?>
             </div>
         </div>
     </div>
 </div>
 
-{{-- DEPARTEMENTS --}}
-<div class="param-panel {{ $activeTab=='departments' ? 'active' : '' }}">
+
+<div class="param-panel <?php echo e($activeTab=='departments' ? 'active' : ''); ?>">
     <div class="param-grid">
         <div class="param-form-card">
             <div class="param-form-card-header"><h3>Nouveau departement</h3></div>
             <div class="param-form-card-body">
-                <form method="POST" action="{{ route('departments.store') }}">
-                    @csrf
-                    @if($errors->has('name'))
-                    <div class="param-alert error">{{ $errors->first('name') }}</div>
-                    @endif
+                <form method="POST" action="<?php echo e(route('departments.store')); ?>">
+                    <?php echo csrf_field(); ?>
+                    <?php if($errors->has('name')): ?>
+                    <div class="param-alert error"><?php echo e($errors->first('name')); ?></div>
+                    <?php endif; ?>
                     <div class="param-input-group">
                         <label class="param-label">Nom</label>
-                        <input type="text" name="name" class="param-input" value="{{ old('name') }}" placeholder="Ex: Cardiologie" required>
+                        <input type="text" name="name" class="param-input" value="<?php echo e(old('name')); ?>" placeholder="Ex: Cardiologie" required>
                     </div>
                     <div class="param-input-group">
                         <label class="param-label">Chef de service (optionnel)</label>
-                        <input type="text" name="chef" class="param-input" value="{{ old('chef') }}" placeholder="Ex: Dr. Martin">
+                        <input type="text" name="chef" class="param-input" value="<?php echo e(old('chef')); ?>" placeholder="Ex: Dr. Martin">
                     </div>
                     <div class="param-input-group">
                         <label class="param-label">Description (optionnel)</label>
-                        <textarea name="description" class="param-input" rows="2" style="resize:vertical;">{{ old('description') }}</textarea>
+                        <textarea name="description" class="param-input" rows="2" style="resize:vertical;"><?php echo e(old('description')); ?></textarea>
                     </div>
                     <button type="submit" class="btn-submit">Creer le departement</button>
                 </form>
@@ -209,54 +207,55 @@
         </div>
         <div class="param-list-card">
             <div class="param-list-header">
-                <h3>Tous les departements <span class="param-count-badge" style="background:#14b8a6;">{{ $departments->count() }}</span></h3>
+                <h3>Tous les departements <span class="param-count-badge" style="background:#14b8a6;"><?php echo e($departments->count()); ?></span></h3>
                 <input type="text" class="param-search" placeholder="Rechercher..." oninput="filterList(this,'departments-list')">
             </div>
             <div id="departments-list">
-                @forelse($departments as $dept)
-                <div class="param-item" data-search="{{ strtolower($dept->name.' '.($dept->code ?? '').' '.($dept->chef ?? '')) }}">
+                <?php $__empty_1 = true; $__currentLoopData = $departments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dept): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                <div class="param-item" data-search="<?php echo e(strtolower($dept->name.' '.($dept->code ?? '').' '.($dept->chef ?? ''))); ?>">
                     <div class="param-item-left">
                         <div>
-                            <div class="param-item-name">{{ $dept->name }}
-                                @if($dept->code)<span style="background:#f3f4f6;color:#6b7280;font-size:0.65rem;font-weight:700;padding:1px 7px;border-radius:4px;margin-left:6px;">{{ $dept->code }}</span>@endif
+                            <div class="param-item-name"><?php echo e($dept->name); ?>
+
+                                <?php if($dept->code): ?><span style="background:#f3f4f6;color:#6b7280;font-size:0.65rem;font-weight:700;padding:1px 7px;border-radius:4px;margin-left:6px;"><?php echo e($dept->code); ?></span><?php endif; ?>
                             </div>
-                            <div class="param-item-sub">@if($dept->chef)Chef : {{ $dept->chef }} · @endif{{ $dept->rooms_count ?? 0 }} salle(s)</div>
+                            <div class="param-item-sub"><?php if($dept->chef): ?>Chef : <?php echo e($dept->chef); ?> · <?php endif; ?><?php echo e($dept->rooms_count ?? 0); ?> salle(s)</div>
                         </div>
                     </div>
                     <div class="param-item-actions">
-                        <button class="btn-sm" onclick="openDeptModal({{ $dept->id }},'{{ addslashes($dept->name) }}','{{ addslashes($dept->code ?? '') }}','{{ $dept->color ?? '#0ea5e9' }}','{{ addslashes($dept->chef ?? '') }}','{{ addslashes($dept->description ?? '') }}')">Modifier</button>
-                        <form method="POST" action="{{ route('departments.destroy',$dept) }}" style="display:inline;" onsubmit="return confirm('Supprimer ?')">
-                            @csrf @method('DELETE')
+                        <button class="btn-sm" onclick="openDeptModal(<?php echo e($dept->id); ?>,'<?php echo e(addslashes($dept->name)); ?>','<?php echo e(addslashes($dept->code ?? '')); ?>','<?php echo e($dept->color ?? '#0ea5e9'); ?>','<?php echo e(addslashes($dept->chef ?? '')); ?>','<?php echo e(addslashes($dept->description ?? '')); ?>')">Modifier</button>
+                        <form method="POST" action="<?php echo e(route('departments.destroy',$dept)); ?>" style="display:inline;" onsubmit="return confirm('Supprimer ?')">
+                            <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
                             <button type="submit" class="btn-sm danger">Supprimer</button>
                         </form>
                     </div>
                 </div>
-                @empty
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                 <div class="param-empty"><p>Aucun departement cree.</p></div>
-                @endforelse
+                <?php endif; ?>
             </div>
         </div>
     </div>
 </div>
 
-{{-- DOCUMENTS --}}
-<div class="param-panel {{ $activeTab=='documents' ? 'active' : '' }}">
+
+<div class="param-panel <?php echo e($activeTab=='documents' ? 'active' : ''); ?>">
     <div class="param-list-card">
         <div class="docs-filter-bar">
             <label>Filtrer par departement :</label>
-            <form method="GET" action="{{ route('parametrage.index') }}" style="display:flex;align-items:center;gap:8px;">
+            <form method="GET" action="<?php echo e(route('parametrage.index')); ?>" style="display:flex;align-items:center;gap:8px;">
                 <input type="hidden" name="tab" value="documents">
                 <select name="dept_filter" class="docs-filter-select" onchange="this.form.submit()">
                     <option value="">Tous les departements</option>
-                    @foreach($departmentNames as $dn)
-                    <option value="{{ $dn }}" {{ request('dept_filter')==$dn ? 'selected' : '' }}>{{ $dn }}</option>
-                    @endforeach
+                    <?php $__currentLoopData = $departmentNames; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dn): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <option value="<?php echo e($dn); ?>" <?php echo e(request('dept_filter')==$dn ? 'selected' : ''); ?>><?php echo e($dn); ?></option>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </select>
-                @if(request('dept_filter'))
-                <a href="{{ route('parametrage.index',['tab'=>'documents']) }}" style="font-size:0.8rem;color:#ef4444;text-decoration:none;padding:6px 10px;border:1px solid #fecaca;border-radius:6px;background:#fef2f2;">Reset</a>
-                @endif
+                <?php if(request('dept_filter')): ?>
+                <a href="<?php echo e(route('parametrage.index',['tab'=>'documents'])); ?>" style="font-size:0.8rem;color:#ef4444;text-decoration:none;padding:6px 10px;border:1px solid #fecaca;border-radius:6px;background:#fef2f2;">Reset</a>
+                <?php endif; ?>
             </form>
-            <span style="margin-left:auto;font-size:0.82rem;color:#6b7280;">{{ $employeesWithDocs->count() }} employe(s)</span>
+            <span style="margin-left:auto;font-size:0.82rem;color:#6b7280;"><?php echo e($employeesWithDocs->count()); ?> employe(s)</span>
             <button class="btn-add-doc" onclick="openModal('addDocModal')">+ Ajouter un document</button>
         </div>
         <div style="overflow-x:auto;">
@@ -267,42 +266,42 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($employeesWithDocs as $emp)
-                    @php $ini = strtoupper(substr($emp->first_name,0,1).substr($emp->last_name,0,1)); @endphp
+                    <?php $__empty_1 = true; $__currentLoopData = $employeesWithDocs; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $emp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                    <?php $ini = strtoupper(substr($emp->first_name,0,1).substr($emp->last_name,0,1)); ?>
                     <tr>
                         <td>
                             <div style="display:flex;align-items:center;gap:10px;">
-                                <div class="emp-avatar">{{ $ini }}</div>
-                                <button onclick="openDocsModal({{ $emp->id }},'{{ addslashes($emp->first_name) }} {{ addslashes($emp->last_name) }}')"
+                                <div class="emp-avatar"><?php echo e($ini); ?></div>
+                                <button onclick="openDocsModal(<?php echo e($emp->id); ?>,'<?php echo e(addslashes($emp->first_name)); ?> <?php echo e(addslashes($emp->last_name)); ?>')"
                                         style="background:none;border:none;cursor:pointer;font-weight:600;font-size:0.875rem;color:#0ea5e9;text-decoration:underline;padding:0;font-family:inherit;">
-                                    {{ $emp->first_name }} {{ $emp->last_name }}</button>
+                                    <?php echo e($emp->first_name); ?> <?php echo e($emp->last_name); ?></button>
                             </div>
                         </td>
-                        <td><span style="font-size:0.78rem;background:#f3f4f6;padding:3px 8px;border-radius:5px;color:#374151;">{{ $emp->department ?? '—' }}</span></td>
+                        <td><span style="font-size:0.78rem;background:#f3f4f6;padding:3px 8px;border-radius:5px;color:#374151;"><?php echo e($emp->department ?? '—'); ?></span></td>
                         <td style="text-align:center;">
-                            @if($emp->doc_count > 0)
-                            <button onclick="openDocsModal({{ $emp->id }},'{{ addslashes($emp->first_name) }} {{ addslashes($emp->last_name) }}')"
+                            <?php if($emp->doc_count > 0): ?>
+                            <button onclick="openDocsModal(<?php echo e($emp->id); ?>,'<?php echo e(addslashes($emp->first_name)); ?> <?php echo e(addslashes($emp->last_name)); ?>')"
                                     style="background:#dcfce7;color:#16a34a;font-size:0.78rem;font-weight:700;padding:3px 14px;border-radius:20px;cursor:pointer;border:none;font-family:inherit;">
-                                {{ $emp->doc_count }} doc(s)</button>
-                            @else
+                                <?php echo e($emp->doc_count); ?> doc(s)</button>
+                            <?php else: ?>
                             <span style="background:#f3f4f6;color:#9ca3af;font-size:0.78rem;padding:3px 14px;border-radius:20px;display:inline-block;">Aucun</span>
-                            @endif
+                            <?php endif; ?>
                         </td>
                     </tr>
-                    @empty
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                     <tr><td colspan="3" style="text-align:center;padding:40px;color:#6b7280;">Aucun employe trouve.</td></tr>
-                    @endforelse
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
     </div>
 </div>
 
-{{-- LOCALISATION --}}
-<div class="param-panel {{ $activeTab=='localisation' ? 'active' : '' }}">
+
+<div class="param-panel <?php echo e($activeTab=='localisation' ? 'active' : ''); ?>">
     <div class="param-grid">
 
-        {{-- Formulaire --}}
+        
         <div class="param-form-card">
             <div class="loc-card-header">
                 <h3> Ajouter / modifier une localisation</h3>
@@ -319,9 +318,9 @@
                     <label class="param-label">Département concerné</label>
                     <select id="loc_department" class="param-input">
                         <option value="">— Tous les départements (global) —</option>
-                        @foreach($departmentNames as $dn)
-                        <option value="{{ $dn }}">{{ $dn }}</option>
-                        @endforeach
+                        <?php $__currentLoopData = $departmentNames; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dn): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <option value="<?php echo e($dn); ?>"><?php echo e($dn); ?></option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
                     <p style="font-size:0.72rem;color:#9ca3af;margin-top:4px;">
                         Si un département spécifique est sélectionné, cette localisation sera prioritaire pour les employés de ce département.
@@ -356,7 +355,7 @@
             </div>
         </div>
 
-        {{-- Liste des localisations enregistrées --}}
+        
         <div class="param-list-card">
             <div class="param-list-header">
                 <h3>Localisations enregistrées</h3>
@@ -370,16 +369,16 @@
     </div>
 </div>
 
-{{-- MODAL SALLE --}}
+
 <div class="param-modal-overlay" id="roomModal">
     <div class="param-modal">
         <div class="param-modal-header"><h3>Modifier la salle</h3><button class="btn-close" onclick="closeModal('roomModal')">&#x2715;</button></div>
         <form id="roomForm" method="POST">
-            @csrf @method('PUT')
+            <?php echo csrf_field(); ?> <?php echo method_field('PUT'); ?>
             <div class="param-input-group"><label class="param-label">Nom</label><input type="text" name="name" id="rName" class="param-input" required></div>
             <div class="param-input-group"><label class="param-label">Departement</label>
                 <select name="department_id" id="rDept" class="param-input" required>
-                    @foreach($departments as $d)<option value="{{ $d->id }}">{{ $d->name }}</option>@endforeach
+                    <?php $__currentLoopData = $departments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $d): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($d->id); ?>"><?php echo e($d->name); ?></option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </select>
             </div>
             <div class="param-input-group"><label class="param-label">Capacite</label><input type="number" name="capacity" id="rCap" class="param-input" min="1"></div>
@@ -392,12 +391,12 @@
     </div>
 </div>
 
-{{-- MODAL DEPARTEMENT --}}
+
 <div class="param-modal-overlay" id="deptModal">
     <div class="param-modal">
         <div class="param-modal-header"><h3>Modifier le departement</h3><button class="btn-close" onclick="closeModal('deptModal')">&#x2715;</button></div>
         <form id="deptForm" method="POST">
-            @csrf @method('PUT')
+            <?php echo csrf_field(); ?> <?php echo method_field('PUT'); ?>
             <div class="param-input-group"><label class="param-label">Nom</label><input type="text" name="name" id="dName" class="param-input" required></div>
             <div class="param-input-group"><label class="param-label">Code</label><input type="text" name="code" id="dCode" class="param-input" maxlength="10" style="text-transform:uppercase;"></div>
             <div class="param-input-group"><label class="param-label">Couleur</label><input type="color" name="color" id="dColor" style="width:48px;height:40px;border-radius:8px;border:1px solid #e5e7eb;cursor:pointer;padding:2px;"></div>
@@ -411,12 +410,12 @@
     </div>
 </div>
 
-{{-- MODAL AJOUTER DOCUMENT --}}
+
 <div class="param-modal-overlay" id="addDocModal">
     <div class="param-modal" style="max-width:560px;">
         <div class="param-modal-header"><h3>Ajouter un document</h3><button class="btn-close" onclick="closeModal('addDocModal')">&#x2715;</button></div>
-        <form method="POST" action="{{ route('parametrage.documents.upload') }}" enctype="multipart/form-data">
-            @csrf
+        <form method="POST" action="<?php echo e(route('parametrage.documents.upload')); ?>" enctype="multipart/form-data">
+            <?php echo csrf_field(); ?>
             <div class="param-input-group">
                 <label class="param-label">Nom du document <span style="color:#ef4444;">*</span></label>
                 <input type="text" name="doc_name" class="param-input" required placeholder="Ex: Attestation de travail...">
@@ -441,9 +440,9 @@
                     <label class="param-label">Employe</label>
                     <select id="empSel" class="param-input" onchange="showEmpFile(this)">
                         <option value="">Selectionner...</option>
-                        @foreach($allEmployees as $e)
-                        <option value="{{ $e->id }}">{{ $e->first_name }} {{ $e->last_name }}@if($e->department) — {{ $e->department }}@endif</option>
-                        @endforeach
+                        <?php $__currentLoopData = $allEmployees; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $e): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <option value="<?php echo e($e->id); ?>"><?php echo e($e->first_name); ?> <?php echo e($e->last_name); ?><?php if($e->department): ?> — <?php echo e($e->department); ?><?php endif; ?></option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
                 </div>
                 <div class="param-input-group" id="emp-file-zone" style="display:none;">
@@ -457,7 +456,7 @@
                     <label class="param-label">Departement</label>
                     <select id="deptSel" class="param-input" onchange="loadDept(this.value)">
                         <option value="">Selectionner...</option>
-                        @foreach($departmentNames as $dn)<option value="{{ $dn }}">{{ $dn }}</option>@endforeach
+                        <?php $__currentLoopData = $departmentNames; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dn): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($dn); ?>"><?php echo e($dn); ?></option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
                 </div>
                 <div id="dept-list"></div>
@@ -471,7 +470,7 @@
     </div>
 </div>
 
-{{-- MODAL DOCUMENTS EMPLOYE --}}
+
 <div class="param-modal-overlay" id="docsModal">
     <div class="param-modal" style="max-width:560px;">
         <div class="param-modal-header">
@@ -483,7 +482,7 @@
 </div>
 
 <script>
-var EMPS = {!! json_encode($allEmployeesJs, JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_QUOT) !!};
+var EMPS = <?php echo json_encode($allEmployeesJs, JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_QUOT); ?>;
 
 function filterList(inp, lid) {
     var q = inp.value.toLowerCase();
@@ -624,7 +623,7 @@ if (btnSaveLoc) {
         };
         btn.disabled = true; feedback.textContent = '';
 
-        fetch('{{ route("site-location.store") }}', {
+        fetch('<?php echo e(route("site-location.store")); ?>', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
             body: JSON.stringify(payload),
@@ -655,7 +654,7 @@ function fetchLocations() {
     var c = document.getElementById('locs-list-content');
     c.innerHTML = '<div style="text-align:center;padding:24px;color:#9ca3af;font-size:0.82rem;">Chargement…</div>';
 
-    fetch('{{ route("site-location.index") }}', { headers: { 'Accept': 'application/json' } })
+    fetch('<?php echo e(route("site-location.index")); ?>', { headers: { 'Accept': 'application/json' } })
     .then(function (res) { return res.json(); })
     .then(function (data) {
         if (!data.success || !data.locations || !data.locations.length) {
@@ -707,7 +706,7 @@ function prefillForm(loc) {
 // Supprimer une localisation
 function deleteLoc(id) {
     if (!confirm('Supprimer cette localisation ?')) return;
-    fetch('{{ url("parametrage/site-location") }}/' + id, {
+    fetch('<?php echo e(url("parametrage/site-location")); ?>/' + id, {
         method: 'DELETE',
         headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
     })
@@ -724,4 +723,6 @@ if (btnRefreshLocs) { btnRefreshLocs.addEventListener('click', fetchLocations); 
 fetchLocations();
 </script>
 
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\Projects\SIRH-\resources\views/parametrage/index.blade.php ENDPATH**/ ?>

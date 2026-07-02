@@ -128,6 +128,88 @@
     }
     .shift-filter-pill.active { box-shadow: 0 0 0 2px currentColor; font-weight: 700; }
 
+    /* ══════════════════════════════════════════════════════
+    /* ══════════════════════════════════════════════════════
+       BANNIÈRE ALERTE LOCALISATION — cliquable
+    ══════════════════════════════════════════════════════ */
+    .geo-alert-banner {
+        background: #fef2f2; border-bottom: 2px solid #fca5a5;
+        padding: .55rem 1.5rem; flex-shrink: 0;
+        cursor: pointer; transition: background .15s; user-select: none;
+    }
+    .geo-alert-banner:hover { background: #fee2e2; }
+    .geo-alert-banner-inner { display: flex; align-items: center; gap: 10px; }
+    .geo-alert-title { font-size: 13px; font-weight: 700; color: #b91c1c; }
+    .geo-alert-count-badge {
+        background: #dc2626; color: #fff; font-size: 12px; font-weight: 800;
+        padding: 2px 10px; border-radius: 99px; margin-left: 4px;
+    }
+    .geo-alert-caret {
+        margin-left: auto; font-size: 11px; color: #b91c1c;
+        display: flex; align-items: center; gap: 6px;
+        font-weight: 600; white-space: nowrap;
+    }
+    /* ── Modal alerte géoloc / photo (structure partagée) ── */
+    .geo-modal-overlay {
+        display: none; position: fixed; inset: 0; z-index: 9999;
+        background: rgba(0,0,0,.5); align-items: center; justify-content: center;
+    }
+    .geo-modal-overlay.open { display: flex; }
+    .geo-modal {
+        background: #fff; border-radius: 14px; width: 92%; max-width: 720px;
+        max-height: 85vh; display: flex; flex-direction: column;
+        box-shadow: 0 20px 60px rgba(0,0,0,.25); overflow: hidden;
+    }
+    .geo-modal-header {
+        background: #fef2f2; border-bottom: 1px solid #fecaca;
+        padding: 14px 20px; display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+    }
+    .geo-modal-header h2 { font-size: 15px; font-weight: 700; color: #b91c1c; margin: 0; flex: 1; }
+    .geo-modal-close {
+        background: none; border: none; font-size: 20px; color: #b91c1c;
+        cursor: pointer; line-height: 1; padding: 0;
+    }
+    .geo-modal-body { flex: 1; overflow-y: auto; }
+    .geo-modal-row {
+        display: flex; align-items: center; gap: 14px;
+        padding: 13px 20px; border-bottom: 1px solid #fef2f2; transition: background .12s;
+    }
+    .geo-modal-row:last-child { border-bottom: none; }
+    .geo-modal-row:hover { background: #fff5f5; }
+    .geo-modal-avatar {
+        width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 13px; font-weight: 700; background: #fee2e2; color: #b91c1c;
+    }
+    .geo-modal-emp-name { font-size: 13px; font-weight: 700; color: #0f172a; }
+    .geo-modal-emp-sub  { font-size: 11px; color: #64748b; margin-top: 2px; max-width: 360px; }
+    .geo-modal-dist { margin-left: auto; text-align: right; flex-shrink: 0; }
+    .geo-modal-dist-val { font-size: 16px; font-weight: 800; color: #dc2626; }
+    .geo-modal-dist-label { font-size: 10px; color: #94a3b8; margin-top: 1px; }
+    .geo-modal-maps {
+        display: inline-flex; align-items: center; gap: 5px;
+        margin-top: 7px; padding: 4px 10px; border-radius: 6px;
+        background: #fff; border: 1px solid #fecaca;
+        font-size: 11px; font-weight: 600; color: #dc2626;
+        text-decoration: none; transition: all .12s;
+    }
+    .geo-modal-maps:hover { background: #fef2f2; }
+    .geo-modal-footer {
+        padding: 11px 20px; border-top: 1px solid #e2e8f0; background: #f8fafc;
+        font-size: 11px; color: #94a3b8; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: space-between;
+    }
+
+    /* ── Modal photo (variante teal, réutilise .geo-modal-*) ── */
+    .photo-modal-header {
+        background: var(--p-teal-bg); border-bottom: 1px solid var(--p-teal-light);
+    }
+    .photo-modal-header h2 { color: var(--p-teal); }
+    .photo-modal-close { color: var(--p-teal); }
+    .photo-modal-body { padding: 22px; text-align: center; }
+    .photo-modal-img { max-width: 100%; max-height: 420px; border-radius: 10px; border: 1px solid var(--p-border); }
+    .photo-modal-placeholder { padding: 48px 20px; color: var(--p-text-muted); font-size: 13px; }
+
     /* ── Body ── */
     .pt-body { display:flex; flex:1; overflow:hidden; }
 
@@ -174,7 +256,6 @@
     /* ══════════════════════════════════════════════════════
        COULEUR PAR TYPE DE SHIFT
     ══════════════════════════════════════════════════════ */
-    /* Shift normal — fond vert très clair + barre latérale verte */
     .pt-table tbody tr.row-shift-normal td {
         background: var(--shift-normal-row);
     }
@@ -182,7 +263,6 @@
         border-left: 3px solid var(--shift-normal-dot);
         padding-left: 10px;
     }
-    /* Garde — fond mauve très clair + barre latérale mauve */
     .pt-table tbody tr.row-shift-garde td {
         background: var(--shift-garde-row);
     }
@@ -190,9 +270,13 @@
         border-left: 3px solid var(--shift-garde-dot);
         padding-left: 10px;
     }
-    /* Hover */
     .pt-table tbody tr.row-shift-normal:hover td { filter: brightness(.97); }
     .pt-table tbody tr.row-shift-garde:hover td  { filter: brightness(.97); }
+
+    /* Ligne avec alerte géoloc — léger liseré rouge en plus de la couleur shift */
+    .pt-table tbody tr.row-geo-alert td:first-child {
+        box-shadow: inset 3px 0 0 var(--p-red);
+    }
 
     /* ── Badge shift type inline dans colonne Employé ── */
     .shift-type-pill {
@@ -298,11 +382,38 @@
     .geo-tooltip-row:last-child { margin-bottom: 0; }
     .geo-tooltip-label { color: #94a3b8; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
     .geo-tooltip-val   { color: #fff; font-weight: 600; font-size: 11px; }
+    .geo-tooltip-alert {
+        background: #7f1d1d; color: #fecaca; padding: 6px 8px; border-radius: 6px;
+        font-size: 10.5px; font-weight: 600; margin-top: 8px; white-space: normal; max-width: 220px;
+    }
     .geo-maps-link {
         display: block; margin-top: 8px; color: #5eead4; font-size: 10px;
         text-decoration: none; border-top: 1px solid #1e293b; padding-top: 8px;
     }
     .geo-maps-link:hover { color: #99f6e4; }
+    .pt-pdf-dropdown { position: relative; }
+.pt-btn-pdf {
+    background:#e2e8f0; color:#0f172a; padding:7px 14px; border-radius:8px;
+    font-size:13px; font-weight:600; border:1px solid var(--p-border);
+    cursor:pointer; display:flex; align-items:center; gap:6px;
+}
+.pt-btn-pdf:hover { background:#d6dde6; }
+.pt-pdf-caret { font-size:9px; transition: transform .15s; }
+.pt-pdf-dropdown.open .pt-pdf-caret { transform: rotate(180deg); }
+.pt-pdf-menu {
+    display:none; position:absolute; top:calc(100% + 6px); right:0;
+    background:#fff; border:1px solid var(--p-border); border-radius:8px;
+    box-shadow:0 8px 24px rgba(0,0,0,.12); min-width:190px; z-index:50; overflow:hidden;
+}
+.pt-pdf-dropdown.open .pt-pdf-menu { display:block; }
+.pt-pdf-item {
+    display:flex; flex-direction:column; gap:1px; padding:8px 12px;
+    font-size:12.5px; font-weight:600; color:var(--p-text); text-decoration:none;
+    border-bottom:1px solid var(--p-border-soft);
+}
+.pt-pdf-item:last-child { border-bottom:none; }
+.pt-pdf-item span { font-size:10.5px; font-weight:400; color:var(--p-text-muted); }
+.pt-pdf-item:hover { background:var(--p-teal-bg); color:var(--p-teal); }
 </style>
 <?php $__env->stopPush(); ?>
 
@@ -323,10 +434,22 @@
             </div>
         </div>
         <div class="pt-topbar-right">
-            <a href="<?php echo e(route('pointage.pdf', request()->only(['date','department','search','vue','shift']))); ?>"
-               style="background:#e2e8f0;color:#0f172a;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid var(--p-border);">
-                PDF
-            </a>
+            <div class="pt-pdf-dropdown">
+    <button type="button" class="pt-btn-pdf" id="btn-pdf-toggle">
+        PDF <span class="pt-pdf-caret">▾</span>
+    </button>
+    <div class="pt-pdf-menu" id="pdf-menu">
+        <a class="pt-pdf-item" href="<?php echo e(route('pointage.pdf', array_merge(request()->only(['date','department','search','vue','shift']), ['periode' => 'jour']))); ?>">
+             Jour <span><?php echo e($currentDate->translatedFormat('d M Y')); ?></span>
+        </a>
+        <a class="pt-pdf-item" href="<?php echo e(route('pointage.pdf', array_merge(request()->only(['date','department','search','vue','shift']), ['periode' => 'semaine']))); ?>">
+             Semaine <span><?php echo e($startOfWeek->format('d/m')); ?> – <?php echo e($endOfWeek->format('d/m')); ?></span>
+        </a>
+        <a class="pt-pdf-item" href="<?php echo e(route('pointage.pdf', array_merge(request()->only(['date','department','search','vue','shift']), ['periode' => 'mois']))); ?>">
+             Mois <span><?php echo e($currentDate->translatedFormat('F Y')); ?></span>
+        </a>
+    </div>
+</div>
             <a href="<?php echo e(route('pointage.badges-pin')); ?>"
                style="background:#9CC4B7;color:white;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
                 Badges PIN
@@ -403,6 +526,97 @@
     </div>
 
     
+    <?php if(isset($geoAlerts) && $geoAlerts->count() > 0): ?>
+    <?php $siteName = $geoAlerts->first()['site_name'] ?? 'la localisation du site'; ?>
+
+    
+    <div class="geo-alert-banner" onclick="openGeoAlertModal()" title="Cliquer pour voir le détail">
+        <div class="geo-alert-banner-inner">
+            <div style="font-size:18px;line-height:1;flex-shrink:0;">⚠️</div>
+            <div class="geo-alert-title">
+                Alerte localisation :
+                <span class="geo-alert-count-badge"><?php echo e($geoAlerts->count()); ?></span>
+                employé(s) pointé(s) en dehors de <?php echo e($siteName); ?>
+
+            </div>
+            <div class="geo-alert-caret">
+                Voir le détail &nbsp;›
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="geo-modal-overlay" id="geoAlertModal">
+        <div class="geo-modal">
+            <div class="geo-modal-header">
+                <h2>⚠️ <?php echo e($geoAlerts->count()); ?> employé(s) hors localisation</h2>
+                <button class="geo-modal-close" onclick="closeGeoAlertModal()">✕</button>
+            </div>
+            <div class="geo-modal-body">
+                <?php $__currentLoopData = $geoAlerts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $alert): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <?php
+                    $g        = $alert['geo'];
+                    $mapsUrl  = $g ? 'https://www.google.com/maps?q='.$g['latitude'].','.$g['longitude'] : null;
+                    $accuracy = $g['accuracy'] ?? null;
+                    $address  = $g['address'] ?? null;
+                    $time     = $g['recorded_at'] ?? null;
+                    $dist     = $alert['geo_distance'] ?? 0;
+                    $distColor = $dist > 2000 ? '#7f1d1d' : ($dist > 500 ? '#dc2626' : '#f97316');
+                ?>
+                <div class="geo-modal-row">
+                    <div class="geo-modal-avatar"><?php echo e($alert['avatar']); ?></div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="geo-modal-emp-name">
+                            <?php echo e($alert['nom']); ?>
+
+                            <?php if($alert['shift_type'] === 'garde'): ?>
+                                <span style="font-size:10px;background:#faf5ff;color:#7c3aed;border:1px solid #e9d5ff;padding:1px 7px;border-radius:99px;font-weight:700;margin-left:6px;">Garde</span>
+                            <?php else: ?>
+                                <span style="font-size:10px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;padding:1px 7px;border-radius:99px;font-weight:700;margin-left:6px;">Shift normal</span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="geo-modal-emp-sub">
+                            <?php if($address): ?> 📍 <?php echo e($address); ?> <?php endif; ?>
+                            <?php if($time): ?> &nbsp;·&nbsp; Badgé à <?php echo e($time); ?> <?php endif; ?>
+                            <?php if($accuracy): ?> &nbsp;·&nbsp; Précision GPS ± <?php echo e($accuracy); ?> m <?php endif; ?>
+                        </div>
+                        <?php if($mapsUrl): ?>
+                        <a href="<?php echo e($mapsUrl); ?>" target="_blank" class="geo-modal-maps">
+                            🗺 Voir sur Google Maps
+                        </a>
+                        <?php endif; ?>
+                    </div>
+                    <div class="geo-modal-dist">
+                        <div class="geo-modal-dist-val" style="color:<?php echo e($distColor); ?>"><?php echo e(number_format($dist, 0, ',', ' ')); ?> m</div>
+                        <div class="geo-modal-dist-label">du site</div>
+                    </div>
+                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
+            <div class="geo-modal-footer">
+                <span>Site de référence : <strong><?php echo e($siteName); ?></strong></span>
+                <span><?php echo e(now()->setTimezone('Africa/Casablanca')->format('d/m/Y H:i')); ?></span>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    
+    <div class="geo-modal-overlay" id="photoModal">
+        <div class="geo-modal" style="max-width:460px;">
+            <div class="geo-modal-header photo-modal-header">
+                <h2 class="photo-modal-header" id="photoModalTitle"> Dernière photo</h2>
+                <button class="geo-modal-close photo-modal-close" onclick="closePhotoModal()">✕</button>
+            </div>
+            <div class="geo-modal-body photo-modal-body" id="photoModalBody">
+                <div class="photo-modal-placeholder">Chargement…</div>
+            </div>
+            <div class="geo-modal-footer">
+                <span id="photoModalMeta"></span>
+            </div>
+        </div>
+    </div>
+
     <div class="pt-weeknav">
         <?php
             $prevDate     = $currentDate->copy()->subWeek();
@@ -458,7 +672,7 @@
                         <th>Pause total</th>
                         <th>Pause début / fin</th>
                         <th style="width:80px">Total travaillé</th>
-                        <th>Action</th>
+                        <th>Photo</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -474,13 +688,14 @@
                     $geo        = $emp['geo'] ?? null;
                     $hasGeo     = $geo && !($geo['denied'] ?? true) && isset($geo['latitude'], $geo['longitude']);
                     $mapsUrl    = $hasGeo ? 'https://www.google.com/maps?q='.$geo['latitude'].','.$geo['longitude'] : null;
+                    $isGeoAlert = $emp['geo_alert'] ?? false;
 
                     // Shift type résolu
                     $shiftType  = $emp['shift_type'] ?? 'normal';
                     $isGarde    = $shiftType === 'garde';
                     $rowClass   = $isGarde ? 'row-shift-garde' : 'row-shift-normal';
                 ?>
-                <tr class="<?php echo e($isDimmed ? 'pt-row-dimmed' : ''); ?> <?php echo e($rowClass); ?>"
+                <tr class="<?php echo e($isDimmed ? 'pt-row-dimmed' : ''); ?> <?php echo e($rowClass); ?> <?php echo e($isGeoAlert ? 'row-geo-alert' : ''); ?>"
                     id="row-emp-<?php echo e($emp['id']); ?>">
 
                     
@@ -502,10 +717,12 @@
                     
                     <td style="text-align:center;padding:10px 6px;">
                         <?php if($hasGeo): ?>
-                            
 <div class="geo-tooltip-wrap">
     <a href="<?php echo e($mapsUrl); ?>" target="_blank"
-       style="font-size:18px;text-decoration:none;cursor:pointer;position:relative;z-index:1000;">📍</a>
+       style="font-size:18px;text-decoration:none;cursor:pointer;position:relative;z-index:1000;<?php echo e($isGeoAlert ? 'filter:drop-shadow(0 0 2px #dc2626);' : ''); ?>">
+       <?php echo e($isGeoAlert ? '📍' : '📍'); ?>
+
+    </a>
     <div class="geo-tooltip" style="pointer-events:none;">
                                     <?php if(!empty($geo['address'])): ?>
                                     <div style="font-weight:600;margin-bottom:8px;color:#e2e8f0;font-size:12px;max-width:220px;white-space:normal;line-height:1.4;">
@@ -535,6 +752,12 @@
                                         <span class="geo-tooltip-val"><?php echo e($geo['recorded_at']); ?></span>
                                     </div>
                                     <?php endif; ?>
+                                    <?php if($isGeoAlert): ?>
+                                    <div class="geo-tooltip-alert">
+                                        ⚠️ À <?php echo e($emp['geo_distance']); ?> m de <?php echo e($emp['site_name'] ?? 'la localisation du site'); ?>
+
+                                    </div>
+                                    <?php endif; ?>
                                     <a href="<?php echo e($mapsUrl); ?>" target="_blank" class="geo-maps-link">🗺 Voir sur Google Maps →</a>
                                 </div>
                             </div>
@@ -553,9 +776,12 @@
 
                             </div>
                             <div>
-                                <div style="font-size:13px;font-weight:500;color:var(--p-text);">
+                                <div style="font-size:13px;font-weight:500;color:var(--p-text);display:flex;align-items:center;gap:6px;">
                                     <?php echo e($emp['nom']); ?>
 
+                                    <?php if($isGeoAlert): ?>
+                                    <span title="Pointage en dehors de la localisation du site" style="font-size:11px;">⚠️</span>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="shift-type-pill <?php echo e($isGarde ? 'garde' : 'normal'); ?>">
                                     <span class="pill-dot"></span>
@@ -652,17 +878,12 @@
 
                     
                     <td>
-                        <?php if($p): ?>
-                        <button class="pt-action-btn <?php echo e($p->ignore_badge ? '' : 'keep'); ?>"
-                                data-id="<?php echo e($p->id); ?>"
-                                data-url="<?php echo e(route('pointage.toggle-ignore', $p->id)); ?>"
-                                onclick="toggleIgnore(this)">
-                            <?php echo e($p->ignore_badge ? '⊘ Ignorer' : '👁 Garder'); ?>
-
+                        <button class="pt-action-btn"
+                                data-url="<?php echo e(route('pointage.last-photo', $emp['id'])); ?>"
+                                data-name="<?php echo e($emp['nom']); ?>"
+                                onclick="showLastPhoto(this)">
+                             Voir photo
                         </button>
-                        <?php else: ?>
-                        <button class="pt-action-btn" disabled style="opacity:.4;cursor:default;">⊘ Ignorer</button>
-                        <?php endif; ?>
                     </td>
 
                 </tr>
@@ -692,6 +913,10 @@
                 <div class="pt-stat-dot" style="background:var(--p-teal)"></div>
                 GPS actifs : <strong style="color:var(--p-teal)"><?php echo e($stats['geo_ok'] ?? 0); ?></strong>
             </div>
+            <div class="pt-stat">
+                <div class="pt-stat-dot" style="background:#dc2626"></div>
+                Alertes localisation : <strong style="color:#dc2626"><?php echo e($stats['geo_alerts'] ?? 0); ?></strong>
+            </div>
 
             
             <div class="pt-stat" style="border-left:1px solid var(--p-border);padding-left:1.5rem;margin-left:.5rem;">
@@ -711,6 +936,14 @@
 <?php $__env->startPush('scripts'); ?>
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+
+
+const pdfDropdown = document.querySelector('.pt-pdf-dropdown');
+document.getElementById('btn-pdf-toggle').addEventListener('click', function (e) {
+    e.stopPropagation();
+    pdfDropdown.classList.toggle('open');
+});
+document.addEventListener('click', () => pdfDropdown.classList.remove('open'));
 
 // ── Valider la journée complète ──────────────────────────────────────────────
 document.getElementById('btn-validate').addEventListener('click', async function () {
@@ -766,16 +999,6 @@ async function toggleValider(btn) {
     } catch(e) { console.error(e); }
 }
 
-// ── Toggle ignore ────────────────────────────────────────────────────────────
-async function toggleIgnore(btn) {
-    try {
-        const res  = await fetch(btn.dataset.url, { method: 'POST', headers: {'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json'} });
-        const data = await res.json();
-        btn.classList.toggle('keep', !data.ignore_badge);
-        btn.textContent = data.ignore_badge ? '⊘ Ignorer' : '👁 Garder';
-    } catch(e) { console.error(e); }
-}
-
 // ── Toggle absence ───────────────────────────────────────────────────────────
 async function toggleAbsence(checkbox) {
     const empId = checkbox.dataset.employee, date = checkbox.dataset.date;
@@ -801,6 +1024,87 @@ async function toggleAbsence(checkbox) {
         checkbox.disabled = false;
     }
 }
+
+
+// ── Modal alerte géolocalisation ─────────────────────────────────────────────
+function openGeoAlertModal() {
+    var modal = document.getElementById('geoAlertModal');
+    if (modal) {
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeGeoAlertModal() {
+    var modal = document.getElementById('geoAlertModal');
+    if (modal) {
+        modal.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+}
+
+// Fermer en cliquant sur l'overlay
+var geoOverlay = document.getElementById('geoAlertModal');
+if (geoOverlay) {
+    geoOverlay.addEventListener('click', function (e) {
+        if (e.target === geoOverlay) closeGeoAlertModal();
+    });
+}
+
+// ── Modal photo — dernière photo badgeuse ────────────────────────────────────
+async function showLastPhoto(btn) {
+    var modal = document.getElementById('photoModal');
+    var body  = document.getElementById('photoModalBody');
+    var title = document.getElementById('photoModalTitle');
+    var meta  = document.getElementById('photoModalMeta');
+
+    title.textContent = (btn.dataset.name || 'Photo');
+    body.innerHTML     = '<div class="photo-modal-placeholder">Chargement…</div>';
+    meta.textContent   = '';
+
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    try {
+        const res  = await fetch(btn.dataset.url, {
+            headers: {'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json'},
+        });
+        const data = await res.json();
+
+        if (data.success && data.photo_url) {
+            body.innerHTML = '<img src="' + data.photo_url + '" alt="Photo badgeuse" class="photo-modal-img">';
+            var typeLabel = data.type === 'entree' ? 'Entrée' : (data.type === 'sortie' ? 'Sortie' : (data.type || ''));
+            meta.textContent = (typeLabel ? typeLabel + ' — ' : '') + (data.recorded_at || '');
+        } else {
+            body.innerHTML = '<div class="photo-modal-placeholder">' + (data.message || 'Aucune photo disponible pour cet employé.') + '</div>';
+        }
+    } catch (e) {
+        body.innerHTML = '<div class="photo-modal-placeholder" style="color:var(--p-red);">Erreur lors du chargement de la photo.</div>';
+    }
+}
+
+function closePhotoModal() {
+    var modal = document.getElementById('photoModal');
+    if (modal) {
+        modal.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+}
+
+var photoOverlay = document.getElementById('photoModal');
+if (photoOverlay) {
+    photoOverlay.addEventListener('click', function (e) {
+        if (e.target === photoOverlay) closePhotoModal();
+    });
+}
+
+// Fermer avec Escape (géoloc + photo)
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+        closeGeoAlertModal();
+        closePhotoModal();
+    }
+});
 </script>
 <?php $__env->stopPush(); ?>
 

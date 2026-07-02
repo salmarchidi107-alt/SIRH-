@@ -13,6 +13,29 @@
 </div>
 
 {{-- ============================================================
+     AFFICHAGE DES ERREURS DE VALIDATION
+     ============================================================ --}}
+@if($errors->any())
+<div style="
+    background: #fef2f2;
+    border: 2px solid #ef4444;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 16px rgba(239,68,68,0.10);
+">
+    <div style="font-weight:700;color:#991b1b;margin-bottom:8px;font-size:0.95rem;">
+        ⚠️ Veuillez corriger les erreurs suivantes :
+    </div>
+    <ul style="margin:0;padding-left:20px;color:#7f1d1d;font-size:0.9rem;line-height:1.7">
+        @foreach($errors->all() as $error)
+            <li>{{ $error }}</li>
+        @endforeach
+    </ul>
+</div>
+@endif
+
+{{-- ============================================================
      BANNIÈRE DE CONFLIT (chevauchement avec un autre employé)
      ============================================================ --}}
 @if(session('conflict_warning'))
@@ -127,30 +150,42 @@
                 <div class="form-group">
                     <label>Employé *</label>
                     @if(isset($employee))
+                        {{-- Mode employé connecté : champ caché, affichage en lecture seule --}}
                         <input type="hidden" name="employee_id" id="employee_id_hidden" value="{{ $employee->id }}">
                         <div style="padding:16px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:24px">
                             <h3 style="margin:0 0 8px 0;color:var(--primary);font-size:1.1rem">{{ $employee->full_name }}</h3>
                             <div style="color:var(--text-muted);font-size:0.875rem">{{ $employee->department }} — {{ $employee->position }}</div>
                         </div>
                     @else
-                        <select id="employee_select" name="employee_id" class="form-control" required>
+                        {{-- ── FIX : old('employee_id') stocké dans un data-attribute
+                             pour que le JS puisse le restaurer APRÈS avoir reconstruit les options ── --}}
+                        <select id="employee_select"
+                                name="employee_id"
+                                class="form-control {{ $errors->has('employee_id') ? 'is-invalid' : '' }}"
+                                required
+                                data-old="{{ old('employee_id', request('employee_id')) }}">
                             <option value="">Sélectionner un employé</option>
-                            @if($employees ?? [])
-                                @foreach($employees as $emp)
-                                    <option value="{{ $emp->id }}"
-                                        {{ old('employee_id', request('employee_id')) == $emp->id ? 'selected' : '' }}>
-                                        {{ $emp->full_name }} — {{ $emp->department }}
-                                    </option>
-                                @endforeach
-                            @endif
+                            {{-- Les options seront injectées par JS ; celles-ci servent
+                                 de fallback si JS est désactivé --}}
+                            @foreach($employees as $emp)
+                                <option value="{{ $emp->id }}"
+                                    {{ old('employee_id', request('employee_id')) == $emp->id ? 'selected' : '' }}>
+                                    {{ $emp->full_name }} — {{ $emp->department }}
+                                </option>
+                            @endforeach
                         </select>
+                        @error('employee_id')
+                            <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px">{{ $message }}</div>
+                        @enderror
                     @endif
                 </div>
 
                 {{-- ── Type d'absence ── --}}
                 <div class="form-group">
                     <label>Type d'absence *</label>
-                    <select name="type" id="type_select" class="form-control" required
+                    <select name="type" id="type_select"
+                            class="form-control {{ $errors->has('type') ? 'is-invalid' : '' }}"
+                            required
                             onchange="toggleAutreType(this)">
                         <option value="">Sélectionner le type</option>
                         @foreach(array_keys(\App\Models\Absence::TYPES) as $type)
@@ -160,29 +195,44 @@
                         @endforeach
                         <option value="autre" {{ old('type') == 'autre' ? 'selected' : '' }}>Autre</option>
                     </select>
+                    @error('type')
+                        <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 {{-- ── Préciser si "Autre" ── --}}
                 <div class="form-group" id="autre_type_group"
                      style="display:{{ old('type') == 'autre' ? 'block' : 'none' }}">
                     <label>Préciser le type *</label>
-                    <input type="text" name="type_autre" id="type_autre" class="form-control"
+                    <input type="text" name="type_autre" id="type_autre"
+                           class="form-control {{ $errors->has('type_autre') ? 'is-invalid' : '' }}"
                            value="{{ old('type_autre') }}"
                            placeholder="Ex : Formation, Mission externe…">
+                    @error('type_autre')
+                        <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 {{-- ── Date début ── --}}
                 <div class="form-group">
                     <label>Date de début *</label>
-                    <input type="date" name="start_date" id="start_date" class="form-control"
+                    <input type="date" name="start_date" id="start_date"
+                           class="form-control {{ $errors->has('start_date') ? 'is-invalid' : '' }}"
                            value="{{ old('start_date') }}" required>
+                    @error('start_date')
+                        <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 {{-- ── Date fin ── --}}
                 <div class="form-group">
                     <label>Date de fin *</label>
-                    <input type="date" name="end_date" id="end_date" class="form-control"
+                    <input type="date" name="end_date" id="end_date"
+                           class="form-control {{ $errors->has('end_date') ? 'is-invalid' : '' }}"
                            value="{{ old('end_date') }}" required>
+                    @error('end_date')
+                        <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 {{-- ── Motif ── --}}
@@ -208,12 +258,6 @@
                     </select>
                 </div>
 
-                {{-- ── Notes ── --}}
-                <div class="form-group full">
-                    <label>Notes supplémentaires</label>
-                    <textarea name="notes" class="form-control" rows="2">{{ old('notes') }}</textarea>
-                </div>
-
             </div>
         </div>
     </div>
@@ -235,8 +279,8 @@
 /* ─────────────────────────────────────────────────────────────
    Données passées depuis le contrôleur
    ───────────────────────────────────────────────────────────── */
-var employees       = @json($employeeOptions);
-var selfConflicts   = @json($selfConflicts ?? []);
+var employees     = @json($employeeOptions);
+var selfConflicts = @json($selfConflicts ?? []);
 
 /* ─────────────────────────────────────────────────────────────
    Confirmer malgré le conflit (autre employé)
@@ -263,7 +307,7 @@ function toggleAutreType(select) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Helpers : obtenir l'employé_id sélectionné
+   Helpers : obtenir l'employee_id sélectionné
    ───────────────────────────────────────────────────────────── */
 function getSelectedEmployeeId() {
     var sel = document.getElementById('employee_select');
@@ -277,12 +321,12 @@ function getSelectedEmployeeId() {
    Filtre remplacement : exclut l'employé sélectionné
    ───────────────────────────────────────────────────────────── */
 function renderReplacementOptions(excludeId) {
-    var select = document.getElementById('replacement_select');
+    var select  = document.getElementById('replacement_select');
     if (!select) return;
     var current = select.value;
     select.innerHTML = '<option value="">Aucun</option>';
     employees.forEach(function(emp) {
-        if (String(emp.id) === String(excludeId)) return; // exclure
+        if (String(emp.id) === String(excludeId)) return;
         var opt = document.createElement('option');
         opt.value = emp.id;
         opt.textContent = emp.label;
@@ -292,12 +336,17 @@ function renderReplacementOptions(excludeId) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Filtre département → employés + remplacement
+   Filtre département → reconstruit la liste des employés
+   FIX : restaure old('employee_id') via data-old après rebuild
    ───────────────────────────────────────────────────────────── */
 function renderEmployeeOptions(filtered) {
     var select = document.getElementById('employee_select');
     if (!select) return;
-    var current = select.value;
+
+    // ── FIX : priorité à data-old (valeur PHP old()), sinon valeur courante
+    var oldId   = select.getAttribute('data-old') || '';
+    var current = select.value || oldId;
+
     select.innerHTML = '<option value="">Sélectionner un employé</option>';
     filtered.forEach(function(emp) {
         var opt = document.createElement('option');
@@ -306,7 +355,11 @@ function renderEmployeeOptions(filtered) {
         if (String(emp.id) === String(current)) opt.selected = true;
         select.appendChild(opt);
     });
-    // Rafraîchir le remplacement en excluant la sélection courante
+
+    // ── FIX : une fois restaurée, vider data-old pour ne pas bloquer
+    //          les changements manuels ultérieurs
+    select.removeAttribute('data-old');
+
     renderReplacementOptions(select.value);
 }
 
@@ -314,11 +367,11 @@ function renderEmployeeOptions(filtered) {
    Détection conflit propre (même employé, dates communes)
    ───────────────────────────────────────────────────────────── */
 function checkSelfConflict() {
-    var empId     = getSelectedEmployeeId();
-    var startVal  = document.getElementById('start_date').value;
-    var endVal    = document.getElementById('end_date').value;
-    var banner    = document.getElementById('self-conflict-banner');
-    var detail    = document.getElementById('self-conflict-detail');
+    var empId    = getSelectedEmployeeId();
+    var startVal = document.getElementById('start_date').value;
+    var endVal   = document.getElementById('end_date').value;
+    var banner   = document.getElementById('self-conflict-banner');
+    var detail   = document.getElementById('self-conflict-detail');
 
     if (!empId || !startVal || !endVal) {
         banner.style.display = 'none';
@@ -332,7 +385,6 @@ function checkSelfConflict() {
         if (String(c.employee_id) !== String(empId)) return false;
         var cStart = new Date(c.start_date);
         var cEnd   = new Date(c.end_date);
-        // chevauchement si les périodes se croisent
         return newStart <= cEnd && newEnd >= cStart;
     });
 
@@ -358,13 +410,15 @@ document.addEventListener('DOMContentLoaded', function() {
     function filterByDepartment() {
         if (!departmentSelect) return;
         var dep      = departmentSelect.value;
-        var filtered = dep ? employees.filter(function(e) { return e.department === dep; }) : employees;
+        var filtered = dep
+            ? employees.filter(function(e) { return e.department === dep; })
+            : employees;
         renderEmployeeOptions(filtered);
     }
 
     if (departmentSelect) {
         departmentSelect.addEventListener('change', filterByDepartment);
-        filterByDepartment(); // état initial
+        filterByDepartment(); // état initial — restaure aussi old('employee_id')
     }
 
     /* Mise à jour du remplacement quand on change d'employé */

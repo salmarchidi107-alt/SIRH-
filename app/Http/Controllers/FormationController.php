@@ -101,7 +101,7 @@ class FormationController extends Controller
 
         $query = Formation::with($withs);
 
-        // ✅ Employé : ne voit que ses propres formations
+        // Employé : ne voit que ses propres formations
         $authUser = auth()->user();
         if ($authUser->isEmployee()) {
             $employee = Employee::where('user_id', $authUser->id)->first();
@@ -175,7 +175,7 @@ class FormationController extends Controller
 
         $formationsSemaine = $formQuery->get();
 
-        // ✅ Filtre selon le rôle
+        // Filtre selon le rôle
         $authUser = auth()->user();
 
         if ($authUser->isEmployee()) {

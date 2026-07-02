@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 use App\Mail\AbsenceApproved;
 use App\Mail\AbsenceRejected;
 use Carbon\Carbon;
@@ -133,7 +135,7 @@ class AbsenceController extends Controller
 
         $start = Carbon::parse($validated['start_date']);
         $end   = Carbon::parse($validated['end_date']);
-        $validated['days']      = $start->diffInWeekdays($end) + 1;
+        $validated['days']      = $this->calculateWorkingDays($start, $end); // ← MODIFIÉ
         $validated['status']    = 'pending';
         $validated['tenant_id'] = config('app.current_tenant_id');
 
@@ -225,7 +227,7 @@ class AbsenceController extends Controller
 
         $start = Carbon::parse($validated['start_date']);
         $end   = Carbon::parse($validated['end_date']);
-        $validated['days'] = $start->diffInWeekdays($end) + 1;
+        $validated['days'] = $this->calculateWorkingDays($start, $end); // ← MODIFIÉ
 
         $absence->update($validated);
 
@@ -659,5 +661,102 @@ class AbsenceController extends Controller
     private function getDepartments()
     {
         return Department::names();
+    }
+
+    // =========================================================================
+    // calculateWorkingDays — Lundi au Samedi, jours fériés déduits
+    // =========================================================================
+    private function calculateWorkingDays(Carbon $start, Carbon $end): int
+    {
+        $count    = 0;
+        $holidays = [];
+
+        // Récupère les fériés pour chaque année couverte par la période
+        foreach (range($start->year, $end->year) as $year) {
+            foreach ($this->getHolidayDates($year) as $date) {
+                $holidays[] = $date;
+            }
+        }
+
+        for ($day = $start->copy()->startOfDay(); $day->lte($end->copy()->startOfDay()); $day->addDay()) {
+            // Dimanche exclu — samedi compté comme jour ouvré
+            if ($day->dayOfWeek === Carbon::SUNDAY) {
+                continue;
+            }
+            // Jour férié tombant un lundi–samedi → déduit
+            if (in_array($day->toDateString(), $holidays)) {
+                continue;
+            }
+            $count++;
+        }
+
+        return $count;
+    }
+
+    // =========================================================================
+    // getHolidayDates — Fériés fixes (toujours) + fériés islamiques via API
+    // =========================================================================
+    private function getHolidayDates(int $year): array
+    {
+        // ── 1. Fériés fixes marocains ─────────────────────────────────────────
+        // Toujours appliqués, sans dépendance à l'API ni au cache.
+        $fixed = [
+            "$year-01-01", // Nouvel An
+            "$year-01-11", // Manifeste de l'Indépendance
+            "$year-05-01", // Fête du Travail
+            "$year-07-30", // Fête du Trône
+            "$year-08-14", // Fête de la Révolution du Roi et du Peuple
+            "$year-08-21", // Fête de la Jeunesse / Anniversaire du Roi
+            "$year-11-06", // Anniversaire de la Marche Verte
+            "$year-11-18", // Fête de l'Indépendance
+        ];
+
+        // ── 2. Fériés islamiques via API (dates variables) ────────────────────
+        // Mis en cache 24h uniquement si l'API répond avec des données valides.
+        // Un résultat vide n'est jamais mis en cache pour forcer un nouvel essai.
+        $variable = [];
+        $cacheKey = "holidays_variable_{$year}";
+
+        if (Cache::has($cacheKey)) {
+            $variable = Cache::get($cacheKey);
+        } else {
+            try {
+                $response = Http::timeout(5)
+                    ->get('https://calendar-api.ma/api/holidays?year=' . $year);
+
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $list = $data['holidays'] ?? (is_array($data) ? $data : []);
+
+                    // Normalise chaque date en Y-m-d pour garantir la comparaison
+                    $fromApi = collect($list)
+                        ->filter(fn($h) => ! empty($h['date']))
+                        ->map(function ($h) {
+                            try {
+                                // Accepte yyyy-mm-dd ET dd/mm/yyyy ET dd-mm-yyyy
+                                return Carbon::parse($h['date'])->format('Y-m-d');
+                            } catch (\Exception $e) {
+                                return null;
+                            }
+                        })
+                        ->filter()
+                        ->values()
+                        ->toArray();
+
+                    if (! empty($fromApi)) {
+                        $variable = $fromApi;
+                        // Mise en cache uniquement si des données valides ont été reçues
+                        Cache::put($cacheKey, $variable, now()->addHours(24));
+                    }
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning(
+                    "Holiday API indisponible pour {$year} : " . $e->getMessage()
+                );
+            }
+        }
+
+        // Fusion : fériés fixes + fériés islamiques, sans doublon
+        return array_values(array_unique(array_merge($fixed, $variable)));
     }
 }

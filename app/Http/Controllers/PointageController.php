@@ -12,6 +12,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 use Exception;
@@ -22,14 +24,28 @@ class PointageController extends Controller
 
     // =========================================================================
     // Helper : récupère le tenant_id courant
+    // Priorité à auth()->user()->tenant_id (lié à la session, non falsifiable
+    // côté client) plutôt qu'à config('app.current_tenant_id').
     // =========================================================================
     private function getCurrentTenantId(): mixed
     {
-        $tenantId = config('app.current_tenant_id');
-        if (blank($tenantId) && auth()->check()) {
-            $tenantId = auth()->user()->tenant_id;
+        $configTenantId = config('app.current_tenant_id');
+        $authTenantId   = auth()->check() ? auth()->user()->tenant_id : null;
+
+        if (filled($configTenantId) && filled($authTenantId) && (string) $configTenantId !== (string) $authTenantId) {
+            Log::warning('PointageController: incohérence tenant_id détectée', [
+                'config_tenant_id' => $configTenantId,
+                'auth_tenant_id'   => $authTenantId,
+                'user_id'          => auth()->id(),
+                'url'              => request()->fullUrl(),
+            ]);
         }
-        return filled($tenantId) ? $tenantId : null;
+
+        if (filled($authTenantId)) {
+            return $authTenantId;
+        }
+
+        return filled($configTenantId) ? $configTenantId : null;
     }
 
     // =========================================================================
@@ -53,6 +69,89 @@ class PointageController extends Controller
         }
 
         return 'normal';
+    }
+
+    // =========================================================================
+    // haversineDistance — distance en mètres entre deux points GPS
+    // =========================================================================
+    private function haversineDistance(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $earthRadius = 6371000;
+
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+
+        $a = sin($dLat / 2) * sin($dLat / 2)
+           + cos(deg2rad($lat1)) * cos(deg2rad($lat2))
+           * sin($dLng / 2) * sin($dLng / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
+    }
+
+    // =========================================================================
+    // getTenantSiteLocations — charge toutes les localisations du tenant
+    // depuis la table site_locations (multi-département), avec cache 10 min
+    // =========================================================================
+    private function getTenantSiteLocations(mixed $tenantId): Collection
+    {
+        if (! $tenantId) return collect();
+
+        return Cache::remember(
+            "tenant_site_locations_{$tenantId}",
+            now()->addMinutes(10),
+            function () use ($tenantId) {
+                return DB::table('site_locations')
+                    ->where('tenant_id', $tenantId)
+                    ->get();
+            }
+        );
+    }
+
+    // =========================================================================
+    // checkGeoAlert — trouve la localisation de référence selon le département
+    // de l'employé et compare avec sa position GPS.
+    //
+    // Priorité : localisation spécifique au département > localisation globale
+    // =========================================================================
+    private function checkGeoAlert(?array $geo, mixed $tenantId, ?string $department = null): array
+    {
+        $locations = $this->getTenantSiteLocations($tenantId);
+
+        if ($locations->isEmpty()) {
+            return ['alert' => false, 'distance' => null, 'site_name' => null];
+        }
+
+        // 1. Chercher une localisation spécifique au département de l'employé
+        $site = null;
+        if ($department) {
+            $site = $locations->first(fn($l) => (string) $l->department === (string) $department);
+        }
+
+        // 2. Fallback sur la localisation globale (department = null ou vide)
+        if (! $site) {
+            $site = $locations->first(fn($l) => is_null($l->department) || $l->department === '');
+        }
+
+        if (! $site) {
+            return ['alert' => false, 'distance' => null, 'site_name' => null];
+        }
+
+        if (! $geo || ($geo['denied'] ?? true) || ! isset($geo['latitude'], $geo['longitude'])) {
+            return ['alert' => false, 'distance' => null, 'site_name' => $site->site_name];
+        }
+
+        $distance = $this->haversineDistance(
+            (float) $site->latitude, (float) $site->longitude,
+            (float) $geo['latitude'], (float) $geo['longitude']
+        );
+
+        return [
+            'alert'     => $distance > (int) $site->radius_meters,
+            'distance'  => (int) round($distance),
+            'site_name' => $site->site_name,
+        ];
     }
 
     // =========================================================================
@@ -173,12 +272,16 @@ class PointageController extends Controller
 
                 if ($pointage && in_array($pointage->statut, ['absent', 'absence_injustifiee'])) {
                     return [
-                        'id'         => $emp->id,
-                        'nom'        => $emp->first_name . ' ' . $emp->last_name,
-                        'avatar'     => strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1)),
-                        'pointage'   => $pointage,
-                        'geo'        => null,
-                        'shift_type' => $this->resolveShiftType($shift, $pointage),
+                        'id'           => $emp->id,
+                        'nom'          => $emp->first_name . ' ' . $emp->last_name,
+                        'avatar'       => strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1)),
+                        'department'   => $emp->department,
+                        'pointage'     => $pointage,
+                        'geo'          => null,
+                        'shift_type'   => $this->resolveShiftType($shift, $pointage),
+                        'geo_alert'    => false,
+                        'geo_distance' => null,
+                        'site_name'    => null,
                     ];
                 }
 
@@ -190,13 +293,20 @@ class PointageController extends Controller
                     }
                 }
 
+                $geo      = $this->extractGeoFromBadgeRecords($shift);
+                $geoCheck = $this->checkGeoAlert($geo, $tenantId, $emp->department);
+
                 return [
-                    'id'         => $emp->id,
-                    'nom'        => $emp->first_name . ' ' . $emp->last_name,
-                    'avatar'     => strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1)),
-                    'pointage'   => $pointage,
-                    'geo'        => $this->extractGeoFromBadgeRecords($shift),
-                    'shift_type' => $this->resolveShiftType($shift, $pointage),
+                    'id'           => $emp->id,
+                    'nom'          => $emp->first_name . ' ' . $emp->last_name,
+                    'avatar'       => strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1)),
+                    'department'   => $emp->department,
+                    'pointage'     => $pointage,
+                    'geo'          => $geo,
+                    'shift_type'   => $this->resolveShiftType($shift, $pointage),
+                    'geo_alert'    => $geoCheck['alert'],
+                    'geo_distance' => $geoCheck['distance'],
+                    'site_name'    => $geoCheck['site_name'],
                 ];
             });
 
@@ -221,13 +331,16 @@ class PointageController extends Controller
             'en_attente'   => $employees->filter(fn($e) => ! $e['pointage'] || $e['pointage']?->statut === 'pas_de_badge')->count(),
             'total'        => $employees->count(),
             'geo_ok'       => $employees->filter(fn($e) => isset($e['geo']) && !($e['geo']['denied'] ?? true))->count(),
+            'geo_alerts'   => $employees->filter(fn($e) => $e['geo_alert'] ?? false)->count(),
             'shift_normal' => $employees->filter(fn($e) => $e['shift_type'] === 'normal')->count(),
             'shift_garde'  => $employees->filter(fn($e) => $e['shift_type'] === 'garde')->count(),
         ];
 
+        $geoAlerts = $employees->filter(fn($e) => $e['geo_alert'] ?? false)->values();
+
         return view('pointage.index', compact(
             'employees', 'departments', 'weekDays', 'currentDate',
-            'startOfWeek', 'endOfWeek', 'stats', 'vue', 'shiftFilter'
+            'startOfWeek', 'endOfWeek', 'stats', 'vue', 'shiftFilter', 'geoAlerts'
         ));
     }
 
@@ -342,6 +455,73 @@ class PointageController extends Controller
                 ? Carbon::parse($record->created_at)->setTimezone(self::TZ)->format('H:i:s')
                 : null,
         ];
+    }
+
+    // =========================================================================
+    // lastPhoto — dernière photo prise à la badgeuse pour un employé
+    // Cherche le BadgeRecord le plus récent (toutes dates confondues) qui
+    // possède soit un fichier sur disque (face_photo_path), soit une version
+    // base64 (fallback), et renvoie une URL affichable directement en <img>.
+    // =========================================================================
+    public function lastPhoto(Employee $employee): JsonResponse
+    {
+        $tenantId = $this->getCurrentTenantId();
+
+        // Sécurité multi-tenant : l'employé doit appartenir au tenant courant
+        if ($tenantId && (string) $employee->tenant_id !== (string) $tenantId) {
+            return response()->json(['success' => false, 'message' => "Accès non autorisé."], 403);
+        }
+
+        $record = BadgeRecord::where('employee_id', $employee->id)
+            ->where(function ($q) {
+                $q->whereNotNull('face_photo_path')
+                  ->orWhereNotNull('face_photo_base64');
+            })
+            ->orderByDesc('created_at')
+            ->first();
+
+        if (! $record) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Aucune photo trouvée pour cet employé.',
+            ]);
+        }
+
+        $photoUrl = null;
+
+        if ($record->face_photo_path) {
+            try {
+                $disk     = $record->face_photo_disk ?: 'public';
+                $photoUrl = Storage::disk($disk)->url($record->face_photo_path);
+            } catch (\Throwable $e) {
+                Log::warning('lastPhoto: impossible de générer l\'URL disque', [
+                    'badge_record_id' => $record->id,
+                    'error'           => $e->getMessage(),
+                ]);
+            }
+        }
+
+        if (! $photoUrl && $record->face_photo_base64) {
+            $mime     = $record->face_photo_mime ?: 'image/jpeg';
+            $photoUrl = 'data:' . $mime . ';base64,' . $record->face_photo_base64;
+        }
+
+        if (! $photoUrl) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Photo introuvable (fichier manquant sur le serveur).',
+            ]);
+        }
+
+        return response()->json([
+            'success'     => true,
+            'photo_url'   => $photoUrl,
+            'employee'    => $employee->first_name . ' ' . $employee->last_name,
+            'type'        => $record->type,
+            'recorded_at' => $record->created_at
+                ? Carbon::parse($record->created_at)->setTimezone(self::TZ)->format('d/m/Y à H:i:s')
+                : null,
+        ]);
     }
 
     // =========================================================================
@@ -565,7 +745,7 @@ class PointageController extends Controller
     }
 
     // =========================================================================
-    // exportPdf
+    // exportPdf — supporte jour / semaine / mois
     // =========================================================================
     public function exportPdf(Request $request)
     {
@@ -575,53 +755,63 @@ class PointageController extends Controller
             $tenantId    = $this->getCurrentTenantId();
             $vue         = $request->get('vue', 'tous');
             $shiftFilter = $request->get('shift');
+            $periode     = $request->get('periode', 'jour');
 
-            $allBadgeRecords = BadgeRecord::whereDate('created_at', $currentDate->toDateString())
-                ->orderBy('created_at')
-                ->get()
-                ->groupBy('employee_id');
+            Carbon::setLocale('fr');
 
-            $employees = Employee::active()
-                ->with(['pointages' => function ($q) use ($currentDate, $tenantId) {
-                    $q->withoutGlobalScope(TenantScope::class)
-                      ->where('date', $currentDate->toDateString())
-                      ->where('tenant_id', $tenantId);
-                }])
-                ->when($request->filled('search'),     fn($q) => $q->search($request->search))
-                ->when($request->filled('department'), fn($q) => $q->department($request->department))
-                ->defaultOrder()
-                ->get()
-                ->map(function ($emp) use ($currentDate, $tenantId, $allBadgeRecords) {
-                    $pointage = $emp->pointages->first();
-                    $shift    = $allBadgeRecords->get($emp->id, collect());
-
-                    if ($pointage && in_array($pointage->statut, ['absent', 'absence_injustifiee'])) {
-                        return ['id' => $emp->id, 'nom' => $emp->first_name . ' ' . $emp->last_name, 'department' => $emp->department, 'pointage' => $pointage, 'shift_type' => $this->resolveShiftType($shift, $pointage)];
-                    }
-                    if (! $pointage || ! $pointage->ignore_badge) {
-                        if ($shift->isNotEmpty()) $pointage = $this->syncPointageFromBadgeRecords($emp->id, $currentDate, $shift, $tenantId);
-                    }
-                    return ['id' => $emp->id, 'nom' => $emp->first_name . ' ' . $emp->last_name, 'department' => $emp->department, 'pointage' => $pointage, 'shift_type' => $this->resolveShiftType($shift, $pointage)];
-                });
-
-            if ($vue === 'pointe')         $employees = $employees->filter(fn($e) => $e['pointage']?->heure_entree && ! in_array($e['pointage']->statut ?? '', ['absent']));
-            elseif ($vue === 'non_pointe') $employees = $employees->filter(fn($e) => ! $e['pointage']?->heure_entree || in_array($e['pointage']?->statut ?? '', ['absent', 'pas_de_badge']));
-
-            if (in_array($shiftFilter, ['normal', 'garde'])) {
-                $employees = $employees->filter(fn($e) => $e['shift_type'] === $shiftFilter);
+            switch ($periode) {
+                case 'semaine':
+                    $startDate    = $currentDate->copy()->startOfWeek(Carbon::MONDAY);
+                    $endDate      = $currentDate->copy()->endOfWeek(Carbon::SUNDAY);
+                    $periodeLabel = 'Semaine du ' . $startDate->format('d/m/Y') . ' au ' . $endDate->format('d/m/Y');
+                    break;
+                case 'mois':
+                    $startDate    = $currentDate->copy()->startOfMonth();
+                    $endDate      = $currentDate->copy()->endOfMonth();
+                    $periodeLabel = ucfirst($currentDate->translatedFormat('F Y'));
+                    break;
+                default:
+                    $periode      = 'jour';
+                    $startDate    = $currentDate->copy();
+                    $endDate      = $currentDate->copy();
+                    $periodeLabel = $currentDate->translatedFormat('d F Y');
             }
 
-            if ($employees->isEmpty()) return back()->with('error', 'Aucun résultat avec ces filtres.');
+            $rows = $this->gatherPeriodRows($startDate, $endDate, $tenantId, $request, $vue, $shiftFilter);
 
-            $stats       = ['valides' => $employees->filter(fn($e) => $e['pointage']?->valide)->count(), 'total' => $employees->count()];
-            $dateStr     = $currentDate->format('d/m/Y');
+            if ($rows->isEmpty()) {
+                return back()->with('error', 'Aucun résultat avec ces filtres.');
+            }
+
+            $stats = [
+                'total'        => $rows->count(),
+                'valides'      => $rows->where('valide', true)->count(),
+                'absents'      => $rows->whereIn('statut', ['absent', 'absence_injustifiee'])->count(),
+                'total_heures' => $rows->sum('total_heures_decimal'),
+            ];
+
+            $summary = null;
+            if ($periode !== 'jour') {
+                $summary = $rows->groupBy('nom')->map(function ($group) {
+                    return [
+                        'nom'          => $group->first()['nom'],
+                        'department'   => $group->first()['department'],
+                        'jours'        => $group->whereNotIn('statut', ['absent', 'absence_injustifiee'])->count(),
+                        'absences'     => $group->whereIn('statut', ['absent', 'absence_injustifiee'])->count(),
+                        'total_heures' => $group->sum('total_heures_decimal'),
+                    ];
+                })->values()->sortBy('nom')->values();
+            }
+
             $dept        = $request->get('department', 'Tous');
             $filterInfo  = 'Département: ' . $dept . ' | Vue: ' . ucfirst($vue) . ($shiftFilter ? ' | Shift: ' . $shiftFilter : '');
             $generatedAt = now()->format('d/m/Y H:i');
-            $filename    = 'pointage_' . $currentDate->format('Y-m-d') . '_' . \Illuminate\Support\Str::slug($dept) . '_' . $vue . '.pdf';
+            $filename    = 'pointage_' . $periode . '_' . $startDate->format('Y-m-d') . '_' . \Illuminate\Support\Str::slug($dept) . '.pdf';
 
-            return Pdf::loadView('pdf.pointage', compact('employees', 'stats', 'dateStr', 'filterInfo', 'generatedAt'))
-                ->setPaper('a4', 'portrait')
+            return Pdf::loadView('pointage.pdf', compact(
+                    'rows', 'summary', 'stats', 'periode', 'periodeLabel', 'filterInfo', 'generatedAt'
+                ))
+                ->setPaper('a4', $periode === 'jour' ? 'portrait' : 'landscape')
                 ->setOptions(['isRemoteEnabled' => true, 'defaultFont' => 'DejaVu Sans'])
                 ->download($filename);
 
@@ -629,6 +819,74 @@ class PointageController extends Controller
             Log::error('Pointage PDF error', ['error' => $e->getMessage()]);
             return back()->with('error', 'Erreur PDF: ' . $e->getMessage());
         }
+    }
+
+    private function gatherPeriodRows(
+        Carbon $startDate,
+        Carbon $endDate,
+        mixed $tenantId,
+        Request $request,
+        string $vue,
+        ?string $shiftFilter
+    ): Collection {
+
+        $rows = collect();
+
+        $employeesQuery = Employee::active()
+            ->when($request->filled('search'),     fn($q) => $q->search($request->search))
+            ->when($request->filled('department'), fn($q) => $q->department($request->department))
+            ->defaultOrder();
+
+        $employees = $employeesQuery->get();
+
+        for ($d = $startDate->copy(); $d->lte($endDate); $d->addDay()) {
+
+            $dateStr = $d->toDateString();
+
+            $pointages = Pointage::withoutGlobalScope(TenantScope::class)
+                ->where('date', $dateStr)
+                ->where('tenant_id', $tenantId)
+                ->get()
+                ->keyBy('employee_id');
+
+            $badgeRecords = BadgeRecord::whereDate('created_at', $dateStr)
+                ->orderBy('created_at')
+                ->get()
+                ->groupBy('employee_id');
+
+            foreach ($employees as $emp) {
+                $pointage = $pointages->get($emp->id);
+                $shift    = $badgeRecords->get($emp->id, collect());
+
+                if (! $pointage && $shift->isNotEmpty()) {
+                    $pointage = $this->syncPointageFromBadgeRecords($emp->id, $d, $shift, $tenantId);
+                }
+
+                $shiftType = $this->resolveShiftType($shift, $pointage);
+                $statut    = $pointage?->statut ?? 'pas_de_badge';
+
+                if ($vue === 'pointe' && (! $pointage?->heure_entree || $statut === 'absent')) continue;
+                if ($vue === 'non_pointe' && $pointage?->heure_entree && ! in_array($statut, ['absent', 'pas_de_badge'])) continue;
+                if (in_array($shiftFilter, ['normal', 'garde']) && $shiftType !== $shiftFilter) continue;
+
+                $rows->push([
+                    'date'                 => $d->copy(),
+                    'date_label'           => ucfirst($d->translatedFormat('D d/m')),
+                    'date_full'            => $d->translatedFormat('d/m/Y'),
+                    'nom'                  => $emp->first_name . ' ' . $emp->last_name,
+                    'department'           => $emp->department,
+                    'shift_type'           => $shiftType,
+                    'heure_entree'         => $pointage?->heure_entree,
+                    'heure_sortie'         => $pointage?->heure_sortie,
+                    'total_heures'         => $pointage?->total_heures_formate ?? '-',
+                    'total_heures_decimal' => $pointage?->total_heures ?? 0,
+                    'statut'               => $statut,
+                    'valide'               => $pointage?->valide ?? false,
+                ]);
+            }
+        }
+
+        return $rows->sortBy([['date', 'asc'], ['nom', 'asc']])->values();
     }
 
     // =========================================================================
@@ -699,9 +957,9 @@ class PointageController extends Controller
                 return back()->with('error', 'Aucun employé trouvé.');
             }
 
-            $byDept = $employees->groupBy('department');
+            $byDept      = $employees->groupBy('department');
             $generatedAt = now()->format('d/m/Y H:i');
-            $deptFilter = $request->get('department', 'Tous');
+            $deptFilter  = $request->get('department', 'Tous');
 
             $filename = 'badges-pin_' . now()->format('Y-m-d_H-i-s')
                       . ($deptFilter !== 'Tous' ? '_' . \Illuminate\Support\Str::slug($deptFilter) : '')

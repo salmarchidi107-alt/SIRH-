@@ -11,6 +11,27 @@
 </div>
 
 
+<?php if($errors->any()): ?>
+<div style="
+    background: #fef2f2;
+    border: 2px solid #ef4444;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 16px rgba(239,68,68,0.10);
+">
+    <div style="font-weight:700;color:#991b1b;margin-bottom:8px;font-size:0.95rem;">
+        ⚠️ Veuillez corriger les erreurs suivantes :
+    </div>
+    <ul style="margin:0;padding-left:20px;color:#7f1d1d;font-size:0.9rem;line-height:1.7">
+        <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <li><?php echo e($error); ?></li>
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+    </ul>
+</div>
+<?php endif; ?>
+
+
 <?php if(session('conflict_warning')): ?>
 <div id="conflict-banner" style="
     background: #fffbeb;
@@ -122,31 +143,48 @@
                 <div class="form-group">
                     <label>Employé *</label>
                     <?php if(isset($employee)): ?>
+                        
                         <input type="hidden" name="employee_id" id="employee_id_hidden" value="<?php echo e($employee->id); ?>">
                         <div style="padding:16px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:24px">
                             <h3 style="margin:0 0 8px 0;color:var(--primary);font-size:1.1rem"><?php echo e($employee->full_name); ?></h3>
                             <div style="color:var(--text-muted);font-size:0.875rem"><?php echo e($employee->department); ?> — <?php echo e($employee->position); ?></div>
                         </div>
                     <?php else: ?>
-                        <select id="employee_select" name="employee_id" class="form-control" required>
+                        
+                        <select id="employee_select"
+                                name="employee_id"
+                                class="form-control <?php echo e($errors->has('employee_id') ? 'is-invalid' : ''); ?>"
+                                required
+                                data-old="<?php echo e(old('employee_id', request('employee_id'))); ?>">
                             <option value="">Sélectionner un employé</option>
-                            <?php if($employees ?? []): ?>
-                                <?php $__currentLoopData = $employees; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $emp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                    <option value="<?php echo e($emp->id); ?>"
-                                        <?php echo e(old('employee_id', request('employee_id')) == $emp->id ? 'selected' : ''); ?>>
-                                        <?php echo e($emp->full_name); ?> — <?php echo e($emp->department); ?>
+                            
+                            <?php $__currentLoopData = $employees; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $emp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($emp->id); ?>"
+                                    <?php echo e(old('employee_id', request('employee_id')) == $emp->id ? 'selected' : ''); ?>>
+                                    <?php echo e($emp->full_name); ?> — <?php echo e($emp->department); ?>
 
-                                    </option>
-                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                            <?php endif; ?>
+                                </option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
+                        <?php $__errorArgs = ['employee_id'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px"><?php echo e($message); ?></div>
+                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                     <?php endif; ?>
                 </div>
 
                 
                 <div class="form-group">
                     <label>Type d'absence *</label>
-                    <select name="type" id="type_select" class="form-control" required
+                    <select name="type" id="type_select"
+                            class="form-control <?php echo e($errors->has('type') ? 'is-invalid' : ''); ?>"
+                            required
                             onchange="toggleAutreType(this)">
                         <option value="">Sélectionner le type</option>
                         <?php $__currentLoopData = array_keys(\App\Models\Absence::TYPES); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $type): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
@@ -157,29 +195,72 @@
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         <option value="autre" <?php echo e(old('type') == 'autre' ? 'selected' : ''); ?>>Autre</option>
                     </select>
+                    <?php $__errorArgs = ['type'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                        <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px"><?php echo e($message); ?></div>
+                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                 </div>
 
                 
                 <div class="form-group" id="autre_type_group"
                      style="display:<?php echo e(old('type') == 'autre' ? 'block' : 'none'); ?>">
                     <label>Préciser le type *</label>
-                    <input type="text" name="type_autre" id="type_autre" class="form-control"
+                    <input type="text" name="type_autre" id="type_autre"
+                           class="form-control <?php echo e($errors->has('type_autre') ? 'is-invalid' : ''); ?>"
                            value="<?php echo e(old('type_autre')); ?>"
                            placeholder="Ex : Formation, Mission externe…">
+                    <?php $__errorArgs = ['type_autre'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                        <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px"><?php echo e($message); ?></div>
+                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                 </div>
 
                 
                 <div class="form-group">
                     <label>Date de début *</label>
-                    <input type="date" name="start_date" id="start_date" class="form-control"
+                    <input type="date" name="start_date" id="start_date"
+                           class="form-control <?php echo e($errors->has('start_date') ? 'is-invalid' : ''); ?>"
                            value="<?php echo e(old('start_date')); ?>" required>
+                    <?php $__errorArgs = ['start_date'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                        <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px"><?php echo e($message); ?></div>
+                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                 </div>
 
                 
                 <div class="form-group">
                     <label>Date de fin *</label>
-                    <input type="date" name="end_date" id="end_date" class="form-control"
+                    <input type="date" name="end_date" id="end_date"
+                           class="form-control <?php echo e($errors->has('end_date') ? 'is-invalid' : ''); ?>"
                            value="<?php echo e(old('end_date')); ?>" required>
+                    <?php $__errorArgs = ['end_date'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                        <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px"><?php echo e($message); ?></div>
+                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                 </div>
 
                 
@@ -206,12 +287,6 @@
                     </select>
                 </div>
 
-                
-                <div class="form-group full">
-                    <label>Notes supplémentaires</label>
-                    <textarea name="notes" class="form-control" rows="2"><?php echo e(old('notes')); ?></textarea>
-                </div>
-
             </div>
         </div>
     </div>
@@ -233,8 +308,8 @@
 /* ─────────────────────────────────────────────────────────────
    Données passées depuis le contrôleur
    ───────────────────────────────────────────────────────────── */
-var employees       = <?php echo json_encode($employeeOptions, 15, 512) ?>;
-var selfConflicts   = <?php echo json_encode($selfConflicts ?? [], 15, 512) ?>;
+var employees     = <?php echo json_encode($employeeOptions, 15, 512) ?>;
+var selfConflicts = <?php echo json_encode($selfConflicts ?? [], 15, 512) ?>;
 
 /* ─────────────────────────────────────────────────────────────
    Confirmer malgré le conflit (autre employé)
@@ -261,7 +336,7 @@ function toggleAutreType(select) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Helpers : obtenir l'employé_id sélectionné
+   Helpers : obtenir l'employee_id sélectionné
    ───────────────────────────────────────────────────────────── */
 function getSelectedEmployeeId() {
     var sel = document.getElementById('employee_select');
@@ -275,12 +350,12 @@ function getSelectedEmployeeId() {
    Filtre remplacement : exclut l'employé sélectionné
    ───────────────────────────────────────────────────────────── */
 function renderReplacementOptions(excludeId) {
-    var select = document.getElementById('replacement_select');
+    var select  = document.getElementById('replacement_select');
     if (!select) return;
     var current = select.value;
     select.innerHTML = '<option value="">Aucun</option>';
     employees.forEach(function(emp) {
-        if (String(emp.id) === String(excludeId)) return; // exclure
+        if (String(emp.id) === String(excludeId)) return;
         var opt = document.createElement('option');
         opt.value = emp.id;
         opt.textContent = emp.label;
@@ -290,12 +365,17 @@ function renderReplacementOptions(excludeId) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Filtre département → employés + remplacement
+   Filtre département → reconstruit la liste des employés
+   FIX : restaure old('employee_id') via data-old après rebuild
    ───────────────────────────────────────────────────────────── */
 function renderEmployeeOptions(filtered) {
     var select = document.getElementById('employee_select');
     if (!select) return;
-    var current = select.value;
+
+    // ── FIX : priorité à data-old (valeur PHP old()), sinon valeur courante
+    var oldId   = select.getAttribute('data-old') || '';
+    var current = select.value || oldId;
+
     select.innerHTML = '<option value="">Sélectionner un employé</option>';
     filtered.forEach(function(emp) {
         var opt = document.createElement('option');
@@ -304,7 +384,11 @@ function renderEmployeeOptions(filtered) {
         if (String(emp.id) === String(current)) opt.selected = true;
         select.appendChild(opt);
     });
-    // Rafraîchir le remplacement en excluant la sélection courante
+
+    // ── FIX : une fois restaurée, vider data-old pour ne pas bloquer
+    //          les changements manuels ultérieurs
+    select.removeAttribute('data-old');
+
     renderReplacementOptions(select.value);
 }
 
@@ -312,11 +396,11 @@ function renderEmployeeOptions(filtered) {
    Détection conflit propre (même employé, dates communes)
    ───────────────────────────────────────────────────────────── */
 function checkSelfConflict() {
-    var empId     = getSelectedEmployeeId();
-    var startVal  = document.getElementById('start_date').value;
-    var endVal    = document.getElementById('end_date').value;
-    var banner    = document.getElementById('self-conflict-banner');
-    var detail    = document.getElementById('self-conflict-detail');
+    var empId    = getSelectedEmployeeId();
+    var startVal = document.getElementById('start_date').value;
+    var endVal   = document.getElementById('end_date').value;
+    var banner   = document.getElementById('self-conflict-banner');
+    var detail   = document.getElementById('self-conflict-detail');
 
     if (!empId || !startVal || !endVal) {
         banner.style.display = 'none';
@@ -330,7 +414,6 @@ function checkSelfConflict() {
         if (String(c.employee_id) !== String(empId)) return false;
         var cStart = new Date(c.start_date);
         var cEnd   = new Date(c.end_date);
-        // chevauchement si les périodes se croisent
         return newStart <= cEnd && newEnd >= cStart;
     });
 
@@ -356,13 +439,15 @@ document.addEventListener('DOMContentLoaded', function() {
     function filterByDepartment() {
         if (!departmentSelect) return;
         var dep      = departmentSelect.value;
-        var filtered = dep ? employees.filter(function(e) { return e.department === dep; }) : employees;
+        var filtered = dep
+            ? employees.filter(function(e) { return e.department === dep; })
+            : employees;
         renderEmployeeOptions(filtered);
     }
 
     if (departmentSelect) {
         departmentSelect.addEventListener('change', filterByDepartment);
-        filterByDepartment(); // état initial
+        filterByDepartment(); // état initial — restaure aussi old('employee_id')
     }
 
     /* Mise à jour du remplacement quand on change d'employé */

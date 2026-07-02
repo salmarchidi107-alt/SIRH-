@@ -98,15 +98,6 @@
     $taux_amo  = $cur === 'MRU' ? '4%'   : '2,26%';
     $label_amo = $cur === 'MRU' ? 'CNAM' : 'AMO';
     $label_ir  = $cur === 'MRU' ? 'ITS'  : 'IR';
-    @foreach($variableRetenues as $ve)
-<tr>
-    <td class="col-libelle">{{ $ve->label }}</td>
-    <td class="col-nbre-taux"></td>
-    <td class="col-gain"></td>
-    <td class="col-total"></td>
-    <td class="col-retenues">{{ number_format($ve->amount, 2, ',', ' ') }}</td>
-</tr>
-@endforeach
 
     // Société (depuis tenant ou config)
     $tenant       = auth()->user()?->tenant;

@@ -309,7 +309,7 @@ class EmployeeController extends Controller
     }
 
     // =========================================================================
-    // update — ✅ CORRIGÉ : ordre logique, photo gérée, Hash::make appliqué
+    // update: ordre logique, photo gérée, Hash::make appliqué
     // =========================================================================
     public function update(UpdateEmployeeRequest $request, Employee $employee)
     {

@@ -378,7 +378,7 @@
     <a href="{{ route('badge.pointage') }}" class="login-back">← Retour</a>
 
     <div class="type-pill {{ $intent }}">
-      {!! $intent === 'entree' ? '📥 Entrée' : '📤 Sortie' !!}
+      {!! $intent === 'entree' ? ' Entrée' : ' Sortie' !!}
     </div>
     <div class="login-title">
       {{ $intent === 'entree' ? 'Pointage Entrée' : 'Pointage Sortie' }}
@@ -735,7 +735,7 @@ document.getElementById('authForm').addEventListener('submit', function(e){
     e.preventDefault();
     pendingSubmit = true;
     var btn = document.getElementById('submitBtn');
-    btn.textContent = '⏳ Localisation…'; btn.style.opacity = '.75'; btn.style.cursor = 'wait';
+    btn.textContent = 'Localisation…'; btn.style.opacity = '.75'; btn.style.cursor = 'wait';
   }
 });
 

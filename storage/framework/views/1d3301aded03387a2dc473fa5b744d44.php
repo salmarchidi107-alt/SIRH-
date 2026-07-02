@@ -136,6 +136,9 @@ const EXISTING = {
     absence_override:         <?php echo e($existing && $existing->absence_deduction > 0 ? 1 : 0); ?>,
     ir_deduction:             <?php echo e((float) ($existing?->ir_deduction ?? 0)); ?>,
     ir_override:              <?php echo e($existing && $existing->ir_deduction > 0 ? 1 : 0); ?>,
+    
+    overtime_day_hours:       <?php echo e((float) ($existing?->overtime_hours_day ?? $workingData['overtime_day'] ?? 0)); ?>,
+    overtime_day_override:    <?php echo e($existing && $existing->overtime_day_override ? 1 : 0); ?>,
 };
 const GARDE_SHIFTS    = <?php echo json_encode($workingData['garde_shifts']    ?? [], 15, 512) ?>;
 const VAR_GAINS    = <?php echo e($variableElements->where('type','gain')->sum('amount')); ?>;
@@ -183,8 +186,10 @@ const DELAY_SHIFTS    = <?php echo json_encode($workingData['delay_shifts']    ?
 <input type="hidden" name="garde_hours"             id="h_garde_hours">
 <input type="hidden" name="hourly_rate"             id="h_hourly_rate">
 <input type="hidden" name="currency"                id="h_currency" value="MAD">
-<input type="hidden" name="garde_indemnite"         id="h_garde_indemnite" value="<?php echo e(old('garde_indemnite', $existing?->garde_indemnite ?? 0)); ?>">
-<input type="hidden" name="garde_override"          id="h_garde_override"  value="<?php echo e(old('garde_override',  $existing?->garde_override  ?? 0)); ?>">
+
+<input type="hidden" name="garde_indemnite" id="h_garde_indemnite" value="0">
+<input type="hidden" name="garde_override"  id="h_garde_override"  value="0">
+<input type="hidden" name="overtime_day_override" id="h_overtime_day_override" value="0">
 
 
 <div class="card mb-4" style="border-left:4px solid var(--primary)">
@@ -360,8 +365,39 @@ const DELAY_SHIFTS    = <?php echo json_encode($workingData['delay_shifts']    ?
                             </div>
                             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;background:#fffbeb">
                                 <div style="padding:10px 14px;border-right:1px solid #fde68a">
-                                    <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Jour +25%</div>
-                                    <div style="font-size:1.1rem;font-weight:700;color:#d97706" id="ot-day-h-disp"><?php echo e($workingData['overtime_day'] ?? 0); ?> h</div>
+                                    <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+                                        Jour +25%
+                                        <span id="ot-day-override-badge"
+                                              style="display:none;background:#fef3c7;border:1px solid #fcd34d;color:#92400e;
+                                                     padding:1px 6px;border-radius:20px;font-size:0.6rem;font-weight:700;">
+                                            ✎ modifié
+                                        </span>
+                                    </div>
+                                    <div id="ot-day-h-disp"
+                                         onclick="toggleOtDayEdit(true)"
+                                         title="Cliquer pour modifier manuellement"
+                                         style="font-size:1.1rem;font-weight:700;color:#d97706;cursor:pointer;
+                                                display:inline-block;padding:2px 8px;border-radius:6px;
+                                                border:1px dashed rgba(217,119,6,0.4);transition:all 0.2s;"
+                                         onmouseover="this.style.background='#fef3c7'"
+                                         onmouseout="if(!otDayEditMode)this.style.background='transparent'">
+                                        <?php echo e($workingData['overtime_day'] ?? 0); ?> h
+                                    </div>
+                                    <div id="ot-day-input-wrap" style="display:none;margin-top:4px">
+                                        <input type="number" id="ot_day_h_input" class="form-control" step="0.5" min="0"
+                                               style="font-size:0.8rem;border-color:#d97706;border-width:2px" placeholder="0"
+                                               oninput="onOtDayManualChange()">
+                                        <div style="display:flex;gap:4px;margin-top:4px">
+                                            <button type="button" onclick="resetOtDayAuto()"
+                                                    style="flex:1;font-size:0.65rem;padding:3px 6px;border:1px solid #fcd34d;background:white;color:#92400e;border-radius:5px;cursor:pointer;font-weight:600">
+                                                ↺ Auto
+                                            </button>
+                                            <button type="button" onclick="toggleOtDayEdit(false)"
+                                                    style="flex:1;font-size:0.65rem;padding:3px 6px;border:1px solid #d97706;background:#d97706;color:white;border-radius:5px;cursor:pointer;font-weight:600">
+                                                ✓ OK
+                                            </button>
+                                        </div>
+                                    </div>
                                     <div style="font-size:0.72rem;color:var(--text-muted)" id="ot-day-amt-disp">= 0,00 <span class="cur-label">MAD</span></div>
                                 </div>
                                 <div style="padding:10px 14px;border-right:1px solid #fde68a">
@@ -484,6 +520,7 @@ const DELAY_SHIFTS    = <?php echo json_encode($workingData['delay_shifts']    ?
                                    step="0.01" min="0" style="text-align:right" oninput="calculate()">
                         </td>
                     </tr>
+
 <?php if($variableElements->where('type','gain')->count()): ?>
 <tr style="background:#f0fff4">
     <td colspan="2" style="padding:9px 14px">
@@ -678,7 +715,8 @@ const DELAY_SHIFTS    = <?php echo json_encode($workingData['delay_shifts']    ?
                         <td style="padding:9px 14px"><div style="font-weight:600">Autres retenues</div></td>
                         <td style="padding:9px 14px"><input type="number" name="other_deductions" id="other_deductions" class="form-control" value="<?php echo e(old('other_deductions', $existing?->other_deductions ?? 0)); ?>" step="0.01" min="0" style="text-align:right" oninput="calculate()"></td>
                     </tr>
-                    <?php if($variableElements->where('type','retenue')->count()): ?>
+
+<?php if($variableElements->where('type','retenue')->count()): ?>
 <tr style="background:#fff0f0">
     <td colspan="2" style="padding:9px 14px">
         <div style="font-weight:600;font-size:0.78rem;color:#991b1b;margin-bottom:5px">Éléments variables (retenues)</div>
@@ -691,6 +729,7 @@ const DELAY_SHIFTS    = <?php echo json_encode($workingData['delay_shifts']    ?
     </td>
 </tr>
 <?php endif; ?>
+
                     <tr style="background:#fecaca;border-top:2px solid #f87171">
                         <td style="padding:11px 14px;font-weight:700;color:#991b1b">TOTAL RETENUES</td>
                         <td style="padding:11px 14px;text-align:right;font-weight:700;color:#991b1b;font-size:1rem" id="ret-total-display">0,00 <span class="cur-label">MAD</span></td>
@@ -744,15 +783,21 @@ var gardeAutoValue = 0;
 var isGardeOverride = EXISTING.garde_override === 1;
 var gardeManual     = isGardeOverride ? EXISTING.garde_indemnite : 0;
 
-// Absence — override comme la garde
-var absenceAutoValue = 0;
+// Absence
+var absenceAutoValue  = 0;
 var isAbsenceOverride = EXISTING.absence_override === 1;
 var absenceManual     = isAbsenceOverride ? EXISTING.absence_deduction : 0;
 
-// IR — override comme la garde
-var irAutoValue    = 0;
-var isIrOverride   = EXISTING.ir_override === 1;
-var irManual       = isIrOverride ? EXISTING.ir_deduction : 0;
+// IR
+var irAutoValue  = 0;
+var isIrOverride = EXISTING.ir_override === 1;
+var irManual     = isIrOverride ? EXISTING.ir_deduction : 0;
+
+// Heures supp. jour (+25%)
+var otDayEditMode   = false;
+var otDayAutoValue  = EMPLOYEE_DATA.ot_day;
+var isOtDayOverride = EXISTING.overtime_day_override === 1;
+var otDayManual      = isOtDayOverride ? EXISTING.overtime_day_hours : EMPLOYEE_DATA.ot_day;
 
 var SYS = {
     MAD:{CNSS_SAL:0.0448,CNSS_PLAFOND:6000,AMO_SAL:0.0226,FP_RATE:0.20,FP_MAX:2500,HAS_FP:true,CNSS_PAT:0.1029,AMO_PAT:0.0226,TFP:0.016,HAS_TFP:true,HEURES_REF:191.25,
@@ -778,6 +823,60 @@ function fmt(n){return parseFloat(n.toFixed(2)).toLocaleString('fr-FR',{minimumF
 function setHTML(id,val){var el=document.getElementById(id);if(el)el.innerHTML=val+' <span class="cur-label">'+currentSystem+'</span>';}
 function setText(id,val){var el=document.getElementById(id);if(el)el.textContent=val;}
 function getVal(id){return parseFloat(document.getElementById(id).value)||0;}
+
+/* ══════════════════════════════════════════════════════════════════
+   HEURES SUPP. JOUR (+25%) — override
+══════════════════════════════════════════════════════════════════ */
+function toggleOtDayEdit(open) {
+    otDayEditMode = open;
+    document.getElementById('ot-day-h-disp').style.display     = open ? 'none' : 'inline-block';
+    document.getElementById('ot-day-input-wrap').style.display  = open ? 'block' : 'none';
+
+    if (open) {
+        var inp = document.getElementById('ot_day_h_input');
+        inp.value = (isOtDayOverride ? otDayManual : otDayAutoValue).toFixed(2);
+        setTimeout(function(){ inp.focus(); inp.select(); }, 30);
+    } else {
+        var val = parseFloat(document.getElementById('ot_day_h_input').value) || 0;
+        if (Math.abs(val - otDayAutoValue) > 0.001) {
+            otDayManual     = val;
+            isOtDayOverride = true;
+        }
+        updateOtDayDisplay(isOtDayOverride ? otDayManual : otDayAutoValue);
+        calculate();
+    }
+}
+
+function onOtDayManualChange() {
+    var v = parseFloat(document.getElementById('ot_day_h_input').value) || 0;
+    otDayManual     = v;
+    isOtDayOverride = true;
+    updateOtDayDisplay(v);
+    calculate();
+}
+
+function resetOtDayAuto() {
+    isOtDayOverride = false;
+    otDayManual     = otDayAutoValue;
+    var inp = document.getElementById('ot_day_h_input');
+    if (inp) inp.value = otDayAutoValue.toFixed(2);
+    updateOtDayDisplay(otDayAutoValue);
+    toggleOtDayEdit(false);
+    calculate();
+}
+
+function updateOtDayDisplay(hours) {
+    var disp = document.getElementById('ot-day-h-disp');
+    if (disp) {
+        disp.textContent       = fmt(hours) + ' h';
+        disp.style.background  = isOtDayOverride ? '#fef3c7' : 'transparent';
+        disp.style.borderColor = isOtDayOverride ? '#fcd34d' : 'rgba(217,119,6,0.4)';
+        disp.style.borderStyle = isOtDayOverride ? 'solid'   : 'dashed';
+    }
+    var badge = document.getElementById('ot-day-override-badge');
+    if (badge) badge.style.display = isOtDayOverride ? 'inline-flex' : 'none';
+    document.getElementById('h_overtime_day_override').value = isOtDayOverride ? '1' : '0';
+}
 
 /* ══════════════════════════════════════════════════════════════════
    ABSENCE — override
@@ -993,10 +1092,19 @@ function toggleGardeEdit(open) {
     gardeEditMode = open;
     document.getElementById('garde-gain-display').style.display = open ? 'none' : 'block';
     document.getElementById('garde-input-wrap').style.display   = open ? 'block' : 'none';
+
     if (open) {
         var inp = document.getElementById('garde_indemnite_input');
         inp.value = (isGardeOverride ? gardeManual : gardeAutoValue).toFixed(2);
         setTimeout(function(){ inp.focus(); inp.select(); }, 30);
+    } else {
+        var val = parseFloat(document.getElementById('garde_indemnite_input').value) || 0;
+        if (Math.abs(val - gardeAutoValue) > 0.001) {
+            gardeManual     = val;
+            isGardeOverride = true;
+        }
+        updateGardeDisplay(isGardeOverride ? gardeManual : gardeAutoValue);
+        calculate();
     }
 }
 
@@ -1047,6 +1155,7 @@ function updateGardeDisplay(amount) {
     }
     document.getElementById('h_garde_indemnite').value = amount.toFixed(2);
     document.getElementById('h_garde_override').value  = isGardeOverride ? '1' : '0';
+
     var badge = document.getElementById('garde-override-badge');
     if (badge) badge.style.display = isGardeOverride ? 'inline-flex' : 'none';
 }
@@ -1158,13 +1267,11 @@ function onTypeChange() {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   CALCULATE — clé : si override=true, la valeur manuelle
-   est PROTÉGÉE et jamais réinitialisée par le calcul auto.
+   CALCULATE
 ══════════════════════════════════════════════════════════════════ */
 function calculate() {
     var S      = SYS[currentSystem];
     var workH  = EMPLOYEE_DATA.working_hours;
-    var otDayH = EMPLOYEE_DATA.ot_day;
     var absH   = EMPLOYEE_DATA.absence_hours;
     var delayH = EMPLOYEE_DATA.delay_hours;
     var gardeH = EMPLOYEE_DATA.garde_hours;
@@ -1172,13 +1279,23 @@ function calculate() {
     var otNightH = getVal('ot_night_h');
     var otWkndH  = getVal('ot_wknd_h');
 
+    // ── Jour +25% : calcule l'auto mais PROTÈGE la valeur manuelle ──
+    otDayAutoValue = EMPLOYEE_DATA.ot_day;
+    var otDayH;
+    if (isOtDayOverride) {
+        otDayH = otDayManual;
+    } else {
+        otDayManual = otDayAutoValue;
+        otDayH      = otDayAutoValue;
+    }
+
     setText('disp-working', workH+' h');
-    setText('disp-ot-day',  otDayH+' h');
+    setText('disp-ot-day',  EMPLOYEE_DATA.ot_day+' h');
     setText('disp-abs',     absH+' h');
     setText('disp-delay',   delayH+' h');
     document.getElementById('disp-garde-days').innerHTML = gardeD+'<span style="font-size:1rem;font-weight:500"> j</span>';
     setText('disp-garde-sub', fmt(gardeH)+' h au total');
-    setText('ot-day-h-disp',   otDayH+' h');
+    updateOtDayDisplay(otDayH);
     setText('ot-night-h-disp', otNightH+' h');
     setText('ot-wknd-h-disp',  otWkndH+' h');
 
@@ -1229,7 +1346,6 @@ function calculate() {
     } else {
         absenceManual = absenceAutoValue;
         absDeduction  = absenceAutoValue;
-        // ne mettre à jour l'input que si l'utilisateur ne le tape pas
         var absInp = document.getElementById('absence-input');
         if (absInp && document.activeElement !== absInp) {
             absInp.value = absenceAutoValue.toFixed(2);
@@ -1237,7 +1353,6 @@ function calculate() {
     }
     updateAbsenceDisplay(absDeduction);
 
-    // Mise à jour du texte descriptif
     document.getElementById('absence-sub').innerHTML =
         '('+fmt(baseSalary)+' / <span id="heures-ref-label">'+S.hr_lbl+'</span> h) × '+absH+' h'
         +(isAbsenceOverride ? ' <em style="color:#f59e0b">(modifié)</em>' : ' = '+fmt(absenceAutoValue)+' '+currentSystem);
@@ -1249,12 +1364,12 @@ function calculate() {
     var responsibility = getVal('responsibility_allowance');
     var otherGains     = getVal('other_gains');
 
-   var grossSalary = Math.max(0,
-    baseSalary + seniority + totalOT + gardeAmt
-    + perfBonus + transport + meal + housing + responsibility + otherGains
-    + VAR_GAINS
-    - absDeduction
-);
+    var grossSalary = Math.max(0,
+        baseSalary + seniority + totalOT + gardeAmt
+        + perfBonus + transport + meal + housing + responsibility + otherGains
+        + VAR_GAINS
+        - absDeduction
+    );
     setText('gross-display', fmt(grossSalary));
 
     if (currentSystem==='MAD') setText('cnss-sub','4,48% x min('+fmt(grossSalary)+', 6 000) = '+fmt(Math.min(grossSalary,6000)*0.0448)+' MAD');
@@ -1307,10 +1422,10 @@ function calculate() {
     }
     updateIrDisplay(irMensuel);
 
-var totalRet = getVal('advance_deduction') + getVal('loan_deduction')
-             + getVal('garnishment_deduction') + getVal('other_deductions')
-             + VAR_RETENUES;
-                 setHTML('ret-total-display',fmt(totalRet));
+    var totalRet = getVal('advance_deduction') + getVal('loan_deduction')
+                 + getVal('garnishment_deduction') + getVal('other_deductions')
+                 + VAR_RETENUES;
+    setHTML('ret-total-display',fmt(totalRet));
 
     var netSalary=Math.max(0,grossSalary-totalCot-fp-irMensuel-totalRet);
     setText('net-display',fmt(netSalary));
@@ -1323,7 +1438,7 @@ var totalRet = getVal('advance_deduction') + getVal('loan_deduction')
     setText('emp-cnss',fmt(empCnss));setText('emp-amo',fmt(empAmo));setText('emp-tfp',fmt(empTfp));
     setHTML('emp-total',fmt(empTotal));
 
-    // ── Hidden fields ──────────────────────────────────────────
+    // ── Hidden fields ──
     document.getElementById('h_gross_salary').value        = grossSalary.toFixed(2);
     document.getElementById('h_seniority_bonus').value     = seniority.toFixed(2);
     document.getElementById('h_ot_day_amount').value       = otDayAmt.toFixed(2);
@@ -1354,6 +1469,30 @@ var totalRet = getVal('advance_deduction') + getVal('loan_deduction')
     document.getElementById('h_garde_hours').value         = gardeH.toFixed(2);
     document.getElementById('h_hourly_rate').value         = (isHourly?hourlyRate:0).toFixed(2);
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   SÉCURITÉ SUBMIT — forcer les valeurs correctes au moment du submit
+   (dernière protection contre tout état désynchronisé)
+══════════════════════════════════════════════════════════════════ */
+document.getElementById('salaryForm').addEventListener('submit', function() {
+    document.getElementById('h_garde_indemnite').value = isGardeOverride
+        ? gardeManual.toFixed(2)
+        : gardeAutoValue.toFixed(2);
+    document.getElementById('h_garde_override').value  = isGardeOverride ? '1' : '0';
+
+    document.getElementById('h_absence_deduction').value = isAbsenceOverride
+        ? absenceManual.toFixed(2)
+        : absenceAutoValue.toFixed(2);
+
+    document.getElementById('h_ir_deduction').value = isIrOverride
+        ? irManual.toFixed(2)
+        : irAutoValue.toFixed(2);
+
+    document.getElementById('h_ot_day_h').value = isOtDayOverride
+        ? otDayManual.toFixed(2)
+        : otDayAutoValue.toFixed(2);
+    document.getElementById('h_overtime_day_override').value = isOtDayOverride ? '1' : '0';
+});
 
 /* ══════════════════════════════════════════════════════════════════
    INIT
@@ -1393,6 +1532,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if(isIrOverride && irManual > 0){
             document.getElementById('ir-monthly-input').value = irManual.toFixed(2);
             updateIrDisplay(irManual);
+        }
+
+        // Restaurer Jour +25% manuel
+        if(isOtDayOverride){
+            updateOtDayDisplay(otDayManual);
         }
     }, 0);
 });

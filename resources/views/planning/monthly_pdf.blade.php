@@ -192,7 +192,7 @@
         <p>Période : <strong>{{ $startOfMonth->day }} {{ $moisLongFr[$month] }} {{ $year }} — {{ $endOfMonth->day }} {{ $moisLongFr[$month] }} {{ $year }}</strong></p>
         <p>Nombre d'employés : <strong>{{ count($employees) }}</strong></p>
 
-        {{-- ✅ Filtres actifs affichés comme badges --}}
+        {{--  Filtres actifs affichés comme badges --}}
         @if($hasFilter)
             <div class="filters">
                 @if(!empty($department))

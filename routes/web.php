@@ -224,6 +224,7 @@ Route::middleware(['web', 'auth', 'identify-tenant', '2fa'])->group(function () 
             Route::post('/pointage/valider-journee',           [PointageController::class, 'validerJournee'])    ->name('pointage.valider-journee');
             Route::post('/pointage/{pointage}/toggle-valider', [PointageController::class, 'toggleValider'])     ->name('pointage.toggle-valider');
             Route::post('/pointage/{pointage}/toggle-ignore',  [PointageController::class, 'toggleIgnore'])      ->name('pointage.toggle-ignore');
+            Route::get('/pointage/{employee}/last-photo',      [PointageController::class, 'lastPhoto'])         ->name('pointage.last-photo')->where('employee', '[0-9]+');
             Route::put('/pointage/{pointage}',                 [PointageController::class, 'update'])            ->name('pointage.update');
             Route::post('/pointage/toggle-absence',            [PointageController::class, 'toggleAbsence'])     ->name('pointage.toggle-absence');
             Route::get('/pointage/export',                     [PointageController::class, 'export'])            ->name('pointage.export');
@@ -458,4 +459,9 @@ Route::prefix('badge')->name('badge.')->group(function () {
         Route::get('/result',    [BadgePointageController::class,  'result'])      ->name('result');
         Route::post('/geo/save', [BadgeAuthController::class,      'saveGeo'])     ->name('geo.save');
     });
+});
+Route::middleware(['auth'])->group(function () {
+    Route::get('/parametrage/site-location',         [\App\Http\Controllers\SiteLocationController::class, 'index'])  ->name('site-location.index');
+    Route::post('/parametrage/site-location',        [\App\Http\Controllers\SiteLocationController::class, 'store'])  ->name('site-location.store');
+    Route::delete('/parametrage/site-location/{id}', [\App\Http\Controllers\SiteLocationController::class, 'destroy'])->name('site-location.destroy');
 });

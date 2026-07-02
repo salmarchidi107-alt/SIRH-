@@ -100,8 +100,8 @@
                         <label>Unité</label>
                         <select name="unit" class="form-control">
                             <option value="MAD">MAD</option>
-                            <option value="jours">Jours</option>
-                            <option value="heures">Heures</option>
+                            <option value="jours">MRU</option>
+
                         </select>
                     </div>
                 </div>

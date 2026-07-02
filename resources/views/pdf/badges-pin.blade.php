@@ -1,9 +1,7 @@
-{{-- resources/views/pdf/badges-pin.blade.php --}}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Badges PIN</title>
     <style>
         * {
@@ -24,48 +22,48 @@
             max-width: 100%;
         }
 
-        /* En-tête */
+        /* En-tête — fond blanc, juste une bordure, pas de gros padding */
         .header {
-            background: linear-gradient(135deg, #7c3aed 0%, #0d9488 100%);
-            color: #fff;
-            padding: 30px;
-            margin-bottom: 30px;
-            border-radius: 8px;
-            text-align: center;
+            background: #fff;
+            color: #1f2937;
+            padding: 8px 0 14px 0;
+            margin-bottom: 18px;
+            border-bottom: 2px solid #b5b4b7;
+            text-align: left;
         }
 
         .header h1 {
-            font-size: 28px;
+            font-size: 20px;
             font-weight: 700;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
+            color: #1f2937;
         }
 
         .header p {
-            font-size: 12px;
-            opacity: 0.9;
+            font-size: 11px;
+            color: #6b7280;
         }
 
         /* Info filtre */
         .filter-info {
             background: #f3f4f6;
-            padding: 12px 16px;
+            padding: 10px 14px;
             border-radius: 6px;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             font-size: 11px;
             color: #6b7280;
         }
 
         /* Département card */
         .dept-section {
-            margin-bottom: 25px;
-            page-break-inside: avoid;
+            margin-bottom: 22px;
         }
 
         .dept-header {
             background: #f9fafb;
-            border-left: 4px solid #7c3aed;
-            padding: 12px 16px;
-            margin-bottom: 12px;
+            border-left: 4px solid #b5b4b7;
+            padding: 10px 14px;
+            margin-bottom: 10px;
             border-radius: 4px;
         }
 
@@ -143,8 +141,8 @@
             font-size: 13px;
             font-weight: 700;
             letter-spacing: 2px;
-            background: linear-gradient(135deg, #f5f3ff 0%, #f0fdfa 100%);
-            color: #7c3aed;
+            background: #f5f3ff;
+            color: #b5b4b7;
             padding: 6px 10px;
             border-radius: 5px;
             border: 1px solid #e9d5ff;
@@ -155,32 +153,17 @@
 
         /* Footer */
         .footer {
-            margin-top: 30px;
-            padding-top: 15px;
+            margin-top: 25px;
+            padding-top: 12px;
             border-top: 1px solid #e5e7eb;
             font-size: 10px;
             color: #9ca3af;
             text-align: right;
         }
 
-        /* Page break */
-        .dept-section:nth-child(2n) {
-            margin-bottom: 30px;
-        }
-
         @page {
             margin: 10mm;
             size: A4;
-        }
-
-        @media print {
-            body {
-                background: #fff;
-            }
-            .dept-section {
-                page-break-inside: avoid;
-                margin-bottom: 20px;
-            }
         }
     </style>
 </head>
@@ -188,9 +171,9 @@
     <div class="container">
         {{-- En-tête --}}
         <div class="header">
-            <h1>🔐 BADGES PIN</h1>
-            <p>Listing des codes PIN d'accès badges</p>
-        </div>
+    <h1>{{ $tenant?->name ?? config('app.name') }}</h1>
+    <p>BADGES PIN - Liste des codes PIN d'accès badges</p>
+</div>
 
         {{-- Info filtre --}}
         @if($deptFilter !== 'Tous')

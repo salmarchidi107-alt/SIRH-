@@ -9,35 +9,72 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // 1. Supprimer les FK qui s'appuient sur l'index unique
-        Schema::table('plannings', function (Blueprint $table) {
-            $table->dropForeign('plannings_employee_id_foreign');
-            $table->dropForeign('plannings_tenant_id_foreign');
-        });
+        $this->dropForeignKeyOnColumn('plannings', 'employee_id');
 
-        // 2. Supprimer l'index unique
-        Schema::table('plannings', function (Blueprint $table) {
-            $table->dropIndex('plannings_employee_id_date_tenant_unique');
-        });
+        $this->dropForeignKeyOnColumn('plannings', 'tenant_id');
 
-        // 3. Recréer les FK sans l'index unique
+        try {
+            Schema::table('plannings', function (Blueprint $table) {
+                $table->dropUnique('plannings_employee_id_date_tenant_unique');
+            });
+        } catch (\Throwable $e) {
+        }
+
         Schema::table('plannings', function (Blueprint $table) {
-            $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
-            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
+            if (!$this->hasForeignKeyOnColumn('plannings', 'employee_id')) {
+                $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
+            }
+            if (!$this->hasForeignKeyOnColumn('plannings', 'tenant_id')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
+            }
         });
     }
 
     public function down(): void
     {
-        Schema::table('plannings', function (Blueprint $table) {
-            $table->dropForeign('plannings_employee_id_foreign');
-            $table->dropForeign('plannings_tenant_id_foreign');
-        });
+        $this->dropForeignKeyOnColumn('plannings', 'employee_id');
+        $this->dropForeignKeyOnColumn('plannings', 'tenant_id');
 
         Schema::table('plannings', function (Blueprint $table) {
             $table->unique(['employee_id', 'date', 'tenant_id'], 'plannings_employee_id_date_tenant_unique');
             $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
             $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
         });
+    }
+
+
+    private function dropForeignKeyOnColumn(string $table, string $column): void
+    {
+        $dbName = DB::getDatabaseName();
+
+        $constraints = DB::select("
+            SELECT CONSTRAINT_NAME
+            FROM information_schema.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = ?
+              AND TABLE_NAME = ?
+              AND COLUMN_NAME = ?
+              AND REFERENCED_TABLE_NAME IS NOT NULL
+        ", [$dbName, $table, $column]);
+
+        foreach ($constraints as $constraint) {
+            DB::statement("ALTER TABLE `{$table}` DROP FOREIGN KEY `{$constraint->CONSTRAINT_NAME}`");
+        }
+    }
+
+
+    private function hasForeignKeyOnColumn(string $table, string $column): bool
+    {
+        $dbName = DB::getDatabaseName();
+
+        $result = DB::select("
+            SELECT COUNT(*) as cnt
+            FROM information_schema.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = ?
+              AND TABLE_NAME = ?
+              AND COLUMN_NAME = ?
+              AND REFERENCED_TABLE_NAME IS NOT NULL
+        ", [$dbName, $table, $column]);
+
+        return ($result[0]->cnt ?? 0) > 0;
     }
 };

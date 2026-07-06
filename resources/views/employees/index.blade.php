@@ -42,13 +42,17 @@
 <!-- Filter Buttons: Tous / Actifs -->
 <div class="filters-bar">
     <div style="display:flex;gap:8px;flex-direction:row-reverse">
-        <a href="{{ route('employees.index', ['filter' => 'all']) }}"
-           class="btn {{ ($filter ?? 'all') == 'all' ? 'btn-primary' : 'btn-outline' }}">
-            Tous
+        <a href="{{ route('employees.index', ['filter' => 'inactive']) }}"
+           class="btn {{ ($filter ?? 'all') == 'inactive' ? 'btn-primary' : 'btn-outline' }}">
+            Inactifs
         </a>
         <a href="{{ route('employees.index', ['filter' => 'active']) }}"
            class="btn {{ ($filter ?? 'all') == 'active' ? 'btn-primary' : 'btn-outline' }}">
             Actifs
+        </a>
+        <a href="{{ route('employees.index', ['filter' => 'all']) }}"
+           class="btn {{ ($filter ?? 'all') == 'all' ? 'btn-primary' : 'btn-outline' }}">
+            Tous
         </a>
     </div>
 
@@ -154,7 +158,6 @@
                 @empty
                 <tr>
                     <td colspan="8" style="text-align:center;padding:48px;color:var(--text-muted)">
-                        <div style="font-size:2.5rem;margin-bottom:12px">👥</div>
                         <div style="font-weight:600;margin-bottom:4px">Aucun employé trouvé</div>
                         <div style="font-size:0.875rem">Modifiez vos critères de recherche ou ajoutez un employé</div>
                     </td>

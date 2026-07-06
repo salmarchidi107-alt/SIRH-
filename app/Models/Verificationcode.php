@@ -189,16 +189,28 @@ class VerificationCode extends Model
         ]);
     }
 
+    // ─── Trimestre courant (source unique de vérité) ─────────────────────────
+
+    public static function currentQuarterLabel(): string
+    {
+        $q = (int) ceil(now()->month / 3);
+        return 'T' . $q . '-' . now()->year;
+    }
+
     // ─── Méthodes statiques (TwoFactorController) ────────────────────────────
 
     /**
-     * Vérifie qu'un code existe, est ASSIGNED, et appartient bien à cet utilisateur.
+     * Vérifie qu'un code existe, est ASSIGNED, appartient à cet utilisateur
+     * ET que son trimestre est bien le trimestre en cours.
+     * Un code ASSIGNED d'un trimestre révolu est traité comme invalide,
+     * même si le job d'expiration automatique n'est pas encore passé.
      */
     public static function isValidForUser(string $code, int $userId): bool
     {
         return static::where('code', $code)
             ->where('user_id', $userId)
             ->where('status', self::STATUS_ASSIGNED)
+            ->where('quarter', self::currentQuarterLabel())
             ->exists();
     }
 

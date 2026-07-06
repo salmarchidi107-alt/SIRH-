@@ -431,6 +431,45 @@
             </div>
         </div>
 
+        
+        <?php
+            $canViewDocuments = in_array(auth()->user()->role ?? '', ['admin', 'rh'])
+                || (auth()->user()->employee_id ?? null) == $employee->id;
+
+            $documents = [
+                'doc_casier_path'   => 'Casier judiciaire',
+                'doc_rib_path'      => 'RIB',
+                'doc_diplomes_path' => 'Diplômes',
+                'doc_cin_path'      => 'CIN',
+                'doc_contrat_path'  => 'Contrat de travail',
+            ];
+        ?>
+
+        <?php if($canViewDocuments): ?>
+        <div class="card mb-4">
+            <div class="card-header"><div class="card-title">Pièces Jointes</div></div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+                <?php $__currentLoopData = $documents; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $field => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                        <span style="font-size:0.85rem;color:var(--text-primary,#1e293b)">
+                            <?php echo e($label); ?>
+
+                        </span>
+                        <?php if($employee->{$field}): ?>
+                            <a href="<?php echo e(asset('storage/' . $employee->{$field})); ?>"
+                               target="_blank" rel="noopener"
+                               class="btn btn-outline btn-sm">
+                                Voir
+                            </a>
+                        <?php else: ?>
+                            <span class="badge badge-neutral">—</span>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- Manager -->
         <?php if($employee->manager): ?>
         <div class="card">
@@ -450,7 +489,6 @@
         </div>
         <?php endif; ?>
     </div>
-</div>
 
 <script>
 function regeneratePin(id) {

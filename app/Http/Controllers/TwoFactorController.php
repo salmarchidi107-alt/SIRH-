@@ -33,7 +33,8 @@ class TwoFactorController extends Controller
 
     /**
      * Traite la soumission du code de vérification.
-     * Le code reste ASSIGNED tout le trimestre — aucune mutation de statut à la connexion.
+     * Le code reste ASSIGNED tout le trimestre — aucune mutation de statut à la connexion,
+     * sauf s'il s'avère appartenir à un trimestre révolu (expiration "à la volée").
      */
     public function verify(Request $request)
     {
@@ -49,7 +50,6 @@ class TwoFactorController extends Controller
         $throttleKey = '2fa_otp|' . $userId . '|' . $request->ip();
 
         // Rate limiting : 5 tentatives max sur 10 minutes
-        // Protège contre le brute-force uniquement, pas contre les reconnexions légitimes
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
             Auth::logout();
@@ -60,13 +60,39 @@ class TwoFactorController extends Controller
             ]);
         }
 
-        // Vérifier que le code est ASSIGNED et appartient à cet utilisateur
-        if (!VerificationCode::isValidForUser($request->code, $userId)) {
-            RateLimiter::hit($throttleKey, 600); // fenêtre de 10 minutes
+        $record = VerificationCode::where('code', $request->code)
+            ->where('user_id', $userId)
+            ->first();
+
+        // Code inexistant ou n'appartenant pas à cet utilisateur
+        if (!$record) {
+            RateLimiter::hit($throttleKey, 600);
             $remaining = 5 - RateLimiter::attempts($throttleKey);
             return back()->withErrors([
                 'code' => "Code invalide ou non associé à votre compte." .
                           ($remaining > 0 ? " ({$remaining} tentative(s) restante(s))" : ''),
+            ]);
+        }
+
+        // Code d'un trimestre révolu → expiration "à la volée" + refus d'accès
+        // (filet de sécurité si le job planifié verification-codes:expire n'est pas encore passé)
+        if ($record->status === VerificationCode::STATUS_ASSIGNED
+            && $record->quarter !== VerificationCode::currentQuarterLabel()) {
+            $record->expire();
+        }
+
+        if ($record->status === VerificationCode::STATUS_EXPIRED) {
+            RateLimiter::hit($throttleKey, 600);
+            return back()->withErrors([
+                'code' => "Ce code a expiré à la fin du trimestre précédent. " .
+                          "Contactez votre Super Admin pour obtenir un nouveau code.",
+            ]);
+        }
+
+        if ($record->status !== VerificationCode::STATUS_ASSIGNED) {
+            RateLimiter::hit($throttleKey, 600);
+            return back()->withErrors([
+                'code' => "Ce code n'est plus valide (révoqué ou déjà utilisé).",
             ]);
         }
 

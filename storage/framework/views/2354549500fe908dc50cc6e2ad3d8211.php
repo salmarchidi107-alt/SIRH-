@@ -359,6 +359,22 @@
             <?php endif; ?>
 
             
+<?php if($u->canView('expenses')): ?>
+<div class="nav-section-label">Notes de frais</div>
+
+<a href="<?php echo e(route('expenses.index')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('expenses.*') ? 'active' : ''); ?>">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 2l1.5 1.5L9 2l1.5 1.5L12 2l1.5 1.5L15 2l1.5 1.5L18 2v20l-1.5-1.5L15 22l-1.5-1.5L12 22l-1.5-1.5L9 22l-1.5-1.5L6 22V2z"/>
+        <line x1="9" y1="8" x2="15" y2="8"/>
+        <line x1="9" y1="12" x2="15" y2="12"/>
+        <line x1="9" y1="16" x2="12" y2="16"/>
+    </svg>
+    <span>Mes notes de frais</span>
+</a>
+<?php endif; ?>
+
+            
             <?php if($u->canView('lms') || $u->canView('referentiel') || $u->canView('lms_planning')): ?>
             <div class="nav-section-label">Formations</div>
 
@@ -621,6 +637,43 @@
             </a>
             <?php endif; ?>
             <?php endif; ?>
+
+
+            
+<?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh'])): ?>
+<?php $navUser = Auth::user(); ?>
+
+<?php if($navUser->canView('expenses')): ?>
+<div class="nav-section-label">Notes de frais</div>
+
+<?php
+    $expensesEnAttente = 0;
+    try {
+        $expTenantId = config('app.current_tenant_id')
+            ?? (auth()->check() ? auth()->user()->tenant_id : null);
+        $expensesEnAttente = \App\Models\Expense::where('status', 'soumis')
+            ->when($expTenantId, fn($q) => $q->where('tenant_id', $expTenantId))
+            ->count();
+    } catch (\Exception $e) {
+        $expensesEnAttente = 0;
+    }
+?>
+
+<a href="<?php echo e(route('expenses.index')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('expenses.*') ? 'active' : ''); ?>">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 2l1.5 1.5L9 2l1.5 1.5L12 2l1.5 1.5L15 2l1.5 1.5L18 2v20l-1.5-1.5L15 22l-1.5-1.5L12 22l-1.5-1.5L9 22l-1.5-1.5L6 22V2z"/>
+        <line x1="9" y1="8" x2="15" y2="8"/>
+        <line x1="9" y1="12" x2="15" y2="12"/>
+        <line x1="9" y1="16" x2="12" y2="16"/>
+    </svg>
+    <span>Notes de frais</span>
+    <?php if($expensesEnAttente > 0): ?>
+    <span class="nav-badge-live"><?php echo e($expensesEnAttente); ?></span>
+    <?php endif; ?>
+</a>
+<?php endif; ?>
+<?php endif; ?>
 
             
             <?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh'])): ?>

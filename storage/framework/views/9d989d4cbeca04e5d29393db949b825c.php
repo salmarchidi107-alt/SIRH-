@@ -41,13 +41,17 @@
 <!-- Filter Buttons: Tous / Actifs -->
 <div class="filters-bar">
     <div style="display:flex;gap:8px;flex-direction:row-reverse">
-        <a href="<?php echo e(route('employees.index', ['filter' => 'all'])); ?>"
-           class="btn <?php echo e(($filter ?? 'all') == 'all' ? 'btn-primary' : 'btn-outline'); ?>">
-            Tous
+        <a href="<?php echo e(route('employees.index', ['filter' => 'inactive'])); ?>"
+           class="btn <?php echo e(($filter ?? 'all') == 'inactive' ? 'btn-primary' : 'btn-outline'); ?>">
+            Inactifs
         </a>
         <a href="<?php echo e(route('employees.index', ['filter' => 'active'])); ?>"
            class="btn <?php echo e(($filter ?? 'all') == 'active' ? 'btn-primary' : 'btn-outline'); ?>">
             Actifs
+        </a>
+        <a href="<?php echo e(route('employees.index', ['filter' => 'all'])); ?>"
+           class="btn <?php echo e(($filter ?? 'all') == 'all' ? 'btn-primary' : 'btn-outline'); ?>">
+            Tous
         </a>
     </div>
 
@@ -157,7 +161,6 @@
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                 <tr>
                     <td colspan="8" style="text-align:center;padding:48px;color:var(--text-muted)">
-                        <div style="font-size:2.5rem;margin-bottom:12px">👥</div>
                         <div style="font-weight:600;margin-bottom:4px">Aucun employé trouvé</div>
                         <div style="font-size:0.875rem">Modifiez vos critères de recherche ou ajoutez un employé</div>
                     </td>
@@ -167,7 +170,7 @@
         </table>
     </div>
 
-
+    
     <div id="employees-pagination" style="padding:16px;display:flex;gap:12px;align-items:center;justify-content:center;">
         <div id="loading-spinner" class="spinner" style="display:none;">
             <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24">

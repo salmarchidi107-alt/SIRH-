@@ -111,7 +111,7 @@ class DashboardController extends Controller
             ->where('tenant_id', $tenantId)
             ->whereNotNull('birth_date')
             ->whereMonth('birth_date', now()->month)
-            ->whereDay('birth_date', now()->day)       // ← CHANGEMENT : jour exact uniquement
+            ->whereDay('birth_date', now()->day)
             ->where('status', 'active')
             ->get()
             ->map(function ($employee) use ($currentYear) {
@@ -126,14 +126,14 @@ class DashboardController extends Controller
 
         // ── Actualités : à venir (date >= aujourd'hui) ────────────────────────
         $upcomingNews = News::active()
-            ->whereDate('event_date', '>=', today())   // ← CHANGEMENT : exclut les passées
-            ->orderBy('event_date', 'asc')             // ← CHANGEMENT : plus proche en premier
+            ->whereDate('event_date', '>=', today())
+            ->orderBy('event_date', 'asc')
             ->take(5)
             ->get();
 
         // ── Actualités récentes : uniquement aujourd'hui ──────────────────────
         $recentNews = News::active()
-            ->whereDate('event_date', today())         // ← CHANGEMENT : uniquement aujourd'hui
+            ->whereDate('event_date', today())
             ->orderBy('event_date', 'desc')
             ->take(3)
             ->get();

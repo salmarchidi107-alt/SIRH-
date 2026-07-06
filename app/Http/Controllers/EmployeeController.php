@@ -627,20 +627,21 @@ class EmployeeController extends Controller
     }
 
     private function buildQuery(Request $request)
-    {
-        return Employee::query()
-            ->when($request->get('filter') === 'active', fn($q) => $q->active())
-            ->when($request->search, function ($q, $search) {
-                $q->where(function ($q) use ($search) {
-                    $q->where('first_name', 'like', "%$search%")
-                      ->orWhere('last_name',  'like', "%$search%")
-                      ->orWhere('matricule',  'like', "%$search%")
-                      ->orWhere('email',      'like', "%$search%");
-                });
-            })
-            ->when($request->department, fn($q, $dep)    => $q->where('department', $dep))
-            ->when($request->status,     fn($q, $status) => $q->status($status));
-    }
+{
+    return Employee::query()
+        ->when($request->get('filter') === 'active',   fn($q) => $q->active())
+        ->when($request->get('filter') === 'inactive', fn($q) => $q->status('inactive'))
+        ->when($request->search, function ($q, $search) {
+            $q->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%$search%")
+                  ->orWhere('last_name',  'like', "%$search%")
+                  ->orWhere('matricule',  'like', "%$search%")
+                  ->orWhere('email',      'like', "%$search%");
+            });
+        })
+        ->when($request->department, fn($q, $dep)    => $q->where('department', $dep))
+        ->when($request->status,     fn($q, $status) => $q->status($status));
+}
 
     private function getDepartmentsList()
     {

@@ -45,6 +45,7 @@ use App\Http\Controllers\DechargeController;
 use App\Http\Controllers\EquipementController;
 use App\Http\Controllers\RetourController;
 use App\Http\Controllers\Admin\VerificationCodeController as AdminVerifCodeController;
+use App\Http\Controllers\ExpenseController;
 
 // ═════════════════════════════════════════════════════════════════════════════
 // DEBUG TEMPORAIRE — À SUPPRIMER APRÈS TEST
@@ -464,4 +465,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/parametrage/site-location',         [\App\Http\Controllers\SiteLocationController::class, 'index'])  ->name('site-location.index');
     Route::post('/parametrage/site-location',        [\App\Http\Controllers\SiteLocationController::class, 'store'])  ->name('site-location.store');
     Route::delete('/parametrage/site-location/{id}', [\App\Http\Controllers\SiteLocationController::class, 'destroy'])->name('site-location.destroy');
+});
+Route::prefix('notes-frais')->name('expenses.')->group(function () {
+    Route::get('/', [ExpenseController::class, 'index'])->name('index');
+    Route::get('/nouvelle', [ExpenseController::class, 'create'])->name('create');
+    Route::post('/', [ExpenseController::class, 'store'])->name('store');
+    Route::get('/import', [ExpenseController::class, 'import'])->name('import');
+
+    // Endpoints AJAX utilisés par notes-frais.js
+    Route::post('/ocr-scan', [ExpenseController::class, 'ocrScan'])->name('ocr.scan');
+    Route::post('/import/process', [ExpenseController::class, 'processImport'])->name('import.process');
 });

@@ -12,8 +12,7 @@ class VerificationCodeService
 
     public function currentQuarter(): string
     {
-        $q = (int) ceil(now()->month / 3);
-        return 'T' . $q . '-' . now()->year;
+        return VerificationCode::currentQuarterLabel();
     }
 
     public function previousQuarter(): string

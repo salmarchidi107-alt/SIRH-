@@ -44,21 +44,13 @@ class PayrollService
     }
 
     // ─── Normaliser family_status ──────────────────────────────────
-    // Convertit n'importe quelle variante ("marié(e)", "Marié", "marie", etc.)
-    // en une chaîne ASCII minuscule sans caractères spéciaux.
 
     private function normalizeFamilyStatus(string $status): string
     {
         $s = strtolower(trim($status));
-        $s = iconv('UTF-8', 'ASCII//TRANSLIT', $s); // retire accents : é→e, etc.
-        $s = preg_replace('/[^a-z]/', '', $s);       // retire (, ), espaces, tirets...
+        $s = iconv('UTF-8', 'ASCII//TRANSLIT', $s);
+        $s = preg_replace('/[^a-z]/', '', $s);
         return $s;
-        // Exemples de résultats :
-        // "marié(e)"            → "marie"
-        // "Marié"               → "marie"
-        // "célibataire"         → "celibataire"
-        // "divorcé(e)"          → "divorce"
-        // "veuf / veuve"        → "veufveuve"
     }
 
     // ─── Calcul principal ──────────────────────────────────────────
@@ -92,7 +84,6 @@ class PayrollService
         $delayHours         = (float) ($data['delay_hours']            ?? $salary->delay_hours          ?? 0);
         $gardeHours         = (float) ($data['garde_hours']            ?? $salary->garde_hours          ?? 0);
 
-        // ── Indemnité de garde : manuelle (override) ou auto ────────
         $gardeOverride  = (bool)  ($data['garde_override']   ?? $salary->garde_override  ?? false);
         $gardeIndemnite = (float) ($data['garde_indemnite']  ?? $salary->garde_indemnite ?? 0);
 
@@ -119,8 +110,6 @@ class PayrollService
         $responsibilityAllow = (float) ($data['responsibility_allowance'] ?? 0);
         $otherGains          = (float) ($data['other_gains']              ?? 0);
 
-        // ── Si override : utiliser la valeur manuelle saisie ────────
-        // ── Sinon        : calculer automatiquement ─────────────────
         $gardeAmount = $gardeOverride
             ? $gardeIndemnite
             : round($hourlyRate * $gardeHours, 2);
@@ -161,7 +150,6 @@ class PayrollService
 
         $taxableIncome = max(0, round($grossSalary - $cnss - $amo - $fp, 2));
 
-        // ── Lire le statut familial depuis l'employé et normaliser ──
         $rawFamilyStatus = $employee->family_situation ?? 'celibataire';
         $childrenCount   = (int) ($employee->children_count ?? 0);
 
@@ -193,11 +181,8 @@ class PayrollService
             'absence_hours'            => $absenceHours,
             'delay_hours'              => $delayHours,
             'garde_hours'              => $gardeHours,
-
-            // ── Persister la garde manuelle ────────────────────────
             'garde_indemnite'          => $gardeAmount,
             'garde_override'           => $gardeOverride,
-
             'base_salary'              => $base,
             'overtime_hours'           => (float) ($overtimeHoursDay + $overtimeHoursNight + $overtimeHoursWe),
             'overtime_day_amount'      => $otDayAmount,
@@ -242,8 +227,6 @@ class PayrollService
     {
         if ($annualIncome <= 0) return 0;
 
-        // ── Normaliser family_status avant comparaison ─────────────
-        // Gère : "marié(e)", "Marié", "marie", "célibataire", etc.
         $status = $this->normalizeFamilyStatus($familyStatus);
 
         $ir = 0;
@@ -255,7 +238,6 @@ class PayrollService
 
         $familyDeduction = 0;
 
-        // Correspond à "marié", "mariee", "marie" après normalisation
         if (str_starts_with($status, 'mari')) {
             $familyDeduction += 360;
         }
@@ -270,6 +252,27 @@ class PayrollService
     public function getMonthlyWorkingHours(int $employeeId, int $month, int $year): array
     {
         // ══════════════════════════════════════════════════════════
+        // 0. PLANNING DU MOIS — utilisé comme référence pour les retards
+        //    Indexé par date (Y-m-d) => shift_start (premier shift du jour)
+        // ══════════════════════════════════════════════════════════
+        $planningsDuMois = Planning::where('employee_id', $employeeId)
+            ->whereYear('date',  $year)
+            ->whereMonth('date', $month)
+            ->orderBy('shift_start')
+            ->get();
+
+        $planningParDate = [];
+        foreach ($planningsDuMois as $pl) {
+            $dateKey = $pl->date instanceof \Carbon\Carbon
+                ? $pl->date->format('Y-m-d')
+                : \Carbon\Carbon::parse($pl->date)->format('Y-m-d');
+
+            if (!isset($planningParDate[$dateKey]) && !empty($pl->shift_start)) {
+                $planningParDate[$dateKey] = $pl->shift_start;
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════
         // 1. POINTAGES — heures travaillées, retards, absences
         // ══════════════════════════════════════════════════════════
         $pointages = \App\Models\Pointage::where('employee_id', $employeeId)
@@ -283,12 +286,19 @@ class PayrollService
         $absenceHours  = 0;
         $delayHours    = 0;
 
-        // Shifts pour le modal "Heures travaillées"
         $pointageShifts = [];
-        // Shifts pour le modal "Heures supplémentaires"
         $overtimeShifts = [];
-        // Shifts pour le modal "Retards"
-        $delayShifts = [];
+        $delayShifts    = [];
+
+        // ── IMPORTANT : initialisé ICI (avant la boucle des pointages)
+        //    car on y ajoute désormais aussi les absences détectées
+        //    directement depuis les pointages (statut absent),
+        //    en plus de celles de la table `absences` (section 2).
+        //    Avant ce fix, $absenceShifts n'était alimenté QUE par la
+        //    table `absences`, jamais par les pointages — d'où le
+        //    total (16h, calculé depuis les pointages) qui ne
+        //    correspondait à aucune ligne affichée dans le modal.
+        $absenceShifts = [];
 
         foreach ($pointages as $p) {
             $wh = (float) ($p->heures_travaillees     ?? 0);
@@ -297,31 +307,60 @@ class PayrollService
             $workingHours  += $wh;
             $overtimeHours += $oh;
 
-            // Calcul retard en minutes
-            $retardMin = 0;
-            if (!empty($p->heure_entree) && !empty($p->heure_prevue)) {
+            // ── Date normalisée (nécessaire pour consulter le planning
+            //    et pour reconstruire des Carbon fiables) ────────────
+            $dateStr = $p->date instanceof \Carbon\Carbon
+                ? $p->date->format('Y-m-d')
+                : \Carbon\Carbon::parse($p->date)->format('Y-m-d');
+
+            // ══════════════════════════════════════════════════════
+            // CALCUL DU RETARD — priorité :
+            //   1) heure_prevue du pointage (si renseignée)
+            //   2) shift_start du Planning du jour (fallback fiable)
+            //   3) retard_minutes stocké — UNIQUEMENT si positif
+            // ══════════════════════════════════════════════════════
+            $retardMin   = 0;
+            $heurePrevue = $p->heure_prevue ?? null;
+
+            if (empty($heurePrevue) && !empty($p->heure_entree)) {
+                $heurePrevue = $planningParDate[$dateStr] ?? null;
+            }
+
+            if (!empty($p->heure_entree) && !empty($heurePrevue)) {
                 try {
-                    $entree = \Carbon\Carbon::parse($p->heure_entree);
-                    $prevue = \Carbon\Carbon::parse($p->heure_prevue);
+                    $entree = \Carbon\Carbon::parse($dateStr . ' ' . \Carbon\Carbon::parse($p->heure_entree)->format('H:i:s'));
+                    $prevue = \Carbon\Carbon::parse($dateStr . ' ' . \Carbon\Carbon::parse($heurePrevue)->format('H:i:s'));
+
                     if ($entree->gt($prevue)) {
-                        $retardMin = $entree->diffInMinutes($prevue);
+                        $retardMin = abs($entree->diffInMinutes($prevue, true));
                         $delayHours += round($retardMin / 60, 2);
                     }
                 } catch (\Exception $e) {}
-            } elseif (!empty($p->retard_minutes)) {
+            } elseif (!empty($p->retard_minutes) && (int) $p->retard_minutes > 0) {
                 $retardMin  = (int) $p->retard_minutes;
                 $delayHours += round($retardMin / 60, 2);
             }
 
-            // Absence
+            // ══════════════════════════════════════════════════════
+            // ABSENCE — détectée directement depuis le statut du pointage
+            // ══════════════════════════════════════════════════════
             if (in_array($p->statut ?? '', ['absent', 'absence_injustifiee'])) {
                 $absenceHours += 8.0;
-            }
 
-            // ── Date normalisée ──────────────────────────────────
-            $dateStr = $p->date instanceof \Carbon\Carbon
-                ? $p->date->format('Y-m-d')
-                : \Carbon\Carbon::parse($p->date)->format('Y-m-d');
+                // ── Ajout : peupler la liste pour le modal ──────────
+                // Avant ce fix, seule la table `absences` (demandes
+                // approuvées) alimentait cette liste ; les pointages
+                // marqués "absent" directement n'y apparaissaient
+                // jamais, d'où la liste vide malgré un total > 0.
+                $absenceShifts[] = [
+                    'date'   => $dateStr,
+                    'type'   => $p->statut === 'absence_injustifiee'
+                                    ? 'Absence injustifiée'
+                                    : 'Absence',
+                    'heures' => 8,
+                    'statut' => 'pointage',
+                ];
+            }
 
             // ── Shift pointage (modal heures travaillées) ────────
             if ($wh > 0 || !empty($p->heure_entree)) {
@@ -339,7 +378,6 @@ class PayrollService
                 $otNight   = (float) ($p->overtime_night   ?? $p->heures_sup_nuit     ?? 0);
                 $otWeekend = (float) ($p->overtime_weekend ?? $p->heures_sup_weekend  ?? 0);
 
-                // Si pas de ventilation disponible, tout mettre en jour
                 if ($otDay + $otNight + $otWeekend == 0) {
                     $otDay = $oh;
                 }
@@ -372,20 +410,23 @@ class PayrollService
                 $delayShifts[] = [
                     'date'           => $dateStr,
                     'heure_entree'   => $p->heure_entree ?? null,
-                    'heure_prevue'   => $p->heure_prevue ?? null,
+                    'heure_prevue'   => $heurePrevue,
                     'retard_minutes' => $retardMin,
                 ];
             }
         }
 
         // ══════════════════════════════════════════════════════════
-        // 2. ABSENCES depuis la table absences (approuvées)
+        // 2. ABSENCES depuis la table absences (demandes approuvées)
+        //    — vient S'AJOUTER aux absences déjà détectées depuis
+        //    les pointages ci-dessus, sans les dupliquer si possible.
         // ══════════════════════════════════════════════════════════
-        $absenceShifts = [];
-
         try {
             $absences = \App\Models\Absence::where('employee_id', $employeeId)
-                ->whereIn('status', ['approved', 'approuvee', 'validee'])
+                ->where(function ($q) {
+                    $q->whereRaw('LOWER(status) LIKE ?', ['appro%'])
+                      ->orWhereRaw('LOWER(status) LIKE ?', ['valid%']);
+                })
                 ->where(function ($q) use ($month, $year) {
                     $q->where(function ($q2) use ($month, $year) {
                         $q2->whereMonth('date_debut', $month)
@@ -398,21 +439,45 @@ class PayrollService
                 ->orderBy('date_debut')
                 ->get();
 
+            // Dates déjà couvertes par les pointages, pour éviter
+            // d'afficher un doublon si l'absence existe aussi comme
+            // demande formelle ET comme pointage marqué absent.
+            $datesDejaAjoutees = array_column($absenceShifts, 'date');
+
             foreach ($absences as $a) {
-                $dateStr = $a->date_debut instanceof \Carbon\Carbon
-                    ? $a->date_debut->format('Y-m-d')
-                    : \Carbon\Carbon::parse($a->date_debut)->format('Y-m-d');
+                $debut  = $a->date_debut instanceof \Carbon\Carbon
+                    ? $a->date_debut->copy()->startOfDay()
+                    : \Carbon\Carbon::parse($a->date_debut)->startOfDay();
+                $fin    = $a->date_fin instanceof \Carbon\Carbon
+                    ? $a->date_fin->copy()->startOfDay()
+                    : \Carbon\Carbon::parse($a->date_fin ?? $a->date_debut)->startOfDay();
 
-                $jours  = (float) ($a->jours_ouvres ?? $a->nb_jours ?? 1);
-                $heures = round($jours * 8, 2);
+                $type   = $a->type ?? $a->motif ?? 'Absence';
+                $statut = $a->status ?? 'approuvee';
 
-                $absenceShifts[] = [
-                    'date'   => $dateStr,
-                    'type'   => $a->type ?? $a->motif ?? 'Absence',
-                    'heures' => $heures,
-                    'statut' => $a->status ?? 'approuvee',
-                ];
+                $cursor = $debut->copy();
+                while ($cursor->lte($fin)) {
+                    $curDateStr = $cursor->format('Y-m-d');
+
+                    if ((int) $cursor->month === $month
+                        && (int) $cursor->year  === $year
+                        && $cursor->dayOfWeek !== 0
+                        && !in_array($curDateStr, $datesDejaAjoutees)
+                    ) {
+                        $absenceShifts[] = [
+                            'date'   => $curDateStr,
+                            'type'   => $type,
+                            'heures' => 8,
+                            'statut' => $statut,
+                        ];
+                    }
+                    $cursor->addDay();
+                }
             }
+
+            // Retrier par date pour un affichage cohérent dans le modal
+            usort($absenceShifts, fn($a, $b) => strcmp($a['date'], $b['date']));
+
         } catch (\Exception $e) {
             // La table absences peut ne pas exister dans tous les tenants
         }
@@ -436,13 +501,12 @@ class PayrollService
             if ($shift->shift_start && $shift->shift_end) {
                 $start = \Carbon\Carbon::parse($shift->shift_start);
                 $end   = \Carbon\Carbon::parse($shift->shift_end);
-                // Cas nuit : ex 20:00 → 08:00 du lendemain
                 if ($end->lte($start)) {
                     $end->addDay();
                 }
                 $duree = round($start->diffInMinutes($end) / 60, 2);
             } else {
-                $duree = 8; // défaut 8h si horaires non définis
+                $duree = 8;
             }
 
             $gardeHours += $duree;
@@ -464,7 +528,6 @@ class PayrollService
         // Retour complet avec tous les shifts pour les modals
         // ══════════════════════════════════════════════════════════
         return [
-            // Totaux (utilisés pour les calculs de paie)
             'working_hours'    => round($workingHours,  2),
             'overtime_day'     => round($overtimeHours, 2),
             'overtime_night'   => 0,
@@ -474,7 +537,6 @@ class PayrollService
             'garde_hours'      => round($gardeHours,    2),
             'garde_days'       => count($gardeData),
 
-            // Détail shifts pour les modals cliquables
             'garde_shifts'    => $gardeData,
             'pointage_shifts' => $pointageShifts,
             'overtime_shifts' => $overtimeShifts,

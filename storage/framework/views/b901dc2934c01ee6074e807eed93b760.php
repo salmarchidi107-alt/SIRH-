@@ -21,14 +21,6 @@
 </div>
 <?php endif; ?>
 
-
-<?php if(session('success')): ?>
-<div style="margin-bottom:20px;padding:14px 18px;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.25);border-radius:12px;color:#15803d;font-size:0.9rem">
-    <?php echo session('success'); ?>
-
-</div>
-<?php endif; ?>
-
 <form method="POST" action="<?php echo e(route('planning.templates.apply')); ?>" id="applyForm">
     <?php echo csrf_field(); ?>
 

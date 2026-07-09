@@ -8,6 +8,7 @@ use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\UniqueConstraintViolationException;
 
 class EquipementController extends Controller
 {
@@ -157,24 +158,51 @@ class EquipementController extends Controller
             'statut'             => 'required|in:Disponible,Affecté,Maintenance,Perdu',
         ]);
 
-        $tenantId  = $this->tenantId();
-        $reference = Equipement::genererReference($request->categorie, $tenantId);
+        $tenantId    = $this->tenantId();
+        $maxTentatives = 3;
+        $reference   = null;
 
-        Equipement::create([
-            'tenant_id'          => $tenantId,
-            'reference'          => $reference,
-            'designation'        => $request->designation,
-            'categorie'          => $request->categorie,
-            'marque'             => $request->marque,
-            'modele'             => $request->modele,
-            'numero_serie'       => $request->numero_serie,
-            'date_acquisition'   => $request->date_acquisition,
-            'fournisseur'        => $request->fournisseur,
-            'valeur_acquisition' => $request->valeur_acquisition ?? 0,
-            'etat'               => $request->etat,
-            'localisation'       => $request->localisation,
-            'statut'             => $request->statut,
-        ]);
+        // La génération de référence + la création sont dans la même transaction,
+        // avec verrouillage (lockForUpdate) dans genererReference(), pour éviter
+        // toute collision même en cas de double soumission concurrente.
+        // Le retry supplémentaire couvre le cas résiduel où deux transactions
+        // concurrentes liraient le même "dernier numéro" avant que l'une des
+        // deux ait pu committer (edge case selon l'isolation level de MySQL).
+        for ($tentative = 1; $tentative <= $maxTentatives; $tentative++) {
+            try {
+                $reference = DB::transaction(function () use ($request, $tenantId) {
+                    $reference = Equipement::genererReference($request->categorie, $tenantId);
+
+                    Equipement::create([
+                        'tenant_id'          => $tenantId,
+                        'reference'          => $reference,
+                        'designation'        => $request->designation,
+                        'categorie'          => $request->categorie,
+                        'marque'             => $request->marque,
+                        'modele'             => $request->modele,
+                        'numero_serie'       => $request->numero_serie,
+                        'date_acquisition'   => $request->date_acquisition,
+                        'fournisseur'        => $request->fournisseur,
+                        'valeur_acquisition' => $request->valeur_acquisition ?? 0,
+                        'etat'               => $request->etat,
+                        'localisation'       => $request->localisation,
+                        'statut'             => $request->statut,
+                    ]);
+
+                    return $reference;
+                });
+
+                break; // succès, on sort de la boucle
+            } catch (UniqueConstraintViolationException $e) {
+                if ($tentative >= $maxTentatives) {
+                    throw $e;
+                }
+                // On retente : une autre requête a probablement pris la référence
+                // entre-temps, la prochaine itération de genererReference() en
+                // recalculera une nouvelle en tenant compte de cet insert.
+                continue;
+            }
+        }
 
         return redirect()->route('equipements.index', ['tab' => 'catalogue'])
                          ->with('success', "Équipement $reference ajouté avec succès.");

@@ -756,7 +756,7 @@ unset($__errorArgs, $__bag); ?>
     </div>
 
     
-    <?php if($linkedUser): ?>
+    <?php if($linkedUser && auth()->user()->isAdmin()): ?>
     <?php
         $currentPerms = [];
         foreach ($linkedUser->modulePermissions as $perm) {
@@ -979,7 +979,7 @@ unset($__errorArgs, $__bag); ?>
     <?php endif; ?>
 
     
-    <?php if($employee->user): ?>
+    <?php if($employee->user && auth()->user()->isAdmin()): ?>
     <div class="card mb-4">
         <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
             <div class="card-title">Mot de passe du compte</div>
@@ -1291,6 +1291,9 @@ function checkUnique(fieldId, feedbackId, param, ignoreId) {
 
 /* ═══════════════════════════════════════════════════════
    Gestionnaire de permissions
+   (n'existe que si #perm-table est présent, c-à-d si
+   $linkedUser existe, auth()->user()->isAdmin() est vrai,
+   et que le rôle du compte lié n'a pas un accès total)
 ═══════════════════════════════════════════════════════ */
 const Perms = {
     all() {

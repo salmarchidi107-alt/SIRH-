@@ -23,11 +23,20 @@
                 <div class="nf-grid-2 mb-4">
                     <div class="form-group">
                         <label>Employé</label>
-                        <select class="form-control">
-                            <?php $__currentLoopData = $employees; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $emp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <option value="<?php echo e($emp); ?>"><?php echo e($emp); ?></option>
-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                        </select>
+                        <?php if($employee): ?>
+                            <input type="hidden" name="employee_id" value="<?php echo e($employee->id); ?>">
+                            <div style="padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius)">
+                                <?php echo e($employee->full_name); ?> — <?php echo e($employee->department); ?>
+
+                            </div>
+                        <?php else: ?>
+                            <select name="employee_id" class="form-control" id="importEmployeeId" required>
+                                <option value="">Sélectionner un employé</option>
+                                <?php $__currentLoopData = $employees; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $emp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <option value="<?php echo e($emp->id); ?>"><?php echo e($emp->full_name); ?> — <?php echo e($emp->department); ?></option>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </select>
+                        <?php endif; ?>
                     </div>
                     <div class="nf-grid-2">
                         <div class="form-group">
@@ -145,7 +154,9 @@
         btnImportProcess.disabled = true;
         btnImportProcess.textContent = '⏳ Analyse en cours… (' + selectedImportFiles.length + ' fichier(s))';
 
+        var employeeIdEl = document.getElementById('importEmployeeId');
         var formData = new FormData();
+        if (employeeIdEl) formData.append('employee_id', employeeIdEl.value);
         selectedImportFiles.forEach(function (f) { formData.append('receipts[]', f); });
 
         fetch(ROUTE_IMPORT_PROCESS, {
@@ -172,7 +183,7 @@
         items.forEach(function (it) {
             html += '<div class="nf-result-line">— ' + it.title + ' (' + it.amount + ' MAD) — depuis ' + (it.source || '') + '</div>';
         });
-        results.innerHTML = html;q
+        results.innerHTML = html;
         selectedImportFiles = [];
         renderImportFileList();
         btnImportProcess.textContent = "Lancer l'analyse OCR et créer les brouillons";

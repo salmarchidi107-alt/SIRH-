@@ -24,6 +24,10 @@ use Illuminate\Http\{Request, JsonResponse};
  *   la requête — ce qui garantit qu'un admin ne peut pas agir sur un autre tenant.
  * • Les model bindings (VerificationCode, User) sont vérifiés via assertBelongsToTenant()
  *   avant toute opération.
+ *
+ * ─── Codes permanents ───────────────────────────────────────────────────────
+ * Un code est valable jusqu'à sa révocation ou son remplacement — il n'existe
+ * plus de notion de trimestre ni d'expiration automatique.
  */
 class VerificationCodeController extends Controller
 {
@@ -59,10 +63,10 @@ class VerificationCodeController extends Controller
         $tenantId = $this->tenantId();
         $stats    = $this->service->dashboardStats($tenantId);
 
-        // Tous les codes du tenant — 1 ligne par utilisateur (logique identique au SuperAdmin)
+        // Tous les codes du tenant — 1 ligne par utilisateur
         $allCodes = VerificationCode::with(['user', 'assignedBy', 'revokedBy'])
             ->where('tenant_id', $tenantId)
-            ->orderByRaw("FIELD(status, 'assigned', 'used', 'revoked', 'expired')")
+            ->orderByRaw("FIELD(status, 'assigned', 'used', 'revoked')")
             ->orderByDesc('assigned_at')
             ->get();
 
@@ -126,62 +130,6 @@ class VerificationCodeController extends Controller
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
             }
             return back()->withErrors(['generate' => $e->getMessage()]);
-        }
-    }
-
-    // ─── Renouvellement trimestriel ───────────────────────────────────────────
-
-    public function renewQuarter(Request $request): JsonResponse
-    {
-        try {
-            $result = $this->service->renewQuarter(
-                $this->tenantId(),
-                auth()->id()
-            );
-
-            $msg = "Trimestre {$result['quarter']} renouvelé : {$result['expired']} expiré(s), {$result['generated']} généré(s).";
-
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'result'  => $result,
-                    'message' => $msg,
-                    'stats'   => $this->service->dashboardStats($this->tenantId()),
-                ]);
-            }
-
-            return back()->with('success', $msg);
-
-        } catch (\DomainException $e) {
-            if ($request->expectsJson()) {
-                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
-            }
-            return back()->withErrors(['renew' => $e->getMessage()]);
-        }
-    }
-
-    // ─── Renouvellement forcé du trimestre courant ────────────────────────────
-
-    public function forceRenew(): JsonResponse
-    {
-        try {
-            $result = $this->service->forceRenewCurrentQuarter(
-                $this->tenantId(),
-                auth()->id()
-            );
-
-            $msg = "Renouvellement forcé {$result['quarter']} : "
-                 . "{$result['revoked']} révoqué(s), {$result['generated']} généré(s).";
-
-            return response()->json([
-                'success' => true,
-                'result'  => $result,
-                'message' => $msg,
-                'stats'   => $this->service->dashboardStats($this->tenantId()),
-            ]);
-
-        } catch (\DomainException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
     }
 

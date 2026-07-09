@@ -1,21 +1,21 @@
 @extends('layouts.app')
 
-@section('title', 'Nouvelle Note de Frais')
-@section('page-title', 'Nouvelle Note de Frais')
+@section('title', 'Modifier la Note de Frais')
+@section('page-title', 'Modifier la Note de Frais')
 
 @section('content')
 <div class="nf-wrapper">
     <div class="nf-top-tabs">
-        <a href="{{ route('expenses.index') }}" class="nf-top-tab">Liste des notes</a>
-        <a href="{{ route('expenses.create') }}" class="nf-top-tab active">Nouvelle note (OCR)</a>
+        <a href="{{ route('expenses.index') }}" class="nf-top-tab active">Liste des notes</a>
+        <a href="{{ route('expenses.create') }}" class="nf-top-tab">Nouvelle note (OCR)</a>
         <a href="{{ route('expenses.import') }}" class="nf-top-tab">Import groupé</a>
     </div>
 
     <div class="nf-view">
         <div class="page-header">
             <div class="page-header-left">
-                <h1>Nouvelle note de frais</h1>
-                <p>Soumettre une note de frais, avec pré-remplissage automatique par OCR</p>
+                <h1>Modifier la note de frais</h1>
+                <p>Vous pouvez re-scanner un nouveau reçu pour re-remplir les champs automatiquement</p>
             </div>
             <a href="{{ route('expenses.index') }}" class="btn btn-ghost">← Retour</a>
         </div>
@@ -40,11 +40,18 @@
             <div class="card" style="align-self:start">
                 <div class="card-header" style="background:#eff6ff;border-bottom:2px solid #bfdbfe">
                     <div class="card-title" style="color:#1e3a5f">Scan automatique (OCR)</div>
-                    <div style="font-size:0.78rem;color:#2563eb">Uploadez le reçu, les champs se remplissent automatiquement</div>
+                    <div style="font-size:0.78rem;color:#2563eb">Uploadez un nouveau reçu pour re-remplir les champs</div>
                 </div>
                 <div class="card-body">
+                    @if ($expense->receipt_path)
+                        <div style="margin-bottom:12px">
+                            <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px">Reçu actuel :</div>
+                            <a href="{{ Storage::url($expense->receipt_path) }}" target="_blank" class="btn btn-ghost" style="font-size:0.8rem">📎 Voir le reçu actuel</a>
+                        </div>
+                    @endif
+
                     <div class="nf-dropzone" id="dropZone">
-                        <div class="nf-dropzone-text">Cliquer ou glisser une image/PDF du reçu</div>
+                        <div class="nf-dropzone-text">Cliquer ou glisser une image/PDF du nouveau reçu</div>
                         <input type="file" id="ocrFileInput" accept=".jpg,.jpeg,.png,.pdf" style="display:none">
                     </div>
                     <div id="ocrPreview" style="margin-top:12px;display:none">
@@ -57,23 +64,22 @@
             <div class="card">
                 <div class="card-header"><div class="card-title">Détails de la dépense</div></div>
                 <div class="card-body">
-                    <form action="{{ route('expenses.store') }}" method="POST" enctype="multipart/form-data" id="expense-form">
+                    <form action="{{ route('expenses.update', $expense) }}" method="POST" enctype="multipart/form-data" id="expense-form">
                         @csrf
+                        @method('PUT')
 
                         <div class="form-group">
                             <label>Employé</label>
                             @if ($employee)
-                                {{-- Mode employé connecté : lecture seule, comme absences.create --}}
                                 <input type="hidden" name="employee_id" value="{{ $employee->id }}">
                                 <div style="padding:16px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius)">
                                     <h3 style="margin:0 0 8px 0;color:var(--primary);font-size:1.1rem">{{ $employee->full_name }}</h3>
                                     <div style="color:var(--text-muted);font-size:0.875rem">{{ $employee->department }} — {{ $employee->position }}</div>
                                 </div>
                             @else
-                                <select name="employee_id" class="form-control {{ $errors->has('employee_id') ? 'is-invalid' : '' }}" id="field_employee_id" required>
-                                    <option value="">Sélectionner un employé</option>
+                                <select name="employee_id" class="form-control {{ $errors->has('employee_id') ? 'is-invalid' : '' }}" id="field_employee_id" required>                                    <option value="">Sélectionner un employé</option>
                                     @foreach ($employees as $emp)
-                                        <option value="{{ $emp->id }}" {{ (int) old('employee_id') === $emp->id ? 'selected' : '' }}>
+                                        <option value="{{ $emp->id }}" {{ (int) old('employee_id', $expense->employee_id) === $emp->id ? 'selected' : '' }}>
                                             {{ $emp->full_name }} — {{ $emp->department }}
                                         </option>
                                     @endforeach
@@ -87,7 +93,7 @@
                         <div class="form-group">
                             <label>Titre / Libellé</label>
                             <input type="text" name="title" class="form-control {{ $errors->has('title') ? 'is-invalid' : '' }}"
-                                   id="field_title" value="{{ old('title') }}" placeholder="Ex: Taxi aéroport, Déjeuner client…">
+                                   id="field_title" value="{{ old('title', $expense->title) }}" placeholder="Ex: Taxi aéroport, Déjeuner client…">
                             @error('title')
                                 <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px">{{ $message }}</div>
                             @enderror
@@ -98,14 +104,14 @@
                                 <label>Catégorie</label>
                                 <select name="category" class="form-control" id="field_category">
                                     @foreach ($categories as $value => $label)
-                                        <option value="{{ $value }}" {{ old('category') == $value ? 'selected' : '' }}>{{ $label }}</option>
+                                        <option value="{{ $value }}" {{ old('category', $expense->category) == $value ? 'selected' : '' }}>{{ $label }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label>Date de la dépense</label>
                                 <input type="date" name="date" class="form-control {{ $errors->has('date') ? 'is-invalid' : '' }}"
-                                       id="field_date" value="{{ old('date') }}">
+                                       id="field_date" value="{{ old('date', optional($expense->expense_date)->format('Y-m-d')) }}">
                                 @error('date')
                                     <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px">{{ $message }}</div>
                                 @enderror
@@ -116,7 +122,7 @@
                             <div class="form-group">
                                 <label>Montant</label>
                                 <input type="number" name="amount" class="form-control {{ $errors->has('amount') ? 'is-invalid' : '' }}"
-                                       id="field_amount" step="0.01" value="{{ old('amount') }}">
+                                       id="field_amount" step="0.01" value="{{ old('amount', $expense->amount) }}">
                                 @error('amount')
                                     <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px">{{ $message }}</div>
                                 @enderror
@@ -124,18 +130,19 @@
                             <div class="form-group">
                                 <label>Devise</label>
                                 <select name="currency" class="form-control">
-                                    <option>MAD</option><option>MRU</option>
+                                    <option {{ old('currency', $expense->currency) == 'MAD' ? 'selected' : '' }}>MAD</option>
+                                    <option {{ old('currency', $expense->currency) == 'MRU' ? 'selected' : '' }}>MRU</option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="form-group">
                             <label>Description (optionnel)</label>
-                            <textarea name="description" class="form-control" rows="2">{{ old('description') }}</textarea>
+                            <textarea name="description" class="form-control" rows="2">{{ old('description', $expense->description) }}</textarea>
                         </div>
 
                         <div class="form-group">
-                            <label>Justificatif</label>
+                            <label>Remplacer le justificatif (optionnel)</label>
                             <input type="file" name="receipt" class="form-control">
                         </div>
 
@@ -150,7 +157,6 @@
 </div>
 
 <style>
-/* ── Notes de frais : onglets, OCR, mise en page (spécifique à ce module) ── */
 .nf-top-tabs {
     background:var(--surface); border-bottom:1px solid var(--border);
     padding:0 24px; display:flex; gap:4px; margin-bottom:24px;
@@ -189,10 +195,7 @@
 </style>
 
 <script>
-/* ── Notes de frais : scan OCR d'un reçu unique (spécifique à cette vue) ──
-   Aucune donnée fictive : si le service OCR n'est pas configuré côté
-   serveur (voir ExpenseController::ocrScan), on affiche une erreur claire
-   plutôt que de pré-remplir le formulaire avec des valeurs inventées. ── */
+/* ── Notes de frais : scan OCR d'un reçu unique, réutilisé pour l'édition ── */
 (function () {
     var ROUTE_OCR_SCAN = "{{ route('expenses.ocr.scan') }}";
     var CSRF = "{{ csrf_token() }}";
@@ -228,7 +231,8 @@
             ocrPreviewImg.src = URL.createObjectURL(file);
         }
         ocrStatus.className = 'nf-ocr-status loading';
-        ocrStatus.textContent = ' Analyse OCR en cours…';
+        ocrStatus.textContent = 'Analyse OCR en cours…';
+
 
         var formData = new FormData();
         formData.append('receipt', file);

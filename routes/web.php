@@ -472,7 +472,12 @@ Route::prefix('notes-frais')->name('expenses.')->group(function () {
     Route::post('/', [ExpenseController::class, 'store'])->name('store');
     Route::get('/import', [ExpenseController::class, 'import'])->name('import');
 
-    // Endpoints AJAX utilisés par notes-frais.js
+    Route::get('/{expense}/modifier', [ExpenseController::class, 'edit'])->name('edit');
+    Route::put('/{expense}', [ExpenseController::class, 'update'])->name('update');
+    Route::post('/{expense}/approve', [ExpenseController::class, 'approve'])->name('approve');
+    Route::post('/{expense}/reject', [ExpenseController::class, 'reject'])->name('reject');
+    Route::get('/export', [ExpenseController::class, 'exportCsv'])->name('export');
+
     Route::post('/ocr-scan', [ExpenseController::class, 'ocrScan'])->name('ocr.scan');
     Route::post('/import/process', [ExpenseController::class, 'processImport'])->name('import.process');
 });

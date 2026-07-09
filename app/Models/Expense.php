@@ -13,17 +13,15 @@ class Expense extends Model
 
     /**
      * Valeurs possibles pour le statut d'une note de frais.
+     * Workflow simplifié : une note est directement "Validée" à sa
+     * création, un admin/rh peut la "Rejeter" si besoin.
      */
-    public const STATUS_BROUILLON = 'brouillon';
-    public const STATUS_SOUMIS    = 'soumis';
-    public const STATUS_VALIDE    = 'valide';
-    public const STATUS_REJETE    = 'rejete';
+    public const STATUS_VALIDE = 'valide';
+    public const STATUS_REJETE = 'rejete';
 
     public const STATUSES = [
-        self::STATUS_BROUILLON => 'Brouillon',
-        self::STATUS_SOUMIS    => 'Soumis',
-        self::STATUS_VALIDE    => 'Validé',
-        self::STATUS_REJETE    => 'Rejeté',
+        self::STATUS_VALIDE => 'Validé',
+        self::STATUS_REJETE => 'Rejeté',
     ];
 
     /**
@@ -56,25 +54,13 @@ class Expense extends Model
         'amount'       => 'decimal:2',
     ];
 
-    protected $appends = ['full_name'];
-
-    public function getFullNameAttribute(): string
-    {
-        return trim("{$this->first_name} {$this->last_name}");
-    }
-
     protected $attributes = [
-        'status'   => self::STATUS_BROUILLON,
+        'status'   => self::STATUS_VALIDE,
         'currency' => 'MAD',
     ];
 
     /**
      * Employé ayant engagé la dépense.
-     *
-     * NOTE : adaptez le namespace/nom du modèle à celui déjà utilisé dans
-     * HospitalRH / SIRH-v2 pour les employés (ex: App\Models\Employee,
-     * App\Models\Agent, App\Models\User...). La clé étrangère
-     * `employee_id` ci-dessus devra correspondre à cette table.
      */
     public function employee()
     {
@@ -111,8 +97,8 @@ class Expense extends Model
         return $employeeId ? $query->where('employee_id', $employeeId) : $query;
     }
 
-    public function scopeForTenant(Builder $query, int|string|null $tenantId): Builder
+    public function scopeForTenant(Builder $query, ?string $tenantId): Builder
     {
-        return $tenantId ? $query->where('tenant_id', (int) $tenantId) : $query;
+        return $tenantId ? $query->where('tenant_id', $tenantId) : $query;
     }
 }

@@ -23,13 +23,6 @@
 </div>
 @endif
 
-{{-- ── Message succès ── --}}
-@if(session('success'))
-<div style="margin-bottom:20px;padding:14px 18px;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.25);border-radius:12px;color:#15803d;font-size:0.9rem">
-    {!! session('success') !!}
-</div>
-@endif
-
 <form method="POST" action="{{ route('planning.templates.apply') }}" id="applyForm">
     @csrf
 

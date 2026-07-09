@@ -11,7 +11,7 @@
         <span>Codes 2FA</span>
     </div>
     <div class="sa-page-title">Codes de vérification 2FA</div>
-    <div class="sa-page-sub">Attribution automatique — gestion trimestrielle par tenant.</div>
+    <div class="sa-page-sub">Attribution automatique — codes permanents jusqu'à révocation ou remplacement.</div>
 @endsection
 
 @push('styles')
@@ -36,33 +36,17 @@
     }
 
     /* ── Stats globales ─────────────────────────────── */
-    .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
+    .stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
     .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px; position:relative; overflow:hidden; }
     .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:10px 10px 0 0; }
     .stat-card.c-blue::before  { background:var(--primary-l); }
     .stat-card.c-green::before { background:var(--green); }
     .stat-card.c-red::before   { background:var(--red); }
-    .stat-card.c-amber::before { background:var(--amber); }
     .stat-label { font-size:11px; color:var(--muted); font-weight:500; margin-bottom:4px; }
     .stat-val   { font-size:26px; font-weight:800; line-height:1; }
     .stat-val.blue  { color:var(--primary-l); }
     .stat-val.green { color:var(--green); }
     .stat-val.red   { color:var(--red); }
-    .stat-val.amber { color:var(--amber); }
-
-    /* ── Trimestre bar ──────────────────────── */
-    .trimestre-bar { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:13px 18px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:14px; }
-    .trim-info { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
-    .trim-label { font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--light); }
-    .trim-quarters { display:flex; gap:5px; }
-    .trim-q { padding:5px 13px; border-radius:6px; border:1px solid var(--border); background:none; color:var(--muted); font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .15s; }
-    .trim-q:hover  { border-color:var(--primary-l); color:var(--primary); }
-    .trim-q.active { background:#e0f2fe; border-color:var(--primary-l); color:var(--primary-d); }
-    .trim-progress { display:flex; align-items:center; gap:8px; }
-    .trim-bar-wrap { width:90px; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
-    .trim-bar-fill { height:4px; border-radius:2px; transition:width .4s; }
-    .trim-bar-label { font-size:10px; color:var(--light); white-space:nowrap; }
-    .trim-next-badge { font-size:11px; color:var(--light); background:var(--bg); padding:4px 10px; border-radius:20px; border:1px solid var(--border); }
 
     /* ── Panel Générer ──────────────────────── */
     .gen-panel { background:var(--surface); border:1px solid var(--border); border-radius:10px; margin-bottom:14px; overflow:hidden; }
@@ -137,9 +121,6 @@
     .tenant-name { font-size:13px; font-weight:700; color:var(--text); }
     .tenant-meta { font-size:11px; color:var(--light); margin-top:1px; }
     .tenant-header-right { display:flex; align-items:center; gap:8px; }
-    .t-renew-btn { display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:6px; border:1px solid var(--amber); background:#fffbeb; color:#92400e; font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .15s; }
-    .t-renew-btn:hover { background:#fef3c7; }
-    .t-renew-btn svg { width:11px; height:11px; }
     .coverage-badge { padding:3px 9px; border-radius:20px; font-size:10px; font-weight:700; }
     .coverage-badge.full { background:#d1fae5; color:#065f46; }
     .coverage-badge.part { background:#fef3c7; color:#92400e; }
@@ -168,16 +149,14 @@
     .code-digit.updated { border-color:#6ee7b7; background:#d1fae5; color:#065f46; animation:digitFlash .5s ease; }
     @keyframes digitFlash { 0%{transform:scale(1.15)} 60%{transform:scale(1.05)} 100%{transform:scale(1)} }
     .code-digit.st-revoked { border-color:#fca5a5; background:#fee2e2; color:#991b1b; }
-    .code-digit.st-expired { border-color:#fde047; background:#fefce8; color:#a16207; }
     .code-digit.st-used    { border-color:#6ee7b7; background:#d1fae5; color:#065f46; }
 
-    /* Badge statut — on ajoute badge-used-once pour assigned+used_at */
+    /* Badge statut */
     .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:20px; font-size:10px; font-weight:600; white-space:nowrap; }
     .badge-dot { width:5px; height:5px; border-radius:50%; background:currentColor; }
     .badge-assigned  { background:#e0f2fe; color:var(--primary-d); }
     .badge-used-once { background:#d1fae5; color:#065f46; }
     .badge-revoked   { background:#fee2e2; color:#991b1b; }
-    .badge-expired   { background:#fef3c7; color:#92400e; }
 
     .actions-cell { display:flex; align-items:center; justify-content:flex-end; gap:5px; }
     .btn-replace { display:inline-flex; align-items:center; gap:4px; padding:4px 9px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--light); font-size:10px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .15s; }
@@ -252,36 +231,23 @@
 @php
     use App\Models\VerificationCode as VC;
 
-    $cqNum   = (int) ceil(now()->month / 3);
-    $cqLabel = 'T' . $cqNum . '-' . now()->year;
-    $qStart  = ($cqNum - 1) * 3 + 1;
-    $qProgress = min(max((int) round(((now()->month - $qStart) * 30 + now()->day) / 90 * 100), 0), 100);
-    $nextStarts = [1 => '01/04', 2 => '01/07', 3 => '01/10', 4 => '01/01'];
-    $nextYear  = $cqNum === 4 ? now()->year + 1 : now()->year;
-    $nextDate  = $nextStarts[$cqNum] . '/' . $nextYear;
-
     /*
      * Compteurs globaux :
      * - "assigned"  = ASSIGNED + used_at NULL  (jamais utilisé)
      * - "used_once" = ASSIGNED + used_at non NULL (utilisé au moins une fois, réutilisable)
      * - "revoked"   = STATUS_REVOKED
-     * - "expired"   = STATUS_EXPIRED
      */
     $statCounts = [
-    'assigned'  => VC::where('status', VC::STATUS_ASSIGNED)->whereNull('used_at')->count(),
-    'used_once' => VC::where('status', VC::STATUS_ASSIGNED)->whereNotNull('used_at')->count(),
-    'expired'   => VC::where('status', VC::STATUS_EXPIRED)->count(),
-
-
-    'revoked' => VC::where('status', VC::STATUS_REVOKED)
-        ->whereNotIn(
-            'user_id',
-            VC::where('status', VC::STATUS_ASSIGNED)->pluck('user_id')
-        )
-        ->distinct('user_id')
-        ->count('user_id'),
-];
-
+        'assigned'  => VC::where('status', VC::STATUS_ASSIGNED)->whereNull('used_at')->count(),
+        'used_once' => VC::where('status', VC::STATUS_ASSIGNED)->whereNotNull('used_at')->count(),
+        'revoked'   => VC::where('status', VC::STATUS_REVOKED)
+            ->whereNotIn(
+                'user_id',
+                VC::where('status', VC::STATUS_ASSIGNED)->pluck('user_id')
+            )
+            ->distinct('user_id')
+            ->count('user_id'),
+    ];
 
     $tenantPalette = [
         ['bg' => '#e0f2fe', 'color' => '#0f6b7c'],
@@ -297,8 +263,8 @@
     /*
      * ─── LOGIQUE CLÉ ────────────────────────────────────────────────────────
      * On ne veut afficher qu'UNE SEULE ligne par utilisateur, avec :
-     *   - Son code ASSIGNED actif (le seul autorisé par trimestre)
-     *   - Si pas de code ASSIGNED → on prend son dernier code (révoqué/expiré)
+     *   - Son code ASSIGNED actif (le seul autorisé, permanent)
+     *   - Si pas de code ASSIGNED → on prend son dernier code (révoqué)
      *     pour montrer l'historique
      *
      * On regroupe par tenant, puis par user_id, en gardant uniquement
@@ -312,7 +278,7 @@
         // Tous les codes du tenant (ASSIGNED en premier via orderByRaw)
         $allCodes = \App\Models\VerificationCode::with(['user', 'assignedBy', 'revokedBy'])
             ->where('tenant_id', $tid)
-            ->orderByRaw("FIELD(status, 'assigned', 'used', 'revoked', 'expired')")
+            ->orderByRaw("FIELD(status, 'assigned', 'used', 'revoked')")
             ->orderByDesc('assigned_at')
             ->get();
 
@@ -356,47 +322,6 @@
         <div class="stat-label">Révoqués</div>
         <div class="stat-val red">{{ number_format($statCounts['revoked']) }}</div>
     </div>
-    <div class="stat-card c-amber">
-        <div class="stat-label">Expirés</div>
-        <div class="stat-val amber">{{ number_format($statCounts['expired']) }}</div>
-    </div>
-</div>
-
-{{-- ── Trimestre bar ──────────────────────────────────────────────── --}}
-<div class="trimestre-bar">
-    <div class="trim-info">
-        <span class="trim-label">Trimestre</span>
-        <div class="trim-quarters">
-            @foreach([1,2,3,4] as $qn)
-            @php
-                $qP    = $qn < $cqNum ? 100 : ($qn === $cqNum ? $qProgress : 0);
-                $qNx   = $nextStarts[$qn] . '/' . ($qn === 4 ? now()->year + 1 : now()->year);
-                $qColor= $qP >= 100 ? 'var(--green)' : ($qP === 0 ? 'var(--light)' : 'var(--primary-l)');
-            @endphp
-            <button class="trim-q {{ $qn === $cqNum ? 'active' : '' }}"
-                    data-q="{{ $qn }}" data-progress="{{ $qP }}"
-                    data-next="{{ $qNx }}" data-color="{{ $qColor }}"
-                    onclick="selectQ(this)">T{{ $qn }}</button>
-            @endforeach
-        </div>
-        <div class="trim-progress">
-            <div class="trim-bar-wrap">
-                <div class="trim-bar-fill" id="trimBarFill"
-                     style="width:{{ $qProgress }}%;background:{{ $qProgress >= 100 ? 'var(--green)' : 'var(--primary-l)' }};"></div>
-            </div>
-            <span class="trim-bar-label" id="trimBarLabel">{{ $qProgress }}% écoulé</span>
-        </div>
-        <span class="trim-next-badge" id="trimNextLabel">Renouvellement : {{ $nextDate }}</span>
-    </div>
-    <button class="gen-btn gen-btn-outline"
-        style="margin-left:auto;"
-        onclick="confirmRenewAllTenants()">
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-        <path stroke-linecap="round" stroke-linejoin="round"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-    </svg>
-    Renouveler tous
-</button>
 </div>
 
 {{-- ── Panel Générer ──────────────────────────────────────────────── --}}
@@ -436,14 +361,6 @@
                     </svg>
                     <span id="btnGenLbl">Générer les codes manquants</span>
                 </button>
-                <button class="gen-btn gen-btn-outline" id="btnRenewQuarter"
-                        onclick="confirmRenewQuarter()" disabled>
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                    </svg>
-                    <span id="btnRenewLbl">Renouveler le trimestre</span>
-                </button>
             </div>
         </div>
         <div class="gen-note" id="genNote"></div>
@@ -472,7 +389,6 @@
         <option value="assigned">Attribué</option>
         <option value="used_once">Utilisé</option>
         <option value="revoked">Révoqué</option>
-        <option value="expired">Expiré</option>
     </select>
     <button class="f-reset" onclick="resetFilters()">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -528,14 +444,6 @@
         PDF
     </button>
             <span class="coverage-badge {{ $coverageClass }}">{{ $coveragePct }}% couvert</span>
-            <button class="t-renew-btn"
-                    onclick="event.stopPropagation();confirmRenewQuarterForTenant('{{ $tenantId }}','{{ addslashes($tName) }}')">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                </svg>
-                Renouveler
-            </button>
             <span class="chevron">▾</span>
         </div>
     </div>
@@ -548,7 +456,6 @@
                     <th>Collaborateur</th>
                     <th>Code 2FA</th>
                     <th>Statut</th>
-                    <th>Trimestre</th>
                     <th>Attribué le</th>
                     <th>Utilisé le</th>
                     <th style="text-align:right;width:160px">Actions</th>
@@ -563,12 +470,10 @@
                      *   mais le code reste actif (Remplacer + Révoquer disponibles)
                      * - ASSIGNED + used_at null     → "Attribué" (badge bleu)
                      * - REVOKED                     → "Révoqué"  (badge rouge)
-                     * - EXPIRED                     → "Expiré"   (badge amber)
                      */
                     $isUsedOnce   = ($code->status === VC::STATUS_ASSIGNED && !is_null($code->used_at));
                     $isAssigned   = ($code->status === VC::STATUS_ASSIGNED && is_null($code->used_at));
                     $isRevoked    = ($code->status === VC::STATUS_REVOKED);
-                    $isExpired    = ($code->status === VC::STATUS_EXPIRED);
 
                     if ($isUsedOnce) {
                         $badgeClass  = 'badge-used-once';
@@ -580,16 +485,11 @@
                         $badgeLabel  = 'Attribué';
                         $digitClass  = '';
                         $visualStatus = 'assigned';
-                    } elseif ($isRevoked) {
+                    } else {
                         $badgeClass  = 'badge-revoked';
                         $badgeLabel  = 'Révoqué';
                         $digitClass  = 'st-revoked';
                         $visualStatus = 'revoked';
-                    } else {
-                        $badgeClass  = 'badge-expired';
-                        $badgeLabel  = 'Expiré';
-                        $digitClass  = 'st-expired';
-                        $visualStatus = 'expired';
                     }
 
                     $digits = str_split(str_pad($code->code, 6, '0', STR_PAD_LEFT));
@@ -645,9 +545,6 @@
                             <span class="badge-dot"></span>{{ $badgeLabel }}
                         </span>
                     </td>
-                    <td style="font-size:11px;color:var(--muted);font-family:monospace;">
-                        {{ $code->quarter ?? '—' }}
-                    </td>
                     <td style="font-size:11px;color:var(--muted);">
                         {{ $code->assigned_at?->format('d/m/Y') ?? '—' }}
                     </td>
@@ -686,7 +583,7 @@
                             </button>
                             @endif
                             {{-- Codes terminaux : aucune action --}}
-                            @if($isRevoked || $isExpired)
+                            @if($isRevoked)
                             <span style="font-size:11px;color:var(--light);">—</span>
                             @endif
                         </div>
@@ -714,7 +611,6 @@
 <script>
 const REVOKE_BASE_URL = "/superadmin/codes/";
 const REVOKE_BASE_SUFFIX = "/revoke";
-const FORCE_RENEW_URL = "{{ route('superadmin.codes.force-renew') }}";
 </script>
 
 {{-- Modal confirm --}}
@@ -742,7 +638,6 @@ const FORCE_RENEW_URL = "{{ route('superadmin.codes.force-renew') }}";
 const CSRF                = document.querySelector('meta[name="csrf-token"]').content;
 const TENANT_STATS_URL    = "{{ rtrim(route('superadmin.codes.tenant-stats', '__tid__'), '__tid__') }}";
 const GENERATE_MISSING_URL= "{{ route('superadmin.codes.generate-missing') }}";
-const RENEW_QUARTER_URL   = "{{ route('superadmin.codes.renew-quarter') }}";
 const REPLACE_USER_URL    = "{{ rtrim(route('superadmin.codes.replace-user', '__uid__'), '__uid__') }}";
 </script>
 @endsection
@@ -751,72 +646,6 @@ const REPLACE_USER_URL    = "{{ rtrim(route('superadmin.codes.replace-user', '__
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
-/* ══════════════════════════════════════════════════════════════════
-   TRIMESTRE
-══════════════════════════════════════════════════════════════════ */
-function selectQ(btn) {
-    document.querySelectorAll('.trim-q').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const pct  = parseInt(btn.dataset.progress);
-    const fill = document.getElementById('trimBarFill');
-    fill.style.width      = pct + '%';
-    fill.style.background = btn.dataset.color;
-    document.getElementById('trimBarLabel').textContent  = pct + '% écoulé';
-    document.getElementById('trimNextLabel').textContent = 'Renouvellement : ' + btn.dataset.next;
-}
-/* ══════════════════════════════════════════════════════════════════
-   RENOUVELLEMENT — TOUS LES TENANTS
-══════════════════════════════════════════════════════════════════ */
-function confirmRenewAllTenants() {
-    openModal(
-        'Renouveler le trimestre — tous les tenants',
-        `Les codes actifs du <strong>trimestre précédent</strong> de <strong>tous les tenants</strong> seront expirés.<br>
-         Un nouveau code sera créé pour chaque employé actif de chaque tenant.<br><br>
-         <strong>Cette action est irréversible.</strong>`,
-        doRenewAllTenants,
-        true
-    );
-}
-
-async function doRenewAllTenants() {
-    showToast('Renouvellement forcé en cours…', 'warn');
-
-    const tenantIds = [...document.querySelectorAll('.tenant-card')]
-        .map(c => c.dataset.tenantId)
-        .filter(Boolean);
-
-    let totalRevoked = 0, totalGenerated = 0, errors = 0;
-
-    for (const tid of tenantIds) {
-        try {
-            const res  = await fetch(FORCE_RENEW_URL, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': CSRF,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ tenant_id: tid })
-            });
-            const data = await res.json();
-            if (data.success) {
-                totalRevoked   += data.result?.revoked   ?? 0;
-                totalGenerated += data.result?.generated ?? 0;
-            } else {
-                errors++;
-            }
-        } catch {
-            errors++;
-        }
-    }
-
-    const msg = `Terminé : ${totalRevoked} révoqué(s), ${totalGenerated} généré(s)`
-              + (errors > 0 ? ` — ${errors} tenant(s) en erreur` : '');
-
-    showToast(msg, errors > 0 ? 'warn' : 'success');
-    setTimeout(() => window.location.reload(), 2000);
-}
-
 /* ══════════════════════════════════════════════════════════════════
    PANEL GÉNÉRER
 ══════════════════════════════════════════════════════════════════ */
@@ -832,11 +661,10 @@ async function loadTenantStats() {
     const tid      = document.getElementById('genTenant').value;
     const preview  = document.getElementById('tenantPreview');
     const btnGen   = document.getElementById('btnGenerateMissing');
-    const btnRenew = document.getElementById('btnRenewQuarter');
 
     if (!tid) {
         preview.classList.remove('visible');
-        btnGen.disabled = btnRenew.disabled = true;
+        btnGen.disabled = true;
         return;
     }
 
@@ -847,7 +675,7 @@ async function loadTenantStats() {
             <div class="tp-skel-bar" style="width:80%"></div>
             <div class="tp-skel-bar" style="width:60%"></div>
         </div>`;
-    btnGen.disabled = btnRenew.disabled = true;
+    btnGen.disabled = true;
 
     clearTimeout(_statsTimeout);
     _statsTimeout = setTimeout(async () => {
@@ -858,8 +686,7 @@ async function loadTenantStats() {
             const data = await res.json();
             if (!data.success) throw new Error(data.message ?? 'Erreur');
             renderTenantPreview(data.tenant_name, data.stats);
-            btnGen.disabled   = data.stats.missing_count <= 0;
-            btnRenew.disabled = false;
+            btnGen.disabled = data.stats.missing_count <= 0;
         } catch (e) {
             document.getElementById('tpTitle').textContent = 'Erreur de chargement';
             document.getElementById('tpContent').innerHTML =
@@ -877,7 +704,7 @@ function renderTenantPreview(name, stats) {
                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
                </svg>
-               <strong>${stats.missing_count} employé(s)</strong> sans code ce trimestre
+               <strong>${stats.missing_count} employé(s)</strong> sans code
            </div>`
         : `<div class="tp-alert ok">
                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -889,14 +716,11 @@ function renderTenantPreview(name, stats) {
     document.getElementById('tpContent').innerHTML = `
         <div class="tp-grid">
             <div class="tp-stat"><div class="tp-stat-label">Employés actifs</div><div class="tp-stat-val info">${stats.active_employees}</div></div>
-            <div class="tp-stat"><div class="tp-stat-label">Codes attribués</div><div class="tp-stat-val info">${stats.assigned_this_quarter}</div></div>
+            <div class="tp-stat"><div class="tp-stat-label">Codes attribués</div><div class="tp-stat-val info">${stats.assigned_count}</div></div>
             <div class="tp-stat"><div class="tp-stat-label">Sans code</div><div class="tp-stat-val ${missingColor}">${stats.missing_count}</div></div>
             <div class="tp-stat"><div class="tp-stat-label">Couverture</div><div class="tp-stat-val ${coverageColor}">${stats.coverage_pct}%</div></div>
         </div>
-        ${alertHtml}
-        <div style="font-size:10px;color:var(--light);margin-top:8px;">
-            Trimestre : <strong>${stats.current_quarter}</strong> · Renouvellement : ${stats.next_renewal}
-        </div>`;
+        ${alertHtml}`;
 }
 
 /* ── Génération ──────────────────────────────────────────────────── */
@@ -930,56 +754,6 @@ async function submitGenerateMissing() {
         btn.disabled = false;
     } finally {
         document.getElementById('btnGenLbl').textContent = 'Générer les codes manquants';
-    }
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   RENOUVELLEMENT
-══════════════════════════════════════════════════════════════════ */
-let _renewTenantId = null, _renewTenantName = null;
-
-function confirmRenewQuarter() {
-    const tid  = document.getElementById('genTenant').value;
-    const name = document.getElementById('genTenant').selectedOptions[0]?.text ?? '';
-    if (!tid) { showToast('Sélectionnez un tenant.', 'error'); return; }
-    _renewTenantId = tid; _renewTenantName = name;
-    openModal('Renouveler le trimestre — ' + name,
-        `Les codes actifs du <strong>trimestre précédent</strong> seront expirés.<br>
-         Un nouveau code sera créé pour <strong>chaque employé actif</strong>.<br><br>
-         <strong>Cette action est irréversible.</strong>`,
-        doRenewQuarter, true);
-}
-
-function confirmRenewQuarterForTenant(tid, name) {
-    _renewTenantId = tid; _renewTenantName = name;
-    openModal('Renouveler le trimestre — ' + name,
-        `Les codes actifs du <strong>trimestre précédent</strong> de <strong>${name}</strong> seront expirés.<br>
-         Un nouveau code sera créé pour chaque employé actif.<br><br>
-         <strong>Cette action est irréversible.</strong>`,
-        doRenewQuarter, true);
-}
-
-async function doRenewQuarter() {
-    if (!_renewTenantId) return;
-    const btnPanel = document.getElementById('btnRenewQuarter');
-    if (btnPanel) { btnPanel.disabled = true; document.getElementById('btnRenewLbl').textContent = 'En cours…'; }
-    try {
-        const res  = await fetch(RENEW_QUARTER_URL, {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': CSRF, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({ tenant_id: _renewTenantId })
-        });
-        const data = await res.json();
-        if (data.success) {
-            showToast(data.message);
-            setTimeout(() => window.location.reload(), 1600);
-        } else {
-            showToast(data.message ?? 'Erreur', 'error');
-        }
-    } catch (e) {
-        showToast('Erreur réseau. Réessayez.', 'error');
-    } finally {
-        if (btnPanel) { btnPanel.disabled = false; document.getElementById('btnRenewLbl').textContent = 'Renouveler le trimestre'; }
     }
 }
 
@@ -1026,10 +800,10 @@ async function replaceForUser(userId, codeId, userName) {
             // Réinitialiser la colonne "Utilisé le" à "—" (nouveau code jamais utilisé)
             const row   = wrap.closest('tr');
             const cells = row.querySelectorAll('td');
-            // colonne 6 = "Utilisé le" (index 6)
-            cells[6].textContent   = '—';
-            cells[6].style.color   = 'var(--muted)';
-            cells[6].style.fontWeight = '400';
+            // colonne 5 = "Utilisé le" (index 5 : #, Collaborateur, Code, Statut, Attribué le, Utilisé le)
+            cells[5].textContent   = '—';
+            cells[5].style.color   = 'var(--muted)';
+            cells[5].style.fontWeight = '400';
 
             // Réinitialiser le badge à "Attribué"
             const badge = row.querySelector('.badge');
@@ -1057,9 +831,8 @@ if (revokeBtn) {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   RÉVOCATION — via form hidden (pas de rechargement AJAX)
+   RÉVOCATION — via fetch DELETE
 ══════════════════════════════════════════════════════════════════ */
-// PAR
 function confirmRevoke(codeId, userName) {
     openModal(
         'Révoquer le code de ' + userName,
@@ -1184,7 +957,6 @@ function closeModal() {
     _modalCb = null;
 }
 
-// APRÈS — callback exécuté avant la réinitialisation
 document.getElementById('vModalOk').addEventListener('click', () => {
     const cb = _modalCb;
     closeModal();
@@ -1207,17 +979,13 @@ function showToast(msg, type = 'success') {
 function svgR(s) {
     return `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" style="width:${s}px;height:${s}px;flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>`;
 }
+
 /* ══════════════════════════════════════════════════════════════════
    EXPORT PDF PAR TENANT
 ══════════════════════════════════════════════════════════════════ */
 function exportTenantPDF(tenantId, tenantName) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-
-    // ── Trimestre courant (lu depuis le bouton actif) ──
-    const quarter = document.querySelector('.trim-q.active')?.dataset?.q
-        ? 'T' + document.querySelector('.trim-q.active').dataset.q + '-' + new Date().getFullYear()
-        : '';
 
     // ── En-tête ──
     doc.setFontSize(14);
@@ -1226,11 +994,10 @@ function exportTenantPDF(tenantId, tenantName) {
 
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text('Trimestre : ' + quarter, 14, 23);
     doc.text('Généré le : ' + new Date().toLocaleDateString('fr-FR', {
         day: '2-digit', month: '2-digit', year: 'numeric',
         hour: '2-digit', minute: '2-digit'
-    }), 14, 28);
+    }), 14, 23);
 
     // ── Collecte des lignes depuis le DOM ──
     const card = document.querySelector(`.tenant-card[data-tenant-id="${tenantId}"]`);
@@ -1247,9 +1014,8 @@ function exportTenantPDF(tenantId, tenantName) {
             .map(d => d.textContent.trim()).join('');
 
         const status   = tr.querySelector('.badge')?.textContent?.trim() ?? '—';
-        const quarter_ = tds[4]?.textContent?.trim() ?? '—';
-        const assigned = tds[5]?.textContent?.trim() ?? '—';
-        const used     = tds[6]?.textContent?.trim().replace(/\s+/g, ' ') ?? '—';
+        const assigned = tds[4]?.textContent?.trim() ?? '—';
+        const used     = tds[5]?.textContent?.trim().replace(/\s+/g, ' ') ?? '—';
 
         rows.push([
             String(i + 1).padStart(2, '0'),
@@ -1257,7 +1023,6 @@ function exportTenantPDF(tenantId, tenantName) {
             email,
             code,
             status,
-            quarter_,
             assigned,
             used,
         ]);
@@ -1270,8 +1035,8 @@ function exportTenantPDF(tenantId, tenantName) {
 
     // ── Tableau ──
     doc.autoTable({
-        startY: 34,
-        head: [['#', 'Employé', 'Email', 'Code 2FA', 'Statut', 'Trimestre', 'Attribué le', 'Utilisé le']],
+        startY: 29,
+        head: [['#', 'Employé', 'Email', 'Code 2FA', 'Statut', 'Attribué le', 'Utilisé le']],
         body: rows,
         theme: 'grid',
         styles: {
@@ -1292,9 +1057,8 @@ function exportTenantPDF(tenantId, tenantName) {
             0: { halign: 'center', cellWidth: 8  },   // #
             3: { halign: 'center', cellWidth: 22, font: 'courier', fontSize: 10, fontStyle: 'bold' }, // Code
             4: { halign: 'center', cellWidth: 20 },   // Statut
-            5: { halign: 'center', cellWidth: 20 },   // Trimestre
-            6: { halign: 'center', cellWidth: 24 },   // Attribué le
-            7: { halign: 'center', cellWidth: 28 },   // Utilisé le
+            5: { halign: 'center', cellWidth: 24 },   // Attribué le
+            6: { halign: 'center', cellWidth: 28 },   // Utilisé le
         },
         alternateRowStyles: { fillColor: [250, 250, 250] },
         margin: { left: 14, right: 14 },
@@ -1316,9 +1080,9 @@ function exportTenantPDF(tenantId, tenantName) {
 
     // ── Téléchargement ──
     const safeName = tenantName.replace(/[^a-zA-Z0-9]/g, '_');
-    doc.save(`2FA_${safeName}_${quarter}.pdf`);
+    doc.save(`2FA_${safeName}.pdf`);
 
-    showToast('PDF exporté : 2FA_' + safeName + '_' + quarter + '.pdf');
+    showToast('PDF exporté : 2FA_' + safeName + '.pdf');
 }
 </script>
 @endpush

@@ -363,15 +363,15 @@
     .absent-checkbox          { accent-color:var(--p-red); width:15px; height:15px; cursor:pointer; }
     .absent-checkbox:disabled { opacity:.5; cursor:wait; }
 
-    /* ── Géoloc tooltip ── */
+    /* ── Géoloc tooltip — position fixed calculée en JS (évite le clipping/arrière-plan dans le tableau scrollable) ── */
     .geo-tooltip-wrap { position: relative; display: inline-block; }
     .geo-tooltip {
-        display: none; position: absolute; bottom: calc(100% + 8px); left: 50%;
+        display: none; position: fixed; left: 0; top: 0;
         transform: translateX(-50%);
         background: #0f172a; color: #fff;
         border-radius: 10px; padding: 12px 16px;
         font-size: 12px; line-height: 1.5;
-        white-space: nowrap; z-index: 999;
+        white-space: nowrap; z-index: 100000;
         box-shadow: 0 8px 24px rgba(0,0,0,.3); min-width: 200px;
         pointer-events: none;
     }
@@ -379,7 +379,6 @@
         content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
         border: 6px solid transparent; border-top-color: #0f172a;
     }
-    .geo-tooltip-wrap:hover .geo-tooltip { display: block; }
     .geo-tooltip-row { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px; }
     .geo-tooltip-row:last-child { margin-bottom: 0; }
     .geo-tooltip-label { color: #94a3b8; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
@@ -875,7 +874,7 @@
                                 data-url="{{ route('pointage.last-photo', $emp['id']) }}"
                                 data-name="{{ $emp['nom'] }}"
                                 onclick="showLastPhoto(this)">
-                             Voir photo
+                            Voir photo
                         </button>
                     </td>
 
@@ -930,6 +929,45 @@
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
 
+// ── Tooltip géoloc en position fixed (évite le clipping / l'affichage en arrière-plan dans le tableau scrollable) ──
+document.querySelectorAll('.geo-tooltip-wrap').forEach(function (wrap) {
+    var tooltip = wrap.querySelector('.geo-tooltip');
+    if (!tooltip) return;
+
+    // On détache le tooltip du tableau et on l'attache directement à <body>.
+    // Raison : si un ancêtre du tableau (layout, conteneur "zoom"/scale, etc.)
+    // a une propriété transform/filter/perspective, il devient le "containing block"
+    // des éléments position:fixed qu'il contient — ce qui fausse tout le calcul
+    // basé sur les coordonnées viewport (getBoundingClientRect). En rattachant le
+    // tooltip à body (qui n'a jamais ce genre d'ancêtre), le fixed redevient
+    // relatif à la fenêtre, comme attendu.
+    document.body.appendChild(tooltip);
+
+    function positionTooltip() {
+        var rect = wrap.getBoundingClientRect();
+        tooltip.style.display = 'block';
+        var tRect = tooltip.getBoundingClientRect();
+        var left = rect.left + rect.width / 2;
+        var top  = rect.top - 8 - tRect.height;
+        // Ne pas sortir de l'écran en haut : si pas de place au-dessus, on affiche en dessous
+        if (top < 4) {
+            top = rect.bottom + 8;
+        }
+        // Ne pas sortir de l'écran sur les côtés
+        var minLeft = tRect.width / 2 + 4;
+        var maxLeft = window.innerWidth - tRect.width / 2 - 4;
+        if (left < minLeft) left = minLeft;
+        if (left > maxLeft) left = maxLeft;
+
+        tooltip.style.left = left + 'px';
+        tooltip.style.top  = top + 'px';
+    }
+
+    wrap.addEventListener('mouseenter', positionTooltip);
+    wrap.addEventListener('mouseleave', function () {
+        tooltip.style.display = 'none';
+    });
+});
 
 const pdfDropdown = document.querySelector('.pt-pdf-dropdown');
 document.getElementById('btn-pdf-toggle').addEventListener('click', function (e) {
@@ -1051,7 +1089,7 @@ async function showLastPhoto(btn) {
     var title = document.getElementById('photoModalTitle');
     var meta  = document.getElementById('photoModalMeta');
 
-    title.textContent = (btn.dataset.name || 'Photo');
+    title.textContent = '' + (btn.dataset.name || 'Photo');
     body.innerHTML     = '<div class="photo-modal-placeholder">Chargement…</div>';
     meta.textContent   = '';
 

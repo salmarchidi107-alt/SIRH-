@@ -68,7 +68,7 @@
                                     <div style="color:var(--text-muted);font-size:0.875rem"><?php echo e($employee->department); ?> — <?php echo e($employee->position); ?></div>
                                 </div>
                             <?php else: ?>
-                                <select name="employee_id" class="form-control <?php echo e($errors->has('employee_id') ? 'is-invalid' : ''); ?>" required>
+                                <select name="employee_id" class="form-control <?php echo e($errors->has('employee_id') ? 'is-invalid' : ''); ?>" id="field_employee_id" required>
                                     <option value="">Sélectionner un employé</option>
                                     <?php $__currentLoopData = $employees; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $emp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                         <option value="<?php echo e($emp->id); ?>" <?php echo e((int) old('employee_id') === $emp->id ? 'selected' : ''); ?>>
@@ -167,8 +167,7 @@ unset($__errorArgs, $__bag); ?>
                         </div>
 
                         <div style="display:flex;gap:10px;margin-top:8px">
-                            <button type="submit" name="action" value="draft" class="btn btn-ghost" style="flex:1">Enregistrer en brouillon</button>
-                            <button type="submit" name="action" value="submit" class="btn btn-primary" style="flex:1">✓ Soumettre</button>
+                            <button type="submit" class="btn btn-primary" style="flex:1">✓ Enregistrer</button>
                         </div>
                     </form>
                 </div>
@@ -230,6 +229,7 @@ unset($__errorArgs, $__bag); ?>
     var ocrPreview = document.getElementById('ocrPreview');
     var ocrPreviewImg = document.getElementById('ocrPreviewImg');
     var ocrStatus = document.getElementById('ocrStatus');
+    var receiptInput = document.querySelector('input[name="receipt"]');
 
     dropZone.addEventListener('click', function () { ocrFileInput.click(); });
     dropZone.addEventListener('dragover', function (e) { e.preventDefault(); dropZone.classList.add('dragover'); });
@@ -244,12 +244,18 @@ unset($__errorArgs, $__bag); ?>
     });
 
     function handleOcrFile(file) {
+        if (receiptInput) {
+            var dt = new DataTransfer();
+            dt.items.add(file);
+            receiptInput.files = dt.files;
+        }
+
         if (file.type.startsWith('image/')) {
             ocrPreview.style.display = 'block';
             ocrPreviewImg.src = URL.createObjectURL(file);
         }
         ocrStatus.className = 'nf-ocr-status loading';
-        ocrStatus.textContent = '⏳ Analyse OCR en cours…';
+        ocrStatus.textContent = ' Analyse OCR en cours…';
 
         var formData = new FormData();
         formData.append('receipt', file);
@@ -281,6 +287,13 @@ unset($__errorArgs, $__bag); ?>
         if (catEl && data.category) {
             catEl.value = data.category;
             catEl.classList.add('nf-field-filled');
+        }
+        var empEl = document.getElementById('field_employee_id');
+        if (empEl && data.employee_id) {
+            empEl.value = data.employee_id;
+            empEl.classList.remove('nf-field-filled');
+            void empEl.offsetWidth;
+            empEl.classList.add('nf-field-filled');
         }
         ocrStatus.className = 'nf-ocr-status success';
         ocrStatus.textContent = "✓ Champs pré-remplis automatiquement — vérifiez avant d'enregistrer";

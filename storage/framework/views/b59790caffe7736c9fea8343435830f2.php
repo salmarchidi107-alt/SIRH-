@@ -1,26 +1,24 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Modifier la Note de Frais'); ?>
+<?php $__env->startSection('page-title', 'Modifier la Note de Frais'); ?>
 
-@section('title', 'Nouvelle Note de Frais')
-@section('page-title', 'Nouvelle Note de Frais')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="nf-wrapper">
     <div class="nf-top-tabs">
-        <a href="{{ route('expenses.index') }}" class="nf-top-tab">Liste des notes</a>
-        <a href="{{ route('expenses.create') }}" class="nf-top-tab active">Nouvelle note (OCR)</a>
-        <a href="{{ route('expenses.import') }}" class="nf-top-tab">Import groupé</a>
+        <a href="<?php echo e(route('expenses.index')); ?>" class="nf-top-tab active">Liste des notes</a>
+        <a href="<?php echo e(route('expenses.create')); ?>" class="nf-top-tab">Nouvelle note (OCR)</a>
+        <a href="<?php echo e(route('expenses.import')); ?>" class="nf-top-tab">Import groupé</a>
     </div>
 
     <div class="nf-view">
         <div class="page-header">
             <div class="page-header-left">
-                <h1>Nouvelle note de frais</h1>
-                <p>Soumettre une note de frais, avec pré-remplissage automatique par OCR</p>
+                <h1>Modifier la note de frais</h1>
+                <p>Vous pouvez re-scanner un nouveau reçu pour re-remplir les champs automatiquement</p>
             </div>
-            <a href="{{ route('expenses.index') }}" class="btn btn-ghost">← Retour</a>
+            <a href="<?php echo e(route('expenses.index')); ?>" class="btn btn-ghost">← Retour</a>
         </div>
 
-        @if ($errors->any())
+        <?php if($errors->any()): ?>
             <div style="
                 background: #fef2f2; border: 2px solid #ef4444; border-radius: 12px;
                 padding: 16px 20px; margin-bottom: 24px; box-shadow: 0 4px 16px rgba(239,68,68,0.10);
@@ -29,22 +27,29 @@
                      Veuillez corriger les erreurs suivantes :
                 </div>
                 <ul style="margin:0;padding-left:20px;color:#7f1d1d;font-size:0.9rem;line-height:1.7">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
+                    <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <li><?php echo e($error); ?></li>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </ul>
             </div>
-        @endif
+        <?php endif; ?>
 
         <div class="nf-two-col">
             <div class="card" style="align-self:start">
                 <div class="card-header" style="background:#eff6ff;border-bottom:2px solid #bfdbfe">
                     <div class="card-title" style="color:#1e3a5f">Scan automatique (OCR)</div>
-                    <div style="font-size:0.78rem;color:#2563eb">Uploadez le reçu, les champs se remplissent automatiquement</div>
+                    <div style="font-size:0.78rem;color:#2563eb">Uploadez un nouveau reçu pour re-remplir les champs</div>
                 </div>
                 <div class="card-body">
+                    <?php if($expense->receipt_path): ?>
+                        <div style="margin-bottom:12px">
+                            <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px">Reçu actuel :</div>
+                            <a href="<?php echo e(Storage::url($expense->receipt_path)); ?>" target="_blank" class="btn btn-ghost" style="font-size:0.8rem">📎 Voir le reçu actuel</a>
+                        </div>
+                    <?php endif; ?>
+
                     <div class="nf-dropzone" id="dropZone">
-                        <div class="nf-dropzone-text">Cliquer ou glisser une image/PDF du reçu</div>
+                        <div class="nf-dropzone-text">Cliquer ou glisser une image/PDF du nouveau reçu</div>
                         <input type="file" id="ocrFileInput" accept=".jpg,.jpeg,.png,.pdf" style="display:none">
                     </div>
                     <div id="ocrPreview" style="margin-top:12px;display:none">
@@ -57,85 +62,115 @@
             <div class="card">
                 <div class="card-header"><div class="card-title">Détails de la dépense</div></div>
                 <div class="card-body">
-                    <form action="{{ route('expenses.store') }}" method="POST" enctype="multipart/form-data" id="expense-form">
-                        @csrf
+                    <form action="<?php echo e(route('expenses.update', $expense)); ?>" method="POST" enctype="multipart/form-data" id="expense-form">
+                        <?php echo csrf_field(); ?>
+                        <?php echo method_field('PUT'); ?>
 
                         <div class="form-group">
                             <label>Employé</label>
-                            @if ($employee)
-                                {{-- Mode employé connecté : lecture seule, comme absences.create --}}
-                                <input type="hidden" name="employee_id" value="{{ $employee->id }}">
+                            <?php if($employee): ?>
+                                <input type="hidden" name="employee_id" value="<?php echo e($employee->id); ?>">
                                 <div style="padding:16px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius)">
-                                    <h3 style="margin:0 0 8px 0;color:var(--primary);font-size:1.1rem">{{ $employee->full_name }}</h3>
-                                    <div style="color:var(--text-muted);font-size:0.875rem">{{ $employee->department }} — {{ $employee->position }}</div>
+                                    <h3 style="margin:0 0 8px 0;color:var(--primary);font-size:1.1rem"><?php echo e($employee->full_name); ?></h3>
+                                    <div style="color:var(--text-muted);font-size:0.875rem"><?php echo e($employee->department); ?> — <?php echo e($employee->position); ?></div>
                                 </div>
-                            @else
-                                <select name="employee_id" class="form-control {{ $errors->has('employee_id') ? 'is-invalid' : '' }}" id="field_employee_id" required>
+                            <?php else: ?>
+                                <select name="employee_id" class="form-control <?php echo e($errors->has('employee_id') ? 'is-invalid' : ''); ?>" required>
                                     <option value="">Sélectionner un employé</option>
-                                    @foreach ($employees as $emp)
-                                        <option value="{{ $emp->id }}" {{ (int) old('employee_id') === $emp->id ? 'selected' : '' }}>
-                                            {{ $emp->full_name }} — {{ $emp->department }}
+                                    <?php $__currentLoopData = $employees; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $emp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($emp->id); ?>" <?php echo e((int) old('employee_id', $expense->employee_id) === $emp->id ? 'selected' : ''); ?>>
+                                            <?php echo e($emp->full_name); ?> — <?php echo e($emp->department); ?>
+
                                         </option>
-                                    @endforeach
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </select>
-                                @error('employee_id')
-                                    <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px">{{ $message }}</div>
-                                @enderror
-                            @endif
+                                <?php $__errorArgs = ['employee_id'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                    <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px"><?php echo e($message); ?></div>
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                            <?php endif; ?>
                         </div>
 
                         <div class="form-group">
                             <label>Titre / Libellé</label>
-                            <input type="text" name="title" class="form-control {{ $errors->has('title') ? 'is-invalid' : '' }}"
-                                   id="field_title" value="{{ old('title') }}" placeholder="Ex: Taxi aéroport, Déjeuner client…">
-                            @error('title')
-                                <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px">{{ $message }}</div>
-                            @enderror
+                            <input type="text" name="title" class="form-control <?php echo e($errors->has('title') ? 'is-invalid' : ''); ?>"
+                                   id="field_title" value="<?php echo e(old('title', $expense->title)); ?>" placeholder="Ex: Taxi aéroport, Déjeuner client…">
+                            <?php $__errorArgs = ['title'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px"><?php echo e($message); ?></div>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                         </div>
 
                         <div class="nf-grid-2">
                             <div class="form-group">
                                 <label>Catégorie</label>
                                 <select name="category" class="form-control" id="field_category">
-                                    @foreach ($categories as $value => $label)
-                                        <option value="{{ $value }}" {{ old('category') == $value ? 'selected' : '' }}>{{ $label }}</option>
-                                    @endforeach
+                                    <?php $__currentLoopData = $categories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $value => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($value); ?>" <?php echo e(old('category', $expense->category) == $value ? 'selected' : ''); ?>><?php echo e($label); ?></option>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label>Date de la dépense</label>
-                                <input type="date" name="date" class="form-control {{ $errors->has('date') ? 'is-invalid' : '' }}"
-                                       id="field_date" value="{{ old('date') }}">
-                                @error('date')
-                                    <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px">{{ $message }}</div>
-                                @enderror
+                                <input type="date" name="date" class="form-control <?php echo e($errors->has('date') ? 'is-invalid' : ''); ?>"
+                                       id="field_date" value="<?php echo e(old('date', optional($expense->expense_date)->format('Y-m-d'))); ?>">
+                                <?php $__errorArgs = ['date'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                    <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px"><?php echo e($message); ?></div>
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             </div>
                         </div>
 
                         <div class="nf-grid-2-100">
                             <div class="form-group">
                                 <label>Montant</label>
-                                <input type="number" name="amount" class="form-control {{ $errors->has('amount') ? 'is-invalid' : '' }}"
-                                       id="field_amount" step="0.01" value="{{ old('amount') }}">
-                                @error('amount')
-                                    <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px">{{ $message }}</div>
-                                @enderror
+                                <input type="number" name="amount" class="form-control <?php echo e($errors->has('amount') ? 'is-invalid' : ''); ?>"
+                                       id="field_amount" step="0.01" value="<?php echo e(old('amount', $expense->amount)); ?>">
+                                <?php $__errorArgs = ['amount'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                    <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px"><?php echo e($message); ?></div>
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             </div>
                             <div class="form-group">
                                 <label>Devise</label>
                                 <select name="currency" class="form-control">
-                                    <option>MAD</option><option>MRU</option>
+                                    <option <?php echo e(old('currency', $expense->currency) == 'MAD' ? 'selected' : ''); ?>>MAD</option>
+                                    <option <?php echo e(old('currency', $expense->currency) == 'MRU' ? 'selected' : ''); ?>>MRU</option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="form-group">
                             <label>Description (optionnel)</label>
-                            <textarea name="description" class="form-control" rows="2">{{ old('description') }}</textarea>
+                            <textarea name="description" class="form-control" rows="2"><?php echo e(old('description', $expense->description)); ?></textarea>
                         </div>
 
                         <div class="form-group">
-                            <label>Justificatif</label>
+                            <label>Remplacer le justificatif (optionnel)</label>
                             <input type="file" name="receipt" class="form-control">
                         </div>
 
@@ -150,7 +185,6 @@
 </div>
 
 <style>
-/* ── Notes de frais : onglets, OCR, mise en page (spécifique à ce module) ── */
 .nf-top-tabs {
     background:var(--surface); border-bottom:1px solid var(--border);
     padding:0 24px; display:flex; gap:4px; margin-bottom:24px;
@@ -189,13 +223,10 @@
 </style>
 
 <script>
-/* ── Notes de frais : scan OCR d'un reçu unique (spécifique à cette vue) ──
-   Aucune donnée fictive : si le service OCR n'est pas configuré côté
-   serveur (voir ExpenseController::ocrScan), on affiche une erreur claire
-   plutôt que de pré-remplir le formulaire avec des valeurs inventées. ── */
+/* ── Notes de frais : scan OCR d'un reçu unique, réutilisé pour l'édition ── */
 (function () {
-    var ROUTE_OCR_SCAN = "{{ route('expenses.ocr.scan') }}";
-    var CSRF = "{{ csrf_token() }}";
+    var ROUTE_OCR_SCAN = "<?php echo e(route('expenses.ocr.scan')); ?>";
+    var CSRF = "<?php echo e(csrf_token()); ?>";
 
     var dropZone = document.getElementById('dropZone');
     var ocrFileInput = document.getElementById('ocrFileInput');
@@ -228,7 +259,8 @@
             ocrPreviewImg.src = URL.createObjectURL(file);
         }
         ocrStatus.className = 'nf-ocr-status loading';
-        ocrStatus.textContent = ' Analyse OCR en cours…';
+        ocrStatus.textContent = '⏳ Analyse OCR en cours…';
+
 
         var formData = new FormData();
         formData.append('receipt', file);
@@ -261,13 +293,6 @@
             catEl.value = data.category;
             catEl.classList.add('nf-field-filled');
         }
-        var empEl = document.getElementById('field_employee_id');
-        if (empEl && data.employee_id) {
-            empEl.value = data.employee_id;
-            empEl.classList.remove('nf-field-filled');
-            void empEl.offsetWidth;
-            empEl.classList.add('nf-field-filled');
-        }
         ocrStatus.className = 'nf-ocr-status success';
         ocrStatus.textContent = "✓ Champs pré-remplis automatiquement — vérifiez avant d'enregistrer";
     }
@@ -282,4 +307,6 @@
     }
 })();
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\Projects\SIRH-\resources\views/expenses/edit.blade.php ENDPATH**/ ?>

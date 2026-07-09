@@ -13,6 +13,11 @@ return [
     | a conventional file to locate the various service credentials.
     |
     */
+
+
+'tesseract' => [
+        'binary' => env('TESSERACT_PATH', 'tesseract'),
+    ],
 'calendarapi' => [
     'key' => env('CALENDARAPI_KEY'),
 ],

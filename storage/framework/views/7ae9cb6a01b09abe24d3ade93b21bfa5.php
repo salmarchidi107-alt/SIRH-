@@ -176,7 +176,7 @@
                 <div class="form-group">
                     <label>Prénom *</label>
                     <input type="text" name="first_name" class="form-control"
-                           value="<?php echo e(old('first_name')); ?>" required placeholder="Mohamed">
+                           value="<?php echo e(old('first_name')); ?>" required>
                     <?php $__errorArgs = ['first_name'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -204,7 +204,7 @@ endif;
 unset($__errorArgs, $__bag); ?>
                 </div>
                 <div class="form-group">
-                    <label>Email</label>
+                    <label>Email *</label>
                     <input type="email" name="email" class="form-control"
                            value="<?php echo e(old('email')); ?>" autocomplete="new-email">
                     <?php $__errorArgs = ['email'];
@@ -224,8 +224,7 @@ unset($__errorArgs, $__bag); ?>
                     <label>Téléphone</label>
                     <input type="tel" name="phone" id="phone_field" class="form-control"
                            value="<?php echo e(old('phone')); ?>"
-                           inputmode="numeric"
-                           placeholder="Numéro de téléphone">
+                           inputmode="numeric">
                     <span id="phone_feedback" class="field-feedback"></span>
                     <?php $__errorArgs = ['phone'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
@@ -279,8 +278,7 @@ unset($__errorArgs, $__bag); ?>
                     <label>CIN</label>
                     <input type="text" name="cin" id="cin_field" class="form-control"
                            value="<?php echo e(old('cin')); ?>"
-                           oninput="this.value = this.value.toUpperCase()"
-                           placeholder="Numéro CIN">
+                           oninput="this.value = this.value.toUpperCase()">
                     <span id="cin_feedback" class="field-feedback"></span>
                     <?php $__errorArgs = ['cin'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
@@ -396,7 +394,7 @@ unset($__errorArgs, $__bag); ?>
                 <div class="form-group">
                     <label>Type de diplôme</label>
                     <input type="text" name="diploma_type" class="form-control"
-                           value="<?php echo e(old('diploma_type')); ?>" placeholder="ex: Bac+5, Doctorat...">
+                           value="<?php echo e(old('diploma_type')); ?>" >
                 </div>
                 <div class="form-group">
                     <label>Site de travail</label>
@@ -420,8 +418,7 @@ unset($__errorArgs, $__bag); ?>
                 <div class="form-group">
                     <label>Type de contrat *</label>
                     <input type="text" name="contract_type" class="form-control"
-                           value="<?php echo e(old('contract_type')); ?>" required
-                           placeholder="ex: CDI, CDD, Freelance">
+                           value="<?php echo e(old('contract_type')); ?>" required>
                     <?php $__errorArgs = ['contract_type'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -711,6 +708,7 @@ unset($__errorArgs, $__bag); ?>
     </div>
 
     
+    <?php if(auth()->user()->isAdmin()): ?>
     <div class="card mb-4" id="perm-card">
         <div class="card-header" style="display:flex;align-items:center;gap:10px;">
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24"
@@ -891,6 +889,7 @@ unset($__errorArgs, $__bag); ?>
             Les colonnes grisées (—) indiquent qu'une action n'est pas applicable pour ce module.
         </div>
     </div>
+    <?php endif; ?>
 
     
     <div class="card mb-4">
@@ -1030,7 +1029,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /* ── Pré-remplissage permissions selon le rôle ─────────── */
     const roleSelect = document.getElementById('user_role_select');
-    if (roleSelect) {
+    if (roleSelect && typeof Perms !== 'undefined') {
         roleSelect.addEventListener('change', function () {
             if (this.value === 'admin')         Perms.selectAdmin();
             else if (this.value === 'rh')       Perms.selectRH();
@@ -1042,6 +1041,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const createAccountCb = document.getElementById('create_account');
     const permCard        = document.getElementById('perm-card');
     function togglePermCard() {
+        if (!permCard) return; // absent du DOM si l'utilisateur n'est pas Admin
         permCard.style.display = createAccountCb.checked ? '' : 'none';
     }
     togglePermCard();
@@ -1129,6 +1129,8 @@ function checkUnique(fieldId, feedbackId, param, ignoreId = null) {
 
 /* ═══════════════════════════════════════════════════════
    Gestionnaire de permissions
+   (les fonctions ne sont utiles que si #perm-table existe,
+   c-à-d si auth()->user()->isAdmin() est vrai côté serveur)
 ═══════════════════════════════════════════════════════ */
 const Perms = {
 

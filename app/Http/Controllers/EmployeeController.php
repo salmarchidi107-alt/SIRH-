@@ -232,7 +232,10 @@ class EmployeeController extends Controller
 
                     $employee->update(['user_id' => $user->id]);
 
-                    $this->savePermissions($user, $request->input('permissions', []));
+                    // ✅ Seul un Admin peut définir les permissions granulaires
+                    if (auth()->user()->isAdmin()) {
+                        $this->savePermissions($user, $request->input('permissions', []));
+                    }
                 }
             });
 
@@ -358,19 +361,24 @@ class EmployeeController extends Controller
             // ── 5. Mettre à jour l'employé ────────────────────────────────────
             $this->employeeService->update($employee, $validated);
 
-            // ── 6. Mise à jour du mot de passe ────────────────────────────────
+            // ── 6. Mise à jour du mot de passe (Admin uniquement) ─────────────
             $user = null;
-            if ($request->boolean('change_password') && $request->filled('new_password')) {
+            if (
+                auth()->user()->isAdmin()
+                && $request->boolean('change_password')
+                && $request->filled('new_password')
+            ) {
                 $user = $employee->user ?? ($employee->user_id ? User::find($employee->user_id) : null);
 
                 if ($user) {
-                    $user->password       = Hash::make($request->new_password); // ✅ Hash::make ajouté
+                    $user->password       = Hash::make($request->new_password);
                     $user->plain_password = $request->new_password;
                     $user->save();
 
                     Log::info('Mot de passe mis à jour', [
                         'user_id'     => $user->id,
                         'employee_id' => $employee->id,
+                        'by_admin'    => auth()->id(),
                     ]);
                 } else {
                     Log::warning('Tentative MàJ mot de passe sans compte lié', [
@@ -379,8 +387,12 @@ class EmployeeController extends Controller
                 }
             }
 
-            // ── 7. Permissions ────────────────────────────────────────────────
-            if ($request->has('permissions') && $employee->user_id) {
+            // ── 7. Permissions (Admin uniquement) ─────────────────────────────
+            if (
+                $request->has('permissions')
+                && $employee->user_id
+                && auth()->user()->isAdmin()
+            ) {
                 $user = $user ?? User::find($employee->user_id);
                 if ($user) {
                     $this->savePermissions($user, $request->input('permissions', []));
@@ -582,6 +594,8 @@ class EmployeeController extends Controller
 
     /**
      * Persiste les permissions du formulaire pour un utilisateur donné.
+     * ⚠️ Cette méthode ne doit être appelée que si l'utilisateur courant
+     * est Admin — la vérification est faite par les appelants (store/update).
      */
     private function savePermissions(User $user, array $rawPerms): void
     {
@@ -627,21 +641,21 @@ class EmployeeController extends Controller
     }
 
     private function buildQuery(Request $request)
-{
-    return Employee::query()
-        ->when($request->get('filter') === 'active',   fn($q) => $q->active())
-        ->when($request->get('filter') === 'inactive', fn($q) => $q->status('inactive'))
-        ->when($request->search, function ($q, $search) {
-            $q->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%$search%")
-                  ->orWhere('last_name',  'like', "%$search%")
-                  ->orWhere('matricule',  'like', "%$search%")
-                  ->orWhere('email',      'like', "%$search%");
-            });
-        })
-        ->when($request->department, fn($q, $dep)    => $q->where('department', $dep))
-        ->when($request->status,     fn($q, $status) => $q->status($status));
-}
+    {
+        return Employee::query()
+            ->when($request->get('filter') === 'active',   fn($q) => $q->active())
+            ->when($request->get('filter') === 'inactive', fn($q) => $q->status('inactive'))
+            ->when($request->search, function ($q, $search) {
+                $q->where(function ($q) use ($search) {
+                    $q->where('first_name', 'like', "%$search%")
+                      ->orWhere('last_name',  'like', "%$search%")
+                      ->orWhere('matricule',  'like', "%$search%")
+                      ->orWhere('email',      'like', "%$search%");
+                });
+            })
+            ->when($request->department, fn($q, $dep)    => $q->where('department', $dep))
+            ->when($request->status,     fn($q, $status) => $q->status($status));
+    }
 
     private function getDepartmentsList()
     {

@@ -17,7 +17,7 @@
             </div>
             <div style="display:flex;gap:10px">
                 <a class="btn btn-ghost" href="<?php echo e(route('expenses.import')); ?>">Import OCR</a>
-                <a class="btn btn-ghost" href="#" onclick="return false">Export Excel</a>
+                <a class="btn btn-ghost" href="<?php echo e(route('expenses.export', request()->only(['month','year','employee_id','status']))); ?>">📥 Export CSV</a>
                 <a class="btn btn-primary" href="<?php echo e(route('expenses.create')); ?>">+ Nouvelle note</a>
             </div>
         </div>
@@ -70,7 +70,6 @@
                     <div class="nf-stats-row" style="margin-left:auto">
                         <div><span style="color:var(--text-muted)">Total</span><strong><?php echo e($stats['total']); ?></strong></div>
                         <div><span style="color:var(--text-muted)">Montant</span><strong><?php echo e($stats['montant']); ?></strong></div>
-                        <div><span style="color:#d97706">Soumis</span><strong><?php echo e($stats['soumis']); ?></strong></div>
                         <div><span style="color:#059669">Validé</span><strong><?php echo e($stats['valide']); ?></strong></div>
                         <div><span style="color:#dc2626">Rejeté</span><strong><?php echo e($stats['rejete']); ?></strong></div>
                     </div>
@@ -94,14 +93,43 @@
                                 <td><?php echo e($expense->employee->full_name ?? '—'); ?></td>
                                 <td style="font-weight:600"><?php echo e($expense->title); ?></td>
                                 <td><?php echo e($expense->category_label); ?></td>
-                                <td><?php echo e($expense->expense_date->format('d/m/Y')); ?></td>
-                                <td style="text-align:right;font-weight:600"><?php echo e(number_format($expense->amount, 2, ',', ' ')); ?> <?php echo e($expense->currency); ?></td>
+                                <td><?php echo e($expense->expense_date->locale('fr')->translatedFormat('d F Y')); ?></td>                                <td style="text-align:right;font-weight:600"><?php echo e(number_format($expense->amount, 2, ',', ' ')); ?> <?php echo e($expense->currency); ?></td>
                                 <td style="text-align:center">
                                     <span class="nf-badge nf-badge-<?php echo e($expense->status); ?>"><?php echo e($expense->status_label); ?></span>
                                 </td>
-                                <td style="text-align:center"><?php echo e($expense->receipt_path ? '📎' : '—'); ?></td>
+                                <td style="text-align:center">
+                                    <?php if($expense->receipt_path): ?>
+                                        <a href="<?php echo e(Storage::url($expense->receipt_path)); ?>" target="_blank" rel="noopener" title="Voir le justificatif" style="display:inline-flex;color:var(--text-muted)">
+                                            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"
+                                                 stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                      d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                                            </svg>
+                                        </a>
+                                    <?php else: ?>
+                                        —
+                                    <?php endif; ?>
+                                </td>
                                 <td style="text-align:right">
-                                    <a class="btn btn-ghost" style="padding:4px 10px;font-size:0.78rem" href="#" onclick="return false">Modifier</a>
+                                    <div style="display:flex;gap:6px;justify-content:flex-end">
+                                        <a class="btn btn-ghost" style="padding:4px 10px;font-size:0.78rem" href="<?php echo e(route('expenses.edit', $expense)); ?>">Modifier</a>
+
+                                        <?php if (! ($isEmployeeMode)): ?>
+                                            <?php if($expense->status !== \App\Models\Expense::STATUS_VALIDE): ?>
+                                                <form action="<?php echo e(route('expenses.approve', $expense)); ?>" method="POST" style="display:inline">
+                                                    <?php echo csrf_field(); ?>
+                                                    <button type="submit" class="btn btn-ghost" style="padding:4px 10px;font-size:0.78rem;color:#059669">✓ Valider</button>
+                                                </form>
+                                            <?php endif; ?>
+                                            <?php if($expense->status !== \App\Models\Expense::STATUS_REJETE): ?>
+                                                <form action="<?php echo e(route('expenses.reject', $expense)); ?>" method="POST" style="display:inline"
+                                                      onsubmit="return confirm('Rejeter cette note de frais ?')">
+                                                    <?php echo csrf_field(); ?>
+                                                    <button type="submit" class="btn btn-ghost" style="padding:4px 10px;font-size:0.78rem;color:#dc2626">✕ Rejeter</button>
+                                                </form>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
@@ -115,7 +143,6 @@
 </div>
 
 <style>
-/* ── Notes de frais : onglets, badges, stats (spécifique à ce module) ── */
 .nf-top-tabs {
     background:var(--surface); border-bottom:1px solid var(--border);
     padding:0 24px; display:flex; gap:4px; margin-bottom:24px;
@@ -131,8 +158,6 @@
 .nf-view { padding:0; }
 
 .nf-badge { padding:3px 10px; border-radius:20px; font-size:0.72rem; font-weight:700; white-space:nowrap; }
-.nf-badge-brouillon { background:#f1f5f9; color:#64748b; }
-.nf-badge-soumis { background:#fef3c7; color:#92400e; }
 .nf-badge-valide { background:#d1fae5; color:#065f46; }
 .nf-badge-rejete { background:#fee2e2; color:#991b1b; }
 

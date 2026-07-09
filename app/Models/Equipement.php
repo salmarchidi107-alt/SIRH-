@@ -5,11 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Traits\HasTenantScope;
+use Illuminate\Support\Facades\DB;
 
 class Equipement extends Model
 {
-    use HasFactory, SoftDeletes, HasTenantScope;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'equipements';
 
@@ -73,6 +73,22 @@ class Equipement extends Model
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
+    /**
+     * Génère une référence unique par tenant + catégorie.
+     *
+     * IMPORTANT :
+     * - Se base sur le MAX du suffixe numérique existant (pas un count()),
+     *   pour ne jamais réutiliser un numéro déjà pris après une suppression.
+     * - Utilise withTrashed() car la colonne "reference" reste occupée
+     *   en base même pour les équipements soft-deleted (contrainte unique
+     *   au niveau SQL, indépendante du soft delete).
+     * - lockForUpdate() à l'intérieur d'une transaction pour éviter que deux
+     *   requêtes concurrentes (double clic, retry réseau) génèrent la même
+     *   référence avant que l'une des deux ait committé son insert.
+     *
+     * Cette méthode DOIT être appelée à l'intérieur d'une DB::transaction()
+     * qui englobe aussi le Equipement::create() (voir EquipementController::store).
+     */
     public static function genererReference(string $categorie, string $tenantId): string
     {
         $prefixes = [
@@ -88,11 +104,22 @@ class Equipement extends Model
         ];
 
         $prefix = $prefixes[$categorie] ?? 'EQ';
-        $count  = static::where('tenant_id', $tenantId)
-                        ->where('categorie', $categorie)
-                        ->count() + 1;
 
-        return $prefix . '-' . str_pad($count, 5, '0', STR_PAD_LEFT);
+        // Longueur du préfixe + 1 pour le tiret => position du numéro (1-indexed pour SUBSTRING)
+        $offset = strlen($prefix) + 2;
+
+        $last = static::withTrashed()
+            ->where('tenant_id', $tenantId)
+            ->where('reference', 'like', $prefix . '-%')
+            ->lockForUpdate()
+            ->orderByRaw('CAST(SUBSTRING(reference, ' . $offset . ') AS UNSIGNED) DESC')
+            ->first();
+
+        $nextNumber = $last
+            ? ((int) substr($last->reference, $offset - 1)) + 1
+            : 1;
+
+        return $prefix . '-' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
     }
 
     // ─── Accesseurs couleur (utilisés dans les vues Blade) ───────────────────

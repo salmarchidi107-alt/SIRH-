@@ -13,7 +13,7 @@
 
 <form method="POST" action="{{ route('planning.templates.store') }}">
     @csrf
-    
+
         <div class="card" style="margin-bottom: 20px;">
         <div class="card-header">
             <div class="card-title">Informations générales</div>
@@ -22,7 +22,7 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:600px">
                 <div>
                     <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.875rem">Nom du modèle *</label>
-                    <input type="text" name="name" required placeholder="Ex: Semaine classique Urgences" 
+                    <input type="text" name="name" required placeholder="Ex: Semaine classique Urgences"
                         style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem">
                 </div>
                 <div>
@@ -44,7 +44,7 @@
         </div>
         <div class="card-body">
             <div style="display:grid;gap:16px">
-                
+
                 <!-- Monday -->
                 <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:12px;background:var(--surface-2);border-radius:8px">
                     <div style="font-weight:600">Lundi</div>
@@ -53,12 +53,11 @@
                         <option value="matin"> Matin</option>
                         <option value="apres_midi"> Après-midi</option>
                         <option value="journee"> Journée</option>
-                        <option value="nuit"> Nuit</option>
                         <option value="garde"> Garde</option>
                     </select>
                     <input type="time" name="monday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">
                     <input type="time" name="monday_end" placeholder="Fin" style="padding:8px;border:1px solid var(--border);border-radius:6px">
-<select name="monday_room" 
+<select name="monday_room"
         style="padding:8px;border:1px solid var(--border);border-radius:6px">
 
     <option value="">— Choisir une salle —</option>
@@ -79,12 +78,11 @@
                         <option value="matin"> Matin</option>
                         <option value="apres_midi"> Après-midi</option>
                         <option value="journee"> Journée</option>
-                        <option value="nuit"> Nuit</option>
                         <option value="garde"> Garde</option>
                     </select>
                     <input type="time" name="tuesday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">
                     <input type="time" name="tuesday_end" placeholder="Fin" style="padding:8px;border:1px solid var(--border);border-radius:6px">
-<select name="tuesday_room" 
+<select name="tuesday_room"
         style="padding:8px;border:1px solid var(--border);border-radius:6px">
 
     <option value="">— Choisir une salle —</option>
@@ -105,12 +103,11 @@
                         <option value="matin"> Matin</option>
                         <option value="apres_midi"> Après-midi</option>
                         <option value="journee"> Journée</option>
-                        <option value="nuit"> Nuit</option>
                         <option value="garde"> Garde</option>
                     </select>
                     <input type="time" name="wednesday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">
                     <input type="time" name="wednesday_end" placeholder="Fin" style="padding:8px;border:1px solid var(--border);border-radius:6px">
-<select name="wednesday_room" 
+<select name="wednesday_room"
         style="padding:8px;border:1px solid var(--border);border-radius:6px">
 
     <option value="">— Choisir une salle —</option>
@@ -131,7 +128,6 @@
                         <option value="matin"> Matin</option>
                         <option value="apres_midi"> Après-midi</option>
                         <option value="journee"> Journée</option>
-                        <option value="nuit"> Nuit</option>
                         <option value="garde"> Garde</option>
                     </select>
                     <input type="time" name="thursday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">
@@ -154,7 +150,6 @@
                         <option value="matin"> Matin</option>
                         <option value="apres_midi"> Après-midi</option>
                         <option value="journee"> Journée</option>
-                        <option value="nuit"> Nuit</option>
                         <option value="garde"> Garde</option>
                     </select>
                     <input type="time" name="friday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">
@@ -177,7 +172,6 @@
                         <option value="matin"> Matin</option>
                         <option value="apres_midi"> Après-midi</option>
                         <option value="journee"> Journée</option>
-                        <option value="nuit"> Nuit</option>
                         <option value="garde"> Garde</option>
                     </select>
                     <input type="time" name="saturday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">
@@ -200,7 +194,6 @@
                         <option value="matin"> Matin</option>
                         <option value="apres_midi"> Après-midi</option>
                         <option value="journee"> Journée</option>
-                        <option value="nuit"> Nuit</option>
                         <option value="garde"> Garde</option>
                     </select>
                     <input type="time" name="sunday_start" placeholder="Début" style="padding:8px;border:1px solid var(--border);border-radius:6px">

@@ -4,39 +4,9 @@ namespace App\Services;
 
 use App\Models\{VerificationCode, Tenant, User};
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class VerificationCodeService
 {
-    // ─── Trimestre courant ───────────────────────────────────────────────────
-
-    public function currentQuarter(): string
-    {
-        return VerificationCode::currentQuarterLabel();
-    }
-
-    public function previousQuarter(): string
-    {
-        $now = now();
-        $q   = (int) ceil($now->month / 3);
-
-        if ($q === 1) {
-            return 'T4-' . ($now->year - 1);
-        }
-
-        return 'T' . ($q - 1) . '-' . $now->year;
-    }
-
-    public function nextRenewalDate(): Carbon
-    {
-        $q      = (int) ceil(now()->month / 3);
-        $starts = [1 => [4, 1], 2 => [7, 1], 3 => [10, 1], 4 => [1, 1]];
-        [$month, $day] = $starts[$q];
-        $year = $q === 4 ? now()->year + 1 : now()->year;
-
-        return Carbon::create($year, $month, $day);
-    }
-
     // ─── Utilisateurs actifs d'un tenant ─────────────────────────────────────
 
     private function activeUsersForTenant(string $tenantId)
@@ -51,74 +21,58 @@ class VerificationCodeService
 
     public function dashboardStats(string $tenantId): array
     {
-        $quarter     = $this->currentQuarter();
         $activeUsers = $this->activeUsersForTenant($tenantId);
         $activeCount = $activeUsers->count();
         $activeIds   = $activeUsers->pluck('id');
 
-        // Codes attribués ce trimestre pour les utilisateurs actifs
-        $assignedThisQuarter = VerificationCode::forTenant($tenantId)
-            ->forQuarter($quarter)
+        // Codes actifs (ASSIGNED) pour les utilisateurs actifs
+        $assignedCount = VerificationCode::forTenant($tenantId)
             ->assigned()
             ->whereIn('user_id', $activeIds)
             ->count();
 
-        // Codes utilisés au moins une fois ce trimestre (ASSIGNED + used_at non null)
+        // Codes utilisés au moins une fois (ASSIGNED + used_at non null)
         $usedAtLeastOnce = VerificationCode::forTenant($tenantId)
-            ->forQuarter($quarter)
             ->usedAtLeastOnce()
             ->whereIn('user_id', $activeIds)
             ->count();
 
-        // Codes jamais utilisés ce trimestre (ASSIGNED + used_at null)
+        // Codes jamais utilisés (ASSIGNED + used_at null)
         $neverUsed = VerificationCode::forTenant($tenantId)
-            ->forQuarter($quarter)
             ->neverUsed()
             ->whereIn('user_id', $activeIds)
             ->count();
 
-        // ── Révocations MANUELLES uniquement ce trimestre ─────────────────────
-        // On exclut les révocations automatiques :
-        //   - 'Remplacement manuel'  → générées par replaceForUser()
-        //   - 'Renouvellement forcé' → générées par forceRenewCurrentQuarter()
-        // Seules les révocations explicites via le bouton "Révoquer" sont comptées.
-        $revokedThisQuarter = VerificationCode::forTenant($tenantId)
-            ->forQuarter($quarter)
+        // ── Révocations MANUELLES uniquement ─────────────────────────────────
+        // On exclut les révocations générées par replaceForUser() (raison 'Remplacement manuel')
+        $revokedManual = VerificationCode::forTenant($tenantId)
             ->where('status', VerificationCode::STATUS_REVOKED)
             ->where(function ($q) {
                 $q->whereNull('revoke_reason')
                   ->orWhere('revoke_reason', '')
-                  ->orWhere(function ($q2) {
-                      $q2->where('revoke_reason', 'NOT LIKE', '%Remplacement%')
-                         ->where('revoke_reason', 'NOT LIKE', '%forcé%')
-                         ->where('revoke_reason', 'NOT LIKE', '%force%');
-                  });
+                  ->orWhere('revoke_reason', 'NOT LIKE', '%Remplacement%');
             })
             ->count();
 
-        // Totaux historiques (tous trimestres) — conservés pour compatibilité SuperAdmin
         $totals = VerificationCode::forTenant($tenantId)
             ->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')
             ->pluck('total', 'status')
             ->toArray();
 
-        $missingCount = max(0, $activeCount - $assignedThisQuarter);
+        $missingCount = max(0, $activeCount - $assignedCount);
 
         return [
-            'active_employees'      => $activeCount,
-            'assigned_this_quarter' => $assignedThisQuarter,
-            'used_at_least_once'    => $usedAtLeastOnce,
-            'never_used'            => $neverUsed,
-            'missing_count'         => $missingCount,
-            'revoked_this_quarter'  => $revokedThisQuarter,  // ← révocations manuelles uniquement
-            'used_total'            => $totals[VerificationCode::STATUS_USED]    ?? 0,
-            'revoked_total'         => $totals[VerificationCode::STATUS_REVOKED] ?? 0,
-            'expired_total'         => $totals[VerificationCode::STATUS_EXPIRED] ?? 0,
-            'current_quarter'       => $quarter,
-            'next_renewal'          => $this->nextRenewalDate()->format('d/m/Y'),
-            'coverage_pct'          => $activeCount > 0
-                ? (int) round(($assignedThisQuarter / $activeCount) * 100)
+            'active_employees'   => $activeCount,
+            'assigned_count'     => $assignedCount,
+            'used_at_least_once' => $usedAtLeastOnce,
+            'never_used'         => $neverUsed,
+            'missing_count'      => $missingCount,
+            'revoked_count'      => $revokedManual,   // révocations manuelles uniquement
+            'used_total'         => $totals[VerificationCode::STATUS_USED]    ?? 0,
+            'revoked_total'      => $totals[VerificationCode::STATUS_REVOKED] ?? 0,
+            'coverage_pct'       => $activeCount > 0
+                ? (int) round(($assignedCount / $activeCount) * 100)
                 : 0,
         ];
     }
@@ -127,9 +81,7 @@ class VerificationCodeService
 
     public function generateMissing(string $tenantId, int $generatedBy): array
     {
-        $quarter = $this->currentQuarter();
-
-        return DB::transaction(function () use ($tenantId, $quarter, $generatedBy) {
+        return DB::transaction(function () use ($tenantId, $generatedBy) {
             $activeUsers = $this->activeUsersForTenant($tenantId);
 
             if ($activeUsers->isEmpty()) {
@@ -137,7 +89,6 @@ class VerificationCodeService
             }
 
             $coveredIds = VerificationCode::forTenant($tenantId)
-                ->forQuarter($quarter)
                 ->assigned()
                 ->whereIn('user_id', $activeUsers->pluck('id'))
                 ->pluck('user_id')
@@ -147,7 +98,7 @@ class VerificationCodeService
 
             if ($usersNeedingCode->isEmpty()) {
                 throw new \DomainException(
-                    'Tous les utilisateurs actifs ont déjà un code pour le trimestre ' . $quarter . '.'
+                    'Tous les utilisateurs actifs ont déjà un code actif.'
                 );
             }
 
@@ -155,7 +106,6 @@ class VerificationCodeService
 
             foreach ($usersNeedingCode as $user) {
                 $alreadyHasCode = VerificationCode::where('user_id', $user->id)
-                    ->where('quarter', $quarter)
                     ->where('status', VerificationCode::STATUS_ASSIGNED)
                     ->exists();
 
@@ -166,7 +116,6 @@ class VerificationCodeService
                 $code = VerificationCode::create([
                     'code'         => VerificationCode::generateUniqueCode(),
                     'tenant_id'    => $tenantId,
-                    'quarter'      => $quarter,
                     'status'       => VerificationCode::STATUS_ASSIGNED,
                     'user_id'      => $user->id,
                     'assigned_by'  => $generatedBy,
@@ -193,11 +142,8 @@ class VerificationCodeService
 
     public function assignToNewUser(User $user): VerificationCode
     {
-        $quarter = $this->currentQuarter();
-
-        return DB::transaction(function () use ($user, $quarter) {
+        return DB::transaction(function () use ($user) {
             $existing = VerificationCode::where('user_id', $user->id)
-                ->where('quarter', $quarter)
                 ->where('status', VerificationCode::STATUS_ASSIGNED)
                 ->first();
 
@@ -208,7 +154,6 @@ class VerificationCodeService
             return VerificationCode::create([
                 'code'         => VerificationCode::generateUniqueCode(),
                 'tenant_id'    => $user->tenant_id,
-                'quarter'      => $quarter,
                 'status'       => VerificationCode::STATUS_ASSIGNED,
                 'user_id'      => $user->id,
                 'assigned_by'  => null,
@@ -222,104 +167,6 @@ class VerificationCodeService
     public function assignToNewEmployee(User $user): VerificationCode
     {
         return $this->assignToNewUser($user);
-    }
-
-    // ─── Renouvellement trimestriel ──────────────────────────────────────────
-
-    public function renewQuarter(string $tenantId, int $triggeredBy): array
-    {
-        $currentQuarter  = $this->currentQuarter();
-        $previousQuarter = $this->previousQuarter();
-
-        return DB::transaction(function () use ($tenantId, $currentQuarter, $previousQuarter, $triggeredBy) {
-            $toExpire = VerificationCode::forTenant($tenantId)
-                ->forQuarter($previousQuarter)
-                ->active()
-                ->get();
-
-            $expiredCount = 0;
-            foreach ($toExpire as $code) {
-                $code->expire();
-                $expiredCount++;
-            }
-
-            $activeUsers = $this->activeUsersForTenant($tenantId);
-
-            $alreadyCoveredIds = VerificationCode::forTenant($tenantId)
-                ->forQuarter($currentQuarter)
-                ->assigned()
-                ->whereIn('user_id', $activeUsers->pluck('id'))
-                ->pluck('user_id')
-                ->toArray();
-
-            $generatedCount = 0;
-            foreach ($activeUsers as $user) {
-                if (in_array($user->id, $alreadyCoveredIds)) {
-                    continue;
-                }
-
-                VerificationCode::create([
-                    'code'         => VerificationCode::generateUniqueCode(),
-                    'tenant_id'    => $tenantId,
-                    'quarter'      => $currentQuarter,
-                    'status'       => VerificationCode::STATUS_ASSIGNED,
-                    'user_id'      => $user->id,
-                    'assigned_by'  => $triggeredBy,
-                    'assigned_at'  => now(),
-                    'generated_by' => $triggeredBy,
-                ]);
-                $generatedCount++;
-            }
-
-            return [
-                'expired'   => $expiredCount,
-                'generated' => $generatedCount,
-                'quarter'   => $currentQuarter,
-            ];
-        });
-    }
-
-    // ─── Renouvellement forcé du trimestre courant ────────────────────────────
-
-    public function forceRenewCurrentQuarter(string $tenantId, int $triggeredBy): array
-    {
-        $quarter = $this->currentQuarter();
-
-        return DB::transaction(function () use ($tenantId, $quarter, $triggeredBy) {
-            $toRevoke = VerificationCode::forTenant($tenantId)
-                ->forQuarter($quarter)
-                ->active()
-                ->get();
-
-            $revokedCount = 0;
-            foreach ($toRevoke as $code) {
-                $code->revoke($triggeredBy, 'Renouvellement forcé');
-                $revokedCount++;
-            }
-
-            $activeUsers    = $this->activeUsersForTenant($tenantId);
-            $generatedCount = 0;
-
-            foreach ($activeUsers as $user) {
-                VerificationCode::create([
-                    'code'         => VerificationCode::generateUniqueCode(),
-                    'tenant_id'    => $tenantId,
-                    'quarter'      => $quarter,
-                    'status'       => VerificationCode::STATUS_ASSIGNED,
-                    'user_id'      => $user->id,
-                    'assigned_by'  => $triggeredBy,
-                    'assigned_at'  => now(),
-                    'generated_by' => $triggeredBy,
-                ]);
-                $generatedCount++;
-            }
-
-            return [
-                'revoked'   => $revokedCount,
-                'generated' => $generatedCount,
-                'quarter'   => $quarter,
-            ];
-        });
     }
 
     // ─── Révocation individuelle ─────────────────────────────────────────────
@@ -340,18 +187,14 @@ class VerificationCodeService
             );
         }
 
-        $quarter = $this->currentQuarter();
-
-        return DB::transaction(function () use ($user, $quarter, $replacedBy) {
+        return DB::transaction(function () use ($user, $replacedBy) {
             VerificationCode::where('user_id', $user->id)
-                ->where('quarter', $quarter)
                 ->where('status', VerificationCode::STATUS_ASSIGNED)
                 ->each(fn ($c) => $c->revoke($replacedBy, 'Remplacement manuel'));
 
             return VerificationCode::create([
                 'code'         => VerificationCode::generateUniqueCode(),
                 'tenant_id'    => $user->tenant_id,
-                'quarter'      => $quarter,
                 'status'       => VerificationCode::STATUS_ASSIGNED,
                 'user_id'      => $user->id,
                 'assigned_by'  => $replacedBy,

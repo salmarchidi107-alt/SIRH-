@@ -21,32 +21,20 @@
         --indigo-bd:   #c7d2fe;
     }
 
-    .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }
-    @media(max-width:768px) { .stats-row { grid-template-columns:repeat(2,1fr); } }
+    .stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+    @media(max-width:768px) { .stats-row { grid-template-columns:repeat(1,1fr); } }
     .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px; position:relative; overflow:hidden; }
     .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:10px 10px 0 0; }
     .stat-card.c-blue::before  { background:var(--primary-l); }
     .stat-card.c-green::before { background:var(--green); }
     .stat-card.c-red::before   { background:var(--red); }
-    .stat-card.c-amber::before { background:var(--amber); }
     .stat-label { font-size:11px; color:var(--muted); font-weight:500; margin-bottom:4px; }
     .stat-val   { font-size:26px; font-weight:800; line-height:1; }
     .stat-val.blue  { color:var(--primary-l); }
     .stat-val.green { color:var(--green); }
     .stat-val.red   { color:var(--red); }
-    .stat-val.amber { color:var(--amber); }
 
-    .trimestre-bar { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:13px 18px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
-    .trim-info { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
-    .trim-label { font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--light); }
-    .trim-quarters { display:flex; gap:5px; }
-    .trim-q { padding:5px 13px; border-radius:6px; border:1px solid var(--border); background:none; color:var(--muted); font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .15s; }
-    .trim-q.active { background:#e0f2fe; border-color:var(--primary-l); color:var(--primary-d); }
-    .trim-progress { display:flex; align-items:center; gap:8px; }
-    .trim-bar-wrap { width:90px; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
-    .trim-bar-fill { height:4px; border-radius:2px; transition:width .4s; }
-    .trim-bar-label { font-size:10px; color:var(--light); white-space:nowrap; }
-    .trim-next-badge { font-size:11px; color:var(--light); background:var(--bg); padding:4px 10px; border-radius:20px; border:1px solid var(--border); }
+    .coverage-bar { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:13px 18px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
 
     .actions-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; align-items:center; }
     .act-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .15s; border:none; }
@@ -54,9 +42,6 @@
     .act-btn-primary { background:var(--primary); color:#fff; }
     .act-btn-primary:hover { background:var(--primary-d); }
     .act-btn-primary:disabled { opacity:.45; cursor:not-allowed; }
-    .act-btn-outline { background:var(--surface); color:var(--muted); border:1px solid var(--border); }
-    .act-btn-outline:hover { border-color:var(--amber); color:#92400e; background:#fffbeb; }
-    .act-btn-outline:disabled { opacity:.45; cursor:not-allowed; }
     .act-btn-export { background:var(--surface); color:var(--muted); border:1px solid var(--border); }
     .act-btn-export:hover { border-color:var(--primary-l); color:var(--primary); background:#e0f2fe; }
 
@@ -96,7 +81,6 @@
     .code-digit  { width:24px; height:28px; border:1.5px solid var(--indigo-bd); border-radius:5px; background:var(--indigo-bg); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:var(--indigo); font-family:'Courier New',monospace; transition:all .3s; }
     .code-digit.updated    { border-color:#6ee7b7; background:#d1fae5; color:#065f46; animation:digitFlash .5s ease; }
     .code-digit.st-revoked { border-color:#fca5a5; background:#fee2e2; color:#991b1b; }
-    .code-digit.st-expired { border-color:#fde047; background:#fefce8; color:#a16207; }
     .code-digit.st-used    { border-color:#6ee7b7; background:#d1fae5; color:#065f46; }
     @keyframes digitFlash { 0%{transform:scale(1.15)} 60%{transform:scale(1.05)} 100%{transform:scale(1)} }
 
@@ -105,7 +89,6 @@
     .badge-assigned  { background:#e0f2fe; color:var(--primary-d); }
     .badge-used-once { background:#d1fae5; color:#065f46; }
     .badge-revoked   { background:#fee2e2; color:#991b1b; }
-    .badge-expired   { background:#fef3c7; color:#92400e; }
 
     .actions-cell { display:flex; align-items:center; justify-content:flex-end; gap:5px; }
     .btn-replace,
@@ -151,14 +134,6 @@
 
 <?php
     use App\Models\VerificationCode as VC;
-
-    $cqNum      = (int) ceil(now()->month / 3);
-    $cqLabel    = 'T' . $cqNum . '-' . now()->year;
-    $qStart     = ($cqNum - 1) * 3 + 1;
-    $qProgress  = min(max((int) round(((now()->month - $qStart) * 30 + now()->day) / 90 * 100), 0), 100);
-    $nextStarts = [1 => '01/04', 2 => '01/07', 3 => '01/10', 4 => '01/01'];
-    $nextYear   = $cqNum === 4 ? now()->year + 1 : now()->year;
-    $nextDate   = $nextStarts[$cqNum] . '/' . $nextYear;
 ?>
 
 <?php if(session('success')): ?>
@@ -175,49 +150,21 @@
 <div class="stats-row">
     <div class="stat-card c-blue">
         <div class="stat-label">Attribués (jamais utilisés)</div>
-        <div class="stat-val blue" id="statAssigned"><?php echo e($stats['assigned_this_quarter'] - $stats['used_at_least_once']); ?></div>
+        <div class="stat-val blue" id="statAssigned"><?php echo e($stats['assigned_count'] - $stats['used_at_least_once']); ?></div>
     </div>
     <div class="stat-card c-green">
         <div class="stat-label">Utilisés (réutilisables)</div>
         <div class="stat-val green" id="statUsed"><?php echo e($stats['used_at_least_once']); ?></div>
     </div>
     <div class="stat-card c-red">
-        <div class="stat-label">Révoqués ce trimestre</div>
+        <div class="stat-label">Révoqués</div>
         
-        <div class="stat-val red" id="statRevoked">0</div>
-    </div>
-    <div class="stat-card c-amber">
-        <div class="stat-label">Expiré</div>
-        <div class="stat-val amber" id="statMissing"><?php echo e($stats['missing_count']); ?></div>
+        <div class="stat-val red" id="statRevoked"><?php echo e($stats['revoked_count']); ?></div>
     </div>
 </div>
 
 
-<div class="trimestre-bar">
-    <div class="trim-info">
-        <span class="trim-label">Trimestre</span>
-        <div class="trim-quarters">
-            <?php $__currentLoopData = [1,2,3,4]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $qn): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-            <?php
-                $qP    = $qn < $cqNum ? 100 : ($qn === $cqNum ? $qProgress : 0);
-                $qNx   = $nextStarts[$qn] . '/' . ($qn === 4 ? now()->year + 1 : now()->year);
-                $qColor= $qP >= 100 ? 'var(--green)' : ($qP === 0 ? 'var(--light)' : 'var(--primary-l)');
-            ?>
-            <button class="trim-q <?php echo e($qn === $cqNum ? 'active' : ''); ?>"
-                    data-q="<?php echo e($qn); ?>" data-progress="<?php echo e($qP); ?>"
-                    data-next="<?php echo e($qNx); ?>" data-color="<?php echo e($qColor); ?>"
-                    onclick="selectQ(this)">T<?php echo e($qn); ?></button>
-            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-        </div>
-        <div class="trim-progress">
-            <div class="trim-bar-wrap">
-                <div class="trim-bar-fill" id="trimBarFill"
-                     style="width:<?php echo e($qProgress); ?>%;background:<?php echo e($qProgress >= 100 ? 'var(--green)' : 'var(--primary-l)'); ?>;"></div>
-            </div>
-            <span class="trim-bar-label" id="trimBarLabel"><?php echo e($qProgress); ?>% écoulé</span>
-        </div>
-        <span class="trim-next-badge" id="trimNextLabel">Renouvellement : <?php echo e($nextDate); ?></span>
-    </div>
+<div class="coverage-bar">
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
         <span style="font-size:11px;color:var(--muted);">Couverture :</span>
         <span style="font-size:14px;font-weight:800;color:<?php echo e($stats['coverage_pct'] >= 100 ? 'var(--green)' : ($stats['coverage_pct'] >= 50 ? 'var(--amber)' : 'var(--red)')); ?>;"
@@ -235,14 +182,6 @@
         <span id="btnGenerateLbl">Générer les codes manquants</span>
     </button>
 
-    <button class="act-btn act-btn-outline" id="btnRenew" onclick="confirmRenewQuarter()">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round"
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-        </svg>
-        <span id="btnRenewLbl">Renouveler le trimestre</span>
-    </button>
-
     <button class="act-btn act-btn-export" onclick="exportPDF()">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round"
@@ -258,7 +197,7 @@
             <path stroke-linecap="round" stroke-linejoin="round"
                   d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
         </svg>
-        <strong><?php echo e($stats['missing_count']); ?> employé(s)</strong>&nbsp;sans code ce trimestre
+        <strong><?php echo e($stats['missing_count']); ?> employé(s)</strong>&nbsp;sans code
     </div>
     <?php endif; ?>
 </div>
@@ -274,7 +213,6 @@
         <option value="assigned">Attribué</option>
         <option value="used_once">Utilisé</option>
         <option value="revoked">Révoqué</option>
-        <option value="expired">Expiré</option>
     </select>
     <button class="f-reset" onclick="resetFilters()">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -295,7 +233,6 @@
                 <th>Collaborateur</th>
                 <th>Code 2FA</th>
                 <th>Statut</th>
-                <th>Trimestre</th>
                 <th>Attribué le</th>
                 <th>Utilisé le</th>
                 <th style="text-align:right;width:160px">Actions</th>
@@ -307,7 +244,6 @@
                 $isUsedOnce = $code->status === VC::STATUS_ASSIGNED && !is_null($code->used_at);
                 $isAssigned = $code->status === VC::STATUS_ASSIGNED && is_null($code->used_at);
                 $isRevoked  = $code->status === VC::STATUS_REVOKED;
-                $isExpired  = $code->status === VC::STATUS_EXPIRED;
 
                 if ($isUsedOnce) {
                     $badgeClass   = 'badge-used-once';
@@ -319,16 +255,11 @@
                     $badgeLabel   = 'Attribué';
                     $digitClass   = '';
                     $visualStatus = 'assigned';
-                } elseif ($isRevoked) {
+                } else {
                     $badgeClass   = 'badge-revoked';
                     $badgeLabel   = 'Révoqué';
                     $digitClass   = 'st-revoked';
                     $visualStatus = 'revoked';
-                } else {
-                    $badgeClass   = 'badge-expired';
-                    $badgeLabel   = 'Expiré';
-                    $digitClass   = 'st-expired';
-                    $visualStatus = 'expired';
                 }
 
                 $digits    = str_split(str_pad($code->code, 6, '0', STR_PAD_LEFT));
@@ -381,7 +312,6 @@
 
                     </span>
                 </td>
-                <td style="font-size:11px;color:var(--muted);font-family:monospace;"><?php echo e($code->quarter ?? '—'); ?></td>
                 <td style="font-size:11px;color:var(--muted);"><?php echo e($code->assigned_at?->format('d/m/Y') ?? '—'); ?></td>
                 <td style="font-size:11px;color:<?php echo e($isUsedOnce ? 'var(--green)' : 'var(--muted)'); ?>;font-weight:<?php echo e($isUsedOnce ? '600' : '400'); ?>;"
                     id="used-cell-<?php echo e($code->id); ?>">
@@ -462,7 +392,6 @@
 <script>
 const CSRF            = document.querySelector('meta[name="csrf-token"]').content;
 const URL_GENERATE    = "<?php echo e(route('admin.codes.generate-missing')); ?>";
-const URL_RENEW       = "<?php echo e(route('admin.codes.renew-quarter')); ?>";
 const URL_REPLACE_TPL = "<?php echo e(route('admin.codes.replace-user', ['user' => '~~UID~~'])); ?>";
 const URL_REVOKE_TPL  = "<?php echo e(route('admin.codes.revoke', ['verificationCode' => '~~VID~~'])); ?>";
 
@@ -470,7 +399,7 @@ function replaceUrl(tpl, id) {
     return tpl.replace('~~UID~~', id).replace('~~VID~~', id);
 }
 
-/* ── FIX PRINCIPAL : compteur révoqués calculé depuis le DOM ─────────────
+/* ── Compteur révoqués calculé depuis le DOM ──────────────────────────────
    On compte uniquement les lignes visibles dans le tableau avec
    data-status="revoked". Ainsi :
    - Au chargement : reflète exactement ce qui est affiché
@@ -482,21 +411,6 @@ function syncRevokedCount() {
     const count = document.querySelectorAll('.code-row[data-status="revoked"]').length;
     const el    = document.getElementById('statRevoked');
     if (el) el.textContent = count;
-}
-
-/* Lancer au chargement de la page */
-document.addEventListener('DOMContentLoaded', syncRevokedCount);
-
-/* ── Trimestre ───────────────────────────────────────────────────────────── */
-function selectQ(btn) {
-    document.querySelectorAll('.trim-q').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const pct  = parseInt(btn.dataset.progress);
-    const fill = document.getElementById('trimBarFill');
-    fill.style.width      = pct + '%';
-    fill.style.background = btn.dataset.color;
-    document.getElementById('trimBarLabel').textContent  = pct + '% écoulé';
-    document.getElementById('trimNextLabel').textContent = 'Renouvellement : ' + btn.dataset.next;
 }
 
 /* ── Générer codes manquants ─────────────────────────────────────────────── */
@@ -524,44 +438,6 @@ async function generateMissing() {
         btn.disabled = false;
     } finally {
         lbl.textContent = 'Générer les codes manquants';
-    }
-}
-
-/* ── Renouvellement trimestriel ──────────────────────────────────────────── */
-function confirmRenewQuarter() {
-    openModal(
-        'Renouveler le trimestre',
-        `Les codes actifs du <strong>trimestre précédent</strong> seront expirés.<br>
-         Un nouveau code sera créé pour <strong>chaque employé actif</strong>.<br><br>
-         <strong>Cette action est irréversible.</strong>`,
-        doRenewQuarter,
-        true
-    );
-}
-
-async function doRenewQuarter() {
-    const btn = document.getElementById('btnRenew');
-    const lbl = document.getElementById('btnRenewLbl');
-    btn.disabled = true;
-    lbl.textContent = 'En cours…';
-    try {
-        const res  = await fetch(URL_RENEW, {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': CSRF, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({})
-        });
-        const data = await res.json();
-        if (data.success) {
-            showToast(data.message);
-            setTimeout(() => window.location.reload(), 1600);
-        } else {
-            showToast(data.message ?? 'Erreur', 'error');
-        }
-    } catch {
-        showToast('Erreur réseau. Réessayez.', 'error');
-    } finally {
-        btn.disabled = false;
-        lbl.textContent = 'Renouveler le trimestre';
     }
 }
 
@@ -629,7 +505,7 @@ async function replaceForUser(userId, codeId, userName) {
             const actionsCell = document.getElementById('actions-' + codeId);
             if (actionsCell) actionsCell.id = 'actions-' + data.new_id;
 
-            /* FIX : resync compteur — la ligne est repassée en "assigned" */
+            /* Resync compteur — la ligne est repassée en "assigned" */
             syncRevokedCount();
 
             showToast('Nouveau code attribué à ' + userName);
@@ -684,7 +560,7 @@ async function doRevoke(codeId, userName) {
                 row.dataset.status = 'revoked';
             }
 
-            /* FIX : resync compteur depuis le DOM */
+            /* Resync compteur depuis le DOM */
             syncRevokedCount();
 
             showToast('Code de ' + userName + ' révoqué avec succès.');
@@ -723,16 +599,12 @@ function exportPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-    const activeQ = document.querySelector('.trim-q.active');
-    const quarter = activeQ ? 'T' + activeQ.dataset.q + '-' + new Date().getFullYear() : '';
-
     doc.setFontSize(14); doc.setFont('helvetica', 'bold');
     doc.text('Codes de vérification 2FA', 14, 16);
     doc.setFontSize(9); doc.setFont('helvetica', 'normal');
-    doc.text('Trimestre : ' + quarter, 14, 23);
     doc.text('Généré le : ' + new Date().toLocaleDateString('fr-FR', {
         day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'
-    }), 14, 28);
+    }), 14, 23);
 
     const rows = [];
     document.querySelectorAll('#codesTable tbody tr.code-row').forEach(tr => {
@@ -746,16 +618,15 @@ function exportPDF() {
             String(rows.length + 1).padStart(2, '0'),
             name, email, code, status,
             tds[4]?.textContent?.trim() ?? '—',
-            tds[5]?.textContent?.trim() ?? '—',
-            tds[6]?.textContent?.trim().replace(/\s+/g, ' ') ?? '—',
+            tds[5]?.textContent?.trim().replace(/\s+/g, ' ') ?? '—',
         ]);
     });
 
     if (!rows.length) { showToast('Aucune ligne à exporter.', 'warn'); return; }
 
     doc.autoTable({
-        startY: 34,
-        head: [['#', 'Employé', 'Email', 'Code 2FA', 'Statut', 'Trimestre', 'Attribué le', 'Utilisé le']],
+        startY: 29,
+        head: [['#', 'Employé', 'Email', 'Code 2FA', 'Statut', 'Attribué le', 'Utilisé le']],
         body: rows,
         theme: 'grid',
         styles: { font:'helvetica', fontSize:8, cellPadding:3, textColor:20, lineColor:180, lineWidth:.2 },
@@ -764,9 +635,8 @@ function exportPDF() {
             0: { halign:'center', cellWidth:8 },
             3: { halign:'center', cellWidth:22, font:'courier', fontSize:10, fontStyle:'bold' },
             4: { halign:'center', cellWidth:20 },
-            5: { halign:'center', cellWidth:20 },
-            6: { halign:'center', cellWidth:24 },
-            7: { halign:'center', cellWidth:28 },
+            5: { halign:'center', cellWidth:24 },
+            6: { halign:'center', cellWidth:28 },
         },
         alternateRowStyles: { fillColor:[250,250,250] },
         margin: { left:14, right:14 },
@@ -780,7 +650,7 @@ function exportPDF() {
             doc.internal.pageSize.getHeight() - 8,
             { align: 'center' });
     }
-    doc.save('2FA_codes_' + quarter + '.pdf');
+    doc.save('2FA_codes.pdf');
     showToast('PDF exporté avec succès.');
 }
 

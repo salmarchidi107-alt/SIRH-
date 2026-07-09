@@ -358,21 +358,6 @@
             <?php endif; ?>
             <?php endif; ?>
 
-            
-<?php if($u->canView('expenses')): ?>
-<div class="nav-section-label">Notes de frais</div>
-
-<a href="<?php echo e(route('expenses.index')); ?>"
-   class="nav-item <?php echo e(request()->routeIs('expenses.*') ? 'active' : ''); ?>">
-    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M6 2l1.5 1.5L9 2l1.5 1.5L12 2l1.5 1.5L15 2l1.5 1.5L18 2v20l-1.5-1.5L15 22l-1.5-1.5L12 22l-1.5-1.5L9 22l-1.5-1.5L6 22V2z"/>
-        <line x1="9" y1="8" x2="15" y2="8"/>
-        <line x1="9" y1="12" x2="15" y2="12"/>
-        <line x1="9" y1="16" x2="12" y2="16"/>
-    </svg>
-    <span>Mes notes de frais</span>
-</a>
-<?php endif; ?>
 
             
             <?php if($u->canView('lms') || $u->canView('referentiel') || $u->canView('lms_planning')): ?>
@@ -640,42 +625,6 @@
 
 
             
-<?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh'])): ?>
-<?php $navUser = Auth::user(); ?>
-
-<?php if($navUser->canView('expenses')): ?>
-<div class="nav-section-label">Notes de frais</div>
-
-<?php
-    $expensesEnAttente = 0;
-    try {
-        $expTenantId = config('app.current_tenant_id')
-            ?? (auth()->check() ? auth()->user()->tenant_id : null);
-        $expensesEnAttente = \App\Models\Expense::where('status', 'soumis')
-            ->when($expTenantId, fn($q) => $q->where('tenant_id', $expTenantId))
-            ->count();
-    } catch (\Exception $e) {
-        $expensesEnAttente = 0;
-    }
-?>
-
-<a href="<?php echo e(route('expenses.index')); ?>"
-   class="nav-item <?php echo e(request()->routeIs('expenses.*') ? 'active' : ''); ?>">
-    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M6 2l1.5 1.5L9 2l1.5 1.5L12 2l1.5 1.5L15 2l1.5 1.5L18 2v20l-1.5-1.5L15 22l-1.5-1.5L12 22l-1.5-1.5L9 22l-1.5-1.5L6 22V2z"/>
-        <line x1="9" y1="8" x2="15" y2="8"/>
-        <line x1="9" y1="12" x2="15" y2="12"/>
-        <line x1="9" y1="16" x2="12" y2="16"/>
-    </svg>
-    <span>Notes de frais</span>
-    <?php if($expensesEnAttente > 0): ?>
-    <span class="nav-badge-live"><?php echo e($expensesEnAttente); ?></span>
-    <?php endif; ?>
-</a>
-<?php endif; ?>
-<?php endif; ?>
-
-            
             <?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh'])): ?>
             <?php $navUser = Auth::user(); ?>
 
@@ -860,25 +809,30 @@
             <?php $navUser = Auth::user(); ?>
 
             <?php if($navUser->canView('parametrage')): ?>
-            <div class="nav-section-label">Paramétrage</div>
+<div class="nav-section-label">Paramétre</div>
 
-            <a href="<?php echo e(route('parametrage.index')); ?>"
-               class="nav-item <?php echo e(request()->routeIs('parametrage.*') || request()->routeIs('rooms.*') || request()->routeIs('departments.*') ? 'active' : ''); ?>">
-                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0
-                             002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0
-                             001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0
-                             00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0
-                             00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0
-                             00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0
-                             00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0
-                             001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-                <span>Paramétrage</span>
-            </a>
-            <a href="<?php echo e(route('admin.codes.index')); ?>"
+<a href="<?php echo e(route('parametrage.index')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('parametrage.*') || request()->routeIs('rooms.*') || request()->routeIs('departments.*') ? 'active' : ''); ?>">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0
+                 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0
+                 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0
+                 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0
+                 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0
+                 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0
+                 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0
+                 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+    </svg>
+    <span>Paramétrage</span>
+</a>
+<?php endif; ?>
+
+<?php if($navUser->canView('parametrage')): ?>
+<div class="nav-section-label">Sécurité</div>
+
+<a href="<?php echo e(route('admin.codes.index')); ?>"
    class="nav-item <?php echo e(request()->routeIs('admin.codes.*') ? 'active' : ''); ?>">
     <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <rect x="5" y="11" width="14" height="10" rx="2"/>
@@ -886,7 +840,7 @@
     </svg>
     <span>Codes de vérification</span>
 </a>
-            <?php endif; ?>
+<?php endif; ?>
             <?php endif; ?>
 
         </nav>

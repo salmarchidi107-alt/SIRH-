@@ -7,23 +7,8 @@ use App\Models\Expense;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
-/**
- * Contrôleur du module "Notes de frais".
- *
- * Utilise le modèle App\Models\Expense (voir migration
- * database/migrations/2026_07_03_000000_create_expenses_table.php)
- * et votre modèle App\Models\Employee existant — aucune donnée
- * statique ou fictive : tout provient de la base.
- *
- * NOTE : adaptez App\Models\Employee (namespace, colonnes full_name /
- * department / position / tenant_id) si votre modèle d'employés réel
- * diffère.
- */
 class ExpenseController extends Controller
 {
-    /**
-     * Tenant courant, sur le même modèle que layouts/app.blade.php.
-     */
     private function currentTenantId(): ?string
     {
         $id = config('app.current_tenant_id')
@@ -32,11 +17,6 @@ class ExpenseController extends Controller
         return $id !== null ? (string) $id : null;
     }
 
-    /**
-     * Employé associé à l'utilisateur connecté, uniquement si son rôle
-     * est "employee" (mode lecture seule, comme dans absences.create).
-     * Retourne null pour admin/rh, qui choisissent l'employé via select.
-     */
     private function currentEmployee(): ?Employee
     {
         $user = auth()->user();
@@ -46,7 +26,7 @@ class ExpenseController extends Controller
         return null;
     }
 
-   private function employeesForTenant(?string $tenantId)
+    private function employeesForTenant(?string $tenantId)
     {
         return Employee::when($tenantId, fn ($q) => $q->where('tenant_id', $tenantId))
             ->orderBy('last_name')
@@ -54,11 +34,6 @@ class ExpenseController extends Controller
             ->get();
     }
 
-    /**
-     * Liste des notes de frais.
-     * - Employé connecté : uniquement ses propres notes.
-     * - Admin/RH : toutes les notes du tenant, filtrables.
-     */
     public function index(Request $request)
     {
         $tenantId = $this->currentTenantId();
@@ -82,7 +57,6 @@ class ExpenseController extends Controller
         $stats = [
             'total'   => $expenses->count(),
             'montant' => number_format((float) $expenses->sum('amount'), 2, ',', ' ') . ' MAD',
-            'soumis'  => $expenses->where('status', Expense::STATUS_SOUMIS)->count(),
             'valide'  => $expenses->where('status', Expense::STATUS_VALIDE)->count(),
             'rejete'  => $expenses->where('status', Expense::STATUS_REJETE)->count(),
         ];
@@ -96,9 +70,51 @@ class ExpenseController extends Controller
         ]);
     }
 
-    /**
-     * Formulaire de création avec OCR.
-     */
+    public function exportCsv(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $tenantId = $this->currentTenantId();
+        $employee = $this->currentEmployee();
+
+        $query = Expense::with('employee')->forTenant($tenantId);
+
+        if ($employee) {
+            $query->forEmployee($employee->id);
+        } else {
+            $query->forEmployee($request->integer('employee_id') ?: null)
+                  ->status($request->input('status'));
+        }
+
+        if ($request->filled('month') && $request->filled('year')) {
+            $query->forMonth((int) $request->input('month'), (int) $request->input('year'));
+        }
+
+        $expenses = $query->latest('expense_date')->get();
+
+        $filename = 'notes-de-frais-' . now()->format('Y-m-d_His') . '.csv';
+
+        return response()->streamDownload(function () use ($expenses) {
+            $handle = fopen('php://output', 'w');
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, ['Employé', 'Titre', 'Catégorie', 'Date', 'Montant', 'Devise', 'Statut'], ';');
+
+            foreach ($expenses as $expense) {
+                fputcsv($handle, [
+                    $expense->employee->full_name ?? '—',
+                    $expense->title,
+                    $expense->category_label,
+                    optional($expense->expense_date)->format('d/m/Y'),
+                    number_format((float) $expense->amount, 2, ',', ''),
+                    $expense->currency,
+                    $expense->status_label,
+                ], ';');
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
     public function create()
     {
         $tenantId = $this->currentTenantId();
@@ -111,9 +127,6 @@ class ExpenseController extends Controller
         ]);
     }
 
-    /**
-     * Enregistrement d'une note de frais (brouillon ou soumission).
-     */
     public function store(Request $request)
     {
         $tenantId = $this->currentTenantId();
@@ -139,18 +152,105 @@ class ExpenseController extends Controller
             'amount'       => $validated['amount'],
             'currency'     => $validated['currency'],
             'description'  => $validated['description'] ?? null,
-            'receipt_path' => $request->file('receipt')?->store('receipts'),
-            'status'       => $request->input('action') === 'submit'
-                ? Expense::STATUS_SOUMIS
-                : Expense::STATUS_BROUILLON,
+            'receipt_path' => $request->file('receipt')?->store('receipts', 'public'),
+            'status'       => Expense::STATUS_VALIDE,
         ]);
 
-        return redirect()->route('expenses.index')->with('success', 'Note de frais enregistrée.');
+        return redirect()->route('expenses.index')->with('success', 'Note de frais enregistrée et validée.');
+    }
+
+    public function edit(Expense $expense)
+    {
+        $tenantId = $this->currentTenantId();
+        $lockedEmployee = $this->currentEmployee();
+
+        if ($lockedEmployee && $expense->employee_id !== $lockedEmployee->id) {
+            abort(403);
+        }
+        if ($tenantId && $expense->tenant_id !== $tenantId) {
+            abort(403);
+        }
+
+        return view('expenses.edit', [
+            'expense'    => $expense,
+            'categories' => Expense::CATEGORIES,
+            'employee'   => $lockedEmployee,
+            'employees'  => $lockedEmployee ? collect() : $this->employeesForTenant($tenantId),
+        ]);
+    }
+
+    public function update(Request $request, Expense $expense)
+    {
+        $tenantId = $this->currentTenantId();
+        $lockedEmployee = $this->currentEmployee();
+
+        if ($lockedEmployee && $expense->employee_id !== $lockedEmployee->id) {
+            abort(403);
+        }
+        if ($tenantId && $expense->tenant_id !== $tenantId) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'employee_id' => [$lockedEmployee ? 'nullable' : 'required', 'integer', 'exists:employees,id'],
+            'title'       => 'required|string|max:255',
+            'category'    => 'required|string|in:' . implode(',', array_keys(Expense::CATEGORIES)),
+            'date'        => 'required|date',
+            'amount'      => 'required|numeric|min:0',
+            'currency'    => 'required|string|max:3',
+            'description' => 'nullable|string',
+            'receipt'     => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
+        ]);
+
+        $expense->fill([
+            'employee_id'  => $lockedEmployee->id ?? $validated['employee_id'],
+            'title'        => $validated['title'],
+            'category'     => $validated['category'],
+            'expense_date' => $validated['date'],
+            'amount'       => $validated['amount'],
+            'currency'     => $validated['currency'],
+            'description'  => $validated['description'] ?? null,
+        ]);
+
+        if ($request->hasFile('receipt')) {
+            $expense->receipt_path = $request->file('receipt')->store('receipts', 'public');
+        }
+
+        $expense->save();
+
+        return redirect()->route('expenses.index')->with('success', 'Note de frais mise à jour.');
     }
 
     /**
-     * Vue d'import groupé.
+     * Marque une note de frais comme Validée.
      */
+    public function approve(Expense $expense)
+    {
+        $tenantId = $this->currentTenantId();
+        if ($tenantId && $expense->tenant_id !== $tenantId) {
+            abort(403);
+        }
+
+        $expense->update(['status' => Expense::STATUS_VALIDE]);
+
+        return redirect()->route('expenses.index')->with('success', 'Note de frais validée.');
+    }
+
+    /**
+     * Marque une note de frais comme Rejetée.
+     */
+    public function reject(Expense $expense)
+    {
+        $tenantId = $this->currentTenantId();
+        if ($tenantId && $expense->tenant_id !== $tenantId) {
+            abort(403);
+        }
+
+        $expense->update(['status' => Expense::STATUS_REJETE]);
+
+        return redirect()->route('expenses.index')->with('success', 'Note de frais rejetée.');
+    }
+
     public function import()
     {
         $tenantId = $this->currentTenantId();
@@ -162,37 +262,39 @@ class ExpenseController extends Controller
         ]);
     }
 
-    /**
-     * Analyse OCR d'un reçu unique (appelée en AJAX depuis la vue "create").
-     * Retourne les champs détectés au format JSON.
-     *
-     * TODO: aucun service OCR réel n'est branché ici. Intégrez un
-     * fournisseur (Google Vision, AWS Textract, Tesseract…) et
-     * retournez les champs réellement extraits du fichier reçu.
-     * Tant que ce n'est pas fait, le JS bascule automatiquement sur
-     * une simulation locale si cet endpoint échoue ou ne renvoie rien
-     * d'exploitable — voir le <script> de create.blade.php.
-     */
     public function ocrScan(Request $request): JsonResponse
     {
         $request->validate([
             'receipt' => 'required|file|mimes:jpg,jpeg,png,pdf|max:10240',
         ]);
 
-        return response()->json([
-            'error' => 'Service OCR non configuré côté serveur.',
-        ], 501);
+        try {
+            $file = $request->file('receipt');
+            $isPdf = $file->getClientMimeType() === 'application/pdf'
+                || strtolower($file->getClientOriginalExtension()) === 'pdf';
+
+            $result = app(\App\Services\ReceiptOcrService::class)->scan(
+                $file->getRealPath(),
+                $isPdf ? 'pdf' : $file->getClientOriginalExtension(),
+                $this->currentTenantId()
+            );
+
+            if (blank($result['title']) && blank($result['amount'])) {
+                return response()->json([
+                    'error' => "OCR n'a pas réussi à lire le reçu — saisissez les champs manuellement.",
+                ], 422);
+            }
+
+            return response()->json($result);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'error' => "Erreur lors de l'analyse OCR (" . $e->getMessage() . ")",
+            ], 500);
+        }
     }
 
-    /**
-     * Traitement de l'import groupé : analyse OCR de plusieurs reçus
-     * et création des brouillons correspondants pour l'employé choisi.
-     *
-     * TODO: même remarque que ocrScan() — brancher un vrai service OCR.
-     * Une fois fait, chaque fichier de $request->file('receipts') doit
-     * être analysé puis donner lieu à un Expense::create() réel (au
-     * lieu du placeholder ci-dessous qui ne persiste rien).
-     */
     public function processImport(Request $request): JsonResponse
     {
         $tenantId = $this->currentTenantId();
@@ -204,10 +306,49 @@ class ExpenseController extends Controller
             'receipts.*'  => 'file|mimes:jpg,jpeg,png,pdf|max:10240',
         ]);
 
-        $employeeId = $lockedEmployee->id ?? $request->integer('employee_id');
+        $defaultEmployeeId = $lockedEmployee->id ?? $request->integer('employee_id');
+        $ocrService = app(\App\Services\ReceiptOcrService::class);
+
+        $created = [];
+        $failed = [];
+
+        foreach ($request->file('receipts') as $file) {
+            try {
+                $isPdf = $file->getClientMimeType() === 'application/pdf'
+                    || strtolower($file->getClientOriginalExtension()) === 'pdf';
+
+                $result = $ocrService->scan(
+                    $file->getRealPath(),
+                    $isPdf ? 'pdf' : $file->getClientOriginalExtension(),
+                    $tenantId
+                );
+
+                $expense = Expense::create([
+                    'tenant_id'    => $tenantId,
+                    'employee_id'  => $result['employee_id'] ?? $defaultEmployeeId,
+                    'title'        => $result['title'] ?? $file->getClientOriginalName(),
+                    'category'     => $result['category'] ?? 'autre',
+                    'expense_date' => $result['date'] ?? now()->toDateString(),
+                    'amount'       => $result['amount'] ?? 0,
+                    'currency'     => 'MAD',
+                    'receipt_path' => $file->store('receipts', 'public'),
+                    'status'       => Expense::STATUS_VALIDE,
+                ]);
+
+                $created[] = [
+                    'title'  => $expense->title,
+                    'amount' => (string) $expense->amount,
+                    'source' => $file->getClientOriginalName(),
+                ];
+            } catch (\Throwable $e) {
+                report($e);
+                $failed[] = $file->getClientOriginalName();
+            }
+        }
 
         return response()->json([
-            'error' => 'Service OCR non configuré côté serveur — aucun brouillon créé.',
-        ], 501);
+            'created' => $created,
+            'failed'  => $failed,
+        ]);
     }
 }

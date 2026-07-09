@@ -55,6 +55,69 @@
 .currency-switcher button:first-child {
     border-right: 1.5px solid #0d9488;
 }
+
+/* ── Pagination custom (style employés) ── */
+.custom-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 16px 20px;
+}
+.custom-pagination .page-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, color .15s;
+}
+.custom-pagination .page-btn:hover:not(.disabled):not(.active) {
+    border-color: #0d9488;
+    color: #0d9488;
+}
+.custom-pagination .page-btn.active {
+    background: #0d9488;
+    border-color: #0d9488;
+    color: #fff;
+    cursor: default;
+}
+.custom-pagination .page-btn.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    color: var(--text-muted);
+}
+.custom-pagination .page-dots {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 34px;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+.custom-pagination .page-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 12px;
+}
+.pagination-summary {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    padding-bottom: 10px;
+}
 </style>
 
 <div class="page-header">
@@ -380,9 +443,58 @@
                 </tbody>
             </table>
         </div>
+
+        {{-- ── Pagination custom en français (remplace ->links() par défaut) ── --}}
         @if($employees->hasPages())
-        <div style="padding:16px 20px;">
-            {{ $employees->appends(request()->query())->links() }}
+        @php
+            $currentPage = $employees->currentPage();
+            $lastPage    = $employees->lastPage();
+            $window      = 2;
+            $rangeStart  = max(1, $currentPage - $window);
+            $rangeEnd    = min($lastPage, $currentPage + $window);
+        @endphp
+        <div class="pagination-summary">
+            Affichage de {{ $employees->firstItem() }} à {{ $employees->lastItem() }} sur {{ $employees->total() }} employés
+        </div>
+        <div class="custom-pagination">
+            {{-- Précédent --}}
+            @if($employees->onFirstPage())
+                <span class="page-btn disabled">‹ Précédent</span>
+            @else
+                <a href="{{ $employees->appends(request()->query())->previousPageUrl() }}" class="page-btn">‹ Précédent</a>
+            @endif
+
+            {{-- Première page + ellipsis --}}
+            @if($rangeStart > 1)
+                <a href="{{ $employees->appends(request()->query())->url(1) }}" class="page-btn">1</a>
+                @if($rangeStart > 2)
+                    <span class="page-dots">…</span>
+                @endif
+            @endif
+
+            {{-- Pages autour de la page courante --}}
+            @for($p = $rangeStart; $p <= $rangeEnd; $p++)
+                @if($p == $currentPage)
+                    <span class="page-btn active">{{ $p }}</span>
+                @else
+                    <a href="{{ $employees->appends(request()->query())->url($p) }}" class="page-btn">{{ $p }}</a>
+                @endif
+            @endfor
+
+            {{-- Ellipsis + dernière page --}}
+            @if($rangeEnd < $lastPage)
+                @if($rangeEnd < $lastPage - 1)
+                    <span class="page-dots">…</span>
+                @endif
+                <a href="{{ $employees->appends(request()->query())->url($lastPage) }}" class="page-btn">{{ $lastPage }}</a>
+            @endif
+
+            {{-- Suivant --}}
+            @if($employees->hasMorePages())
+                <a href="{{ $employees->appends(request()->query())->nextPageUrl() }}" class="page-btn">Suivant ›</a>
+            @else
+                <span class="page-btn disabled">Suivant ›</span>
+            @endif
         </div>
         @endif
     </div>

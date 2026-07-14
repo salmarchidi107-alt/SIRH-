@@ -69,7 +69,7 @@
 
     .user-row  { display:flex; align-items:center; gap:8px; }
     .user-av   { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; background:#e0f2fe; color:#0f6b7c; }
-    .user-name { font-size:12px; font-weight:600; color:var(--text); }
+    .user-name { font-size:12px; font-weight:600; color: black !important; }
     .user-email{ font-size:10px; color:var(--light); }
 
     .role-badge { display:inline-flex; align-items:center; padding:2px 6px; border-radius:4px; font-size:9px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; margin-top:2px; }

@@ -37,17 +37,19 @@ class Expense extends Model
     ];
 
     protected $fillable = [
-        'tenant_id',
-        'employee_id',
-        'title',
-        'category',
-        'expense_date',
-        'amount',
-        'currency',
-        'description',
-        'receipt_path',
-        'status',
-    ];
+    'tenant_id',
+    'employee_id',
+    'title',
+    'category',
+    'expense_date',
+    'amount',
+    'amount_excluding_tax',
+    'vat_amount',
+    'currency',
+    'description',
+    'receipt_path',
+    'status',
+];
 
     protected $casts = [
         'expense_date' => 'date',

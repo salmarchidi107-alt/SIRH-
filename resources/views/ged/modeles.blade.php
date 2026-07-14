@@ -87,18 +87,23 @@
                 <div class="card-body p-3" style="display:flex;flex-direction:column;gap:14px;">
 
                     <div>
-                        <div class="var-group-label">Employé</div>
-                        <div class="var-chips-row">
-                            <span class="var-chip" onclick="insererVariable(this,'@{{nom}}')"><span class="var-name">@{{nom}}</span></span>
-                            <span class="var-chip" onclick="insererVariable(this,'@{{prenom}}')"><span class="var-name">@{{prenom}}</span></span>
-                            <span class="var-chip" onclick="insererVariable(this,'@{{matricule}}')"><span class="var-name">@{{matricule}}</span></span>
-                            <span class="var-chip" onclick="insererVariable(this,'@{{poste}}')"><span class="var-name">@{{poste}}</span></span>
-                            <span class="var-chip" onclick="insererVariable(this,'@{{departement}}')"><span class="var-name">@{{departement}}</span></span>
-                            <span class="var-chip" onclick="insererVariable(this,'@{{contrat}}')"><span class="var-name">@{{contrat}}</span></span>
-                            <span class="var-chip" onclick="insererVariable(this,'@{{date_embauche}}')"><span class="var-name">@{{date_embauche}}</span></span>
-                            <span class="var-chip" onclick="insererVariable(this,'@{{salaire}}')"><span class="var-name">@{{salaire}}</span></span>
-                        </div>
-                    </div>
+    <div class="var-group-label">Employé</div>
+    <div class="var-chips-row">
+        <span class="var-chip" onclick="insererVariable(this,'@{{nom}}')"><span class="var-name">@{{nom}}</span></span>
+        <span class="var-chip" onclick="insererVariable(this,'@{{prenom}}')"><span class="var-name">@{{prenom}}</span></span>
+        <span class="var-chip" onclick="insererVariable(this,'@{{matricule}}')"><span class="var-name">@{{matricule}}</span></span>
+        <span class="var-chip" onclick="insererVariable(this,'@{{poste}}')"><span class="var-name">@{{poste}}</span></span>
+        <span class="var-chip" onclick="insererVariable(this,'@{{departement}}')"><span class="var-name">@{{departement}}</span></span>
+        <span class="var-chip" onclick="insererVariable(this,'@{{contrat}}')"><span class="var-name">@{{contrat}}</span></span>
+        <span class="var-chip" onclick="insererVariable(this,'@{{date_embauche}}')"><span class="var-name">@{{date_embauche}}</span></span>
+        <span class="var-chip" onclick="insererVariable(this,'@{{date_fin_contrat}}')"><span class="var-name">@{{date_fin_contrat}}</span></span>
+        <span class="var-chip" onclick="insererVariable(this,'@{{salaire}}')"><span class="var-name">@{{salaire}}</span></span>
+        <span class="var-chip" onclick="insererVariable(this,'@{{date_naissance}}')"><span class="var-name">@{{date_naissance}}</span></span>
+        <span class="var-chip" onclick="insererVariable(this,'@{{cin}}')"><span class="var-name">@{{cin}}</span></span>
+        <span class="var-chip" onclick="insererVariable(this,'@{{adresse_employe}}')"><span class="var-name">@{{adresse_employe}}</span></span>
+        <span class="var-chip" onclick="insererVariable(this,'@{{telephone_employe}}')"><span class="var-name">@{{telephone_employe}}</span></span>
+    </div>
+</div>
 
                     <div>
                         <div class="var-group-label">Société</div>

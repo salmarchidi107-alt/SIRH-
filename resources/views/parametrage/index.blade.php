@@ -36,7 +36,6 @@
 .btn-submit{width:100%;padding:11px 16px;border:none;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;background:linear-gradient(135deg,#2dd4bf,#0f766e);color:white;}
 .btn-submit:hover{transform:translateY(-1px);}
 .param-alert{padding:10px 14px;border-radius:8px;font-size:0.82rem;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
-.param-alert.success{background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;}
 .param-alert.error{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;}
 .param-modal-overlay{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);align-items:center;justify-content:center;}
 .param-modal-overlay.open{display:flex;}
@@ -90,9 +89,7 @@
     </div>
 </div>
 
-@if(session('success'))
-<div class="param-alert success" style="max-width:700px;margin-bottom:20px;">{{ session('success') }}</div>
-@endif
+
 @if(session('error'))
 <div class="param-alert error" style="max-width:700px;margin-bottom:20px;">{{ session('error') }}</div>
 @endif
@@ -712,7 +709,6 @@ function deleteLoc(id) {
         headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
     })
     .then(function (res) { return res.json(); })
-    .then(function (data) { if (data.success) fetchLocations(); else alert(data.message || 'Erreur.'); })
     .catch(function () { alert('Erreur réseau.'); });
 }
 

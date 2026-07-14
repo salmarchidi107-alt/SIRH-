@@ -19,6 +19,7 @@ use Exception;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Room;
+use App\Models\Tenant;
 
 class PlanningController extends Controller
 {
@@ -309,15 +310,57 @@ class PlanningController extends Controller
     public function exportWeeklyPdf(Request $request)
     {
         try {
-            $week = $request->week ?? now()->weekOfYear;
-            $year = $request->year ?? now()->year;
+            $week       = $request->week ?? now()->weekOfYear;
+            $year       = $request->year ?? now()->year;
+            $search     = $request->search;
+            $department = $request->department;
+            $shift_type = $request->shift_type;
+            $roomId     = $request->room_id;
 
             $startOfWeek = now()->setISODate($year, $week)->startOfWeek(Carbon::MONDAY);
             $endOfWeek   = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
 
-            $employees = $this->planningService->filterEmployees(null, null);
-            $plannings = $this->planningService->getPlanningsBetween($startOfWeek, $endOfWeek);
-            $weekDays  = $this->planningService->getWeekDays($startOfWeek);
+            $roomName = null;
+            if ($roomId) {
+                $room     = Room::find($roomId);
+                $roomName = $room?->name;
+            }
+            $showAllRooms = empty($roomId);
+
+            $employees = $this->planningService->filterEmployees(
+                $search, $department, $roomId, $showAllRooms, $startOfWeek, $endOfWeek
+            );
+            $plannings = $this->planningService->getPlanningsBetween($startOfWeek, $endOfWeek, $roomName);
+
+            // Filtrage shift_type — logique identique à celle de la vue weekly.blade.php
+            if ($shift_type === 'absence') {
+                $employees = $employees->filter(function ($emp) use ($startOfWeek, $endOfWeek) {
+                    for ($d = $startOfWeek->copy(); $d->lte($endOfWeek); $d->addDay()) {
+                        if ($emp->hasApprovedAbsenceOn($d)) return true;
+                    }
+                    return false;
+                })->values();
+            } elseif ($shift_type === 'sans_shift') {
+                $employees = $employees->filter(function ($emp) use ($plannings, $startOfWeek, $endOfWeek) {
+                    $empPlannings = $plannings->get($emp->id, collect());
+                    for ($d = $startOfWeek->copy(); $d->lte($endOfWeek); $d->addDay()) {
+                        $hasShift = $empPlannings->filter(fn($p) =>
+                            \Carbon\Carbon::parse($p->date)->format('Y-m-d') === $d->format('Y-m-d')
+                        )->isNotEmpty();
+                        if ($hasShift) return false;
+                    }
+                    return true;
+                })->values();
+            } elseif ($shift_type) {
+                $plannings = $plannings
+                    ->map(fn($items) => $items->where('shift_type', $shift_type))
+                    ->filter(fn($items) => $items->isNotEmpty());
+            }
+
+            $weekDays = $this->planningService->getWeekDays($startOfWeek);
+
+            $tenant = auth()->user()?->tenant
+                ?? Tenant::find(config('app.current_tenant_id'));
 
             $filename = "planning_week_{$week}_{$year}.pdf";
 
@@ -329,6 +372,11 @@ class PlanningController extends Controller
                 'year'        => $year,
                 'startOfWeek' => $startOfWeek,
                 'endOfWeek'   => $endOfWeek,
+                'search'      => $search,
+                'department'  => $department,
+                'shift_type'  => $shift_type,
+                'roomName'    => $roomName,
+                'tenant'      => $tenant,
             ])->setPaper('a4', 'landscape');
 
             return $pdf->download($filename);
@@ -349,12 +397,31 @@ class PlanningController extends Controller
             $year       = $request->year       ?? now()->year;
             $search     = $request->search;
             $department = $request->department;
+            $shift_type = $request->shift_type;
+            $roomId     = $request->room_id;
 
             $startOfMonth = Carbon::create($year, $month, 1)->startOfMonth();
             $endOfMonth   = $startOfMonth->copy()->endOfMonth();
 
-            $employees   = $this->planningService->filterEmployees($search, $department);
-            $plannings   = $this->planningService->getPlanningsBetween($startOfMonth, $endOfMonth);
+            $roomName = null;
+            if ($roomId) {
+                $room     = Room::find($roomId);
+                $roomName = $room?->name;
+            }
+            $showAllRooms = empty($roomId);
+
+            $employees = $this->planningService->filterEmployees(
+                $search, $department, $roomId, $showAllRooms, $startOfMonth, $endOfMonth
+            );
+            $plannings = $this->planningService->getPlanningsBetween($startOfMonth, $endOfMonth, $roomName);
+
+            // La vue monthly ne gère pas absence/sans_shift, seulement un filtre shift_type simple
+            if ($shift_type) {
+                $plannings = $plannings
+                    ->map(fn($items) => $items->where('shift_type', $shift_type))
+                    ->filter(fn($items) => $items->isNotEmpty());
+            }
+
             $departments = $this->planningService->getDepartments();
 
             $daysOfMonth = collect();
@@ -364,12 +431,15 @@ class PlanningController extends Controller
                 $currentDay->addDay();
             }
 
+            $tenant = auth()->user()?->tenant
+                ?? Tenant::find(config('app.current_tenant_id'));
+
             $filename = "planning_mensuel_{$month}_{$year}.pdf";
 
             $pdf = Pdf::loadView('planning.monthly_pdf', compact(
                 'employees', 'plannings', 'daysOfMonth',
                 'month', 'year', 'startOfMonth', 'endOfMonth',
-                'search', 'department', 'departments'
+                'search', 'department', 'departments', 'shift_type', 'tenant'
             ))->setPaper('a4', 'landscape');
 
             return $pdf->download($filename);
@@ -391,8 +461,21 @@ class PlanningController extends Controller
             $tenantId = auth()->user()->tenant_id;
             $filename = "planning_mensuel_{$month}_{$year}.xlsx";
 
+            $roomName = null;
+            if ($request->room_id) {
+                $room     = Room::find($request->room_id);
+                $roomName = $room?->name;
+            }
+
+            $filters = [
+                'department' => $request->department,
+                'search'     => $request->search,
+                'shift_type' => $request->shift_type,
+                'room_name'  => $roomName,
+            ];
+
             return Excel::download(
-                new PlanningMonthlyExport($tenantId, $month, $year),
+                new PlanningMonthlyExport($tenantId, $month, $year, $filters),
                 $filename
             );
         } catch (Exception $e) {
@@ -413,8 +496,21 @@ class PlanningController extends Controller
             $tenantId = auth()->user()->tenant_id;
             $filename = "planning_semaine_{$week}_{$year}.xlsx";
 
+            $roomName = null;
+            if ($request->room_id) {
+                $room     = Room::find($request->room_id);
+                $roomName = $room?->name;
+            }
+
+            $filters = [
+                'department' => $request->department,
+                'search'     => $request->search,
+                'shift_type' => $request->shift_type,
+                'room_name'  => $roomName,
+            ];
+
             return Excel::download(
-                new PlanningWeeklyExport($tenantId, $week, $year),
+                new PlanningWeeklyExport($tenantId, $week, $year, $filters),
                 $filename
             );
         } catch (Exception $e) {

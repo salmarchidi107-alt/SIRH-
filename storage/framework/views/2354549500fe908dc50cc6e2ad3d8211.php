@@ -98,6 +98,8 @@
             flex-direction: column;
             min-height: 100vh;
         }
+            .user-namee { font-size:12px; font-weight:600; color:#fff !important; }
+
 
         .nav-submenu  { padding-left: 20px; margin: 4px 0; }
         .nav-sublink  { display: block; padding: 6px 12px; font-size: 0.85rem; color: #888; border-radius: 6px; text-decoration: none; margin: 2px 0; transition: all 0.2s; }
@@ -358,6 +360,21 @@
             <?php endif; ?>
             <?php endif; ?>
 
+            
+<?php if($u->canView('expenses')): ?>
+<div class="nav-section-label">Notes de frais</div>
+
+<a href="<?php echo e(route('expenses.index')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('expenses.*') ? 'active' : ''); ?>">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 2l1.5 1.5L9 2l1.5 1.5L12 2l1.5 1.5L15 2l1.5 1.5L18 2v20l-1.5-1.5L15 22l-1.5-1.5L12 22l-1.5-1.5L9 22l-1.5-1.5L6 22V2z"/>
+        <line x1="9" y1="8" x2="15" y2="8"/>
+        <line x1="9" y1="12" x2="15" y2="12"/>
+        <line x1="9" y1="16" x2="12" y2="16"/>
+    </svg>
+    <span>Mes notes de frais</span>
+</a>
+<?php endif; ?>
 
             
             <?php if($u->canView('lms') || $u->canView('referentiel') || $u->canView('lms_planning')): ?>
@@ -625,6 +642,42 @@
 
 
             
+<?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh'])): ?>
+<?php $navUser = Auth::user(); ?>
+
+<?php if($navUser->canView('expenses')): ?>
+<div class="nav-section-label">Notes de frais</div>
+
+<?php
+    $expensesEnAttente = 0;
+    try {
+        $expTenantId = config('app.current_tenant_id')
+            ?? (auth()->check() ? auth()->user()->tenant_id : null);
+        $expensesEnAttente = \App\Models\Expense::where('status', 'soumis')
+            ->when($expTenantId, fn($q) => $q->where('tenant_id', $expTenantId))
+            ->count();
+    } catch (\Exception $e) {
+        $expensesEnAttente = 0;
+    }
+?>
+
+<a href="<?php echo e(route('expenses.index')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('expenses.*') ? 'active' : ''); ?>">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 2l1.5 1.5L9 2l1.5 1.5L12 2l1.5 1.5L15 2l1.5 1.5L18 2v20l-1.5-1.5L15 22l-1.5-1.5L12 22l-1.5-1.5L9 22l-1.5-1.5L6 22V2z"/>
+        <line x1="9" y1="8" x2="15" y2="8"/>
+        <line x1="9" y1="12" x2="15" y2="12"/>
+        <line x1="9" y1="16" x2="12" y2="16"/>
+    </svg>
+    <span>Notes de frais</span>
+    <?php if($expensesEnAttente > 0): ?>
+    <span class="nav-badge-live"><?php echo e($expensesEnAttente); ?></span>
+    <?php endif; ?>
+</a>
+<?php endif; ?>
+<?php endif; ?>
+
+            
             <?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh'])): ?>
             <?php $navUser = Auth::user(); ?>
 
@@ -851,7 +904,7 @@
             <div class="user-card">
                 <div class="user-avatar"><?php echo e(substr(Auth::user()->name, 0, 1)); ?></div>
                 <div class="user-info">
-                    <div class="user-name"><?php echo e(Auth::user()->name); ?></div>
+                    <div class="user-namee"><?php echo e(Auth::user()->name); ?></div>
                     <div class="user-role"><?php echo e(Auth::user()->getRoleDisplayName()); ?></div>
                 </div>
             </div>

@@ -165,7 +165,9 @@
                         <tbody>
                             @foreach($elements as $el)
                             <tr>
-                                <td class="font-semibold">{{ $el->employee->full_name }}</td>
+                                <td class="font-semibold">
+                                    {{ $el->employee->full_name ?? 'Employé supprimé' }}
+                                </td>
                                 <td>
                                     <span class="badge badge-{{ $el->type->value === 'gain' ? 'success' : 'danger' }}">
                                         {{ $el->type->label() }}

@@ -104,92 +104,82 @@
 </style>
 
 <script>
-/* ── Notes de frais : import groupé de reçus (spécifique à cette vue) ── */
-(function () {
-    var ROUTE_IMPORT_PROCESS = "{{ route('expenses.import.process') }}";
-    var CSRF = "{{ csrf_token() }}";
+// SUPPRIMEZ ces lignes de votre fichier actuel :
+//   var mockReceipts = [ ... ];
+//   function simulateImportResults() { ... }
 
-    var mockReceipts = [
-        { title: 'Taxi Casa Aéroport - Centre ville', amount: '180.00' },
-        { title: 'Restaurant Le Zephyr - Facture', amount: '320.00' },
-        { title: 'Pharmacie Al Andalous', amount: '95.00' },
-    ];
+btnImportProcess.addEventListener('click', function () {
+    if (!selectedImportFiles.length) return;
+    btnImportProcess.disabled = true;
+    btnImportProcess.textContent = '⏳ Analyse en cours… (' + selectedImportFiles.length + ' fichier(s))';
 
-    var importDropZone = document.getElementById('importDropZone');
-    var importFilesInput = document.getElementById('importFiles');
-    var importFileList = document.getElementById('importFileList');
-    var btnImportProcess = document.getElementById('btnImportProcess');
-    var selectedImportFiles = [];
+    var employeeIdEl = document.getElementById('importEmployeeId');
+    var formData = new FormData();
+    if (employeeIdEl) formData.append('employee_id', employeeIdEl.value);
+    selectedImportFiles.forEach(function (f) { formData.append('receipts[]', f); });
 
-    importDropZone.addEventListener('click', function () { importFilesInput.click(); });
-    importDropZone.addEventListener('dragover', function (e) { e.preventDefault(); importDropZone.classList.add('dragover'); });
-    importDropZone.addEventListener('dragleave', function () { importDropZone.classList.remove('dragover'); });
-    importDropZone.addEventListener('drop', function (e) {
-        e.preventDefault();
-        importDropZone.classList.remove('dragover');
-        addImportFiles(e.dataTransfer.files);
-    });
-    importFilesInput.addEventListener('change', function () { addImportFiles(this.files); });
-
-    function addImportFiles(files) {
-        for (var i = 0; i < files.length; i++) selectedImportFiles.push(files[i]);
-        renderImportFileList();
-    }
-
-    function renderImportFileList() {
-        importFileList.innerHTML = selectedImportFiles.map(function (f, i) {
-            return '<div class="nf-filelist-item"><span>📄 ' + f.name + '</span>'
-                + '<button type="button" class="nf-filelist-remove" data-idx="' + i + '">✕</button></div>';
-        }).join('');
-        importFileList.querySelectorAll('.nf-filelist-remove').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                selectedImportFiles.splice(parseInt(btn.dataset.idx, 10), 1);
-                renderImportFileList();
+    fetch(ROUTE_IMPORT_PROCESS, {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+        body: formData
+    })
+        .then(function (r) {
+            // On ne présume JAMAIS que le corps est du JSON valide juste parce que la
+            // requête a abouti réseau-parlant : un 500 Laravel en mode debug renvoie
+            // une page HTML, pas du JSON. On distingue explicitement les deux cas.
+            return r.json().catch(function () {
+                throw new Error('server_returned_non_json');
+            }).then(function (data) {
+                return { ok: r.ok, status: r.status, data: data };
             });
-        });
-        btnImportProcess.disabled = selectedImportFiles.length === 0;
-    }
-
-    btnImportProcess.addEventListener('click', function () {
-        if (!selectedImportFiles.length) return;
-        btnImportProcess.disabled = true;
-        btnImportProcess.textContent = '⏳ Analyse en cours… (' + selectedImportFiles.length + ' fichier(s))';
-
-        var employeeIdEl = document.getElementById('importEmployeeId');
-        var formData = new FormData();
-        if (employeeIdEl) formData.append('employee_id', employeeIdEl.value);
-        selectedImportFiles.forEach(function (f) { formData.append('receipts[]', f); });
-
-        fetch(ROUTE_IMPORT_PROCESS, {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-            body: formData
         })
-            .then(function (r) { return r.json(); })
-            .then(function (data) { showImportResults(data.created || []); })
-            .catch(function () { showImportResults(simulateImportResults()); });
-    });
-
-    function simulateImportResults() {
-        return selectedImportFiles.map(function (f, i) {
-            var mock = mockReceipts[i % mockReceipts.length];
-            return { title: mock.title, amount: mock.amount, source: f.name };
+        .then(function (response) {
+            if (!response.ok) {
+                showImportError(
+                    (response.data && (response.data.error || response.data.message))
+                        || "L'import a échoué (erreur " + response.status + "). Aucun brouillon n'a été créé."
+                );
+                return;
+            }
+            showImportResults(response.data.created || []);
+        })
+        .catch(function () {
+            // Erreur réseau réelle (pas de connexion, timeout...) : on l'annonce clairement,
+            // on n'invente JAMAIS de faux résultats pour "faire joli".
+            showImportError("Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.");
         });
-    }
+});
 
-    function showImportResults(items) {
-        var results = document.getElementById('importResults');
-        results.style.display = 'block';
+function showImportError(message) {
+    var results = document.getElementById('importResults');
+    results.style.display = 'block';
+    results.innerHTML = '<div style="font-weight:700;color:#991b1b;background:#fef2f2;'
+        + 'border:1px solid #fecaca;border-radius:8px;padding:10px 14px;">✕ ' + message + '</div>';
+
+    btnImportProcess.textContent = "Lancer l'analyse OCR et créer les brouillons";
+    btnImportProcess.disabled = selectedImportFiles.length === 0;
+}
+
+function showImportResults(items) {
+    var results = document.getElementById('importResults');
+    results.style.display = 'block';
+
+    if (!items.length) {
+        results.innerHTML = '<div style="font-weight:700;color:#92400e;background:#fffbeb;'
+            + 'border:1px solid #fde68a;border-radius:8px;padding:10px 14px;">⚠ Aucun brouillon n\'a pu être créé à partir des fichiers fournis.</div>';
+    } else {
         var html = '<div style="font-weight:700;color:#059669;margin-bottom:8px">✓ ' + items.length + ' brouillon(s) créé(s)</div>';
         items.forEach(function (it) {
-            html += '<div class="nf-result-line">— ' + it.title + ' (' + it.amount + ' MAD) — depuis ' + (it.source || '') + '</div>';
+            html += '<div class="nf-result-line">— ' + it.title + ' (' + it.amount + ' ' + (it.currency || 'MAD') + ') — depuis ' + (it.source || '') + '</div>';
         });
         results.innerHTML = html;
-        selectedImportFiles = [];
-        renderImportFileList();
-        btnImportProcess.textContent = "Lancer l'analyse OCR et créer les brouillons";
-        btnImportProcess.disabled = true;
     }
-})();
+
+    selectedImportFiles = [];
+    renderImportFileList();
+    btnImportProcess.textContent = "Lancer l'analyse OCR et créer les brouillons";
+    btnImportProcess.disabled = true;
+}
 </script>
+
 @endsection

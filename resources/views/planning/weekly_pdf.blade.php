@@ -6,10 +6,22 @@
     <style>
         body { font-family: DejaVu Sans, sans-serif; color: #1a2e44; margin: 20px; font-size: 10px; }
 
-        h1 { font-size: 16px; font-weight: bold; margin-bottom: 2px; color: #1a2e44; }
+        h1 { font-size: 10px; font-weight: bold; margin-bottom: 2px; color: #1a2e44; }
 
         .meta { font-size: 10px; color: #555; margin-bottom: 14px; }
         .meta span { margin-right: 16px; }
+
+        .company-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6px;
+}
+.company-name {
+    font-size: 20px;
+    font-weight: bold;
+    color: #1a2e44;
+}
 
         .filters {
             margin-top: 4px;
@@ -123,9 +135,17 @@
             color: #aaa;
             text-align: right;
         }
+
+
     </style>
 </head>
 <body>
+
+    <body>
+
+    <div class="company-header">
+        <div class="company-name">{{ $tenant?->name ?? config('app.name') }}</div>
+    </div>
 
     <h1>Planning Hebdomadaire</h1>
 

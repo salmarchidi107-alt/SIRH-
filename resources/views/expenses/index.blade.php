@@ -8,29 +8,23 @@
     <div class="nf-top-tabs">
         <a href="{{ route('expenses.index') }}" class="nf-top-tab active">Liste des notes</a>
         <a href="{{ route('expenses.create') }}" class="nf-top-tab">Nouvelle note (OCR)</a>
-        <a href="{{ route('expenses.import') }}" class="nf-top-tab">Import groupé</a>
     </div>
 
     <div class="nf-view">
         <div class="page-header">
             <div class="page-header-left">
                 <h1>Notes de frais</h1>
-                <p>{{ now()->translatedFormat('F Y') }}</p>
+                <p>{{ now()->locale('fr')->translatedFormat('F Y') }}</p>
             </div>
             <div style="display:flex;gap:10px">
-                <a class="btn btn-ghost" href="{{ route('expenses.import') }}">Import OCR</a>
-                <a class="btn btn-ghost" href="{{ route('expenses.export', request()->only(['month','year','employee_id','status'])) }}">📥 Export CSV</a>
+                {{-- Export PDF : centralise le rendu imprimable ; l'export Excel reste
+                     disponible depuis "Fichier Excel imprimable" (autre écran). --}}
+                <a class="btn btn-ghost" href="{{ route('expenses.export.pdf', request()->only(['month','year','employee_id','status','category','description'])) }}">
+                    📄 Export PDF
+                </a>
                 <a class="btn btn-primary" href="{{ route('expenses.create') }}">+ Nouvelle note</a>
             </div>
         </div>
-
-        @if (session('success'))
-            <div class="card mb-4">
-                <div class="card-body" style="color:#065f46;background:#f0fdf4">
-                    {{ session('success') }}
-                </div>
-            </div>
-        @endif
 
         <div class="card mb-4">
             <div class="card-body">
@@ -38,7 +32,7 @@
                     <select name="month" class="form-control" style="width:auto" onchange="this.form.submit()">
                         @foreach (range(1, 12) as $m)
                             <option value="{{ $m }}" {{ (int) request('month', now()->month) === $m ? 'selected' : '' }}>
-                                {{ \Illuminate\Support\Carbon::create()->month($m)->translatedFormat('F') }}
+                                {{ \Illuminate\Support\Carbon::create()->month($m)->locale('fr')->translatedFormat('F') }}
                             </option>
                         @endforeach
                     </select>
@@ -66,13 +60,85 @@
                         </select>
                     @endunless
 
-                    <div class="nf-stats-row" style="margin-left:auto">
-                        <div><span style="color:var(--text-muted)">Total</span><strong>{{ $stats['total'] }}</strong></div>
-                        <div><span style="color:var(--text-muted)">Montant</span><strong>{{ $stats['montant'] }}</strong></div>
-                        <div><span style="color:#059669">Validé</span><strong>{{ $stats['valide'] }}</strong></div>
-                        <div><span style="color:#dc2626">Rejeté</span><strong>{{ $stats['rejete'] }}</strong></div>
-                    </div>
+                    {{-- Nouveau filtre : catégorie --}}
+                    <select name="category" class="form-control" style="width:auto" onchange="this.form.submit()">
+                        <option value="">Toutes catégories</option>
+                        @foreach ($categories as $value => $label)
+                            <option value="{{ $value }}" {{ request('category') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
+                    </select>
+
+                    {{-- Nouveau filtre : description (recherche texte libre) --}}
+                    <input type="text" name="description" class="form-control" style="width:200px"
+                           placeholder="Rechercher dans la description…" value="{{ request('description') }}">
+
+                    <button type="submit" class="btn btn-primary" style="padding:8px 14px">Filtrer</button>
+
+                    @php
+                        $hasActiveFilters = collect(request()->query())->filter()->isNotEmpty();
+                    @endphp
+                    @if ($hasActiveFilters)
+                        <a href="{{ route('expenses.index') }}" class="btn btn-ghost" style="padding:8px 14px">✕ Réinitialiser</a>
+                    @endif
                 </form>
+            </div>
+        </div>
+
+        {{-- Statistiques : bandeau unifié avec icônes, plus sobre que 4 cartes séparées --}}
+        <div class="nf-stats-panel">
+            <div class="nf-stat-seg">
+                <div class="nf-stat-icon nf-stat-icon-teal">
+                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="nf-stat-val">{{ $stats['total'] }}</div>
+                    <div class="nf-stat-label">Notes au total</div>
+                </div>
+            </div>
+
+            <div class="nf-stat-div"></div>
+
+            <div class="nf-stat-seg nf-stat-seg-lead">
+                <div class="nf-stat-icon nf-stat-icon-blue">
+                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V6m0 10v2"/>
+                        <circle cx="12" cy="12" r="9"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="nf-stat-val nf-stat-val-lg">{{ $stats['montant'] }}</div>
+                    <div class="nf-stat-label">Montant cumulé</div>
+                </div>
+            </div>
+
+            <div class="nf-stat-div"></div>
+
+            <div class="nf-stat-seg">
+                <div class="nf-stat-icon nf-stat-icon-green">
+                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="nf-stat-val">{{ $stats['valide'] }}</div>
+                    <div class="nf-stat-label">Validées</div>
+                </div>
+            </div>
+
+            <div class="nf-stat-div"></div>
+
+            <div class="nf-stat-seg">
+                <div class="nf-stat-icon nf-stat-icon-red">
+                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="nf-stat-val">{{ $stats['rejete'] }}</div>
+                    <div class="nf-stat-label">Rejetées</div>
+                </div>
             </div>
         </div>
 
@@ -81,8 +147,11 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Employé</th><th>Titre</th><th>Catégorie</th><th>Date</th>
-                            <th style="text-align:right">Montant</th><th style="text-align:center">Statut</th>
+                            <th>Employé</th><th>Titre</th><th>Catégorie</th><th>Description</th><th>Date</th>
+                            <th style="text-align:right">HT</th>
+                            <th style="text-align:right">TVA</th>
+                            <th style="text-align:right">TTC</th>
+                            <th style="text-align:center">Statut</th>
                             <th style="text-align:center">Reçu</th><th style="text-align:right">Actions</th>
                         </tr>
                     </thead>
@@ -92,9 +161,23 @@
                                 <td>{{ $expense->employee->full_name ?? '—' }}</td>
                                 <td style="font-weight:600">{{ $expense->title }}</td>
                                 <td>{{ $expense->category_label }}</td>
-                                <td>{{ $expense->expense_date->locale('fr')->translatedFormat('d F Y') }}</td>                                <td style="text-align:right;font-weight:600">{{ number_format($expense->amount, 2, ',', ' ') }} {{ $expense->currency }}</td>
+                                <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ $expense->description }}">
+                                    {{ $expense->description ?: '—' }}
+                                </td>
+                                <td>{{ $expense->expense_date->format('d/m/Y') }}</td>
+                                <td style="text-align:right">
+                                    {{ $expense->amount_excluding_tax !== null ? number_format($expense->amount_excluding_tax, 2, ',', ' ') : '—' }}
+                                </td>
+                                <td style="text-align:right">
+                                    {{ $expense->vat_amount !== null ? number_format($expense->vat_amount, 2, ',', ' ') : '—' }}
+                                </td>
+                                <td style="text-align:right;font-weight:600">
+                                    {{ number_format($expense->amount, 2, ',', ' ') }} {{ $expense->currency }}
+                                </td>
                                 <td style="text-align:center">
-                                    <span class="nf-badge nf-badge-{{ $expense->status }}">{{ $expense->status_label }}</span>
+                                    <div class="nf-status-card nf-status-card-{{ $expense->status }}">
+                                        {{ $expense->status_label }}
+                                    </div>
                                 </td>
                                 <td style="text-align:center">
                                     @if ($expense->receipt_path)
@@ -132,7 +215,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px">Aucune note de frais pour cette période.</td></tr>
+                            <tr><td colspan="11" style="text-align:center;color:var(--text-muted);padding:24px">Aucune note de frais pour cette période.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -156,11 +239,43 @@
 
 .nf-view { padding:0; }
 
-.nf-badge { padding:3px 10px; border-radius:20px; font-size:0.72rem; font-weight:700; white-space:nowrap; }
-.nf-badge-valide { background:#d1fae5; color:#065f46; }
-.nf-badge-rejete { background:#fee2e2; color:#991b1b; }
+/* Statut affiché en carte, plus visible qu'un simple badge arrondi */
+.nf-status-card {
+    display:inline-block; padding:6px 14px; border-radius:10px; font-size:0.75rem;
+    font-weight:700; white-space:nowrap; border:1px solid transparent;
+    box-shadow:0 1px 2px rgba(0,0,0,0.04);
+}
+.nf-status-card-valide { background:#d1fae5; color:#065f46; border-color:#a7f3d0; }
+.nf-status-card-rejete { background:#fee2e2; color:#991b1b; border-color:#fecaca; }
+.nf-status-card-en_attente { background:#fef9c3; color:#854d0e; border-color:#fde68a; }
 
-.nf-stats-row { display:flex; gap:20px; font-size:0.85rem; flex-wrap:wrap; }
-.nf-stats-row div strong { margin-left:4px; }
+/* Statistiques : bandeau unifié, icônes en pastille, séparateurs fins.
+   Le montant cumulé est mis en avant (segment plus large + valeur plus grande)
+   car c'est la donnée la plus consultée sur cette page. */
+.nf-stats-panel {
+    display:flex; align-items:stretch; background:#fff; border:1px solid #eef0f2;
+    border-radius:14px; padding:18px 22px; margin-bottom:20px;
+    box-shadow:0 1px 3px rgba(15,23,42,.04);
+}
+.nf-stat-seg { display:flex; align-items:center; gap:12px; flex:1; min-width:0; }
+.nf-stat-seg-lead { flex:1.4; }
+.nf-stat-div { width:1px; background:#eef0f2; margin:2px 18px; flex-shrink:0; }
+.nf-stat-icon {
+    width:38px; height:38px; border-radius:10px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+}
+.nf-stat-icon-teal  { background:#f0fdfa; color:#0d9488; }
+.nf-stat-icon-blue  { background:#eff6ff; color:#2563eb; }
+.nf-stat-icon-green { background:#f0fdf4; color:#16a34a; }
+.nf-stat-icon-red   { background:#fef2f2; color:#dc2626; }
+.nf-stat-val { font-size:1.35rem; font-weight:700; color:#0f172a; line-height:1.15; white-space:nowrap; }
+.nf-stat-val-lg { font-size:1.5rem; }
+.nf-stat-label { font-size:0.76rem; color:#64748b; font-weight:500; margin-top:1px; }
+
+@media (max-width:840px) {
+    .nf-stats-panel { flex-wrap:wrap; gap:16px 0; }
+    .nf-stat-seg { flex:1 1 45%; }
+    .nf-stat-div { display:none; }
+}
 </style>
 @endsection

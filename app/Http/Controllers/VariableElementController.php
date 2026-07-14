@@ -21,7 +21,14 @@ class VariableElementController extends Controller
 
         $variableElements = VariableElement::where('month', $month)
             ->where('year', $year)
-            ->with('employee')
+            ->with(['employee' => function ($query) {
+                // withTrashed() : on garde l'affichage même si l'employé
+                // a été supprimé (soft delete) entre-temps, pour éviter
+                // "Attempt to read property full_name on null".
+                if (method_exists($query->getModel(), 'trashed')) {
+                    $query->withTrashed();
+                }
+            }])
             ->latest()
             ->paginate(100);
 

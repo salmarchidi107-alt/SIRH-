@@ -13,11 +13,13 @@ return [
     | a conventional file to locate the various service credentials.
     |
     */
+     'ocr' => ['driver' => env('OCR_DRIVER', 'ocrspace')],
+'ocrspace' => [
+    'key' => env('OCR_SPACE_API_KEY'),
+    'timeout' => env('OCR_SPACE_TIMEOUT', 30),
+    'language' => env('OCR_SPACE_LANGUAGE', 'fre'),
+],
 
-
-'tesseract' => [
-        'binary' => env('TESSERACT_PATH', 'tesseract'),
-    ],
 'calendarapi' => [
     'key' => env('CALENDARAPI_KEY'),
 ],

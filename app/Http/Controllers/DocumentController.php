@@ -68,22 +68,32 @@ class DocumentController extends Controller
         });
 
         $employesJson = $employes->mapWithKeys(function ($emp) {
-            return [$emp->id => [
-                'id'            => $emp->id,
-                'nom'           => $emp->last_name     ?? '',
-                'prenom'        => $emp->first_name    ?? '',
-                'matricule'     => $emp->matricule     ?? '',
-                'poste'         => $emp->position      ?? '',
-                'departement'   => $emp->department    ?? '',
-                'contrat'       => $emp->contract_type ?? '',
-                'date_embauche' => $emp->hire_date
-                                    ? \Carbon\Carbon::parse($emp->hire_date)->format('d/m/Y')
-                                    : '',
-                'salaire'       => $emp->salary
-                                    ? number_format($emp->salary, 2, ',', ' ') . ' MAD'
-                                    : '',
-            ]];
-        });
+    return [$emp->id => [
+        'id'                => $emp->id,
+        'nom'               => $emp->last_name     ?? '',
+        'prenom'            => $emp->first_name    ?? '',
+        'matricule'         => $emp->matricule     ?? '',
+        'poste'             => $emp->position      ?? '',
+        'departement'       => $emp->department    ?? '',
+        'contrat'           => $emp->contract_type ?? '',
+        'date_embauche'     => $emp->hire_date
+                                ? \Carbon\Carbon::parse($emp->hire_date)->format('d/m/Y')
+                                : '',
+        'salaire'           => $emp->salary
+                                ? number_format($emp->salary, 2, ',', ' ') . ' MAD'
+                                : '',
+        // ── Nouvelles variables ─────────────────────────────
+        'adresse_employe'   => $emp->address ?? '',
+        'cin'               => $emp->cin     ?? '',
+        'telephone_employe' => $emp->phone   ?? '',
+        'date_fin_contrat'  => $emp->contract_end_date
+                                ? \Carbon\Carbon::parse($emp->contract_end_date)->format('d/m/Y')
+                                : '',
+        'date_naissance'    => $emp->birth_date
+                                ? \Carbon\Carbon::parse($emp->birth_date)->format('d/m/Y')
+                                : '',
+    ]];
+});
 
         $tenantJson = [
             'societe'       => $entete?->nom_societe ?: ($tenant?->name          ?? ''),
@@ -144,30 +154,40 @@ class DocumentController extends Controller
             abort(404, 'Aucun contenu disponible pour ce document.');
         }
 
-        $values = [
-            'nom'           => $employee?->last_name     ?? '—',
-            'prenom'        => $employee?->first_name    ?? '—',
-            'matricule'     => $employee?->matricule     ?? '—',
-            'poste'         => $employee?->position      ?? '—',
-            'departement'   => $employee?->department    ?? '—',
-            'contrat'       => $employee?->contract_type ?? '—',
-            'date_embauche' => $employee?->hire_date
-                                ? \Carbon\Carbon::parse($employee->hire_date)->format('d/m/Y')
-                                : '—',
-            'salaire'       => $employee?->salary
-                                ? number_format($employee->salary, 2, ',', ' ') . ' MAD'
-                                : '—',
-            'date'          => $document->date_document?->format('d/m/Y') ?? now()->format('d/m/Y'),
-            'mois_annee'    => now()->translatedFormat('F Y'),
-            'annee'         => now()->format('Y'),
-            'societe'       => $tenant?->name ?$tenant?->name: ($entete?->nom_societe          ?? '—'),
-            'adresse'       => $tenant?->address     ?$tenant?->address: ($entete?->adresse       ?? '—'),
-            'telephone'     => $tenant?->phone   ?$tenant?->phone: ($entete?->telephone         ?? '—'),
-            'email_societe' => $tenant?->email_societe       ?$tenant?->email_societe: ($entete?->email_societe ?? '—'),
-            'site_web'      => $tenant?->website    ?$tenant?->website: ($entete?->site_web       ?? '—'),
-            'ice'           => $tenant?->ice         ?$tenant?->ice: ($entete?->ice           ?? '—'),
-            'logo_societe'  => $this->buildLogoHtml($entete, $tenant),
-        ];
+       $values = [
+    'nom'               => $employee?->last_name     ?? '—',
+    'prenom'            => $employee?->first_name    ?? '—',
+    'matricule'         => $employee?->matricule     ?? '—',
+    'poste'             => $employee?->position      ?? '—',
+    'departement'       => $employee?->department    ?? '—',
+    'contrat'           => $employee?->contract_type ?? '—',
+    'date_embauche'     => $employee?->hire_date
+                            ? \Carbon\Carbon::parse($employee->hire_date)->format('d/m/Y')
+                            : '—',
+    'salaire'           => $employee?->salary
+                            ? number_format($employee->salary, 2, ',', ' ') . ' MAD'
+                            : '—',
+    // ── Nouvelles variables ─────────────────────────────
+    'adresse_employe'   => $employee?->address ?? '—',
+    'cin'               => $employee?->cin     ?? '—',
+    'telephone_employe' => $employee?->phone   ?? '—',
+    'date_fin_contrat'  => $employee?->contract_end_date
+                            ? \Carbon\Carbon::parse($employee->contract_end_date)->format('d/m/Y')
+                            : '—',
+    'date_naissance'    => $employee?->birth_date
+                            ? \Carbon\Carbon::parse($employee->birth_date)->format('d/m/Y')
+                            : '—',
+    'date'          => $document->date_document?->format('d/m/Y') ?? now()->format('d/m/Y'),
+    'mois_annee'    => now()->translatedFormat('F Y'),
+    'annee'         => now()->format('Y'),
+    'societe'       => $tenant?->name ?$tenant?->name: ($entete?->nom_societe          ?? '—'),
+    'adresse'       => $tenant?->address     ?$tenant?->address: ($entete?->adresse       ?? '—'),
+    'telephone'     => $tenant?->phone   ?$tenant?->phone: ($entete?->telephone         ?? '—'),
+    'email_societe' => $tenant?->email_societe       ?$tenant?->email_societe: ($entete?->email_societe ?? '—'),
+    'site_web'      => $tenant?->website    ?$tenant?->website: ($entete?->site_web       ?? '—'),
+    'ice'           => $tenant?->ice         ?$tenant?->ice: ($entete?->ice           ?? '—'),
+    'logo_societe'  => $this->buildLogoHtml($entete, $tenant),
+];
 
         $search  = [];
         $replace = [];

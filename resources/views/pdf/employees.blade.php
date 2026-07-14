@@ -86,8 +86,8 @@
 <div class="header">
   <div class="header-left">
     <h1>Liste des Employés</h1>
-    <p>HospitalRH — Système de gestion des ressources humaines</p>
-  </div>
+    <p>{{ $tenant?->name ?? config('app.name') }} — Système de gestion des ressources humaines</p>
+</div>
   <div class="header-right">
     <strong>{{ $total }} employé{{ $total > 1 ? 's' : '' }}</strong><br>
     Généré le {{ $generatedAt }}
@@ -146,7 +146,7 @@
 
 {{-- PIED DE PAGE --}}
 <div class="footer">
-  <span>HospitalRH — Document confidentiel</span>
+  <span>{{ $tenant?->name ?? config('app.name') }} — Document confidentiel</span>
   <span>Total : {{ $total }} employé{{ $total > 1 ? 's' : '' }}</span>
 </div>
 

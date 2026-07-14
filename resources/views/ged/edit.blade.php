@@ -328,26 +328,32 @@ function appliquerDonneesEmploye() {
     }
 
     const remplacements = {
-        '@{{nom}}'          : emp.nom          || '—',
-        '@{{prenom}}'       : emp.prenom        || '—',
-        '@{{matricule}}'    : emp.matricule     || '—',
-        '@{{poste}}'        : emp.poste         || '—',
-        '@{{departement}}'  : emp.departement   || '—',
-        '@{{contrat}}'      : emp.contrat       || '—',
-        '@{{date_embauche}}': emp.date_embauche || '—',
-        '@{{salaire}}'      : emp.salaire       || '—',
-        '@{{date}}'         : dateStr,
-        '@{{aujourd_hui}}'  : dateStr,
-        '@{{mois_annee}}'   : moisAnnee,
-        '@{{annee}}'        : String(today.getFullYear()),
-        '@{{societe}}'      : tenantData.societe       || '—',
-        '@{{adresse}}'      : tenantData.adresse       || '—',
-        '@{{telephone}}'    : tenantData.telephone     || '—',
-        '@{{email_societe}}': tenantData.email_societe || '—',
-        '@{{site_web}}'     : tenantData.site_web      || '—',
-        '@{{ice}}'          : tenantData.ice           || '—',
-        '@{{rc}}'           : tenantData.rc            || '—',
-    };
+    '@{{nom}}'               : emp.nom          || '—',
+    '@{{prenom}}'            : emp.prenom        || '—',
+    '@{{matricule}}'         : emp.matricule     || '—',
+    '@{{poste}}'             : emp.poste         || '—',
+    '@{{departement}}'       : emp.departement   || '—',
+    '@{{contrat}}'           : emp.contrat       || '—',
+    '@{{date_embauche}}'     : emp.date_embauche || '—',
+    '@{{salaire}}'           : emp.salaire       || '—',
+    // ── Nouvelles variables ─────────────────────────────
+    '@{{adresse_employe}}'   : emp.adresse_employe   || '—',
+    '@{{cin}}'                : emp.cin               || '—',
+    '@{{telephone_employe}}' : emp.telephone_employe || '—',
+    '@{{date_fin_contrat}}'  : emp.date_fin_contrat  || '—',
+    '@{{date_naissance}}'    : emp.date_naissance    || '—',
+    '@{{date}}'              : dateStr,
+    '@{{aujourd_hui}}'       : dateStr,
+    '@{{mois_annee}}'        : moisAnnee,
+    '@{{annee}}'             : String(today.getFullYear()),
+    '@{{societe}}'           : tenantData.societe       || '—',
+    '@{{adresse}}'           : tenantData.adresse       || '—',
+    '@{{telephone}}'         : tenantData.telephone     || '—',
+    '@{{email_societe}}'     : tenantData.email_societe || '—',
+    '@{{site_web}}'          : tenantData.site_web      || '—',
+    '@{{ice}}'               : tenantData.ice           || '—',
+    '@{{rc}}'                : tenantData.rc            || '—',
+};
 
     let contenu = contenuBase;
     for (const [variable, valeur] of Object.entries(remplacements)) {

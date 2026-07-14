@@ -16,10 +16,22 @@
         }
 
         h1 {
-            font-size: 18px;
+            font-size: 10px;
             margin-bottom: 4px;
             color: #1a2e44;
         }
+
+        .company-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 4px;
+}
+.company-name {
+    font-size: 20px;
+    font-weight: bold;
+    color: #1a2e44;
+}
 
         .meta {
             margin-bottom: 12px;
@@ -185,9 +197,13 @@
         $hasFilter = !empty($department) || !empty($search) || !empty($shift_type);
     @endphp
 
-    <h1>Planning Mensuel</h1>
+    <div class="company-header">
+    <div class="company-name">{{ $tenant?->name ?? config('app.name') }}</div>
+</div>
 
-    <div class="meta">
+<h1>Planning Mensuel</h1>
+
+<div class="meta">
         <p>Mois : <strong>{{ $moisLongFr[$month] }} {{ $year }}</strong></p>
         <p>Période : <strong>{{ $startOfMonth->day }} {{ $moisLongFr[$month] }} {{ $year }} — {{ $endOfMonth->day }} {{ $moisLongFr[$month] }} {{ $year }}</strong></p>
         <p>Nombre d'employés : <strong>{{ count($employees) }}</strong></p>

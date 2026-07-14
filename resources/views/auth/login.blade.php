@@ -161,7 +161,7 @@
         .visual-top h1 span{ color:var(--primary-light); }
 
         .visual-top p{
-            font-size:14.5px;
+            font-size:18px;
             line-height:1.6;
             color:#C6C5EA;
             max-width:34ch;
@@ -645,8 +645,9 @@
         <div class="visual-top-row">
             <div class="visual-top">
                 <div class="eyebrow">SIRH · Plénitude Groupe</div>
-                <h1>La plateforme RH pensée pour <span>les métiers de la santé</span></h1>
-                <p>Un espace unique, sécurisé et conforme aux réglementations sociales et fiscales du Maroc et de la Mauritanie.</p>
+                <h1>Pilotez votre <span>
+                    capital humain</span></h1>
+                <p>Digitalisez, automatisez et pilotez l'ensemble du cycle de vie de vos collaborateurs depuis une seule plateforme — pensée pour la santé et tous les secteurs.</p>
             </div>
 
             <div class="logo-wrap">

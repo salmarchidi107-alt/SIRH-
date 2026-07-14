@@ -270,6 +270,19 @@ class PointageController extends Controller
                 $pointage = $emp->pointages->first();
                 $shift    = $allBadgeRecords->get($emp->id, collect());
 
+                // ─────────────────────────────────────────────────────────
+                // Garde entamée la veille (ex: 19h -> 07h) et toujours ouverte
+                // (pas de sortie badgée) : on continue à l'afficher aujourd'hui
+                // au lieu de la faire disparaître, tant qu'aucun badge n'a été
+                // scanné aujourd'hui pour cet employé.
+                // ─────────────────────────────────────────────────────────
+                if (! $pointage && $shift->isEmpty()) {
+                    $openPointage = $this->findOpenOvernightPointage($emp->id, $currentDate, $tenantId);
+                    if ($openPointage) {
+                        $pointage = $openPointage;
+                    }
+                }
+
                 if ($pointage && in_array($pointage->statut, ['absent', 'absence_injustifiee'])) {
                     return [
                         'id'           => $emp->id,
@@ -374,6 +387,15 @@ class PointageController extends Controller
             ->map(function ($emp) use ($currentDate, $tenantId, $allBadgeRecords) {
                 $pointage  = $emp->pointages->first();
                 $shift     = $allBadgeRecords->get($emp->id, collect());
+
+                // Garde de la veille toujours ouverte : même règle que dans index()
+                if (! $pointage && $shift->isEmpty()) {
+                    $openPointage = $this->findOpenOvernightPointage($emp->id, $currentDate, $tenantId);
+                    if ($openPointage) {
+                        $pointage = $openPointage;
+                    }
+                }
+
                 $shiftType = $this->resolveShiftType($shift, $pointage);
 
                 if (! $pointage || ! $pointage->ignore_badge) {
@@ -685,6 +707,62 @@ class PointageController extends Controller
 
         $shiftType = $this->resolveShiftType($shift);
 
+        $hasEntreeToday = $shift->where('type', 'entree')->isNotEmpty();
+        $hasSortieToday = $shift->where('type', 'sortie')->isNotEmpty();
+
+        // ─────────────────────────────────────────────────────────────────
+        // Cas garde à cheval sur minuit (ex: 19h -> 07h le lendemain) :
+        // une "sortie" badgée aujourd'hui SANS "entree" aujourd'hui doit être
+        // rattachée au pointage encore ouvert de la veille, plutôt que de créer
+        // une nouvelle ligne "pas de badge" pour aujourd'hui.
+        // ─────────────────────────────────────────────────────────────────
+        if (! $hasEntreeToday && $hasSortieToday) {
+            $openPointage = $this->findOpenOvernightPointage($employeeId, $date, $tenantId);
+
+            if ($openPointage) {
+                $lastSortie  = $shift->where('type', 'sortie')->last()?->created_at;
+                $firstPause  = $shift->where('type', 'pause')->first()?->created_at;
+                $firstRetour = $shift->where('type', 'retour_pause')->first()?->created_at;
+
+                $updateData = [
+                    'statut'     => 'present',
+                    'updated_at' => now(),
+                ];
+
+                if ($lastSortie) {
+                    $updateData['heure_sortie'] = Carbon::parse($lastSortie)->setTimezone(self::TZ)->format('H:i:s');
+                }
+                // Pause éventuelle prise côté "lendemain" (avant la sortie), seulement
+                // si aucune pause n'a déjà été enregistrée la veille.
+                if ($firstPause && ! $openPointage->pause_start) {
+                    $updateData['pause_start'] = Carbon::parse($firstPause)->setTimezone(self::TZ)->format('H:i:s');
+                }
+                if ($firstRetour) {
+                    $updateData['pause_end'] = Carbon::parse($firstRetour)->setTimezone(self::TZ)->format('H:i:s');
+                }
+                if ($firstPause && $firstRetour && ! $openPointage->pause_minutes) {
+                    $diff = Carbon::parse($firstPause)->diffInMinutes(Carbon::parse($firstRetour));
+                    $updateData['pause_minutes'] = $diff > 0 ? $diff : 0;
+                }
+
+                Log::debug('syncPointage : rattachement sortie à la garde de la veille', [
+                    'employee_id'        => $employeeId,
+                    'pointage_veille_id' => $openPointage->id,
+                    'date_veille'        => $openPointage->date,
+                    'heure_sortie'       => $updateData['heure_sortie'] ?? null,
+                ]);
+
+                DB::table('pointages')->where('id', $openPointage->id)->update($updateData);
+                $openPointage = $openPointage->fresh();
+
+                if (method_exists($openPointage, 'calculerTotalHeures')) {
+                    $openPointage->calculerTotalHeures(true);
+                }
+
+                return $openPointage->fresh();
+            }
+        }
+
         Log::debug('syncPointage shift_type', [
             'employee_id'   => $employeeId,
             'shift_type'    => $shiftType,
@@ -742,6 +820,26 @@ class PointageController extends Controller
         }
 
         return $pointage->fresh();
+    }
+
+    // =========================================================================
+    // findOpenOvernightPointage — pointage de la veille encore ouvert
+    // (entrée badgée, pas encore de sortie), quel que soit le shift_type
+    // (garde OU normal — un shift normal peut lui aussi chevaucher minuit).
+    // Utilisé pour :
+    //   1) rattacher la sortie badgée le lendemain matin,
+    //   2) continuer à l'afficher "en cours" tant qu'elle n'est pas clôturée.
+    // =========================================================================
+    private function findOpenOvernightPointage(int $employeeId, Carbon $date, mixed $tenantId): ?Pointage
+    {
+        return Pointage::withoutGlobalScope(TenantScope::class)
+            ->where('employee_id', $employeeId)
+            ->where('tenant_id', $tenantId)
+            ->where('date', $date->copy()->subDay()->toDateString())
+            ->whereNotNull('heure_entree')
+            ->whereNull('heure_sortie')
+            ->whereNotIn('statut', ['absent', 'absence_injustifiee'])
+            ->first();
     }
 
     // =========================================================================
@@ -861,6 +959,12 @@ class PointageController extends Controller
                 if (! $pointage && $shift->isNotEmpty()) {
                     $pointage = $this->syncPointageFromBadgeRecords($emp->id, $d, $shift, $tenantId);
                 }
+
+                // NB: on ne "reporte" pas ici la garde ouverte de la veille comme
+                // dans index()/export() — le but de ce rapport période est de
+                // sommer les heures une seule fois par garde (déjà comptées sous
+                // la date où elle a démarré). La rattacher aussi au jour suivant
+                // doublerait le total_heures dans les sommes hebdo/mensuelles.
 
                 $shiftType = $this->resolveShiftType($shift, $pointage);
                 $statut    = $pointage?->statut ?? 'pas_de_badge';

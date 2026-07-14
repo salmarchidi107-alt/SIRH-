@@ -6,6 +6,7 @@ use App\Models\Employee;
 use App\Models\Expense;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ExpenseController extends Controller
 {
@@ -34,7 +35,11 @@ class ExpenseController extends Controller
             ->get();
     }
 
-    public function index(Request $request)
+    /**
+     * Construit la requête filtrée commune à index(), exportCsv() et exportPdf(),
+     * pour ne jamais avoir à dupliquer la logique de filtrage à trois endroits.
+     */
+    private function filteredExpensesQuery(Request $request)
     {
         $tenantId = $this->currentTenantId();
         $employee = $this->currentEmployee();
@@ -52,7 +57,25 @@ class ExpenseController extends Controller
             $query->forMonth((int) $request->input('month'), (int) $request->input('year'));
         }
 
-        $expenses = $query->latest('expense_date')->get();
+        // Nouveau filtre : catégorie
+        if ($request->filled('category')) {
+            $query->where('category', $request->input('category'));
+        }
+
+        // Nouveau filtre : recherche texte libre dans la description
+        if ($request->filled('description')) {
+            $query->where('description', 'like', '%' . $request->input('description') . '%');
+        }
+
+        return $query->latest('expense_date');
+    }
+
+    public function index(Request $request)
+    {
+        $tenantId = $this->currentTenantId();
+        $employee = $this->currentEmployee();
+
+        $expenses = $this->filteredExpensesQuery($request)->get();
 
         $stats = [
             'total'   => $expenses->count(),
@@ -62,47 +85,35 @@ class ExpenseController extends Controller
         ];
 
         return view('expenses.index', [
-            'expenses'     => $expenses,
-            'statusLabels' => Expense::STATUSES,
-            'stats'        => $stats,
-            'employees'    => $employee ? collect() : $this->employeesForTenant($tenantId),
+            'expenses'       => $expenses,
+            'statusLabels'   => Expense::STATUSES,
+            'categories'     => Expense::CATEGORIES,
+            'stats'          => $stats,
+            'employees'      => $employee ? collect() : $this->employeesForTenant($tenantId),
             'isEmployeeMode' => (bool) $employee,
         ]);
     }
 
     public function exportCsv(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
     {
-        $tenantId = $this->currentTenantId();
-        $employee = $this->currentEmployee();
-
-        $query = Expense::with('employee')->forTenant($tenantId);
-
-        if ($employee) {
-            $query->forEmployee($employee->id);
-        } else {
-            $query->forEmployee($request->integer('employee_id') ?: null)
-                  ->status($request->input('status'));
-        }
-
-        if ($request->filled('month') && $request->filled('year')) {
-            $query->forMonth((int) $request->input('month'), (int) $request->input('year'));
-        }
-
-        $expenses = $query->latest('expense_date')->get();
+        $expenses = $this->filteredExpensesQuery($request)->get();
 
         $filename = 'notes-de-frais-' . now()->format('Y-m-d_His') . '.csv';
 
         return response()->streamDownload(function () use ($expenses) {
             $handle = fopen('php://output', 'w');
             fwrite($handle, "\xEF\xBB\xBF");
-            fputcsv($handle, ['Employé', 'Titre', 'Catégorie', 'Date', 'Montant', 'Devise', 'Statut'], ';');
+            fputcsv($handle, ['Employé', 'Titre', 'Catégorie', 'Description', 'Date', 'HT', 'TVA', 'TTC', 'Devise', 'Statut'], ';');
 
             foreach ($expenses as $expense) {
                 fputcsv($handle, [
                     $expense->employee->full_name ?? '—',
                     $expense->title,
                     $expense->category_label,
+                    $expense->description,
                     optional($expense->expense_date)->format('d/m/Y'),
+                    $expense->amount_excluding_tax !== null ? number_format((float) $expense->amount_excluding_tax, 2, ',', '') : '',
+                    $expense->vat_amount !== null ? number_format((float) $expense->vat_amount, 2, ',', '') : '',
                     number_format((float) $expense->amount, 2, ',', ''),
                     $expense->currency,
                     $expense->status_label,
@@ -113,6 +124,42 @@ class ExpenseController extends Controller
         }, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
+    }
+
+    /**
+     * Export PDF des notes de frais filtrées, avec les mêmes données que l'export
+     * Excel (HT / TVA / TTC / description incluses), au format imprimable.
+     *
+     * Nécessite le paquet barryvdh/laravel-dompdf :
+     *   composer require barryvdh/laravel-dompdf
+     */
+    public function exportPdf(Request $request)
+    {
+        $expenses = $this->filteredExpensesQuery($request)->get();
+
+        $stats = [
+            'total'   => $expenses->count(),
+            'montant' => number_format((float) $expenses->sum('amount'), 2, ',', ' ') . ' MAD',
+        ];
+
+        $periodLabel = $request->filled('month') && $request->filled('year')
+            ? \Illuminate\Support\Carbon::create()->month((int) $request->input('month'))->locale('fr')->translatedFormat('F') . ' ' . $request->input('year')
+            : now()->locale('fr')->translatedFormat('F Y');
+
+        $tenantId = $this->currentTenantId();
+        $tenant = $tenantId ? \App\Models\Tenant::find($tenantId) : null;
+
+        $pdf = Pdf::loadView('expenses.pdf', [
+            'expenses'    => $expenses,
+            'stats'       => $stats,
+            'periodLabel' => $periodLabel,
+            'generatedAt' => now(),
+            'tenant'      => $tenant,
+        ])->setPaper('a4', 'landscape');
+
+        $filename = 'notes-de-frais-' . now()->format('Y-m-d_His') . '.pdf';
+
+        return $pdf->download($filename);
     }
 
     public function create()
@@ -137,7 +184,9 @@ class ExpenseController extends Controller
             'title'       => 'required|string|max:255',
             'category'    => 'required|string|in:' . implode(',', array_keys(Expense::CATEGORIES)),
             'date'        => 'required|date',
-            'amount'      => 'required|numeric|min:0',
+            'amount'                => 'required|numeric|min:0',
+            'amount_excluding_tax'  => 'nullable|numeric|min:0',
+            'vat_amount'            => 'nullable|numeric|min:0',
             'currency'    => 'required|string|max:3',
             'description' => 'nullable|string',
             'receipt'     => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
@@ -149,10 +198,14 @@ class ExpenseController extends Controller
             'title'        => $validated['title'],
             'category'     => $validated['category'],
             'expense_date' => $validated['date'],
-            'amount'       => $validated['amount'],
+            'amount'                => $validated['amount'],
+            'amount_excluding_tax'  => $validated['amount_excluding_tax'] ?? null,
+            'vat_amount'            => $validated['vat_amount'] ?? null,
             'currency'     => $validated['currency'],
             'description'  => $validated['description'] ?? null,
-            'receipt_path' => $request->file('receipt')?->store('receipts', 'public'),
+            'receipt_path' => $request->filled('receipt_path')
+                ? $request->input('receipt_path')
+                : $request->file('receipt')?->store('receipts', 'public'),
             'status'       => Expense::STATUS_VALIDE,
         ]);
 
@@ -196,7 +249,9 @@ class ExpenseController extends Controller
             'title'       => 'required|string|max:255',
             'category'    => 'required|string|in:' . implode(',', array_keys(Expense::CATEGORIES)),
             'date'        => 'required|date',
-            'amount'      => 'required|numeric|min:0',
+            'amount'                => 'required|numeric|min:0',
+            'amount_excluding_tax'  => 'nullable|numeric|min:0',
+            'vat_amount'            => 'nullable|numeric|min:0',
             'currency'    => 'required|string|max:3',
             'description' => 'nullable|string',
             'receipt'     => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
@@ -207,7 +262,9 @@ class ExpenseController extends Controller
             'title'        => $validated['title'],
             'category'     => $validated['category'],
             'expense_date' => $validated['date'],
-            'amount'       => $validated['amount'],
+            'amount'                => $validated['amount'],
+            'amount_excluding_tax'  => $validated['amount_excluding_tax'] ?? null,
+            'vat_amount'            => $validated['vat_amount'] ?? null,
             'currency'     => $validated['currency'],
             'description'  => $validated['description'] ?? null,
         ]);
@@ -251,17 +308,6 @@ class ExpenseController extends Controller
         return redirect()->route('expenses.index')->with('success', 'Note de frais rejetée.');
     }
 
-    public function import()
-    {
-        $tenantId = $this->currentTenantId();
-        $employee = $this->currentEmployee();
-
-        return view('expenses.import', [
-            'employee'  => $employee,
-            'employees' => $employee ? collect() : $this->employeesForTenant($tenantId),
-        ]);
-    }
-
     public function ocrScan(Request $request): JsonResponse
     {
         $request->validate([
@@ -295,60 +341,9 @@ class ExpenseController extends Controller
         }
     }
 
-    public function processImport(Request $request): JsonResponse
-    {
-        $tenantId = $this->currentTenantId();
-        $lockedEmployee = $this->currentEmployee();
-
-        $request->validate([
-            'employee_id' => [$lockedEmployee ? 'nullable' : 'required', 'integer', 'exists:employees,id'],
-            'receipts'    => 'required|array|min:1',
-            'receipts.*'  => 'file|mimes:jpg,jpeg,png,pdf|max:10240',
-        ]);
-
-        $defaultEmployeeId = $lockedEmployee->id ?? $request->integer('employee_id');
-        $ocrService = app(\App\Services\ReceiptOcrService::class);
-
-        $created = [];
-        $failed = [];
-
-        foreach ($request->file('receipts') as $file) {
-            try {
-                $isPdf = $file->getClientMimeType() === 'application/pdf'
-                    || strtolower($file->getClientOriginalExtension()) === 'pdf';
-
-                $result = $ocrService->scan(
-                    $file->getRealPath(),
-                    $isPdf ? 'pdf' : $file->getClientOriginalExtension(),
-                    $tenantId
-                );
-
-                $expense = Expense::create([
-                    'tenant_id'    => $tenantId,
-                    'employee_id'  => $result['employee_id'] ?? $defaultEmployeeId,
-                    'title'        => $result['title'] ?? $file->getClientOriginalName(),
-                    'category'     => $result['category'] ?? 'autre',
-                    'expense_date' => $result['date'] ?? now()->toDateString(),
-                    'amount'       => $result['amount'] ?? 0,
-                    'currency'     => 'MAD',
-                    'receipt_path' => $file->store('receipts', 'public'),
-                    'status'       => Expense::STATUS_VALIDE,
-                ]);
-
-                $created[] = [
-                    'title'  => $expense->title,
-                    'amount' => (string) $expense->amount,
-                    'source' => $file->getClientOriginalName(),
-                ];
-            } catch (\Throwable $e) {
-                report($e);
-                $failed[] = $file->getClientOriginalName();
-            }
-        }
-
-        return response()->json([
-            'created' => $created,
-            'failed'  => $failed,
-        ]);
-    }
+    // NOTE DE SUPPRESSION : les méthodes import() et processImport() ont été
+    // retirées ici — la fonctionnalité "Import groupé" est supprimée du projet
+    // conformément à la demande. Pensez à retirer les routes correspondantes
+    // dans routes/web.php (voir instructions fournies séparément) et à supprimer
+    // le fichier resources/views/expenses/import.blade.php.
 }

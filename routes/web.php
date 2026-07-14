@@ -46,10 +46,9 @@ use App\Http\Controllers\EquipementController;
 use App\Http\Controllers\RetourController;
 use App\Http\Controllers\Admin\VerificationCodeController as AdminVerifCodeController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\ExpenseOCRController;
 
-// ═════════════════════════════════════════════════════════════════════════════
-// DEBUG TEMPORAIRE — À SUPPRIMER APRÈS TEST
-// ═════════════════════════════════════════════════════════════════════════════
+
 Route::get('/debug-ai-key', function () {
     $configKey = config('ai.providers.openrouter.key');
     $envKey    = env('OPENROUTER_API_KEY');
@@ -466,18 +465,23 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/parametrage/site-location',        [\App\Http\Controllers\SiteLocationController::class, 'store'])  ->name('site-location.store');
     Route::delete('/parametrage/site-location/{id}', [\App\Http\Controllers\SiteLocationController::class, 'destroy'])->name('site-location.destroy');
 });
-Route::prefix('notes-frais')->name('expenses.')->group(function () {
-    Route::get('/', [ExpenseController::class, 'index'])->name('index');
-    Route::get('/nouvelle', [ExpenseController::class, 'create'])->name('create');
-    Route::post('/', [ExpenseController::class, 'store'])->name('store');
-    Route::get('/import', [ExpenseController::class, 'import'])->name('import');
+Route::middleware(['web', 'auth', 'identify-tenant', '2fa'])
+    ->prefix('notes-frais')
+    ->name('expenses.')
+    ->group(function () {
+        Route::get('/', [ExpenseController::class, 'index'])->name('index');
+        Route::get('/nouvelle', [ExpenseController::class, 'create'])->name('create');
+        Route::post('/', [ExpenseController::class, 'store'])->name('store');
 
-    Route::get('/{expense}/modifier', [ExpenseController::class, 'edit'])->name('edit');
-    Route::put('/{expense}', [ExpenseController::class, 'update'])->name('update');
-    Route::post('/{expense}/approve', [ExpenseController::class, 'approve'])->name('approve');
-    Route::post('/{expense}/reject', [ExpenseController::class, 'reject'])->name('reject');
-    Route::get('/export', [ExpenseController::class, 'exportCsv'])->name('export');
+        Route::get('/{expense}/modifier', [ExpenseController::class, 'edit'])->name('edit');
+        Route::put('/{expense}', [ExpenseController::class, 'update'])->name('update');
+        Route::post('/{expense}/approve', [ExpenseController::class, 'approve'])->name('approve');
+        Route::post('/{expense}/reject', [ExpenseController::class, 'reject'])->name('reject');
+        Route::get('/export', [ExpenseController::class, 'exportCsv'])->name('export');
+        Route::get('/export-pdf', [ExpenseController::class, 'exportPdf'])->name('export.pdf');
 
-    Route::post('/ocr-scan', [ExpenseController::class, 'ocrScan'])->name('ocr.scan');
-    Route::post('/import/process', [ExpenseController::class, 'processImport'])->name('import.process');
-});
+        // Anti-abus : limite le nombre d'appels OCR par utilisateur (l'API externe est facturée).
+        Route::post('/ocr/scan', [ExpenseOCRController::class, 'scan'])
+            ->middleware('throttle:20,1')
+            ->name('ocr.scan');
+    });

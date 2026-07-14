@@ -12,13 +12,25 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('absences', function (Blueprint $table) {
-            $table->uuid('tenant_id')->nullable()->after('id');
-
-            $table->foreign('tenant_id')
-                  ->references('id')
-                  ->on('tenants')
-                  ->onDelete('cascade');
+            if (!Schema::hasColumn('absences', 'tenant_id')) {
+                $table->uuid('tenant_id')->nullable()->after('id');
+            }
         });
+
+        // La contrainte de clé étrangère est ajoutée séparément : si la colonne
+        // existait déjà mais sans contrainte, celle-ci sera bien créée quand même.
+        $foreignKeyExists = collect(
+            \DB::select("SHOW KEYS FROM absences WHERE Key_name = 'absences_tenant_id_foreign'")
+        )->isNotEmpty();
+
+        if (!$foreignKeyExists) {
+            Schema::table('absences', function (Blueprint $table) {
+                $table->foreign('tenant_id')
+                      ->references('id')
+                      ->on('tenants')
+                      ->onDelete('cascade');
+            });
+        }
     }
 
     /**

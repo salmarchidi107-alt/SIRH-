@@ -723,7 +723,7 @@
 <div class="geo-tooltip-wrap">
     <a href="{{ $mapsUrl }}" target="_blank"
        style="font-size:18px;text-decoration:none;cursor:pointer;position:relative;z-index:1000;{{ $isGeoAlert ? 'filter:drop-shadow(0 0 2px #dc2626);' : '' }}">
-       {{ $isGeoAlert ? '📍' : '📍' }}
+       {{ $isGeoAlert ? '🔴' : '📍' }}
     </a>
     <div class="geo-tooltip" style="pointer-events:none;">
                                     @if(!empty($geo['address']))
@@ -869,14 +869,14 @@
                     </td>
 
                     {{-- Photo — dernière photo prise à la badgeuse --}}
-                    <td>
-                        <button class="pt-action-btn"
-                                data-url="{{ route('pointage.last-photo', $emp['id']) }}"
-                                data-name="{{ $emp['nom'] }}"
-                                onclick="showLastPhoto(this)">
-                            Voir photo
-                        </button>
-                    </td>
+<td>
+    <button class="pt-action-btn"
+            data-url="{{ route('pointage.last-photo', ['employee' => $emp['id'], 'date' => $currentDate->toDateString()]) }}"
+            data-name="{{ $emp['nom'] }}"
+            onclick="showLastPhoto(this)">
+        Voir photo
+    </button>
+</td>
 
                 </tr>
                 @endforeach

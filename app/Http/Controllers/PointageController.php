@@ -24,8 +24,6 @@ class PointageController extends Controller
 
     // =========================================================================
     // Helper : récupère le tenant_id courant
-    // Priorité à auth()->user()->tenant_id (lié à la session, non falsifiable
-    // côté client) plutôt qu'à config('app.current_tenant_id').
     // =========================================================================
     private function getCurrentTenantId(): mixed
     {
@@ -112,8 +110,6 @@ class PointageController extends Controller
     // =========================================================================
     // checkGeoAlert — trouve la localisation de référence selon le département
     // de l'employé et compare avec sa position GPS.
-    //
-    // Priorité : localisation spécifique au département > localisation globale
     // =========================================================================
     private function checkGeoAlert(?array $geo, mixed $tenantId, ?string $department = null): array
     {
@@ -123,13 +119,11 @@ class PointageController extends Controller
             return ['alert' => false, 'distance' => null, 'site_name' => null];
         }
 
-        // 1. Chercher une localisation spécifique au département de l'employé
         $site = null;
         if ($department) {
             $site = $locations->first(fn($l) => (string) $l->department === (string) $department);
         }
 
-        // 2. Fallback sur la localisation globale (department = null ou vide)
         if (! $site) {
             $site = $locations->first(fn($l) => is_null($l->department) || $l->department === '');
         }
@@ -247,12 +241,14 @@ class PointageController extends Controller
             ->get()
             ->groupBy('employee_id');
 
-        Log::debug('BadgeRecords shift_type debug', [
-            'date'    => $currentDate->toDateString(),
-            'records' => BadgeRecord::whereDate('created_at', $currentDate->toDateString())
-                ->get(['id', 'employee_id', 'type', 'shift_type'])
-                ->toArray(),
-        ]);
+        if (app()->environment('local')) {
+            Log::debug('BadgeRecords shift_type debug', [
+                'date'    => $currentDate->toDateString(),
+                'records' => BadgeRecord::whereDate('created_at', $currentDate->toDateString())
+                    ->get(['id', 'employee_id', 'type', 'shift_type'])
+                    ->toArray(),
+            ]);
+        }
 
         $employeesQuery = Employee::active()
             ->with(['pointages' => function ($q) use ($currentDate, $tenantId) {
@@ -480,12 +476,14 @@ class PointageController extends Controller
     }
 
     // =========================================================================
-    // lastPhoto — dernière photo prise à la badgeuse pour un employé
-    // Cherche le BadgeRecord le plus récent (toutes dates confondues) qui
-    // possède soit un fichier sur disque (face_photo_path), soit une version
-    // base64 (fallback), et renvoie une URL affichable directement en <img>.
+    // lastPhoto — photo prise à la badgeuse pour un employé, strictement
+    // bornée au jour calendaire sélectionné ($date passé en query string).
+    // Chaque jour garde sa propre photo : pour une garde à cheval sur minuit,
+    // l'entrée (jeudi 19h) et la sortie (vendredi 07h) ont des created_at sur
+    // des jours différents, donc chaque ligne du tableau (jeudi / vendredi)
+    // récupère naturellement sa propre photo, sans chevauchement.
     // =========================================================================
-    public function lastPhoto(Employee $employee): JsonResponse
+    public function lastPhoto(Employee $employee, Request $request): JsonResponse
     {
         $tenantId = $this->getCurrentTenantId();
 
@@ -494,7 +492,15 @@ class PointageController extends Controller
             return response()->json(['success' => false, 'message' => "Accès non autorisé."], 403);
         }
 
+        // Date sélectionnée dans le tableau (query param ?date=YYYY-MM-DD)
+        try {
+            $date = Carbon::parse($request->query('date', today()->toDateString()));
+        } catch (\Exception $e) {
+            $date = today();
+        }
+
         $record = BadgeRecord::where('employee_id', $employee->id)
+            ->whereDate('created_at', $date->toDateString())
             ->where(function ($q) {
                 $q->whereNotNull('face_photo_path')
                   ->orWhereNotNull('face_photo_base64');
@@ -505,7 +511,7 @@ class PointageController extends Controller
         if (! $record) {
             return response()->json([
                 'success' => false,
-                'message' => 'Aucune photo trouvée pour cet employé.',
+                'message' => 'Aucune photo trouvée pour ce jour.',
             ]);
         }
 
@@ -996,7 +1002,7 @@ class PointageController extends Controller
     // =========================================================================
     // badgesPin
     // =========================================================================
-    public function badgesPin(Request $request): \Illuminate\View\View
+    public function badgesPin(Request $request): View
     {
         $employees = Employee::active()
             ->when($request->filled('search'),     fn($q) => $q->search($request->search))

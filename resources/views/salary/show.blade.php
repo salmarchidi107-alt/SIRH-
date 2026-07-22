@@ -33,7 +33,7 @@
                 @else {{ ucfirst($employee->payment_method ?? '—') }}
                 @endif
             </strong></div>
-            <div><div style="color:var(--text-muted);font-size:0.75rem">Salaire base</div><strong>{{ number_format($employee->base_salary,0,',',' ') }} MAD</strong></div>
+            <div><div style="color:var(--text-muted);font-size:0.75rem">Salaire base</div><strong>{{ number_format($employee->base_salary,0,',',' ') }} </strong></div>
 
             {{-- ── CORRECTION : family_situation au lieu de family_status ── --}}
             <div><div style="color:var(--text-muted);font-size:0.75rem">Situation familiale</div><strong>{{ ucfirst($employee->family_situation ?? 'Célibataire') }}</strong></div>

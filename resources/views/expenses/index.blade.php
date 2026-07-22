@@ -17,33 +17,36 @@
                 <p>{{ now()->locale('fr')->translatedFormat('F Y') }}</p>
             </div>
             <div style="display:flex;gap:10px">
-                {{-- Export PDF : centralise le rendu imprimable ; l'export Excel reste
-                     disponible depuis "Fichier Excel imprimable" (autre écran). --}}
-                <a class="btn btn-ghost" href="{{ route('expenses.export.pdf', request()->only(['month','year','employee_id','status','category','description'])) }}">
-                    📄 Export PDF
-                </a>
-                <a class="btn btn-primary" href="{{ route('expenses.create') }}">+ Nouvelle note</a>
-            </div>
+    <a class="btn btn-ghost" href="{{ route('expenses.export', request()->only(['month','year','employee_id','status','category','description'])) }}">
+         Export Excel
+    </a>
+    <a class="btn btn-ghost" href="{{ route('expenses.export.pdf', request()->only(['month','year','employee_id','status','category','description'])) }}">
+         Export PDF
+    </a>
+    <a class="btn btn-primary" href="{{ route('expenses.create') }}">+ Nouvelle note</a>
+</div>
         </div>
 
         <div class="card mb-4">
             <div class="card-body">
-                <form method="GET" action="{{ route('expenses.index') }}" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
-                    <select name="month" class="form-control" style="width:auto" onchange="this.form.submit()">
+                <form method="GET" action="{{ route('expenses.index') }}" style="display:flex;gap:10px;align-items:center;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px">
+                    <select name="month" class="form-control" style="width:auto;flex-shrink:0" onchange="this.form.submit()">
+                        <option value="">Tous les mois</option>
                         @foreach (range(1, 12) as $m)
-                            <option value="{{ $m }}" {{ (int) request('month', now()->month) === $m ? 'selected' : '' }}>
+                            <option value="{{ $m }}" {{ (int) request('month') === $m ? 'selected' : '' }}>
                                 {{ \Illuminate\Support\Carbon::create()->month($m)->locale('fr')->translatedFormat('F') }}
                             </option>
                         @endforeach
                     </select>
-                    <select name="year" class="form-control" style="width:auto" onchange="this.form.submit()">
+                    <select name="year" class="form-control" style="width:auto;flex-shrink:0" onchange="this.form.submit()">
+                        <option value="">Toutes les années</option>
                         @foreach (range(now()->year, now()->year - 3) as $y)
-                            <option value="{{ $y }}" {{ (int) request('year', now()->year) === $y ? 'selected' : '' }}>{{ $y }}</option>
+                            <option value="{{ $y }}" {{ (int) request('year') === $y ? 'selected' : '' }}>{{ $y }}</option>
                         @endforeach
                     </select>
 
                     @unless ($isEmployeeMode)
-                        <select name="employee_id" class="form-control" style="width:auto" onchange="this.form.submit()">
+                        <select name="employee_id" class="form-control" style="width:auto;flex-shrink:0" onchange="this.form.submit()">
                             <option value="">Tous les employés</option>
                             @foreach ($employees as $emp)
                                 <option value="{{ $emp->id }}" {{ (int) request('employee_id') === $emp->id ? 'selected' : '' }}>
@@ -52,7 +55,7 @@
                             @endforeach
                         </select>
 
-                        <select name="status" class="form-control" style="width:auto" onchange="this.form.submit()">
+                        <select name="status" class="form-control" style="width:auto;flex-shrink:0" onchange="this.form.submit()">
                             <option value="">Tous statuts</option>
                             @foreach ($statusLabels as $value => $label)
                                 <option value="{{ $value }}" {{ request('status') === $value ? 'selected' : '' }}>{{ $label }}</option>
@@ -61,7 +64,7 @@
                     @endunless
 
                     {{-- Nouveau filtre : catégorie --}}
-                    <select name="category" class="form-control" style="width:auto" onchange="this.form.submit()">
+                    <select name="category" class="form-control" style="width:auto;flex-shrink:0" onchange="this.form.submit()">
                         <option value="">Toutes catégories</option>
                         @foreach ($categories as $value => $label)
                             <option value="{{ $value }}" {{ request('category') === $value ? 'selected' : '' }}>{{ $label }}</option>
@@ -69,16 +72,15 @@
                     </select>
 
                     {{-- Nouveau filtre : description (recherche texte libre) --}}
-                    <input type="text" name="description" class="form-control" style="width:200px"
+                    <input type="text" name="description" class="form-control" style="width:170px;flex-shrink:0"
                            placeholder="Rechercher dans la description…" value="{{ request('description') }}">
-
-                    <button type="submit" class="btn btn-primary" style="padding:8px 14px">Filtrer</button>
 
                     @php
                         $hasActiveFilters = collect(request()->query())->filter()->isNotEmpty();
                     @endphp
+                    <button type="submit" class="btn btn-primary" style="padding:8px 14px;flex-shrink:0;white-space:nowrap">Filtrer</button>
                     @if ($hasActiveFilters)
-                        <a href="{{ route('expenses.index') }}" class="btn btn-ghost" style="padding:8px 14px">✕ Réinitialiser</a>
+                        <a href="{{ route('expenses.index') }}" class="btn btn-ghost" style="padding:8px 14px;flex-shrink:0;white-space:nowrap">✕ Réinitialiser</a>
                     @endif
                 </form>
             </div>
@@ -193,24 +195,48 @@
                                     @endif
                                 </td>
                                 <td style="text-align:right">
-                                    <div style="display:flex;gap:6px;justify-content:flex-end">
-                                        <a class="btn btn-ghost" style="padding:4px 10px;font-size:0.78rem" href="{{ route('expenses.edit', $expense) }}">Modifier</a>
+                                    <div class="nf-actions">
+                                        <a class="nf-icon-btn nf-icon-btn-neutral" href="{{ route('expenses.edit', $expense) }}" title="Modifier">
+                                            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                            </svg>
+                                        </a>
 
                                         @unless ($isEmployeeMode)
                                             @if ($expense->status !== \App\Models\Expense::STATUS_VALIDE)
                                                 <form action="{{ route('expenses.approve', $expense) }}" method="POST" style="display:inline">
                                                     @csrf
-                                                    <button type="submit" class="btn btn-ghost" style="padding:4px 10px;font-size:0.78rem;color:#059669">✓ Valider</button>
+                                                    <button type="submit" class="nf-icon-btn nf-icon-btn-green" title="Valider">
+                                                        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                                        </svg>
+                                                    </button>
                                                 </form>
                                             @endif
                                             @if ($expense->status !== \App\Models\Expense::STATUS_REJETE)
                                                 <form action="{{ route('expenses.reject', $expense) }}" method="POST" style="display:inline"
                                                       onsubmit="return confirm('Rejeter cette note de frais ?')">
                                                     @csrf
-                                                    <button type="submit" class="btn btn-ghost" style="padding:4px 10px;font-size:0.78rem;color:#dc2626">✕ Rejeter</button>
+                                                    <button type="submit" class="nf-icon-btn nf-icon-btn-red" title="Rejeter">
+                                                        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                                                        </svg>
+                                                    </button>
                                                 </form>
                                             @endif
                                         @endunless
+
+                                        {{-- Bouton Supprimer --}}
+                                        <form action="{{ route('expenses.destroy', $expense) }}" method="POST" style="display:inline"
+                                              onsubmit="return confirm('Supprimer définitivement cette note de frais ? Cette action est irréversible.')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="nf-icon-btn nf-icon-btn-red" title="Supprimer">
+                                                <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9.5 4h5a1 1 0 011 1v2H8.5V5a1 1 0 011-1z"/>
+                                                </svg>
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
@@ -277,5 +303,20 @@
     .nf-stat-seg { flex:1 1 45%; }
     .nf-stat-div { display:none; }
 }
+
+/* Actions en icônes : compact, avec tooltip natif via title */
+.nf-actions { display:flex; gap:4px; justify-content:flex-end; }
+.nf-icon-btn {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:30px; height:30px; border-radius:8px; border:1px solid transparent;
+    background:transparent; cursor:pointer; transition:all .15s;
+    text-decoration:none; padding:0;
+}
+.nf-icon-btn-neutral { color:#64748b; }
+.nf-icon-btn-neutral:hover { background:#f1f5f9; color:#0f172a; border-color:#e2e8f0; }
+.nf-icon-btn-green { color:#059669; }
+.nf-icon-btn-green:hover { background:#ecfdf5; border-color:#a7f3d0; }
+.nf-icon-btn-red { color:#dc2626; }
+.nf-icon-btn-red:hover { background:#fef2f2; border-color:#fecaca; }
 </style>
 @endsection

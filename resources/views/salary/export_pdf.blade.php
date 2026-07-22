@@ -6,391 +6,469 @@
 <title>Rapport de Paie — {{ $periodLabel }}</title>
 <style>
 /* ═══════════════════════════════════════════════════
-   RESET & BASE — Times New Roman 12pt professionnel
+   RESET & BASE — noir et blanc, sobre, professionnel
 ═══════════════════════════════════════════════════ */
 * { margin:0; padding:0; box-sizing:border-box; }
 
 @page {
     size: A4 portrait;
-    margin: 16mm 18mm 16mm 18mm;
+    margin: 10mm 8mm 10mm 8mm;
+}
+
+html, body {
+    width: 100%;
+    overflow-x: hidden;
 }
 
 body {
     font-family: "Times New Roman", Times, serif;
-    font-size: 12px;
-    color: #1a1a1a;
+    font-size: 11pt;
+    color: #000000;
     background: #ffffff;
-    line-height: 1.6;
-    width: 100%;
+    line-height: 1.45;
+}
+
+.page-container {
+    max-width: 190mm;
+    margin: 0 auto;
+    padding: 10mm 0;
+}
+
+table { table-layout: fixed; width: 100%; border-collapse: collapse; }
+td, th { word-wrap: break-word; overflow-wrap: break-word; }
+
+h1, h2, .title-14 {
+    font-size: 13pt;
+    font-weight: bold;
+    color: #000000;
 }
 
 /* ═══════════════════════════════════════════════════
-   HEADER
+   EN-TÊTE
 ═══════════════════════════════════════════════════ */
-.header {
-    padding-bottom: 14px;
-    border-bottom: 2.5px solid #0d9488;
-    margin-bottom: 22px;
-    display: table;
-    width: 100%;
+.letterhead {
+    text-align: center;
+    padding-bottom: 10pt;
+    border-bottom: 1.5pt solid #000000;
+    margin-bottom: 16pt;
 }
-.header-left  { display: table-cell; vertical-align: middle; width: 62%; }
-.header-right { display: table-cell; vertical-align: middle; text-align: right; width: 38%; }
-
-.company-name {
-    font-size: 13px;
+.tenant-name {
+    font-size: 13pt;
     font-weight: bold;
-    color: #0d9488;
-    letter-spacing: 1.5px;
     text-transform: uppercase;
+    letter-spacing: 0.5pt;
+}
+.tenant-tagline {
+    font-size: 11pt;
+    margin-top: 2pt;
 }
 .doc-title {
-    font-size: 22px;
+    font-size: 13pt;
     font-weight: bold;
-    color: #111827;
-    margin-top: 4px;
-    letter-spacing: -0.3px;
-}
-.doc-sub {
-    font-size: 11px;
-    color: #6b7280;
-    margin-top: 4px;
-    font-style: italic;
-}
-.meta-pill {
-    display: inline-block;
-    background: #f0fdfa;
-    border: 1px solid #99f6e4;
-    color: #0d9488;
-    font-size: 11px;
-    font-weight: bold;
-    padding: 4px 14px;
-    border-radius: 20px;
-    margin-bottom: 5px;
-}
-.meta-pill-blue {
-    display: inline-block;
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
-    color: #1d4ed8;
-    font-size: 11px;
-    font-weight: bold;
-    padding: 4px 14px;
-    border-radius: 20px;
-    margin-bottom: 5px;
-    margin-left: 4px;
-}
-.meta-line {
-    font-size: 10px;
-    color: #9ca3af;
-    margin-top: 4px;
-    font-style: italic;
-}
-
-/* ═══════════════════════════════════════════════════
-   KPI CARDS
-═══════════════════════════════════════════════════ */
-.kpi-row {
-    display: table;
-    width: 100%;
-    margin-bottom: 18px;
-    border-collapse: separate;
-    border-spacing: 6px 0;
-}
-.kpi-cell { display: table-cell; width: 25%; padding: 0 3px; }
-.kpi-card {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    padding: 10px 12px;
-    border-left: 4px solid #0d9488;
-}
-.kpi-card.red   { border-left-color: #ef4444; }
-.kpi-card.amber { border-left-color: #f59e0b; }
-.kpi-card.blue  { border-left-color: #3b82f6; }
-.kpi-label {
-    font-size: 9px;
-    color: #6b7280;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: bold;
-    font-family: "Times New Roman", Times, serif;
+    margin-top: 10pt;
+    letter-spacing: 0.5pt;
 }
-.kpi-value {
-    font-size: 14px;
-    font-weight: bold;
-    color: #111827;
-    margin-top: 4px;
-    line-height: 1.2;
+
+.ref-table {
+    width: 100%;
+    margin-top: 12pt;
+    border: 1pt solid #000000;
 }
-.kpi-sub {
-    font-size: 9px;
-    color: #9ca3af;
-    margin-top: 4px;
-    font-style: italic;
+.ref-table td {
+    padding: 4pt 9pt;
+    font-size: 11pt;
+    border: 0.5pt solid #000000;
+}
+.ref-table td.label {
+    font-weight: bold;
+    width: 25%;
+    background: #f0f0f0;
 }
 
 /* ═══════════════════════════════════════════════════
-   SECTION TITLE
+   AVERTISSEMENTS DEVISE
+═══════════════════════════════════════════════════ */
+.currency-notice {
+    border: 1pt solid #000000;
+    font-size: 10pt;
+    font-style: italic;
+    padding: 6pt 10pt;
+    margin: 12pt 0;
+}
+.currency-notice.warning {
+    border: 1.25pt solid #000000;
+    background: #f5f5f5;
+    font-weight: bold;
+    font-style: normal;
+}
+
+/* ═══════════════════════════════════════════════════
+   TITRES DE SECTION
 ═══════════════════════════════════════════════════ */
 .section-title {
-    font-size: 11px;
+    font-size: 13pt;
     font-weight: bold;
-    color: #111827;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    padding: 6px 0 6px 0;
-    border-bottom: 1.5px solid #0d9488;
-    margin-bottom: 12px;
+    letter-spacing: 0.3pt;
+    padding-bottom: 4pt;
+    border-bottom: 1pt solid #000000;
+    margin: 20pt 0 10pt 0;
     display: table;
     width: 100%;
 }
-.section-title-text { display: table-cell; vertical-align: middle; }
+.section-title-text { display: table-cell; vertical-align: bottom; }
 .section-count {
     display: table-cell;
     text-align: right;
-    vertical-align: middle;
-    background: #e5e7eb;
-    /* badge inline via span */
-}
-.section-count span {
-    background: #ccfbf1;
-    color: #0d9488;
-    font-size: 9px;
-    padding: 2px 9px;
-    border-radius: 10px;
-    font-weight: bold;
-    letter-spacing: 0;
+    vertical-align: bottom;
+    font-size: 10pt;
+    font-weight: normal;
     text-transform: none;
+    letter-spacing: 0;
 }
 
 /* ═══════════════════════════════════════════════════
-   TABLE
+   TABLEAU RÉSUMÉ
+═══════════════════════════════════════════════════ */
+.summary-table {
+    width: 100%;
+    border: 1pt solid #000000;
+    font-size: 10.5pt;
+}
+.summary-table thead th {
+    padding: 6pt 9pt;
+    text-align: left;
+    font-size: 10pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    background: #e0e0e0;
+    border: 0.75pt solid #000000;
+}
+.summary-table thead th.right { text-align: right; }
+.summary-table tbody td {
+    padding: 6pt 9pt;
+    border: 0.5pt solid #000000;
+}
+.summary-table tbody td.right { text-align: right; font-weight: bold; }
+.summary-table tbody td.sub { font-size: 9pt; font-style: italic; }
+.summary-table .total-row td {
+    background: #e0e0e0;
+    font-weight: bold;
+    font-size: 11pt;
+    border-top: 1.5pt solid #000000;
+    border-bottom: 1.5pt solid #000000;
+}
+
+/* ═══════════════════════════════════════════════════
+   TABLEAU PRINCIPAL — DÉTAIL DES BULLETINS
 ═══════════════════════════════════════════════════ */
 .main-table {
     width: 100%;
-    border-collapse: collapse;
-    font-size: 10.5px;
-    font-family: "Times New Roman", Times, serif;
-}
-.main-table thead tr {
-    background: #0d9488;
-    color: #ffffff;
+    font-size: 9pt;
+    border: 1pt solid #000000;
 }
 .main-table thead th {
-    padding: 8px 9px;
+    padding: 5pt 4pt;
     text-align: left;
-    font-size: 9px;
+    font-size: 8.5pt;
     font-weight: bold;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    white-space: nowrap;
-    font-family: "Times New Roman", Times, serif;
+    background: #e0e0e0;
+    border: 0.75pt solid #000000;
+    line-height: 1.2;
 }
 .main-table thead th.right  { text-align: right; }
 .main-table thead th.center { text-align: center; }
 
-.main-table tbody tr { border-bottom: 1px solid #e5e7eb; }
-.main-table tbody tr:nth-child(even) td { background: #f9fafb; }
-.main-table tbody tr:last-child td { border-bottom: none; }
-
 .main-table tbody td {
-    padding: 7px 9px;
+    padding: 5pt 3pt;
     vertical-align: middle;
-    color: #374151;
+    border: 0.5pt solid #000000;
+    overflow: hidden;
 }
 .main-table tbody td.right  { text-align: right; }
 .main-table tbody td.center { text-align: center; }
-.main-table tbody td.muted  { color: #9ca3af; }
 .main-table tbody td.bold   { font-weight: bold; }
-.main-table tbody td.green  { color: #047857; font-weight: bold; }
-.main-table tbody td.red    { color: #dc2626; }
+.main-table tbody td.italic { font-style: italic; }
 
-.emp-name { font-weight: bold; color: #111827; font-size: 11px; }
-.emp-pos  { color: #9ca3af; font-size: 9.5px; margin-top: 2px; font-style: italic; }
+.emp-name { font-weight: bold; font-size: 9.5pt; }
+.emp-pos  { font-size: 8pt; font-style: italic; margin-top: 1pt; }
 
-/* ── Badges statut ── */
-.badge {
+.status-tag {
     display: inline-block;
-    padding: 3px 9px;
-    border-radius: 10px;
-    font-size: 9.5px;
+    padding: 1pt 3pt;
+    border: 0.75pt solid #000000;
+    font-size: 7pt;
     font-weight: bold;
-    white-space: nowrap;
-    font-family: "Times New Roman", Times, serif;
+    white-space: normal;
+    word-break: break-word;
+    max-width: 100%;
 }
-.badge-draft     { background: #fef3c7; color: #92400e; }
-.badge-validated { background: #d1fae5; color: #065f46; }
-.badge-paid      { background: #dbeafe; color: #1e40af; }
-.badge-none      { background: #f3f4f6; color: #6b7280; }
 
-/* ── Ligne totaux ── */
-.total-row td {
-    background: #f0fdfa !important;
-    border-top: 2px solid #0d9488;
-    border-bottom: 2px solid #0d9488;
-    font-weight: bold;
-    color: #111827;
-    font-size: 11px;
-    padding: 10px 10px;
+/* Ligne dont la devise n'est pas définie en base — mise en évidence
+   par une bordure pointillée plutôt qu'une couleur, pour rester
+   cohérent avec le rendu noir et blanc du document. */
+.row-currency-undefined td {
+    border-top: 0.75pt dashed #000000;
+    border-bottom: 0.75pt dashed #000000;
 }
-.total-row td.green { color: #047857; }
-.total-row td.red   { color: #dc2626; }
+.currency-undefined-tag {
+    display: inline-block;
+    font-size: 6.5pt;
+    font-weight: bold;
+    font-style: italic;
+    margin-top: 1pt;
+}
+
+/* Étiquette de devise affichée systématiquement sous chaque montant,
+   qu'il y ait une seule devise dans le rapport ou plusieurs. Avant,
+   elle n'apparaissait qu'en cas de devises mixtes ($mixedCurrencies),
+   ce qui masquait une devise erronée tant qu'un seul employé/une
+   seule devise était présent dans le rapport. */
+.currency-tag {
+    display: inline-block;
+    font-size: 7pt;
+    font-weight: normal;
+    margin-top: 1pt;
+}
+
+.total-row td {
+    background: #e0e0e0;
+    font-weight: bold;
+    font-size: 9.5pt;
+    padding: 6pt 4pt;
+    border-top: 1.5pt solid #000000;
+    border-bottom: 1.5pt solid #000000;
+}
 
 /* ═══════════════════════════════════════════════════
-   RÉCAP CHARGES
+   RÉCAP CHARGES PATRONALES
 ═══════════════════════════════════════════════════ */
 .charges-table {
-    width: 55%;
-    border-collapse: collapse;
-    font-size: 11px;
-    font-family: "Times New Roman", Times, serif;
-    margin-top: 4px;
+    width: 100%;
+    font-size: 10.5pt;
+    margin-top: 2pt;
+    border: 1pt solid #000000;
 }
-.charges-table thead tr { background: #1f2937; color: #fff; }
 .charges-table thead th {
-    padding: 8px 12px;
+    padding: 6pt 9pt;
     text-align: left;
-    font-size: 9.5px;
+    font-size: 10pt;
     font-weight: bold;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    background: #e0e0e0;
+    border: 0.75pt solid #000000;
 }
 .charges-table thead th.right { text-align: right; }
 .charges-table tbody td {
-    padding: 8px 12px;
-    border-bottom: 1px solid #e5e7eb;
-    color: #374151;
+    padding: 6pt 9pt;
+    border: 0.5pt solid #000000;
 }
 .charges-table tbody td.right { text-align: right; }
-.charges-table tbody td.muted { color: #9ca3af; font-style: italic; }
-.charges-table tbody td.red   { color: #dc2626; font-weight: bold; }
+.charges-table tbody td.sub { font-style: italic; font-size: 9pt; }
 .charges-table .total-row td {
-    background: #f0fdfa !important;
-    border-top: 2px solid #0d9488;
-    border-bottom: 2px solid #0d9488;
+    background: #e0e0e0;
     font-weight: bold;
+    border-top: 1.5pt solid #000000;
+    border-bottom: 1.5pt solid #000000;
 }
-.charges-table .total-row td.green { color: #047857; }
 
 /* ═══════════════════════════════════════════════════
-   FOOTER
+   PIED DE PAGE
 ═══════════════════════════════════════════════════ */
 .footer {
-    margin-top: 30px;
-    padding-top: 12px;
-    border-top: 1px solid #d1d5db;
+    margin-top: 24pt;
+    padding-top: 8pt;
+    border-top: 1pt solid #000000;
     display: table;
     width: 100%;
 }
 .footer-left  {
-    display: table-cell; width: 50%;
-    font-size: 10px; color: #6b7280; vertical-align: middle;
+    display: table-cell; width: 55%;
+    font-size: 9pt; vertical-align: middle; line-height: 1.45;
 }
 .footer-right {
-    display: table-cell; width: 50%; text-align: right;
-    font-size: 10px; color: #6b7280; vertical-align: middle;
+    display: table-cell; width: 45%; text-align: right;
+    font-size: 9pt; vertical-align: middle; line-height: 1.45;
 }
 .footer-legal {
-    margin-top: 8px;
-    font-size: 9px;
-    color: #d1d5db;
-    text-align: center;
+    margin-top: 8pt;
+    font-size: 8pt;
     font-style: italic;
+    text-align: center;
 }
 
-/* ─ Page break ─ */
 .page-break { page-break-after: always; }
 </style>
 </head>
 <body>
+<div class="page-container">
+
+@php
+    /*
+     * ── Détection de la devise réelle du rapport ────────────────────────
+     * IMPORTANT : on ne "devine" plus la devise d'un bulletin dont la
+     * colonne `currency` est null en base. Avant, `$sal->currency ?? $reportCurrency`
+     * masquait silencieusement ce cas en rattachant le bulletin à la devise
+     * du rapport (souvent MAD par défaut) — ce qui produisait des PDF
+     * affichant "MAD" pour des bulletins réellement saisis en MRU mais mal
+     * enregistrés. On isole maintenant ces cas dans un bucket "N/D".
+     */
+    $allSalaries      = $allEmployees->flatMap->salaries;
+    $currenciesFound  = $allSalaries->pluck('currency')->filter()->unique()->values();
+    $hasUndefinedCurrency = $allSalaries->contains(fn($s) => empty($s->currency));
+
+    // Si un filtre devise a été appliqué côté contrôleur (paramètre
+    // `currency` transmis depuis l'index), on l'utilise directement comme
+    // référence d'affichage : tous les bulletins récupérés ont déjà été
+    // filtrés sur cette devise en base, donc c'est la source de vérité.
+    if (!empty($currency)) {
+        $reportCurrency = $currency;
+    } elseif ($currenciesFound->count() === 1) {
+        $reportCurrency = $currenciesFound->first();
+    } else {
+        $reportCurrency = $tenant->currency ?? 'MAD';
+    }
+
+    $mixedCurrencies = $currenciesFound->count() > 1;
+@endphp
 
 {{-- ══════════════════════════════════
-     HEADER
+     EN-TÊTE
 ══════════════════════════════════ --}}
-<div class="header">
-    <div class="header-left">
-        @if(!empty($tenant?->name))
-        <div class="company-name">{{ strtoupper($tenant->name) }}</div>
-        @endif
-        <div class="doc-title">Rapport de Paie</div>
-        <div class="doc-sub">Récapitulatif des bulletins de salaire</div>
-    </div>
-    <div class="header-right">
-        <div class="meta-pill">{{ $periodLabel }}</div>
-        @if($department)
-        <div class="meta-pill-blue">Dept : {{ $department }}</div>
-        @endif
-        <div class="meta-line">
-            Généré le {{ now()->locale('fr')->isoFormat('D MMMM YYYY [à] HH:mm') }}
-        </div>
+<div class="letterhead">
+    @if(!empty($tenant?->name))
+    <div class="tenant-name">{{ strtoupper($tenant->name) }}</div>
+    <div class="tenant-tagline">Système d'Information des Ressources Humaines</div>
+    @endif
+    <div class="doc-title">Rapport de Paie</div>
+
+    <table class="ref-table">
+        <tr>
+            <td class="label">Période</td>
+            <td>{{ $periodLabel }}</td>
+            <td class="label">Devise</td>
+            <td>{{ !empty($currency) ? $currency . ' (filtré)' : $reportCurrency }}</td>
+        </tr>
+        <tr>
+            <td class="label">Département</td>
+            <td>{{ $department ?? 'Tous départements' }}</td>
+            <td class="label">Édité le</td>
+            <td>{{ now()->locale('fr')->isoFormat('D MMM YYYY, HH:mm') }}</td>
+        </tr>
         @if($status)
-        <div class="meta-line">Filtre statut : <strong>{{ ucfirst($status) }}</strong></div>
+        <tr>
+            <td class="label">Filtre statut</td>
+            <td colspan="3">{{ ucfirst($status) }}</td>
+        </tr>
         @endif
-    </div>
+    </table>
 </div>
 
-{{-- ══════════════════════════════════
-     KPI CARDS
-══════════════════════════════════ --}}
-<div class="kpi-row">
-    <div class="kpi-cell">
-        <div class="kpi-card">
-            <div class="kpi-label">Masse salariale brute</div>
-            <div class="kpi-value">{{ number_format($summary['total_gross'], 0, ',', ' ') }} MAD</div>
-            <div class="kpi-sub">Coût employeur : {{ number_format($summary['total_employer_cost'] ?? 0, 0, ',', ' ') }} MAD</div>
-        </div>
-    </div>
-    <div class="kpi-cell">
-        <div class="kpi-card amber">
-            <div class="kpi-label">Charges salariales</div>
-            <div class="kpi-value">{{ number_format($summary['total_cnss_sal'] + $summary['total_amo_sal'], 0, ',', ' ') }} MAD</div>
-            <div class="kpi-sub">CNSS : {{ number_format($summary['total_cnss_sal'], 0, ',', ' ') }} | AMO : {{ number_format($summary['total_amo_sal'], 0, ',', ' ') }}</div>
-        </div>
-    </div>
-    <div class="kpi-cell">
-        <div class="kpi-card red">
-            <div class="kpi-label">IR retenu à la source</div>
-            <div class="kpi-value">{{ number_format($summary['total_ir'], 0, ',', ' ') }} MAD</div>
-            <div class="kpi-sub">DGI — déclaration mensuelle</div>
-        </div>
-    </div>
-    <div class="kpi-cell">
-        <div class="kpi-card blue">
-            <div class="kpi-label">Net à payer total</div>
-            <div class="kpi-value">{{ number_format($summary['total_net'], 0, ',', ' ') }} MAD</div>
-            <div class="kpi-sub">{{ $summary['count_validated'] }} validés / {{ $summary['count'] }} bulletins</div>
-        </div>
-    </div>
+@if($mixedCurrencies)
+<div class="currency-notice">
+    Attention : cette période regroupe des bulletins générés dans plusieurs devises ({{ $currenciesFound->join(', ') }}).
+    Chaque ligne indique sa devise d'origine ; les totaux ne doivent pas être additionnés entre devises différentes.
 </div>
+@endif
+
+@if($hasUndefinedCurrency)
+<div class="currency-notice warning">
+    ⚠ Certains bulletins de cette période n'ont aucune devise enregistrée en base de données.
+    Ils sont signalés « Devise N/D » dans le tableau ci-dessous et exclus des totaux par devise
+    afin d'éviter tout montant faussé. Rouvrez ces bulletins via « Saisir » pour leur affecter
+    explicitement MAD ou MRU, puis régénérez ce rapport.
+</div>
+@endif
 
 {{-- ══════════════════════════════════
-     TABLEAU BULLETINS
+     RÉSUMÉ DE LA PÉRIODE
 ══════════════════════════════════ --}}
 <div class="section-title">
-    <div class="section-title-text">Détail des bulletins</div>
-    <div class="section-count"><span>{{ $allEmployees->count() }} employés</span></div>
+    <div class="section-title-text">Résumé de la période</div>
 </div>
 
-<table class="main-table">
+<table class="summary-table">
+    <colgroup>
+        <col style="width:40%">
+        <col style="width:28%">
+        <col style="width:32%">
+    </colgroup>
     <thead>
         <tr>
-            <th style="width:18%">Employé</th>
-            <th style="width:12%">Département</th>
-            @if($dateDebut && $dateFin)
-            <th style="width:10%" class="center">Période</th>
-            @endif
-            <th style="width:10%" class="center">Mode paiement</th>
-            <th style="width:9%" class="right">Base</th>
-            <th style="width:9%" class="right">Brut</th>
-            <th style="width:9%" class="right">CNSS+AMO</th>
-            <th style="width:8%" class="right">IR</th>
-            <th style="width:10%" class="right">Net à payer</th>
-            <th style="width:8%" class="center">Statut</th>
+            <th>Poste</th>
+            <th class="right">Montant ({{ $reportCurrency }})</th>
+            <th>Détail</th>
         </tr>
     </thead>
     <tbody>
-    @php $totBrut = 0; $totCnss = 0; $totIr = 0; $totNet = 0; @endphp
+        <tr>
+            <td>Masse salariale brute</td>
+            <td class="right">{{ number_format($summary['total_gross'], 0, ',', ' ') }}</td>
+            <td class="sub">Coût employeur total : {{ number_format($summary['total_employer_cost'] ?? 0, 0, ',', ' ') }} {{ $reportCurrency }}</td>
+        </tr>
+        <tr>
+            <td>Charges salariales (CNSS + AMO)</td>
+            <td class="right">{{ number_format($summary['total_cnss_sal'] + $summary['total_amo_sal'], 0, ',', ' ') }}</td>
+            <td class="sub">CNSS : {{ number_format($summary['total_cnss_sal'], 0, ',', ' ') }} — AMO : {{ number_format($summary['total_amo_sal'], 0, ',', ' ') }}</td>
+        </tr>
+        <tr>
+            <td>IR retenu à la source</td>
+            <td class="right">{{ number_format($summary['total_ir'], 0, ',', ' ') }}</td>
+            <td class="sub">DGI — déclaration mensuelle</td>
+        </tr>
+        <tr class="total-row">
+            <td>Net à payer total</td>
+            <td class="right">{{ number_format($summary['total_net'], 0, ',', ' ') }}</td>
+            <td class="sub">{{ $summary['count_validated'] }} validés / {{ $summary['count'] }} bulletins</td>
+        </tr>
+    </tbody>
+</table>
+
+{{-- ══════════════════════════════════
+     TABLEAU DES BULLETINS
+══════════════════════════════════ --}}
+<div class="section-title">
+    <div class="section-title-text">Détail des bulletins</div>
+    <div class="section-count">{{ $allEmployees->count() }} employés</div>
+</div>
+
+<table class="main-table">
+    <colgroup>
+        <col style="width:17%">
+        <col style="width:9%">
+        @if($dateDebut && $dateFin)<col style="width:8%">@endif
+        <col style="width:{{ ($dateDebut && $dateFin) ? '10%' : '14%' }}">
+        <col style="width:7%">
+        <col style="width:10%">
+        <col style="width:10%">
+        <col style="width:8%">
+        <col style="width:{{ ($dateDebut && $dateFin) ? '11%' : '15%' }}">
+        <col style="width:10%">
+    </colgroup>
+    <thead>
+        <tr>
+            <th>Employé</th>
+            <th>Département</th>
+            @if($dateDebut && $dateFin)
+            <th class="center">Période</th>
+            @endif
+            <th class="center">Mode paiement</th>
+            <th class="right">Base</th>
+            <th class="right">Brut</th>
+            <th class="right">CNSS+AMO</th>
+            <th class="right">IR</th>
+            <th class="right">Net à payer</th>
+            <th class="center">Statut</th>
+        </tr>
+    </thead>
+    <tbody>
+    @php
+        $totBrut = 0; $totCnss = 0; $totIr = 0; $totNet = 0;
+        $totalsByCurrency = [];
+        $undefinedCount = 0;
+    @endphp
 
     @forelse($allEmployees as $emp)
         @php $salList = $emp->salaries; @endphp
@@ -400,86 +478,135 @@ body {
                 <div class="emp-name">{{ $emp->full_name }}</div>
                 <div class="emp-pos">{{ $emp->position }}</div>
             </td>
-            <td class="muted">{{ $emp->department ?? '—' }}</td>
-            @if($dateDebut && $dateFin)<td class="center muted">—</td>@endif
-            <td class="center muted">{{ ucfirst($emp->payment_method ?? '—') }}</td>
-            <td class="right muted">{{ number_format($emp->base_salary, 0, ',', ' ') }}</td>
-            <td class="center muted">—</td>
-            <td class="center muted">—</td>
-            <td class="center muted">—</td>
-            <td class="center muted">—</td>
-            <td class="center"><span class="badge badge-none">Non généré</span></td>
+            <td>{{ $emp->department ?? '—' }}</td>
+            @if($dateDebut && $dateFin)<td class="center">—</td>@endif
+            <td class="center">{{ ucfirst($emp->payment_method ?? '—') }}</td>
+            <td class="right">{{ number_format($emp->base_salary, 0, ',', ' ') }}</td>
+            <td class="center">—</td>
+            <td class="center">—</td>
+            <td class="center">—</td>
+            <td class="center">—</td>
+            <td class="center"><span class="status-tag">Non généré</span></td>
         </tr>
         @else
             @foreach($salList as $sal)
             @php
-                $totBrut += $sal->gross_salary;
-                $totCnss += $sal->cnss_deduction + $sal->amo_deduction;
-                $totIr   += $sal->ir_deduction;
-                $totNet  += $sal->net_salary;
-                $badgeClass = match($sal->status) {
-                    'validated' => 'badge-validated',
-                    'paid'      => 'badge-paid',
-                    'draft'     => 'badge-draft',
-                    default     => 'badge-none',
-                };
+                // ── Ne plus rattacher silencieusement une devise nulle
+                //    à $reportCurrency : on la marque explicitement.
+                $currIsUndefined = empty($sal->currency);
+                $curr = $currIsUndefined ? null : $sal->currency;
+
+                if ($currIsUndefined) {
+                    $undefinedCount++;
+                } else {
+                    $totBrut += $sal->gross_salary;
+                    $totCnss += $sal->cnss_deduction + $sal->amo_deduction;
+                    $totIr   += $sal->ir_deduction;
+                    $totNet  += $sal->net_salary;
+
+                    $totalsByCurrency[$curr] ??= ['gross' => 0, 'cnss' => 0, 'ir' => 0, 'net' => 0];
+                    $totalsByCurrency[$curr]['gross'] += $sal->gross_salary;
+                    $totalsByCurrency[$curr]['cnss']  += $sal->cnss_deduction + $sal->amo_deduction;
+                    $totalsByCurrency[$curr]['ir']    += $sal->ir_deduction;
+                    $totalsByCurrency[$curr]['net']   += $sal->net_salary;
+                }
+
                 $badgeLabel = match($sal->status) {
                     'validated' => 'Validé',
                     'paid'      => 'Rémunéré',
                     'draft'     => 'Brouillon',
                     default     => ucfirst($sal->status ?? 'Inconnu'),
                 };
-                $cur = $sal->currency ?? 'MAD';
             @endphp
-            <tr>
+            <tr class="{{ $currIsUndefined ? 'row-currency-undefined' : '' }}">
                 <td>
                     <div class="emp-name">{{ $emp->full_name }}</div>
                     <div class="emp-pos">{{ $emp->position }}</div>
                 </td>
-                <td class="muted">{{ $emp->department ?? '—' }}</td>
+                <td>{{ $emp->department ?? '—' }}</td>
                 @if($dateDebut && $dateFin)
-                <td class="center muted" style="white-space:nowrap;">
+                <td class="center">
                     {{ \Carbon\Carbon::create($sal->year, $sal->month)->locale('fr')->isoFormat('MMM YYYY') }}
                 </td>
                 @endif
-                <td class="center muted" style="font-size:10.5px;">
+                <td class="center" style="font-size:8pt;">
                     @if($emp->payment_method == 'virement')
                         Virement{{ $emp->bank ? ' '.$emp->bank : '' }}
                     @else
                         {{ ucfirst($emp->payment_method ?? '—') }}
                     @endif
                 </td>
-                <td class="right muted">{{ number_format($emp->base_salary, 0, ',', ' ') }}</td>
-                <td class="right bold">{{ number_format($sal->gross_salary, 0, ',', ' ') }}</td>
-                <td class="right red">{{ number_format($sal->cnss_deduction + $sal->amo_deduction, 0, ',', ' ') }}</td>
-                <td class="right red">{{ number_format($sal->ir_deduction, 0, ',', ' ') }}</td>
-                <td class="right green">{{ number_format($sal->net_salary, 0, ',', ' ') }}</td>
-                <td class="center"><span class="badge {{ $badgeClass }}">{{ $badgeLabel }}</span></td>
+                <td class="right">{{ number_format($emp->base_salary, 0, ',', ' ') }}</td>
+                <td class="right bold">
+                    {{ number_format($sal->gross_salary, 0, ',', ' ') }}
+                    @if($currIsUndefined)
+                        <br><span class="currency-undefined-tag">Devise N/D ⚠</span>
+                    @else
+                        <br><span class="currency-tag">{{ $curr }}</span>
+                    @endif
+                </td>
+                <td class="right">{{ number_format($sal->cnss_deduction + $sal->amo_deduction, 0, ',', ' ') }}</td>
+                <td class="right">{{ number_format($sal->ir_deduction, 0, ',', ' ') }}</td>
+                <td class="right bold">
+                    {{ number_format($sal->net_salary, 0, ',', ' ') }}
+                    @if($currIsUndefined)
+                        <br><span class="currency-undefined-tag">Devise N/D ⚠</span>
+                    @else
+                        <br><span class="currency-tag">{{ $curr }}</span>
+                    @endif
+                </td>
+                <td class="center"><span class="status-tag">{{ $badgeLabel }}</span></td>
             </tr>
             @endforeach
         @endif
     @empty
         <tr>
             <td colspan="{{ ($dateDebut && $dateFin) ? 10 : 9 }}"
-                style="text-align:center;padding:24px;color:#9ca3af;font-style:italic;">
+                style="text-align:center;padding:20pt;font-style:italic;">
                 Aucun bulletin trouvé pour cette période.
             </td>
         </tr>
     @endforelse
 
     @if($allEmployees->count() > 0)
-    <tr class="total-row">
-        <td colspan="{{ ($dateDebut && $dateFin) ? 5 : 4 }}" style="text-align:left;">
-            TOTAL — {{ $summary['count'] }} bulletins
-        </td>
-        <td class="right bold">{{ number_format($totBrut, 0, ',', ' ') }} MAD</td>
-        <td class="right red">{{ number_format($totCnss, 0, ',', ' ') }} MAD</td>
-        <td class="right red">{{ number_format($totIr, 0, ',', ' ') }} MAD</td>
-        <td class="right green">{{ number_format($totNet, 0, ',', ' ') }} MAD</td>
-        <td class="center" style="font-size:10px;color:#0d9488;font-weight:bold;">
-            {{ $summary['count_validated'] }}V / {{ $summary['count_paid'] }}P / {{ $summary['count_draft'] }}B
-        </td>
-    </tr>
+        @if($mixedCurrencies || $undefinedCount > 0)
+            {{-- Une ligne de total distincte par devise réellement connue --}}
+            @foreach($totalsByCurrency as $curr => $t)
+            <tr class="total-row">
+                <td colspan="{{ ($dateDebut && $dateFin) ? 5 : 4 }}" style="text-align:left;">
+                    TOTAL ({{ $curr }})
+                </td>
+                <td class="right">{{ number_format($t['gross'], 0, ',', ' ') }}</td>
+                <td class="right">{{ number_format($t['cnss'], 0, ',', ' ') }}</td>
+                <td class="right">{{ number_format($t['ir'], 0, ',', ' ') }}</td>
+                <td class="right">{{ number_format($t['net'], 0, ',', ' ') }}</td>
+                <td class="center">—</td>
+            </tr>
+            @endforeach
+            @if($undefinedCount > 0)
+            <tr class="total-row">
+                <td colspan="{{ ($dateDebut && $dateFin) ? 5 : 4 }}" style="text-align:left;">
+                    {{ $undefinedCount }} bulletin(s) — Devise N/D (exclu des totaux)
+                </td>
+                <td class="right" colspan="4" style="text-align:center;font-style:italic;font-weight:normal;">
+                    À corriger via « Saisir » avant de refaire ce rapport
+                </td>
+            </tr>
+            @endif
+        @else
+        <tr class="total-row">
+            <td colspan="{{ ($dateDebut && $dateFin) ? 5 : 4 }}" style="text-align:left;">
+                TOTAL — {{ $summary['count'] }} bulletins
+            </td>
+            <td class="right">{{ number_format($totBrut, 0, ',', ' ') }} {{ $reportCurrency }}</td>
+            <td class="right">{{ number_format($totCnss, 0, ',', ' ') }} {{ $reportCurrency }}</td>
+            <td class="right">{{ number_format($totIr, 0, ',', ' ') }} {{ $reportCurrency }}</td>
+            <td class="right">{{ number_format($totNet, 0, ',', ' ') }} {{ $reportCurrency }}</td>
+            <td class="center" style="font-size:8pt;">
+                {{ $summary['count_validated'] }}V / {{ $summary['count_paid'] }}P / {{ $summary['count_draft'] }}B
+            </td>
+        </tr>
+        @endif
     @endif
     </tbody>
 </table>
@@ -488,45 +615,48 @@ body {
      RÉCAP CHARGES PATRONALES
 ══════════════════════════════════ --}}
 @if(($summary['total_employer_cost'] ?? 0) > 0)
-<div style="margin-top:24px;">
-    <div class="section-title">
-        <div class="section-title-text">Récapitulatif charges patronales</div>
-    </div>
-    <table class="charges-table">
-        <thead>
-            <tr>
-                <th style="width:50%">Poste</th>
-                <th style="width:20%">Taux</th>
-                <th class="right" style="width:30%">Montant (MAD)</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>CNSS salariale</td>
-                <td class="muted">4,48 %</td>
-                <td class="right">{{ number_format($summary['total_cnss_sal'], 0, ',', ' ') }}</td>
-            </tr>
-            <tr>
-                <td>AMO salariale</td>
-                <td class="muted">2,26 %</td>
-                <td class="right">{{ number_format($summary['total_amo_sal'], 0, ',', ' ') }}</td>
-            </tr>
-            <tr>
-                <td>IR retenu à la source</td>
-                <td class="muted">Barème progressif</td>
-                <td class="right red">{{ number_format($summary['total_ir'], 0, ',', ' ') }}</td>
-            </tr>
-            <tr class="total-row">
-                <td colspan="2"><strong>Coût employeur total</strong></td>
-                <td class="right green">{{ number_format($summary['total_employer_cost'] ?? 0, 0, ',', ' ') }}</td>
-            </tr>
-        </tbody>
-    </table>
+<div class="section-title">
+    <div class="section-title-text">Récapitulatif des charges patronales</div>
 </div>
+<table class="charges-table">
+    <colgroup>
+        <col style="width:48%">
+        <col style="width:22%">
+        <col style="width:30%">
+    </colgroup>
+    <thead>
+        <tr>
+            <th>Poste</th>
+            <th>Taux</th>
+            <th class="right">Montant ({{ $reportCurrency }})</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>CNSS salariale</td>
+            <td class="sub">4,48 %</td>
+            <td class="right">{{ number_format($summary['total_cnss_sal'], 0, ',', ' ') }}</td>
+        </tr>
+        <tr>
+            <td>AMO salariale</td>
+            <td class="sub">2,26 %</td>
+            <td class="right">{{ number_format($summary['total_amo_sal'], 0, ',', ' ') }}</td>
+        </tr>
+        <tr>
+            <td>IR retenu à la source</td>
+            <td class="sub">Barème progressif</td>
+            <td class="right">{{ number_format($summary['total_ir'], 0, ',', ' ') }}</td>
+        </tr>
+        <tr class="total-row">
+            <td colspan="2"><strong>Coût employeur total</strong></td>
+            <td class="right">{{ number_format($summary['total_employer_cost'] ?? 0, 0, ',', ' ') }}</td>
+        </tr>
+    </tbody>
+</table>
 @endif
 
 {{-- ══════════════════════════════════
-     FOOTER
+     PIED DE PAGE
 ══════════════════════════════════ --}}
 <div class="footer">
     <div class="footer-left">
@@ -534,14 +664,18 @@ body {
         Document confidentiel — Usage interne uniquement
     </div>
     <div class="footer-right">
-        Rapport de paie · {{ $periodLabel }}<br>
+        Rapport de paie — {{ $periodLabel }}<br>
         Généré le {{ now()->format('d/m/Y à H:i') }}
     </div>
 </div>
 <div class="footer-legal">
     Ce document est généré automatiquement par le système de gestion RH.
-    Les montants sont exprimés en MAD sauf indication contraire.
+    Sauf indication contraire, les montants sont exprimés en {{ $reportCurrency }}.
+    @if($hasUndefinedCurrency)
+        Les bulletins marqués « Devise N/D » n'ont pas de devise enregistrée et sont exclus des totaux ci-dessus.
+    @endif
 </div>
 
+</div>
 </body>
 </html>

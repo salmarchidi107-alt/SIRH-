@@ -81,27 +81,34 @@
                         @method('PUT')
 
                         <div class="form-group">
-                            <label>Employé</label>
-                            @if ($employee)
-                                <input type="hidden" name="employee_id" value="{{ $employee->id }}">
-                                <div style="padding:16px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius)">
-                                    <h3 style="margin:0 0 8px 0;color:var(--primary);font-size:1.1rem">{{ $employee->full_name }}</h3>
-                                    <div style="color:var(--text-muted);font-size:0.875rem">{{ $employee->department }} — {{ $employee->position }}</div>
-                                </div>
-                            @else
-                                <select name="employee_id" class="form-control {{ $errors->has('employee_id') ? 'is-invalid' : '' }}" id="field_employee_id" required>
-                                    <option value="">Sélectionner un employé</option>
-                                    @foreach ($employees as $emp)
-                                        <option value="{{ $emp->id }}" {{ (int) old('employee_id', $expense->employee_id) === $emp->id ? 'selected' : '' }}>
-                                            {{ $emp->full_name }} — {{ $emp->department }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('employee_id')
-                                    <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px">{{ $message }}</div>
-                                @enderror
-                            @endif
-                        </div>
+    <label>Employé</label>
+    @if ($employee)
+        <input type="hidden" name="employee_id" value="{{ $employee->id }}">
+        <div style="padding:16px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius)">
+            <h3 style="margin:0 0 8px 0;color:var(--primary);font-size:1.1rem">{{ $employee->full_name }}</h3>
+            <div style="color:var(--text-muted);font-size:0.875rem">{{ $employee->department }} — {{ $employee->position }}</div>
+        </div>
+    @else
+        <select class="form-control" id="field_department_filter" style="margin-bottom:8px">
+            <option value="">Tous les départements</option>
+            @foreach ($employees->pluck('department')->filter()->unique()->sort() as $dept)
+                <option value="{{ $dept }}">{{ $dept }}</option>
+            @endforeach
+        </select>
+
+        <select name="employee_id" class="form-control {{ $errors->has('employee_id') ? 'is-invalid' : '' }}" id="field_employee_id" required>
+            <option value="">Sélectionner un employé</option>
+            @foreach ($employees as $emp)
+                <option value="{{ $emp->id }}" data-department="{{ $emp->department }}" {{ (int) old('employee_id', $expense->employee_id) === $emp->id ? 'selected' : '' }}>
+                    {{ $emp->full_name }} — {{ $emp->department }}
+                </option>
+            @endforeach
+        </select>
+        @error('employee_id')
+            <div class="invalid-feedback" style="color:#ef4444;font-size:0.82rem;margin-top:4px">{{ $message }}</div>
+        @enderror
+    @endif
+</div>
 
                         <div class="form-group">
                             <label>Titre / Libellé</label>
@@ -242,6 +249,33 @@ var ocrPreviewImg = document.getElementById('ocrPreviewImg');
 var ocrProgressWrap = document.getElementById('ocrProgressWrap');
 var ocrProgressBar = document.getElementById('ocrProgressBar');
 var ocrStatus = document.getElementById('ocrStatus');
+
+// ── Filtre employés par département ──
+var deptFilter = document.getElementById('field_department_filter');
+var employeeSelect = document.getElementById('field_employee_id');
+
+if (deptFilter && employeeSelect) {
+    var allEmployeeOptions = Array.prototype.slice.call(employeeSelect.options);
+
+    deptFilter.addEventListener('change', function () {
+        var selectedDept = deptFilter.value;
+        var currentValue = employeeSelect.value;
+        employeeSelect.innerHTML = '';
+
+        allEmployeeOptions.forEach(function (opt) {
+            var dept = opt.getAttribute('data-department');
+            if (opt.value === '' || !selectedDept || dept === selectedDept) {
+                employeeSelect.appendChild(opt);
+            }
+        });
+
+        // Si l'employé précédemment sélectionné n'appartient plus au département choisi,
+        // on revient sur "Sélectionner un employé" plutôt que de garder une sélection incohérente
+        if (employeeSelect.querySelector('option[value="' + currentValue + '"]') === null) {
+            employeeSelect.value = '';
+        }
+    });
+}
 
 dropZone.addEventListener('click', function () {
     ocrFileInput.click();

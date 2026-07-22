@@ -778,8 +778,8 @@ class PointageController extends Controller
             ])->toArray(),
         ]);
 
-        $pointage = Pointage::withoutGlobalScope(TenantScope::class)
-            ->firstOrCreate(
+       $pointage = Pointage::withoutGlobalScope(TenantScope::class)
+            ->updateOrCreate(
                 [
                     'employee_id' => $employeeId,
                     'date'        => $date->toDateString(),
@@ -790,7 +790,6 @@ class PointageController extends Controller
                     'valide'     => false,
                     'source'     => 'badge',
                     'shift_type' => $shiftType,
-                    'tenant_id'  => $tenantId,
                 ]
             );
 

@@ -66,6 +66,13 @@ class PayrollService
             'year'        => $year,
         ]);
 
+        // ── Devise du bulletin ───────────────────────────────────
+        // Dérivée du tenant de l'employé, jamais devinée depuis un
+        // défaut global codé en dur. On respecte une devise explicitement
+        // fournie dans $data (ex: recalcul manuel avec devise forcée),
+        // sinon on retombe sur celle du tenant, sinon 'MAD' en dernier recours.
+        $currency = $data['currency'] ?? $employee->tenant?->currency ?? 'MAD';
+
         $salaryType = $data['salary_type'] ?? $employee->default_salary_type ?? 'monthly';
 
         if ($salaryType === 'hourly') {
@@ -172,6 +179,7 @@ class PayrollService
         );
 
         $salary->fill([
+            'currency'                 => $currency,
             'salary_type'              => $salaryType,
             'hourly_rate'              => $salaryType === 'hourly' ? $hourlyRate : null,
             'working_hours'            => $workingHours,
@@ -294,10 +302,6 @@ class PayrollService
         //    car on y ajoute désormais aussi les absences détectées
         //    directement depuis les pointages (statut absent),
         //    en plus de celles de la table `absences` (section 2).
-        //    Avant ce fix, $absenceShifts n'était alimenté QUE par la
-        //    table `absences`, jamais par les pointages — d'où le
-        //    total (16h, calculé depuis les pointages) qui ne
-        //    correspondait à aucune ligne affichée dans le modal.
         $absenceShifts = [];
 
         foreach ($pointages as $p) {
@@ -347,11 +351,6 @@ class PayrollService
             if (in_array($p->statut ?? '', ['absent', 'absence_injustifiee'])) {
                 $absenceHours += 8.0;
 
-                // ── Ajout : peupler la liste pour le modal ──────────
-                // Avant ce fix, seule la table `absences` (demandes
-                // approuvées) alimentait cette liste ; les pointages
-                // marqués "absent" directement n'y apparaissaient
-                // jamais, d'où la liste vide malgré un total > 0.
                 $absenceShifts[] = [
                     'date'   => $dateStr,
                     'type'   => $p->statut === 'absence_injustifiee'
@@ -418,8 +417,6 @@ class PayrollService
 
         // ══════════════════════════════════════════════════════════
         // 2. ABSENCES depuis la table absences (demandes approuvées)
-        //    — vient S'AJOUTER aux absences déjà détectées depuis
-        //    les pointages ci-dessus, sans les dupliquer si possible.
         // ══════════════════════════════════════════════════════════
         try {
             $absences = \App\Models\Absence::where('employee_id', $employeeId)
@@ -439,9 +436,6 @@ class PayrollService
                 ->orderBy('date_debut')
                 ->get();
 
-            // Dates déjà couvertes par les pointages, pour éviter
-            // d'afficher un doublon si l'absence existe aussi comme
-            // demande formelle ET comme pointage marqué absent.
             $datesDejaAjoutees = array_column($absenceShifts, 'date');
 
             foreach ($absences as $a) {
@@ -475,7 +469,6 @@ class PayrollService
                 }
             }
 
-            // Retrier par date pour un affichage cohérent dans le modal
             usort($absenceShifts, fn($a, $b) => strcmp($a['date'], $b['date']));
 
         } catch (\Exception $e) {

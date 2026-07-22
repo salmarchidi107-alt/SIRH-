@@ -308,6 +308,27 @@ class ExpenseController extends Controller
         return redirect()->route('expenses.index')->with('success', 'Note de frais rejetée.');
     }
 
+    public function destroy(Expense $expense)
+{
+    $tenantId = $this->currentTenantId();
+    $lockedEmployee = $this->currentEmployee();
+
+    if ($lockedEmployee && $expense->employee_id !== $lockedEmployee->id) {
+        abort(403);
+    }
+    if ($tenantId && $expense->tenant_id !== $tenantId) {
+        abort(403);
+    }
+
+    if ($expense->receipt_path) {
+        \Illuminate\Support\Facades\Storage::disk('public')->delete($expense->receipt_path);
+    }
+
+    $expense->delete();
+
+    return redirect()->route('expenses.index')->with('success', 'Note de frais supprimée.');
+}
+
     public function ocrScan(Request $request): JsonResponse
     {
         $request->validate([

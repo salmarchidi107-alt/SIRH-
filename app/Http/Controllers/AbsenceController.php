@@ -11,8 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Cache;
 use App\Mail\AbsenceApproved;
 use App\Mail\AbsenceRejected;
 use Carbon\Carbon;
@@ -24,6 +22,9 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class AbsenceController extends Controller
 {
+    // Durée d'un cycle de droits à congés, en mois
+    const CYCLE_MONTHS = 24;
+
     // =========================================================================
     // index
     // =========================================================================
@@ -135,7 +136,7 @@ class AbsenceController extends Controller
 
         $start = Carbon::parse($validated['start_date']);
         $end   = Carbon::parse($validated['end_date']);
-        $validated['days']      = $this->calculateWorkingDays($start, $end); // ← MODIFIÉ
+        $validated['days']      = $start->diffInWeekdays($end) + 1;
         $validated['status']    = 'pending';
         $validated['tenant_id'] = config('app.current_tenant_id');
 
@@ -193,16 +194,7 @@ class AbsenceController extends Controller
     // =========================================================================
     public function show(Absence $absence)
     {
-        // ⚠️ FIX : withoutGlobalScopes() contourne le TenantScope sur Employee
-        // qui bloquait le chargement quand le tenant_id de l'absence diffère
-        // de celui de la session (cas multi-tenant / développement local).
-        $absence->load([
-            'employee'       => fn($q) => $q->withoutGlobalScopes(),
-            'replacement'    => fn($q) => $q->withoutGlobalScopes(),
-            'approver'       => fn($q) => $q->withoutGlobalScopes(),
-            'approvedByUser',
-        ]);
-
+        $absence->load(['employee', 'replacement', 'approver', 'approvedByUser']);
         return view('absences.show', compact('absence'));
     }
 
@@ -227,7 +219,7 @@ class AbsenceController extends Controller
 
         $start = Carbon::parse($validated['start_date']);
         $end   = Carbon::parse($validated['end_date']);
-        $validated['days'] = $this->calculateWorkingDays($start, $end); // ← MODIFIÉ
+        $validated['days'] = $start->diffInWeekdays($end) + 1;
 
         $absence->update($validated);
 
@@ -254,14 +246,16 @@ class AbsenceController extends Controller
             abort(403, 'Accès non autorisé.');
         }
 
-        // ⚠️ FIX : approved_by référence employees.id, pas users.id
         $absence->update([
             'tenant_id'   => config('app.current_tenant_id'),
             'status'      => 'approved',
             'approved_at' => now(),
-            'approved_by' => auth()->user()->id,
+            'approved_by' => auth()->id(),
         ]);
 
+        // NOTE : DroitAbsence reste indexé par année civile pour l'instant.
+        // Le nouveau système de cycle de 24 mois est calculé à la volée
+        // dans buildCountersData() et n'a pas besoin de ce modèle.
         if (in_array($absence->type, ['conge_annuel', 'conge_sans_solde', 'conge_maladie', 'absence_justifiee'])) {
             $year  = $absence->start_date->year;
             $droit = \App\Models\DroitAbsence::getOuCreeParAnnee($absence->employee_id, $year);
@@ -290,12 +284,10 @@ class AbsenceController extends Controller
             abort(403, 'Accès non autorisé.');
         }
 
-        // ⚠️ FIX : approved_by référence employees.id, pas users.id
         $absence->update([
             'status'      => 'rejected',
             'approved_at' => now(),
-            'approved_by' => auth()->user()->id,
-
+            'approved_by' => auth()->id(),
         ]);
 
         $year  = $absence->start_date->year;
@@ -334,15 +326,16 @@ class AbsenceController extends Controller
     // =========================================================================
     public function counters(Request $request)
     {
-        $year         = $request->get('year', now()->year);
         $departments  = $this->getDepartments();
         $countersData = $this->buildCountersData($request);
+        $cycle        = $request->filled('cycle') ? (int) $request->get('cycle') : null;
+        $maxCycle     = $this->getMaxCycleNumber($request);
 
         $search     = $request->get('search');
         $department = $request->get('department');
 
         return view('absences.counters', compact(
-            'countersData', 'year', 'departments', 'search', 'department'
+            'countersData', 'cycle', 'maxCycle', 'departments', 'search', 'department'
         ));
     }
 
@@ -351,12 +344,12 @@ class AbsenceController extends Controller
     // =========================================================================
     public function countersExport(Request $request)
     {
-        $year         = $request->get('year', now()->year);
+        $cycle        = $request->filled('cycle') ? (int) $request->get('cycle') : 'actuel';
         $countersData = $this->buildCountersData($request);
 
         return Excel::download(
-            new CountersExport($countersData, $year),
-            "compteurs_absences_{$year}.xlsx"
+            new CountersExport($countersData, $cycle),
+            "compteurs_absences_cycle_{$cycle}.xlsx"
         );
     }
 
@@ -365,12 +358,12 @@ class AbsenceController extends Controller
     // =========================================================================
     public function droitsExport(Request $request)
     {
-        $year         = $request->get('year', now()->year);
+        $cycle        = $request->filled('cycle') ? (int) $request->get('cycle') : 'actuel';
         $countersData = $this->buildCountersData($request);
 
         return Excel::download(
             new DroitsAbsenceExport($countersData),
-            "droits_absences_{$year}.xlsx"
+            "droits_absences_cycle_{$cycle}.xlsx"
         );
     }
 
@@ -501,14 +494,7 @@ class AbsenceController extends Controller
     // =========================================================================
     public function downloadPdf(Absence $absence)
     {
-        // ⚠️ FIX : withoutGlobalScopes() pour charger l'employé sans filtre tenant
-        $absence->load([
-            'employee'       => fn($q) => $q->withoutGlobalScopes(),
-            'replacement'    => fn($q) => $q->withoutGlobalScopes(),
-            'approver'       => fn($q) => $q->withoutGlobalScopes(),
-            'approvedByUser',
-        ]);
-
+        $absence->load(['employee', 'replacement', 'approver', 'approvedByUser']);
         Carbon::setLocale('fr');
 
         $tenant = $absence->employee->user?->tenant
@@ -523,7 +509,7 @@ class AbsenceController extends Controller
             ]);
 
         $filename = 'demande_absence_'
-            . str_replace(' ', '_', strtolower($absence->employee->full_name ?? 'employe'))
+            . str_replace(' ', '_', strtolower($absence->employee->full_name))
             . '_' . $absence->start_date->format('Y-m-d') . '.pdf';
 
         return $pdf->download($filename);
@@ -552,36 +538,100 @@ class AbsenceController extends Controller
             ->toArray();
     }
 
+    /**
+     * Calcule les données compteurs pour tous les employés filtrés,
+     * en se basant sur des CYCLES DE 24 MOIS (renouvelables) calculés
+     * individuellement à partir de la date d'embauche de chaque employé,
+     * et non plus sur l'année civile.
+     *
+     * Cycle 1 = [hire_date            ; hire_date + 24 mois[
+     * Cycle 2 = [hire_date + 24 mois   ; hire_date + 48 mois[
+     * ...etc.
+     *
+     * $request->cycle permet de forcer un numéro de cycle précis (1, 2, 3...).
+     * Sans ce paramètre, on affiche le cycle EN COURS pour chaque employé.
+     */
     private function buildCountersData(Request $request): array
     {
         $query = Employee::active()->orderBy('department')->orderBy('last_name');
         $this->applyEmployeeFilters($query, $request);
         $employees = $query->get();
 
+        $requestedCycle = $request->filled('cycle') ? (int) $request->get('cycle') : null;
+        $now            = Carbon::now();
+
         $countersData = [];
 
         foreach ($employees as $emp) {
-            $startDate    = Carbon::parse($emp->hire_date);
-            $now          = Carbon::now();
-            $monthsWorked = $startDate->diffInMonths($now);
-            $acquis       = round($monthsWorked * 1.5, 1);
+            if (! $emp->hire_date) {
+                // Pas de date d'embauche renseignée : impossible de calculer un cycle,
+                // on saute l'employé plutôt que de planter le calcul.
+                continue;
+            }
 
+            $hireDate = Carbon::parse($emp->hire_date);
+
+            // Nombre total de mois travaillés depuis l'embauche jusqu'à aujourd'hui
+            $totalMonths = $hireDate->diffInMonths($now);
+
+            // Numéro du cycle EN COURS (1-indexé)
+            $currentCycleNumber = intdiv($totalMonths, self::CYCLE_MONTHS) + 1;
+
+            // Cycle demandé, sinon cycle en cours
+            $cycleNumber = $requestedCycle ?? $currentCycleNumber;
+            if ($cycleNumber < 1) {
+                $cycleNumber = 1;
+            }
+
+            // Bornes du cycle sélectionné (propres à cet employé)
+            $cycleStart = $hireDate->copy()->addMonths(($cycleNumber - 1) * self::CYCLE_MONTHS);
+            $cycleEnd   = $hireDate->copy()->addMonths($cycleNumber * self::CYCLE_MONTHS); // exclusive
+
+            $isCompleted = $cycleNumber < $currentCycleNumber;
+            $isCurrent   = $cycleNumber === $currentCycleNumber;
+            $isFuture    = $cycleNumber > $currentCycleNumber;
+
+            if ($isCompleted) {
+                $monthsWorked = self::CYCLE_MONTHS; // cycle entièrement terminé
+            } elseif ($isCurrent) {
+                $monthsWorked = $totalMonths - ($cycleNumber - 1) * self::CYCLE_MONTHS;
+            } else {
+                $monthsWorked = 0; // cycle futur, pas encore commencé
+            }
+
+            $acquis = round($monthsWorked * 1.5, 1);
+
+            // Congés pris DANS ce cycle uniquement
             $taken = Absence::where('employee_id', $emp->id)
                 ->where('status', 'approved')
-                ->whereDate('start_date', '>=', $startDate)
                 ->whereIn('type', ['conge_annuel', 'conge_sans_solde', 'conge_maladie', 'absence_justifiee'])
+                ->whereDate('start_date', '>=', $cycleStart)
+                ->whereDate('start_date', '<', $cycleEnd)
                 ->sum('days');
-            $taken += (float) ($emp->conges_anterieurs ?? 0);
 
+            // Le solde de congés antérieurs (avant l'existence du système) n'est
+            // imputé qu'une seule fois, sur le tout premier cycle.
+            if ($cycleNumber === 1) {
+                $taken += (float) ($emp->conges_anterieurs ?? 0);
+            }
+
+            // Demandes en attente DANS ce cycle uniquement
             $pending = Absence::where('employee_id', $emp->id)
                 ->where('status', 'pending')
-                ->whereDate('start_date', '>=', $startDate)
+                ->whereDate('start_date', '>=', $cycleStart)
+                ->whereDate('start_date', '<', $cycleEnd)
                 ->sum('days');
 
             $solde = $acquis - $taken;
 
             $countersData[] = [
                 'employee'          => $emp,
+                'cycle_number'      => $cycleNumber,
+                'cycle_start'       => $cycleStart,
+                'cycle_end'         => $cycleEnd->copy()->subDay(), // date de fin affichée (inclusive)
+                'is_completed'      => $isCompleted,
+                'is_current'        => $isCurrent,
+                'is_future'         => $isFuture,
                 'months_worked'     => $monthsWorked,
                 'acquis'            => $acquis,
                 'taken'             => $taken,
@@ -593,6 +643,28 @@ class AbsenceController extends Controller
         }
 
         return $countersData;
+    }
+
+    /**
+     * Détermine le plus grand numéro de cycle "en cours" parmi les employés
+     * filtrés — sert à générer les options du sélecteur de cycle.
+     */
+    private function getMaxCycleNumber(Request $request): int
+    {
+        $query = Employee::active();
+        $this->applyEmployeeFilters($query, $request);
+        $employees = $query->get(['hire_date']);
+
+        $now = Carbon::now();
+        $max = 1;
+
+        foreach ($employees as $emp) {
+            if (! $emp->hire_date) continue;
+            $months = Carbon::parse($emp->hire_date)->diffInMonths($now);
+            $max    = max($max, intdiv($months, self::CYCLE_MONTHS) + 1);
+        }
+
+        return $max;
     }
 
     private function buildConflicts($absences)
@@ -661,102 +733,5 @@ class AbsenceController extends Controller
     private function getDepartments()
     {
         return Department::names();
-    }
-
-    // =========================================================================
-    // calculateWorkingDays — Lundi au Samedi, jours fériés déduits
-    // =========================================================================
-    private function calculateWorkingDays(Carbon $start, Carbon $end): int
-    {
-        $count    = 0;
-        $holidays = [];
-
-        // Récupère les fériés pour chaque année couverte par la période
-        foreach (range($start->year, $end->year) as $year) {
-            foreach ($this->getHolidayDates($year) as $date) {
-                $holidays[] = $date;
-            }
-        }
-
-        for ($day = $start->copy()->startOfDay(); $day->lte($end->copy()->startOfDay()); $day->addDay()) {
-            // Dimanche exclu — samedi compté comme jour ouvré
-            if ($day->dayOfWeek === Carbon::SUNDAY) {
-                continue;
-            }
-            // Jour férié tombant un lundi–samedi → déduit
-            if (in_array($day->toDateString(), $holidays)) {
-                continue;
-            }
-            $count++;
-        }
-
-        return $count;
-    }
-
-    // =========================================================================
-    // getHolidayDates — Fériés fixes (toujours) + fériés islamiques via API
-    // =========================================================================
-    private function getHolidayDates(int $year): array
-    {
-        // ── 1. Fériés fixes marocains ─────────────────────────────────────────
-        // Toujours appliqués, sans dépendance à l'API ni au cache.
-        $fixed = [
-            "$year-01-01", // Nouvel An
-            "$year-01-11", // Manifeste de l'Indépendance
-            "$year-05-01", // Fête du Travail
-            "$year-07-30", // Fête du Trône
-            "$year-08-14", // Fête de la Révolution du Roi et du Peuple
-            "$year-08-21", // Fête de la Jeunesse / Anniversaire du Roi
-            "$year-11-06", // Anniversaire de la Marche Verte
-            "$year-11-18", // Fête de l'Indépendance
-        ];
-
-        // ── 2. Fériés islamiques via API (dates variables) ────────────────────
-        // Mis en cache 24h uniquement si l'API répond avec des données valides.
-        // Un résultat vide n'est jamais mis en cache pour forcer un nouvel essai.
-        $variable = [];
-        $cacheKey = "holidays_variable_{$year}";
-
-        if (Cache::has($cacheKey)) {
-            $variable = Cache::get($cacheKey);
-        } else {
-            try {
-                $response = Http::timeout(5)
-                    ->get('https://calendar-api.ma/api/holidays?year=' . $year);
-
-                if ($response->successful()) {
-                    $data = $response->json();
-                    $list = $data['holidays'] ?? (is_array($data) ? $data : []);
-
-                    // Normalise chaque date en Y-m-d pour garantir la comparaison
-                    $fromApi = collect($list)
-                        ->filter(fn($h) => ! empty($h['date']))
-                        ->map(function ($h) {
-                            try {
-                                // Accepte yyyy-mm-dd ET dd/mm/yyyy ET dd-mm-yyyy
-                                return Carbon::parse($h['date'])->format('Y-m-d');
-                            } catch (\Exception $e) {
-                                return null;
-                            }
-                        })
-                        ->filter()
-                        ->values()
-                        ->toArray();
-
-                    if (! empty($fromApi)) {
-                        $variable = $fromApi;
-                        // Mise en cache uniquement si des données valides ont été reçues
-                        Cache::put($cacheKey, $variable, now()->addHours(24));
-                    }
-                }
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning(
-                    "Holiday API indisponible pour {$year} : " . $e->getMessage()
-                );
-            }
-        }
-
-        // Fusion : fériés fixes + fériés islamiques, sans doublon
-        return array_values(array_unique(array_merge($fixed, $variable)));
     }
 }

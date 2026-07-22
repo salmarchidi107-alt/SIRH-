@@ -232,6 +232,36 @@ class EquipementController extends Controller
                          ->with('success', 'Équipement mis à jour.');
     }
 
+    // ─── Catalogue : Supprimer ────────────────────────────────────────────────
+
+    public function destroy(Equipement $equipement)
+    {
+        abort_if($equipement->tenant_id !== $this->tenantId(), 403);
+
+        if ($equipement->statut === 'Affecté') {
+            return back()->with('error', "Impossible de supprimer « {$equipement->designation} » : il est actuellement affecté. Restituez-le d'abord.");
+        }
+
+        // Sécurité supplémentaire : vérifie qu'aucune affectation active
+        // (même orpheline) n'existe pour cet équipement avant suppression.
+        $affectationActive = AffectationEquipement::forTenant($this->tenantId())
+            ->where('equipement_id', $equipement->id)
+            ->actives()
+            ->exists();
+
+        if ($affectationActive) {
+            return back()->with('error', "Impossible de supprimer « {$equipement->designation} » : une affectation active y est encore liée.");
+        }
+
+        $designation = $equipement->designation;
+        $reference   = $equipement->reference;
+
+        $equipement->delete();
+
+        return redirect()->route('equipements.index', ['tab' => 'catalogue'])
+                         ->with('success', "Équipement {$reference} — {$designation} supprimé avec succès.");
+    }
+
     // ─── Affectation ──────────────────────────────────────────────────────────
 
     public function affecter(Request $request)

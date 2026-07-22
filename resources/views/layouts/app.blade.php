@@ -325,6 +325,17 @@
                 <span>Pointage</span>
             </a>
             @endif
+
+            @if($u->canView('activites'))
+            <a href="{{ route('activites.projects.index') }}"
+               class="nav-item {{ request()->routeIs('activites.projects.*') || request()->routeIs('activites.tasks.*') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="9"/>
+                    <polyline points="12 7 12 12 15 14"/>
+                </svg>
+                <span>Mes projets</span>
+            </a>
+            @endif
             @endif
 
             {{-- ── Absences & Congés ── --}}
@@ -602,6 +613,34 @@
                 <span>Pointage</span>
                 @if($pointageEnAttente > 0)
                 <span class="nav-badge-live">{{ $pointageEnAttente }}</span>
+                @endif
+            </a>
+            @endif
+
+            @if($navUser->canView('activites'))
+            @php
+                $activitesEnRetard = 0;
+                try {
+                    $actTenantId = config('app.current_tenant_id')
+                        ?? (auth()->check() ? auth()->user()->tenant_id : null);
+                    $activitesEnRetard = \App\Models\Task::tenant($actTenantId)
+                        ->whereNotIn('status', ['terminee', 'annulee'])
+                        ->whereDate('due_date', '<', today())
+                        ->count();
+                } catch (\Exception $e) {
+                    $activitesEnRetard = 0;
+                }
+            @endphp
+
+            <a href="{{ route('activites.admin.index') }}"
+               class="nav-item {{ request()->routeIs('activites.admin.*') ? 'active' : '' }}">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="9"/>
+                    <polyline points="12 7 12 12 15 14"/>
+                </svg>
+                <span>Suivi d'activité</span>
+                @if($activitesEnRetard > 0)
+                <span class="nav-badge-live">{{ $activitesEnRetard }}</span>
                 @endif
             </a>
             @endif
@@ -1012,6 +1051,7 @@
                         <a href="{{ route('pointage.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Pointages</a>
                         <a href="{{ route('salary.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Salaires</a>
                         <a href="{{ route('lms.exportPdf') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Formations (LMS)</a>
+                        <a href="{{ route('activites.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Suivi d'activité</a>
                     </div>
                 </div>
                 @endif

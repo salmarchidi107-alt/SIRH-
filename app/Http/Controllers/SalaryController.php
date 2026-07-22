@@ -389,8 +389,6 @@ class SalaryController extends Controller
             'employer_amo'             => 'nullable|numeric|min:0',
             'employer_tfp'             => 'nullable|numeric|min:0',
             'employer_total_cost'      => 'nullable|numeric|min:0',
-
-            // ── Les deux champs manquants — cause du bug ───────────
             'garde_indemnite'          => 'nullable|numeric|min:0',
             'garde_override'           => 'nullable|boolean',
         ]);
@@ -418,7 +416,10 @@ class SalaryController extends Controller
             'employee_id'              => $employee->id,
             'month'                    => $month,
             'year'                     => $year,
-            'currency'                 => $data['currency']        ?? 'MAD',
+            // ── Devise : priorité au champ soumis dans le formulaire,
+            //    sinon devise du tenant de l'employé, sinon MAD.
+            //    Ne retombe plus systématiquement sur 'MAD' en dur.
+            'currency'                 => $data['currency'] ?? $employee->tenant?->currency ?? 'MAD',
             'salary_type'              => $data['salary_type']     ?? 'monthly',
             'hourly_rate'              => $data['hourly_rate']     ?? 0,
             'working_hours'            => $data['working_hours']   ?? 0,
@@ -465,8 +466,6 @@ class SalaryController extends Controller
             'employer_tfp'             => $data['employer_tfp']             ?? 0,
             'employer_total_cost'      => $data['employer_total_cost']      ?? 0,
             'status'                   => $salary->status ?? 'draft',
-
-            // ── Persister la garde manuelle ────────────────────────
             'garde_indemnite'          => $data['garde_indemnite'] ?? 0,
             'garde_override'           => (bool) ($data['garde_override'] ?? false),
         ]);

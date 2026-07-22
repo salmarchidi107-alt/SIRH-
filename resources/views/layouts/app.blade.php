@@ -617,33 +617,7 @@
             </a>
             @endif
 
-            @if($navUser->canView('activites'))
-            @php
-                $activitesEnRetard = 0;
-                try {
-                    $actTenantId = config('app.current_tenant_id')
-                        ?? (auth()->check() ? auth()->user()->tenant_id : null);
-                    $activitesEnRetard = \App\Models\Task::tenant($actTenantId)
-                        ->whereNotIn('status', ['terminee', 'annulee'])
-                        ->whereDate('due_date', '<', today())
-                        ->count();
-                } catch (\Exception $e) {
-                    $activitesEnRetard = 0;
-                }
-            @endphp
 
-            <a href="{{ route('activites.admin.index') }}"
-               class="nav-item {{ request()->routeIs('activites.admin.*') ? 'active' : '' }}">
-                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="9"/>
-                    <polyline points="12 7 12 12 15 14"/>
-                </svg>
-                <span>Suivi d'activité</span>
-                @if($activitesEnRetard > 0)
-                <span class="nav-badge-live">{{ $activitesEnRetard }}</span>
-                @endif
-            </a>
-            @endif
             @endif
 
             {{-- ══════════════════════════════════════════════════════════

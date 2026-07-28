@@ -28,6 +28,7 @@ class Tenant extends BaseTenant
         'logo_path',
         'brand_color',
         'sidebar_color',
+        'timezone',
         'database_name',
     ];
 

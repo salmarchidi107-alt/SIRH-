@@ -1,6 +1,5 @@
 <?php
-// ── UpdatePlanningRequest.php ─────────────────────────────────────────────────
-// Chemin : app/Http/Requests/UpdatePlanningRequest.php
+
 
 namespace App\Http\Requests;
 

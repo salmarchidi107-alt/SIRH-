@@ -255,6 +255,7 @@ class ReportingController extends Controller
             'masseBrute'      => $fin['masseSalarialeBrute'],
             'gardeTotal'      => $fin['gardeTotal'],
             'gardeHeures'     => $fin['gardeHeures'],
+            'currency'        => $fin['currency'],
             'validation'      => $validation,
         ]);
 
@@ -296,6 +297,7 @@ class ReportingController extends Controller
             'salaireMoyenNet'     => $fin['salaireMoyenNet'],
             'gardeTotal'          => $fin['gardeTotal'],
             'gardeHeures'         => $fin['gardeHeures'],
+            'currency'            => $fin['currency'],
             'evolutionMasse'      => $evolutionMasse,
             'validation'          => $validation,
         ]);
@@ -312,6 +314,9 @@ class ReportingController extends Controller
             ? (Department::find($data['departement'])?->name ?? $data['departement'])
             : 'Tous départements';
         $data['generatedAt'] = now()->setTimezone(self::TZ)->format('d/m/Y H:i');
+
+        // $data['currency'] est déjà défini par buildAllData() -> calcFinancialData(),
+        // dérivé des bulletins de salaire réels de la période (pas du tenant).
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reporting.pdf', $data)
             ->setPaper('a4', 'portrait')
@@ -678,6 +683,7 @@ class ReportingController extends Controller
             'bulletinsTotal' => 0, 'bulletinsValides' => 0,
             'salaireMoyenBrut' => 0, 'salaireMoyenNet' => 0,
             'gardeTotal' => 0, 'gardeHeures' => 0,
+            'currency' => 'MAD',
         ];
 
         if (empty($employeeIds) || empty($periodesMois)) return $zero;
@@ -708,6 +714,18 @@ class ReportingController extends Controller
         Log::debug('Reporting - colonnes salary (premier bulletin)', [
             'keys' => array_keys($salaries->first()?->getAttributes() ?? []),
         ]);
+
+        // ── Devise réelle des bulletins de la période ──
+        // On ne se fie plus à $tenant->currency (souvent resté sur MAD par défaut) :
+        // on lit la colonne 'currency' des bulletins effectivement utilisés dans ce rapport.
+        $currenciesPresentes = $salaries->pluck('currency')->filter()->unique()->values();
+        $currency = $currenciesPresentes->first() ?? 'MAD';
+
+        if ($currenciesPresentes->count() > 1) {
+            Log::debug('Reporting - devises mixtes détectées sur la période', [
+                'currencies' => $currenciesPresentes->toArray(),
+            ]);
+        }
 
         $masseSalarialeBrute = round((float) $salaries->sum('gross_salary'), 2);
         $netTotal            = round((float) $salaries->sum('net_salary'), 2);
@@ -823,6 +841,7 @@ class ReportingController extends Controller
             'gardeTotal'  => $gardeTotal,
             'bulletins'   => $bulletinsTotal,
             'masseBrute'  => $masseSalarialeBrute,
+            'currency'    => $currency,
         ]);
 
         return compact(
@@ -831,7 +850,7 @@ class ReportingController extends Controller
             'irRetenu','dgiMensuelle','chargesSalariales',
             'bulletinsTotal','bulletinsValides',
             'salaireMoyenBrut','salaireMoyenNet',
-            'gardeTotal','gardeHeures'
+            'gardeTotal','gardeHeures','currency'
         );
     }
 

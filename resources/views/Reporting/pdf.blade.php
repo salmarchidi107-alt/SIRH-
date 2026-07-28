@@ -208,6 +208,12 @@ tr.sep td {
 </head>
 <body>
 
+@php
+    // Devise du tenant — plus jamais codée en dur.
+    // Le contrôleur doit passer $currency (ex: $tenant->currency ?? 'MAD').
+    $currency = $currency ?? ($tenant->currency ?? 'MAD');
+@endphp
+
 {{-- ── Pied de page (fixe sur toutes les pages) ── --}}
 <div class="footer">
     <span class="fl">
@@ -456,7 +462,7 @@ tr.sep td {
         <thead>
             <tr>
                 <th style="width:52%">Libellé</th>
-                <th class="r">Montant (MAD)</th>
+                <th class="r">Montant ({{ $currency }})</th>
                 <th class="r">Taux / % masse brute</th>
                 <th class="c" style="width:14%">Nature</th>
             </tr>
@@ -582,12 +588,12 @@ tr.sep td {
             </tr>
             <tr>
                 <td>Salaire moyen brut par bulletin</td>
-                <td class="r mono">{{ number_format($salaireMoyenBrut, 2, ',', ' ') }} MAD</td>
+                <td class="r mono">{{ number_format($salaireMoyenBrut, 2, ',', ' ') }} {{ $currency }}</td>
                 <td class="c">—</td>
             </tr>
             <tr>
                 <td>Salaire moyen net par bulletin</td>
-                <td class="r mono txt-teal bold">{{ number_format($salaireMoyenNet, 2, ',', ' ') }} MAD</td>
+                <td class="r mono txt-teal bold">{{ number_format($salaireMoyenNet, 2, ',', ' ') }} {{ $currency }}</td>
                 <td class="c">—</td>
             </tr>
         </tbody>
@@ -602,7 +608,7 @@ tr.sep td {
         <thead>
             <tr>
                 <th>Période</th>
-                <th class="r">Masse salariale brute (MAD)</th>
+                <th class="r">Masse salariale brute ({{ $currency }})</th>
                 <th class="r">Variation</th>
             </tr>
         </thead>
@@ -668,27 +674,27 @@ tr.sep td {
             </tr>
             <tr>
                 <td>Masse salariale brute</td>
-                <td class="r mono bold">{{ number_format($masseSalarialeBrute, 2, ',', ' ') }} MAD</td>
+                <td class="r mono bold">{{ number_format($masseSalarialeBrute, 2, ',', ' ') }} {{ $currency }}</td>
                 <td class="c">—</td>
             </tr>
             <tr>
                 <td>Coût employeur total</td>
-                <td class="r mono">{{ number_format($coutEmployeur, 2, ',', ' ') }} MAD</td>
+                <td class="r mono">{{ number_format($coutEmployeur, 2, ',', ' ') }} {{ $currency }}</td>
                 <td class="c">—</td>
             </tr>
             <tr>
                 <td>Net à payer total</td>
-                <td class="r mono txt-teal bold">{{ number_format($netTotal, 2, ',', ' ') }} MAD</td>
+                <td class="r mono txt-teal bold">{{ number_format($netTotal, 2, ',', ' ') }} {{ $currency }}</td>
                 <td class="c">—</td>
             </tr>
             <tr>
                 <td>IR retenu à la source</td>
-                <td class="r mono txt-red">{{ number_format($irRetenu, 2, ',', ' ') }} MAD</td>
+                <td class="r mono txt-red">{{ number_format($irRetenu, 2, ',', ' ') }} {{ $currency }}</td>
                 <td class="c">—</td>
             </tr>
             <tr>
                 <td>DGI — Déclaration mensuelle</td>
-                <td class="r mono">{{ number_format($dgiMensuelle, 2, ',', ' ') }} MAD</td>
+                <td class="r mono">{{ number_format($dgiMensuelle, 2, ',', ' ') }} {{ $currency }}</td>
                 <td class="c">—</td>
             </tr>
             <tr>
@@ -704,7 +710,7 @@ tr.sep td {
     </table>
 
     <div class="note">
-        Taux de cotisation appliqués (Maroc) : CNSS salariale 4,48% — CNSS patronale 8,98% — AMO 2,26% (part salariale et patronale) — Taxe de formation professionnelle 1,60%.
+        Taux de cotisation appliqués : CNSS salariale 4,48% — CNSS patronale 8,98% — AMO 2,26% (part salariale et patronale) — Taxe de formation professionnelle 1,60%.
         Les montants IR sont issus des bulletins de paie validés. Ce rapport est confidentiel et généré automatiquement par {{ $tenant?->name ?? config('app.name') }}.
     </div>
 </div>

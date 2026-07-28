@@ -37,6 +37,50 @@
         color: rgba(255,255,255,0.85);
     }
 
+    .emp-alert-tasks {
+        border-radius: var(--emp-radius);
+        padding: 14px 18px;
+        margin-bottom: 20px;
+        border: 1px solid var(--border);
+    }
+    .emp-alert-tasks.is-late {
+        background: #fef2f2;
+        border-color: #fecaca;
+    }
+    .emp-alert-tasks.is-info {
+        background: var(--emp-blue-light);
+        border-color: #bfdbfe;
+    }
+    .emp-alert-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
+    }
+    .emp-alert-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text);
+    }
+    .emp-alert-link {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--emp-teal-dark);
+        text-decoration: none;
+    }
+    .emp-alert-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 7px 0;
+        border-top: 1px solid rgba(0,0,0,0.06);
+        font-size: 12.5px;
+    }
+    .emp-alert-row:first-of-type { border-top: none; }
+    .emp-alert-task-name { font-weight: 600; color: var(--text); }
+    .emp-alert-task-meta { font-size: 11px; color: var(--text-muted); }
+    .emp-alert-late-badge { color: var(--emp-red); font-weight: 700; font-size: 11px; }
+
     .emp-kpi-row {
         display: grid;
         grid-template-columns: repeat(3, minmax(0,1fr));
@@ -250,6 +294,39 @@
     <strong>Bonjour {{ $employee->first_name }} 👋</strong>
     <span>{{ now()->isoFormat('dddd D MMMM YYYY') }} @if($employee->department) — {{ $employee->department }} @endif @if($employee->position) · {{ $employee->position }} @endif</span>
 </div>
+
+@if($myTasks->isNotEmpty())
+<div class="emp-alert-tasks {{ $myTasksLate > 0 ? 'is-late' : 'is-info' }}">
+    <div class="emp-alert-head">
+        <span class="emp-alert-title">
+            @if($myTasksLate > 0)
+                ⚠️ {{ $myTasksLate }} tâche(s) en retard sur {{ $myTasks->count() }} en attente
+            @else
+                📋 {{ $myTasks->count() }} tâche(s) à réaliser
+            @endif
+        </span>
+        <a href="{{ route('activites.my-tasks.index') }}" class="emp-alert-link">Voir mes tâches →</a>
+    </div>
+    @foreach($myTasks->take(3) as $task)
+        <div class="emp-alert-row">
+            <div>
+                <div class="emp-alert-task-name">{{ $task->title }}</div>
+                <div class="emp-alert-task-meta">
+                    {{ $task->project->name }}
+                    @if($task->due_date)
+                        · Échéance {{ $task->due_date->format('d/m/Y') }}
+                    @endif
+                </div>
+            </div>
+            @if($task->isLate())
+                <span class="emp-alert-late-badge">En retard</span>
+            @else
+                <span class="emp-alert-task-meta">{{ \App\Models\Task::PRIORITY_LABELS[$task->priority] }}</span>
+            @endif
+        </div>
+    @endforeach
+</div>
+@endif
 
 <div class="emp-kpi-row">
     <div class="card">

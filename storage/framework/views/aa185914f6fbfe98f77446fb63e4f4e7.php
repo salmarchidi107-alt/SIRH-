@@ -35,6 +35,50 @@
         color: rgba(255,255,255,0.85);
     }
 
+    .emp-alert-tasks {
+        border-radius: var(--emp-radius);
+        padding: 14px 18px;
+        margin-bottom: 20px;
+        border: 1px solid var(--border);
+    }
+    .emp-alert-tasks.is-late {
+        background: #fef2f2;
+        border-color: #fecaca;
+    }
+    .emp-alert-tasks.is-info {
+        background: var(--emp-blue-light);
+        border-color: #bfdbfe;
+    }
+    .emp-alert-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
+    }
+    .emp-alert-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text);
+    }
+    .emp-alert-link {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--emp-teal-dark);
+        text-decoration: none;
+    }
+    .emp-alert-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 7px 0;
+        border-top: 1px solid rgba(0,0,0,0.06);
+        font-size: 12.5px;
+    }
+    .emp-alert-row:first-of-type { border-top: none; }
+    .emp-alert-task-name { font-weight: 600; color: var(--text); }
+    .emp-alert-task-meta { font-size: 11px; color: var(--text-muted); }
+    .emp-alert-late-badge { color: var(--emp-red); font-weight: 700; font-size: 11px; }
+
     .emp-kpi-row {
         display: grid;
         grid-template-columns: repeat(3, minmax(0,1fr));
@@ -248,6 +292,41 @@
     <strong>Bonjour <?php echo e($employee->first_name); ?> 👋</strong>
     <span><?php echo e(now()->isoFormat('dddd D MMMM YYYY')); ?> <?php if($employee->department): ?> — <?php echo e($employee->department); ?> <?php endif; ?> <?php if($employee->position): ?> · <?php echo e($employee->position); ?> <?php endif; ?></span>
 </div>
+
+<?php if($myTasks->isNotEmpty()): ?>
+<div class="emp-alert-tasks <?php echo e($myTasksLate > 0 ? 'is-late' : 'is-info'); ?>">
+    <div class="emp-alert-head">
+        <span class="emp-alert-title">
+            <?php if($myTasksLate > 0): ?>
+                ⚠️ <?php echo e($myTasksLate); ?> tâche(s) en retard sur <?php echo e($myTasks->count()); ?> en attente
+            <?php else: ?>
+                📋 <?php echo e($myTasks->count()); ?> tâche(s) à réaliser
+            <?php endif; ?>
+        </span>
+        <a href="<?php echo e(route('activites.my-tasks.index')); ?>" class="emp-alert-link">Voir mes tâches →</a>
+    </div>
+    <?php $__currentLoopData = $myTasks->take(3); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $task): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+        <div class="emp-alert-row">
+            <div>
+                <div class="emp-alert-task-name"><?php echo e($task->title); ?></div>
+                <div class="emp-alert-task-meta">
+                    <?php echo e($task->project->name); ?>
+
+                    <?php if($task->due_date): ?>
+                        · Échéance <?php echo e($task->due_date->format('d/m/Y')); ?>
+
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php if($task->isLate()): ?>
+                <span class="emp-alert-late-badge">En retard</span>
+            <?php else: ?>
+                <span class="emp-alert-task-meta"><?php echo e(\App\Models\Task::PRIORITY_LABELS[$task->priority]); ?></span>
+            <?php endif; ?>
+        </div>
+    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+</div>
+<?php endif; ?>
 
 <div class="emp-kpi-row">
     <div class="card">

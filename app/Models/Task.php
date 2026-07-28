@@ -17,18 +17,24 @@ class Task extends Model
         'tenant_id',
         'project_id',
         'user_id',
+        'assigned_to',
         'title',
         'description',
         'priority',
         'status',
+        'start_date',
         'due_date',
         'estimated_minutes',
+        'percent_complete',
+        'employee_comment',
         'timer_started_at',
         'completed_at',
     ];
 
     protected $casts = [
+        'start_date' => 'date',
         'due_date' => 'date',
+        'percent_complete' => 'integer',
         'timer_started_at' => 'datetime',
         'completed_at' => 'datetime',
     ];
@@ -37,7 +43,11 @@ class Task extends Model
 
     public const STATUSES = ['a_faire', 'en_cours', 'en_pause', 'terminee', 'annulee'];
 
-    // Alignés sur les classes .badge-* déjà utilisées dans tes autres vues (cf. reporting/index.blade.php)
+    // Champs que l'employé assigné a le droit de modifier lui-même
+    // (cf. espace employé > Mes tâches). Tout le reste (projet, titre,
+    // description, priorité, dates, estimation) reste piloté par l'admin.
+    public const EMPLOYEE_EDITABLE_FIELDS = ['status', 'percent_complete', 'employee_comment'];
+
     public const STATUS_LABELS = [
         'a_faire' => 'À faire',
         'en_cours' => 'En cours',
@@ -47,11 +57,11 @@ class Task extends Model
     ];
 
     public const STATUS_BADGES = [
-        'a_faire' => 'badge-gray',
-        'en_cours' => 'badge-blue',
-        'en_pause' => 'badge-warn',
-        'terminee' => 'badge-ok',
-        'annulee' => 'badge-bad',
+        'a_faire' => 'sa-badge-gray',
+        'en_cours' => 'sa-badge-blue',
+        'en_pause' => 'sa-badge-amber',
+        'terminee' => 'sa-badge-green',
+        'annulee' => 'sa-badge-red',
     ];
 
     public const PRIORITY_LABELS = [
@@ -62,10 +72,10 @@ class Task extends Model
     ];
 
     public const PRIORITY_BADGES = [
-        'faible' => 'badge-gray',
-        'normale' => 'badge-blue',
-        'haute' => 'badge-warn',
-        'urgente' => 'badge-bad',
+        'faible' => 'sa-badge-gray',
+        'normale' => 'sa-badge-blue',
+        'haute' => 'sa-badge-amber',
+        'urgente' => 'sa-badge-red',
     ];
 
     public function statusLabel(): string
@@ -75,7 +85,7 @@ class Task extends Model
 
     public function statusBadgeClass(): string
     {
-        return self::STATUS_BADGES[$this->status] ?? 'badge-gray';
+        return self::STATUS_BADGES[$this->status] ?? 'sa-badge-gray';
     }
 
     public function priorityLabel(): string
@@ -85,14 +95,11 @@ class Task extends Model
 
     public function priorityBadgeClass(): string
     {
-        return self::PRIORITY_BADGES[$this->priority] ?? 'badge-gray';
+        return self::PRIORITY_BADGES[$this->priority] ?? 'sa-badge-gray';
     }
 
     protected static function booted(): void
     {
-        // Une tâche hérite toujours du tenant (et, par sécurité, du user_id
-        // si absent) de son projet parent — évite toute incohérence si le
-        // projet et la tâche n'appartenaient pas au même employé/tenant.
         static::creating(function (Task $task) {
             if ($task->project_id && $project = Project::find($task->project_id)) {
                 $task->tenant_id = $task->tenant_id ?: $project->tenant_id;
@@ -100,10 +107,13 @@ class Task extends Model
             } elseif (! $task->tenant_id) {
                 $task->tenant_id = Auth::user()?->tenant_id;
             }
+
+            if (! $task->assigned_to) {
+                $task->assigned_to = $task->user_id ?: Auth::id();
+            }
         });
     }
 
-    /** Filtre sur le tenant courant (ou celui passé en paramètre). */
     public function scopeTenant($query, ?string $tenantId = null)
     {
         $tenantId = $tenantId ?? config('app.current_tenant_id') ?? Auth::user()?->tenant_id;
@@ -111,9 +121,20 @@ class Task extends Model
         return $tenantId ? $query->where('tenant_id', $tenantId) : $query;
     }
 
+    /** Tâches assignées à un employé donné (ou l'utilisateur connecté par défaut). */
+    public function scopeAssignedTo($query, ?int $userId = null)
+    {
+        return $query->where('assigned_to', $userId ?? Auth::id());
+    }
+
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function assignee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     public function project(): BelongsTo
@@ -126,23 +147,16 @@ class Task extends Model
         return $this->hasMany(Activity::class)->orderByDesc('activity_date')->orderByDesc('id');
     }
 
-    /* ------------------------------------------------------------------ */
-    /*  Temps                                                              */
-    /* ------------------------------------------------------------------ */
-
-    /** Minutes totales déjà enregistrées (sessions + saisies manuelles). */
     public function getLoggedMinutesAttribute(): int
     {
         return (int) $this->activities()->sum('duration_minutes');
     }
 
-    /** Vrai si un chronomètre est actuellement lancé sur cette tâche. */
     public function getIsTimerRunningAttribute(): bool
     {
         return ! is_null($this->timer_started_at);
     }
 
-    /** Minutes écoulées depuis le lancement du chronomètre en cours (0 si aucun). */
     public function getRunningMinutesAttribute(): int
     {
         if (! $this->timer_started_at) {
@@ -159,7 +173,6 @@ class Task extends Model
             && ! in_array($this->status, ['terminee', 'annulee']);
     }
 
-    /** Pourcentage temps loggé / temps estimé, plafonné à 100 (null si pas d'estimation). */
     public function getTimeProgressPercentAttribute(): ?int
     {
         if (! $this->estimated_minutes) {
@@ -169,9 +182,26 @@ class Task extends Model
         return (int) min(100, round(($this->logged_minutes / $this->estimated_minutes) * 100));
     }
 
-    /* ------------------------------------------------------------------ */
-    /*  Actions liées au chronomètre                                       */
-    /* ------------------------------------------------------------------ */
+    /**
+     * Mise à jour restreinte utilisée par l'espace employé (Mes tâches) :
+     * ne touche jamais aux champs pilotés par l'admin (projet, titre,
+     * description, priorité, dates, estimation, assignation).
+     */
+    public function applyEmployeeUpdate(array $data): void
+    {
+        $payload = array_intersect_key($data, array_flip(self::EMPLOYEE_EDITABLE_FIELDS));
+
+        if (isset($payload['percent_complete'])) {
+            $payload['percent_complete'] = max(0, min(100, (int) $payload['percent_complete']));
+        }
+
+        if (($payload['status'] ?? null) === 'terminee') {
+            $payload['completed_at'] = Carbon::now();
+            $payload['percent_complete'] = 100;
+        }
+
+        $this->update($payload);
+    }
 
     public function startTimer(): void
     {
@@ -181,10 +211,6 @@ class Task extends Model
         ]);
     }
 
-    /**
-     * Arrête le chronomètre en cours et journalise le temps écoulé
-     * sous forme d'une Activity de type "chrono".
-     */
     public function stopTimer(string $newStatus): ?Activity
     {
         if (! $this->timer_started_at) {
@@ -200,6 +226,7 @@ class Task extends Model
             'type' => 'chrono',
             'activity_date' => Carbon::now()->toDateString(),
             'duration_minutes' => $minutes,
+            'status' => 'validee',
             'comment' => null,
         ]);
 

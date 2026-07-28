@@ -358,6 +358,9 @@ class EmployeeController extends Controller
                 $validated['new_password_confirmation']
             );
 
+            // ── 4bis. Nettoyer le champ rôle avant l'update employé ───────────
+            unset($validated['user_role']);
+
             // ── 5. Mettre à jour l'employé ────────────────────────────────────
             $this->employeeService->update($employee, $validated);
 
@@ -384,6 +387,33 @@ class EmployeeController extends Controller
                     Log::warning('Tentative MàJ mot de passe sans compte lié', [
                         'employee_id' => $employee->id,
                     ]);
+                }
+            }
+
+            // ── 6bis. Mise à jour du rôle utilisateur (Admin uniquement) ──────
+            if (
+                auth()->user()->isAdmin()
+                && $employee->user_id
+                && $request->filled('user_role')
+            ) {
+                $user = $user ?? ($employee->user ?? User::find($employee->user_id));
+
+                if ($user) {
+                    $previousRole = $user->role;
+                    $newRole      = $this->normalizeRole($request->user_role);
+
+                    if ($newRole !== $previousRole) {
+                        $user->role = $newRole;
+                        $user->save();
+
+                        Log::info('Rôle utilisateur mis à jour', [
+                            'user_id'      => $user->id,
+                            'employee_id'  => $employee->id,
+                            'ancien_role'  => $previousRole,
+                            'nouveau_role' => $newRole,
+                            'by_admin'     => auth()->id(),
+                        ]);
+                    }
                 }
             }
 

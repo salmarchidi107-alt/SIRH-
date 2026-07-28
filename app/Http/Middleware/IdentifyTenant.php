@@ -11,25 +11,15 @@ use Symfony\Component\HttpFoundation\Response;
 
 class IdentifyTenant
 {
-    /**
-     * Initialise la tenancy depuis l'user connecté.
-     *
-     * FIX : Sur localhost, DomainTenant ne set pas current_tenant_id (null).
-     * Ce middleware DOIT le setter depuis $user->tenant_id dans ce cas.
-     *
-     * Priorité :
-     *  1. current_tenant_id déjà set (domaine tenant réel) → passer
-     *  2. Superadmin ou pas de tenant_id                  → passer
-     *  3. User connecté avec tenant_id valide             → setter config et passer
-     *  4. Tenant introuvable                              → déconnexion
-     *  5. Non connecté                                    → passer
-     */
     public function handle(Request $request, Closure $next): Response
     {
         $currentTenantId = config('app.current_tenant_id');
 
         // ── Cas 1 : déjà résolu par DomainTenant (domaine tenant réel) ───
         if (filled($currentTenantId)) {
+            $tenant = Tenant::find($currentTenantId);
+            $this->applyTenantTimezone($tenant);
+
             return $next($request);
         }
 
@@ -47,8 +37,6 @@ class IdentifyTenant
         }
 
         // ── Cas 3 : User avec tenant_id → résoudre et setter ─────────────
-        // FIX PRINCIPAL : on set TOUJOURS depuis l'user sur localhost
-        // (quand DomainTenant n'a pas pu résoudre depuis le domaine)
         $tenant = Tenant::find($user->tenant_id);
 
         if (! $tenant) {
@@ -68,6 +56,7 @@ class IdentifyTenant
 
         // ── Setter current_tenant_id en config ────────────────────────────
         config(['app.current_tenant_id' => (string) $tenant->id]);
+        $this->applyTenantTimezone($tenant);
 
         // ── Initialiser tenancy si pas encore fait ────────────────────────
         if (! tenancy()->initialized) {
@@ -78,10 +67,21 @@ class IdentifyTenant
                     'error'     => $e->getMessage(),
                     'tenant_id' => $tenant->id,
                 ]);
-                // Ne pas bloquer — la config est setée, ça suffit pour les requêtes simples
             }
         }
 
         return $next($request);
+    }
+
+    /**
+     * Applique le fuseau horaire propre au tenant pour la durée de cette requête.
+     * Ne touche pas au fichier config/app.php : override en mémoire uniquement.
+     */
+    private function applyTenantTimezone(?Tenant $tenant): void
+    {
+        if ($tenant && $tenant->timezone) {
+            config(['app.timezone' => $tenant->timezone]);
+            date_default_timezone_set($tenant->timezone);
+        }
     }
 }

@@ -614,7 +614,7 @@
                 <div class="form-group full">
                     <label>Compte utilisateur lié</label>
                     @if($linkedUser)
-                        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border);">
+                        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border);margin-bottom:16px;">
                             <div style="width:40px;height:40px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:600;">
                                 {{ strtoupper(substr($linkedUser->name, 0, 1)) }}
                             </div>
@@ -630,6 +630,21 @@
                             <a href="{{ route('employees.edit', [$employee, 'remove_user' => true]) }}"
                                class="btn btn-danger btn-sm" style="margin-left:auto;">Délier</a>
                         </div>
+
+                        @if(auth()->user()->isAdmin())
+                        <div class="form-group" style="max-width:340px;">
+                            <label>Rôle utilisateur</label>
+                            <select name="user_role" id="user_role_select" class="form-control">
+                                <option value="employee" {{ old('user_role', $linkedUser->role) == 'employee' ? 'selected' : '' }}>Employé</option>
+                                <option value="rh"       {{ old('user_role', $linkedUser->role) == 'rh'       ? 'selected' : '' }}>Responsable RH</option>
+                                <option value="admin"    {{ old('user_role', $linkedUser->role) == 'admin'    ? 'selected' : '' }}>Administrateur</option>
+                            </select>
+                            @error('user_role') <span style="color:var(--danger);font-size:0.75rem">{{ $message }}</span> @enderror
+                            <small style="color:#64748b;font-size:0.72rem;margin-top:4px;display:block;">
+                                Changer le rôle peut modifier les permissions granulaires ci-dessous.
+                            </small>
+                        </div>
+                        @endif
                     @else
                         <select name="user_id" class="form-control">
                             <option value="">Sélectionner un compte utilisateur...</option>
@@ -673,25 +688,14 @@
         <div class="card-header" style="display:flex;align-items:center;gap:10px;">
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24"
                  stroke="currentColor" stroke-width="2" style="color:#14b8a6;flex-shrink:0">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6
-                         11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623
-                         5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152
-                         c-3.196 0-6.1-1.248-8.25-3.285z"/>
             </svg>
             <div class="card-title" style="margin:0;">Gestion des permissions</div>
             <span style="font-size:11px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;border-radius:20px;padding:2px 10px;">
                 {{ $linkedUser->name }} — <strong>{{ strtoupper($linkedUser->role ?? 'employee') }}</strong>
             </span>
-            @if($linkedUser->isFullAccessRole())
-            <span style="font-size:11px;background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0;border-radius:20px;padding:2px 10px;">
-                ✓ Accès total (rôle Admin)
-            </span>
-            @endif
         </div>
 
-        @if($linkedUser->isFullAccessRole())
-        <div style="padding:20px;color:#64748b;font-size:0.875rem;background:#f8fafc;">
+        <div id="admin-full-access-banner" style="padding:20px;color:#64748b;font-size:0.875rem;background:#f8fafc;{{ $linkedUser->isFullAccessRole() ? '' : 'display:none;' }}">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
                  style="display:inline;margin-right:6px;color:#14b8a6;">
                 <circle cx="12" cy="12" r="10"/>
@@ -701,7 +705,8 @@
             Les utilisateurs avec le rôle <strong>Admin</strong> ont automatiquement accès à toutes les fonctionnalités.
             Les permissions granulaires ne s'appliquent qu'aux rôles <strong>RH</strong> et <strong>Employé</strong>.
         </div>
-        @else
+
+        <div id="perm-editor-wrapper" style="{{ $linkedUser->isFullAccessRole() ? 'display:none;' : '' }}">
 
         <div class="perm-toolbar">
             <span class="perm-toolbar-label">Sélection rapide :</span>
@@ -768,6 +773,12 @@
                 <div class="perm-cell"><input type="checkbox" name="permissions[pointage][{{ $a }}]" {{ $checked('pointage',$a) ? 'checked' : '' }}></div>
                 @endforeach
             </div>
+            <div class="perm-row perm-row--sub">
+                <div class="perm-mod-name">Suivi d'activité</div>
+                @foreach(['view','create','edit','delete'] as $a)
+                <div class="perm-cell"><input type="checkbox" name="permissions[activites][{{ $a }}]" {{ $checked('activites',$a) ? 'checked' : '' }}></div>
+                @endforeach
+            </div>
 
             <div class="perm-group-label">Absences &amp; Congés</div>
             <div class="perm-row">
@@ -789,6 +800,14 @@
                 <div class="perm-cell"><span class="perm-na">—</span></div>
                 <div class="perm-cell"><input type="checkbox" name="permissions[absences_counters][edit]" {{ $checked('absences_counters','edit') ? 'checked' : '' }}></div>
                 <div class="perm-cell"><span class="perm-na">—</span></div>
+            </div>
+
+            <div class="perm-group-label">Notes de frais</div>
+            <div class="perm-row">
+                <div class="perm-mod-name">Notes de frais</div>
+                @foreach(['view','create','edit','delete'] as $a)
+                <div class="perm-cell"><input type="checkbox" name="permissions[expenses][{{ $a }}]" {{ $checked('expenses',$a) ? 'checked' : '' }}></div>
+                @endforeach
             </div>
 
             <div class="perm-group-label">Formations (LMS)</div>
@@ -846,7 +865,15 @@
                 @endforeach
             </div>
 
-            <div class="perm-group-label">Paramétrage &amp; Rapports</div>
+            <div class="perm-group-label">Équipements</div>
+            <div class="perm-row">
+                <div class="perm-mod-name">Gestion des équipements</div>
+                @foreach(['view','create','edit','delete'] as $a)
+                <div class="perm-cell"><input type="checkbox" name="permissions[equipements][{{ $a }}]" {{ $checked('equipements',$a) ? 'checked' : '' }}></div>
+                @endforeach
+            </div>
+
+            <div class="perm-group-label">Paramétrage</div>
             <div class="perm-row">
                 <div class="perm-mod-name">Paramétrage</div>
                 @foreach(['view','create','edit','delete'] as $a)
@@ -854,11 +881,11 @@
                 @endforeach
             </div>
 
-            <div class="perm-group-label">Équipements</div>
+            <div class="perm-group-label">Sécurité</div>
             <div class="perm-row">
-                <div class="perm-mod-name">Gestion des équipements</div>
+                <div class="perm-mod-name">Codes de vérification</div>
                 @foreach(['view','create','edit','delete'] as $a)
-                <div class="perm-cell"><input type="checkbox" name="permissions[equipment][{{ $a }}]" {{ $checked('equipment',$a) ? 'checked' : '' }}></div>
+                <div class="perm-cell"><input type="checkbox" name="permissions[securite][{{ $a }}]" {{ $checked('securite',$a) ? 'checked' : '' }}></div>
                 @endforeach
             </div>
 
@@ -867,7 +894,8 @@
         <div class="perm-footer-note">
             Les colonnes grisées (—) indiquent qu'une action n'est pas applicable pour ce module.
         </div>
-        @endif
+
+        </div>{{-- #perm-editor-wrapper --}}
     </div>
     @endif
 
@@ -1139,6 +1167,24 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Vérification unicité CIN / Téléphone ────────────────
     checkUnique('cin_field',   'cin_feedback',   'cin',   {{ $employee->id }});
     checkUnique('phone_field', 'phone_feedback', 'phone', {{ $employee->id }});
+
+    // ── Rôle utilisateur → presets de permissions ────────────
+    const roleSelect = document.getElementById('user_role_select');
+    if (roleSelect) {
+        const banner  = document.getElementById('admin-full-access-banner');
+        const wrapper = document.getElementById('perm-editor-wrapper');
+
+        roleSelect.addEventListener('change', function () {
+            const isAdmin = this.value === 'admin';
+            if (banner)  banner.style.display  = isAdmin ? '' : 'none';
+            if (wrapper) wrapper.style.display = isAdmin ? 'none' : '';
+
+            if (typeof Perms === 'undefined') return;
+            if (this.value === 'admin')         Perms.selectAll();
+            else if (this.value === 'rh')       Perms.selectRH();
+            else if (this.value === 'employee') Perms.selectEmployee();
+        });
+    }
 });
 
 function checkUnique(fieldId, feedbackId, param, ignoreId) {
@@ -1178,8 +1224,7 @@ function checkUnique(fieldId, feedbackId, param, ignoreId) {
 /* ═══════════════════════════════════════════════════════
    Gestionnaire de permissions
    (n'existe que si #perm-table est présent, c-à-d si
-   $linkedUser existe, auth()->user()->isAdmin() est vrai,
-   et que le rôle du compte lié n'a pas un accès total)
+   $linkedUser existe et auth()->user()->isAdmin() est vrai)
 ═══════════════════════════════════════════════════════ */
 const Perms = {
     all() {
@@ -1212,11 +1257,13 @@ const Perms = {
         this.deselectAll();
         this.byModule([
             'dashboard','employees','trombinoscope','news',
-            'planning','temps_vue','pointage',
+            'planning','temps_vue','pointage','activites',
             'absences','absences_calendar','absences_counters',
+            'expenses',
             'lms','referentiel','lms_planning',
-            'salary','ged','ged_modeles','ged_entete',
-            'reporting','equipment',
+            'salary','reporting',
+            'ged','ged_modeles','ged_entete',
+            'equipements','parametrage',
         ], ['view','create','edit']);
     },
 };

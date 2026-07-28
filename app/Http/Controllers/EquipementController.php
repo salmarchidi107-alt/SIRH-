@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EquipementController extends Controller
 {
@@ -93,38 +94,11 @@ class EquipementController extends Controller
             ->orderBy('designation')
             ->get();
 
-        // ── Retours : employés inactifs avec affectations actives ──
-        $employee_ids_depart = AffectationEquipement::forTenant($tenantId)
-            ->actives()
-            ->whereHas('employee', fn($q) => $q->where('status', 'inactive'))
-            ->pluck('employee_id')
-            ->unique();
-
-        $employes_depart = collect();
-        if ($employee_ids_depart->isNotEmpty()) {
-            $employes_depart = Employee::whereIn('id', $employee_ids_depart)->get();
-
-            $affectations_par_emp = AffectationEquipement::forTenant($tenantId)
-                ->actives()
-                ->with('equipement')
-                ->whereIn('employee_id', $employee_ids_depart)
-                ->get()
-                ->groupBy('employee_id');
-
-            $employes_depart->each(function ($emp) use ($affectations_par_emp) {
-                $emp->setRelation(
-                    'affectationsEquipements',
-                    $affectations_par_emp->get($emp->id, collect())
-                );
-            });
-        }
-
-        // ── Décharges en attente ──
-        $decharges_en_attente = AffectationEquipement::forTenant($tenantId)
+        // ── Décharges & Retours (fusionné) : toutes les affectations actives ──
+        $toutes_affectations_actives = AffectationEquipement::forTenant($tenantId)
             ->with(['employee', 'equipement'])
-            ->where('decharge_signee', false)
             ->actives()
-            ->orderByDesc('created_at')
+            ->orderByDesc('date_affectation')
             ->get();
 
         $liste_categories = [
@@ -135,9 +109,165 @@ class EquipementController extends Controller
         return view('equipements.index', compact(
             'tab', 'metrics', 'categories', 'alertes_depart',
             'dernieres_affectations', 'equipements', 'employees_actifs',
-            'equipements_disponibles', 'employes_depart', 'decharges_en_attente',
+            'equipements_disponibles', 'toutes_affectations_actives',
             'liste_categories'
         ));
+    }
+
+    // ─── Export (CSV natif — pas de dépendance externe) ───────────────────────
+
+    public function export(Request $request)
+    {
+        $tenantId = $this->tenantId();
+        $type     = $request->query('type');
+
+        [$headers, $rows] = match ($type) {
+            'catalogue'    => $this->exportDataCatalogue($tenantId, $request),
+            'affectations' => $this->exportDataAffectations($tenantId),
+            'salaries'     => $this->exportDataSalaries($tenantId),
+            'decharges'    => $this->exportDataDecharges($tenantId),
+            'retours'      => $this->exportDataRetours($tenantId),
+            default        => abort(404, "Type d'export inconnu."),
+        };
+
+        $filename = ($type ?: 'export') . '_' . now()->format('Y-m-d') . '.csv';
+
+        return $this->streamCsv($filename, $headers, $rows);
+    }
+
+    private function streamCsv(string $filename, array $headers, iterable $rows): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($headers, $rows) {
+            $out = fopen('php://output', 'w');
+            // BOM UTF-8 pour qu'Excel affiche correctement les accents
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, $headers, ';');
+            foreach ($rows as $row) {
+                fputcsv($out, $row, ';');
+            }
+            fclose($out);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    private function exportDataCatalogue(string $tenantId, Request $request): array
+    {
+        $equipements = Equipement::forTenant($tenantId)
+            ->when($request->categorie, fn($q, $c) => $q->where('categorie', $c))
+            ->when($request->statut,    fn($q, $s) => $q->where('statut', $s))
+            ->when($request->search,    fn($q, $s) => $q->where(function ($qq) use ($s) {
+                $qq->where('reference',   'like', "%$s%")
+                   ->orWhere('designation', 'like', "%$s%")
+                   ->orWhere('marque',      'like', "%$s%");
+            }))
+            ->orderBy('reference')
+            ->get();
+
+        $headers = ['Référence', 'Désignation', 'Catégorie', 'Marque', 'Modèle', 'N° série', 'État', 'Statut', 'Valeur (MAD)'];
+        $rows    = $equipements->map(fn($eq) => [
+            $eq->reference,
+            $eq->designation,
+            $eq->categorie,
+            $eq->marque,
+            $eq->modele,
+            $eq->numero_serie,
+            $eq->etat,
+            $eq->statut,
+            $eq->valeur_acquisition,
+        ]);
+
+        return [$headers, $rows];
+    }
+
+    private function exportDataAffectations(string $tenantId): array
+    {
+        $affectations = AffectationEquipement::forTenant($tenantId)
+            ->with(['employee', 'equipement'])
+            ->actives()
+            ->orderByDesc('date_affectation')
+            ->get();
+
+        $headers = ['Salarié', 'Matricule', 'Matériel', 'Référence', 'Date affectation', 'État remise', 'Statut'];
+        $rows    = $affectations->map(fn($aff) => [
+            trim(($aff->employee->first_name ?? '') . ' ' . ($aff->employee->last_name ?? '')),
+            $aff->employee->employee_number ?? $aff->employee->matricule ?? '',
+            $aff->equipement->designation ?? '',
+            $aff->equipement->reference ?? '',
+            optional($aff->date_affectation)->format('d/m/Y'),
+            $aff->etat_remise,
+            $aff->statut,
+        ]);
+
+        return [$headers, $rows];
+    }
+
+    private function exportDataSalaries(string $tenantId): array
+    {
+        $groups = AffectationEquipement::forTenant($tenantId)
+            ->where('statut', 'Actif')
+            ->with(['employee', 'equipement'])
+            ->get()
+            ->groupBy('employee_id');
+
+        $headers = ['Salarié', 'Matricule', 'Nb équipements', 'Valeur confiée (MAD)'];
+        $rows    = $groups->map(function ($affs) {
+            $emp = $affs->first()->employee;
+            return [
+                trim(($emp->first_name ?? '') . ' ' . ($emp->last_name ?? '')),
+                $emp->employee_number ?? $emp->matricule ?? '',
+                $affs->count(),
+                $affs->sum(fn($a) => $a->equipement->valeur_acquisition ?? 0),
+            ];
+        })->values();
+
+        return [$headers, $rows];
+    }
+
+    private function exportDataDecharges(string $tenantId): array
+    {
+        $decharges = AffectationEquipement::forTenant($tenantId)
+            ->with(['employee', 'equipement'])
+            ->where('decharge_signee', false)
+            ->actives()
+            ->orderByDesc('created_at')
+            ->get();
+
+        $headers = ['N° Décharge', 'Salarié', 'Équipement', 'Référence', 'État remise', 'Statut'];
+        $rows    = $decharges->map(fn($dch) => [
+            $dch->numero_decharge,
+            trim(($dch->employee->first_name ?? '') . ' ' . ($dch->employee->last_name ?? '')),
+            $dch->equipement->designation ?? '',
+            $dch->equipement->reference ?? '',
+            $dch->etat_remise,
+            'En attente',
+        ]);
+
+        return [$headers, $rows];
+    }
+
+    private function exportDataRetours(string $tenantId): array
+    {
+        // Même logique que index() pour les "employés en départ" :
+        // affectations actives dont le salarié a le statut "inactive".
+        $affectations = AffectationEquipement::forTenant($tenantId)
+            ->with(['employee', 'equipement'])
+            ->actives()
+            ->whereHas('employee', fn($q) => $q->where('status', 'inactive'))
+            ->orderBy('employee_id')
+            ->get();
+
+        $headers = ['Salarié', 'Matricule', 'Équipement', 'Référence', 'Date affectation', 'Valeur (MAD)'];
+        $rows    = $affectations->map(fn($aff) => [
+            trim(($aff->employee->first_name ?? '') . ' ' . ($aff->employee->last_name ?? '')),
+            $aff->employee->employee_number ?? $aff->employee->matricule ?? '',
+            $aff->equipement->designation ?? '',
+            $aff->equipement->reference ?? '',
+            optional($aff->date_affectation)->format('d/m/Y'),
+            $aff->equipement->valeur_acquisition ?? 0,
+        ]);
+
+        return [$headers, $rows];
     }
 
     // ─── Catalogue : Ajouter ──────────────────────────────────────────────────
@@ -158,9 +288,9 @@ class EquipementController extends Controller
             'statut'             => 'required|in:Disponible,Affecté,Maintenance,Perdu',
         ]);
 
-        $tenantId    = $this->tenantId();
+        $tenantId      = $this->tenantId();
         $maxTentatives = 3;
-        $reference   = null;
+        $reference     = null;
 
         // La génération de référence + la création sont dans la même transaction,
         // avec verrouillage (lockForUpdate) dans genererReference(), pour éviter
@@ -386,6 +516,25 @@ class EquipementController extends Controller
 
     public function ficheSalarie(int $employeeId)
     {
+        $data = $this->ficheSalarieData($employeeId);
+        return view('equipements.fiche_salarie', $data);
+    }
+
+    public function ficheSalariePdf(int $employeeId)
+    {
+        $data     = $this->ficheSalarieData($employeeId);
+        $employee = $data['employee'];
+
+        $pdf = \PDF::loadView('equipements.fiche_salarie_pdf', $data)
+            ->setPaper('a4', 'portrait');
+
+        $nom = str_replace(' ', '_', trim($employee->first_name . '_' . $employee->last_name));
+
+        return $pdf->download("fiche_patrimoine_{$nom}_" . now()->format('Y-m-d') . '.pdf');
+    }
+
+    private function ficheSalarieData(int $employeeId): array
+    {
         $tenantId = $this->tenantId();
         $employee = Employee::where('tenant_id', $tenantId)->findOrFail($employeeId);
 
@@ -409,8 +558,6 @@ class EquipementController extends Controller
             'decharges_signees'    => $affectations_actives->where('decharge_signee', true)->count(),
         ];
 
-        return view('equipements.fiche_salarie', compact(
-            'employee', 'affectations_actives', 'historique', 'metrics_salarie'
-        ));
+        return compact('employee', 'affectations_actives', 'historique', 'metrics_salarie');
     }
 }

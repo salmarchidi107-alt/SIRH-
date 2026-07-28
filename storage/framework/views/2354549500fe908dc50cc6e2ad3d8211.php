@@ -319,14 +319,23 @@
             <?php endif; ?>
 
             <?php if($u->canView('activites')): ?>
-            <a href="<?php echo e(route('activites.projects.index')); ?>"
-               class="nav-item <?php echo e(request()->routeIs('activites.projects.*') || request()->routeIs('activites.tasks.*') ? 'active' : ''); ?>">
-                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="9"/>
-                    <polyline points="12 7 12 12 15 14"/>
-                </svg>
-                <span>Mes projets</span>
-            </a>
+            <a href="<?php echo e(route('activites.my-tasks.index')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('activites.my-tasks.*') ? 'active' : ''); ?>">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M9 11l3 3L22 4"/>
+        <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+    </svg>
+    <span>Mes tâches</span>
+</a>
+
+<a href="<?php echo e(route('activites.time-entries.index')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('activites.time-entries.*') ? 'active' : ''); ?>">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="9"/>
+        <polyline points="12 7 12 12 15 14"/>
+    </svg>
+    <span>Saisie de temps</span>
+</a>
             <?php endif; ?>
             <?php endif; ?>
 
@@ -506,12 +515,12 @@
             <?php endif; ?>
 
             
-            <?php if($u->canView('parametrage') || $u->canView('reporting')): ?>
-            <div class="nav-section-label">Paramétrage</div>
+            <?php if($u->canView('parametrage') || $u->canView('securite') || $u->canView('reporting')): ?>
+<div class="nav-section-label">Paramétrage</div>
 
-            <?php if($u->canView('parametrage')): ?>
-            <a href="<?php echo e(route('parametrage.index')); ?>"
-               class="nav-item <?php echo e(request()->routeIs('parametrage.*') ? 'active' : ''); ?>">
+<?php if($u->canView('parametrage')): ?>
+<a href="<?php echo e(route('parametrage.index')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('parametrage.*') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0
@@ -527,6 +536,17 @@
                 <span>Paramétrage</span>
             </a>
             <?php endif; ?>
+
+            <?php if($u->canView('securite')): ?>
+<a href="<?php echo e(route('admin.codes.index')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('admin.codes.*') ? 'active' : ''); ?>">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <rect x="5" y="11" width="14" height="10" rx="2"/>
+        <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+    </svg>
+    <span>Codes de vérification</span>
+</a>
+<?php endif; ?>
 
             <?php if($u->canView('reporting')): ?>
             <a href="<?php echo e(route('reporting.index')); ?>"
@@ -605,7 +625,33 @@
             </a>
             <?php endif; ?>
 
+            <?php if($navUser->canView('activites')): ?>
+            <?php
+    $activitesEnRetard = 0;
+    try {
+        $actTenantId = config('app.current_tenant_id')
+            ?? (auth()->check() ? auth()->user()->tenant_id : null);
+        $activitesEnRetard = \App\Models\Task::tenant($actTenantId)
+            ->whereNotIn('status', ['terminee', 'annulee'])
+            ->whereDate('due_date', '<', today())
+            ->count();
+    } catch (\Exception $e) {
+        $activitesEnRetard = 0;
+    }
+?>
 
+<a href="<?php echo e(route('activites.admin.dashboard')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('activites.admin.*') ? 'active' : ''); ?>">
+    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="9"/>
+        <polyline points="12 7 12 12 15 14"/>
+    </svg>
+    <span>Suivi d'activité</span>
+    <?php if($activitesEnRetard > 0): ?>
+    <span class="nav-badge-live"><?php echo e($activitesEnRetard); ?></span>
+    <?php endif; ?>
+</a>
+            <?php endif; ?>
             <?php endif; ?>
 
             
@@ -871,10 +917,10 @@
             <?php endif; ?>
             <?php endif; ?>
             
-            <?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh'])): ?>
-            <?php $navUser = Auth::user(); ?>
+      <?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh'])): ?>
+<?php $navUser = Auth::user(); ?>
 
-            <?php if($navUser->canView('parametrage')): ?>
+<?php if($navUser->canView('parametrage')): ?>
 <div class="nav-section-label">Paramétre</div>
 
 <a href="<?php echo e(route('parametrage.index')); ?>"
@@ -895,7 +941,7 @@
 </a>
 <?php endif; ?>
 
-<?php if($navUser->canView('parametrage')): ?>
+<?php if($navUser->canView('securite')): ?>
 <div class="nav-section-label">Sécurité</div>
 
 <a href="<?php echo e(route('admin.codes.index')); ?>"
@@ -907,7 +953,7 @@
     <span>Codes de vérification</span>
 </a>
 <?php endif; ?>
-            <?php endif; ?>
+<?php endif; ?>
 
         </nav>
 
@@ -999,7 +1045,8 @@
                         <a href="<?php echo e(route('pointage.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Pointages</a>
                         <a href="<?php echo e(route('salary.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Salaires</a>
                         <a href="<?php echo e(route('lms.exportPdf')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Formations (LMS)</a>
-                        <a href="<?php echo e(route('activites.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Suivi d'activité</a>
+                        <a href="<?php echo e(route('activites.admin.tasks.export-excel')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Suivi d'activité — Tâches</a>
+                        <a href="<?php echo e(route('activites.admin.projects.export-excel')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Suivi d'activité — Projets</a>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -1013,9 +1060,7 @@
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <polyline points="22 4 12 14.01 9 11.01"/>
                 </svg>
-                <?php echo e(session('success')); ?>
-
-            </div>
+                <?php echo e(session('success')); ?>            </div>
             <?php endif; ?>
 
             <?php if(session('warning')): ?>

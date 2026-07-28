@@ -95,6 +95,23 @@
                 @error('region_other')<div class="sa-error">{{ $message }}</div>@enderror
             </div>
 
+            {{-- Fuseau horaire --}}
+<div class="sa-field">
+    <label class="sa-label">Fuseau horaire *</label>
+    <select name="timezone" class="sa-input" required>
+        @php
+            $timezones = \DateTimeZone::listIdentifiers();
+            $selectedTz = old('timezone', $tenant->timezone ?? 'Africa/Casablanca');
+        @endphp
+        @foreach($timezones as $tz)
+            <option value="{{ $tz }}" {{ $selectedTz === $tz ? 'selected' : '' }}>
+                {{ $tz }} (UTC{{ (new \DateTime('now', new \DateTimeZone($tz)))->format('P') }})
+            </option>
+        @endforeach
+    </select>
+    @error('timezone')<div class="sa-error">{{ $message }}</div>@enderror
+</div>
+
             {{-- Adresse --}}
             <div class="sa-field">
                 <label class="sa-label">Adresse *</label>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\Absence;
 use App\Models\News;
+use App\Models\Task;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Planning;
@@ -108,6 +109,19 @@ public function index()
             ->take(3)
             ->get();
 
+        // Tâches du module "Suivi d'activité" assignées à l'employé, pour
+        // l'alerte affichée en haut de son tableau de bord.
+        $myTasks = Task::query()
+            ->tenant($user->tenant_id)
+            ->where('assigned_to', $user->id)
+            ->whereNotIn('status', ['terminee', 'annulee'])
+            ->with('project')
+            ->orderByRaw("FIELD(status, 'en_cours','en_pause','a_faire')")
+            ->orderBy('due_date')
+            ->get();
+
+        $myTasksLate = $myTasks->filter(fn ($t) => $t->isLate())->count();
+
         return view('employe.dashboard', compact(
             'employee',
             'planningSemaine',
@@ -119,7 +133,9 @@ public function index()
             'absencesData',
             'evenements',
             'upcomingNews',
-            'recentNews'
+            'recentNews',
+            'myTasks',
+            'myTasksLate'
         ));
     }
 }

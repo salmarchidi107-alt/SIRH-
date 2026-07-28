@@ -59,6 +59,7 @@ class TenantController extends Controller
             'logo'          => 'nullable|image|mimes:png,svg,jpg,jpeg|max:2048',
             'brand_color'   => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
             'sidebar_color' => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
+            'timezone'      => 'required|timezone',
             'first_name'    => 'required|string|max:50',
             'last_name'     => 'required|string|max:50',
             'admin_email'   => 'required|email|unique:users,email',
@@ -87,6 +88,7 @@ class TenantController extends Controller
                 'logo_path'     => $logoPath,
                 'brand_color'   => $data['brand_color']   ?? '#0d9488',
                 'sidebar_color' => $data['sidebar_color'] ?? '#0d2238',
+                'timezone'      => $data['timezone'],
             ]);
 
             $userData = [
@@ -136,6 +138,7 @@ class TenantController extends Controller
             'logo'          => 'nullable|image|mimes:png,svg,jpg,jpeg|max:2048',
             'brand_color'   => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
             'sidebar_color' => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
+            'timezone' => 'required|timezone',
             'first_name'    => 'nullable|string|max:50',
             'last_name'     => 'nullable|string|max:50',
             'admin_email'   => 'nullable|email|max:100',

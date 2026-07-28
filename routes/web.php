@@ -47,11 +47,11 @@ use App\Http\Controllers\RetourController;
 use App\Http\Controllers\Admin\VerificationCodeController as AdminVerifCodeController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ExpenseOCRController;
-use App\Http\Controllers\Activites\ActivityController;
-use App\Http\Controllers\Activites\AdminController;
-use App\Http\Controllers\Activites\ProjectController;
-use App\Http\Controllers\Activites\TaskController;
-use App\Http\Controllers\Activites\TimerController;
+use App\Http\Controllers\Activites\Admin\DashboardController as ActivitesAdminDashboardController;
+use App\Http\Controllers\Activites\Admin\ProjectController as ActivitesAdminProjectController;
+use App\Http\Controllers\Activites\Admin\TaskController as ActivitesAdminTaskController;
+use App\Http\Controllers\Activites\Employee\MyTaskController;
+use App\Http\Controllers\Activites\Employee\TimeEntryController;
 
 
 Route::get('/debug-ai-key', function () {
@@ -358,19 +358,21 @@ Route::middleware(['auth', 'role:admin,rh'])
 
  });
 
- // ══ MODULE ÉQUIPEMENTS ══
-        Route::middleware(['role:admin,rh'])->prefix('equipements')->name('equipements.')->group(function () {
-            Route::get('/',                               [\App\Http\Controllers\EquipementController::class, 'index'])        ->name('index');
-            Route::post('/store',                         [\App\Http\Controllers\EquipementController::class, 'store'])        ->name('store');
-            Route::put('/{equipement}',                   [\App\Http\Controllers\EquipementController::class, 'update'])       ->name('update');
-            Route::delete('/{equipement}',                [\App\Http\Controllers\EquipementController::class, 'destroy'])      ->name('destroy');
-            Route::post('/affecter',                      [\App\Http\Controllers\EquipementController::class, 'affecter'])     ->name('affecter');
-            Route::post('/restituer/{affectation}',       [\App\Http\Controllers\EquipementController::class, 'restituer'])    ->name('restituer');
-            Route::post('/valider-sortie/{employeeId}',   [\App\Http\Controllers\EquipementController::class, 'validerSortie'])->name('valider_sortie');
-            Route::post('/declarer-perte/{affectation}',  [\App\Http\Controllers\EquipementController::class, 'declarerPerte'])->name('declarer_perte');
-            Route::post('/signer-decharge/{affectation}', [\App\Http\Controllers\EquipementController::class, 'signerDecharge'])->name('signer_decharge');
-            Route::get('/salarie/{employeeId}',           [\App\Http\Controllers\EquipementController::class, 'ficheSalarie']) ->name('fiche_salarie');
-        });
+// ══ MODULE ÉQUIPEMENTS ══
+Route::middleware(['role:admin,rh'])->prefix('equipements')->name('equipements.')->group(function () {
+    Route::get('/',                               [\App\Http\Controllers\EquipementController::class, 'index'])        ->name('index');
+    Route::get('/export',                         [\App\Http\Controllers\EquipementController::class, 'export'])       ->name('export');
+    Route::post('/store',                         [\App\Http\Controllers\EquipementController::class, 'store'])        ->name('store');
+    Route::put('/{equipement}',                   [\App\Http\Controllers\EquipementController::class, 'update'])       ->name('update');
+    Route::delete('/{equipement}',                [\App\Http\Controllers\EquipementController::class, 'destroy'])      ->name('destroy');
+    Route::post('/affecter',                      [\App\Http\Controllers\EquipementController::class, 'affecter'])     ->name('affecter');
+    Route::post('/restituer/{affectation}',       [\App\Http\Controllers\EquipementController::class, 'restituer'])    ->name('restituer');
+    Route::post('/valider-sortie/{employeeId}',   [\App\Http\Controllers\EquipementController::class, 'validerSortie'])->name('valider_sortie');
+    Route::post('/declarer-perte/{affectation}',  [\App\Http\Controllers\EquipementController::class, 'declarerPerte'])->name('declarer_perte');
+    Route::post('/signer-decharge/{affectation}', [\App\Http\Controllers\EquipementController::class, 'signerDecharge'])->name('signer_decharge');
+    Route::get('/salarie/{employeeId}',           [\App\Http\Controllers\EquipementController::class, 'ficheSalarie']) ->name('fiche_salarie');
+    Route::get('/salarie/{employeeId}/pdf',  [\App\Http\Controllers\EquipementController::class, 'ficheSalariePdf'])->name('fiche_salarie.pdf');
+    });
 
     // ── Dashboard employé ─────────────────────────────────────────────────
     Route::middleware(['employee'])->group(function () {
@@ -492,40 +494,49 @@ Route::middleware(['web', 'auth', 'identify-tenant', '2fa'])
             ->middleware('throttle:20,1')
             ->name('ocr.scan');
     });
+Route::middleware(['auth'])->group(function () {
 
-    Route::middleware(['auth'])->group(function () {
-
-    // ---------- Espace Employé : chacun gère ses propres projets ----------
+    // ═══════════════════════════════════════════════════════════════════
+    // ESPACE EMPLOYÉ — 2 onglets
+    // ═══════════════════════════════════════════════════════════════════
     Route::prefix('mes-activites')->name('activites.')->group(function () {
 
-        // Projets
-        Route::get('/', [ProjectController::class, 'index'])->name('projects.index');
-        Route::post('/', [ProjectController::class, 'store'])->name('projects.store');
-        Route::get('/{project}', [ProjectController::class, 'show'])->name('projects.show');
-        Route::delete('/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
+        // Onglet 1 : Mes tâches
+        Route::get('/mes-taches', [MyTaskController::class, 'index'])->name('my-tasks.index');
+        Route::post('/mes-taches', [MyTaskController::class, 'store'])->name('my-tasks.store');
+        Route::patch('/mes-taches/{task}', [MyTaskController::class, 'update'])->name('my-tasks.update');
 
-        // Tâches (imbriquées dans un projet)
-        Route::post('/{project}/taches', [TaskController::class, 'store'])->name('tasks.store');
-        Route::get('/{project}/taches/{task}', [TaskController::class, 'show'])->name('tasks.show');
-        Route::patch('/{project}/taches/{task}/statut', [TaskController::class, 'updateStatus'])->name('tasks.status');
-        Route::delete('/{project}/taches/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
-
-        // Activités (saisies de temps manuelles)
-        Route::post('/{project}/taches/{task}/activites', [ActivityController::class, 'store'])->name('tasks.activities.store');
-        Route::delete('/{project}/taches/{task}/activites/{activity}', [ActivityController::class, 'destroy'])->name('tasks.activities.destroy');
-
-        // Chronomètre
-        Route::post('/{project}/taches/{task}/chrono/demarrer', [TimerController::class, 'start'])->name('tasks.timer.start');
-        Route::post('/{project}/taches/{task}/chrono/pause', [TimerController::class, 'pause'])->name('tasks.timer.pause');
-        Route::post('/{project}/taches/{task}/chrono/terminer', [TimerController::class, 'finish'])->name('tasks.timer.finish');
+        // Onglet 2 : Saisie de temps (fonctionnalité principale du module)
+        Route::get('/saisie-temps', [TimeEntryController::class, 'index'])->name('time-entries.index');
+        Route::post('/saisie-temps', [TimeEntryController::class, 'store'])->name('time-entries.store');
+        Route::delete('/saisie-temps/{activity}', [TimeEntryController::class, 'destroy'])->name('time-entries.destroy');
+        Route::get('/saisie-temps/projets/{project}/taches', [TimeEntryController::class, 'tasksForProject'])->name('time-entries.tasks-for-project');
     });
 
-    // ---------- Espace Admin / RH : vue d'ensemble de l'équipe ----------
-    // La vérification canView('activites') est faite dans AdminController::index,
-    // comme le reste de tes contrôleurs (cf. $navUser->canView(...) dans la sidebar).
-    Route::get('/admin/activites', [AdminController::class, 'index'])->name('activites.admin.index');
+    // ═══════════════════════════════════════════════════════════════════
+    // ESPACE ADMIN / RH — 3 onglets
+    // ═══════════════════════════════════════════════════════════════════
+    Route::prefix('admin/activites')->name('activites.admin.')->middleware(['role:admin,rh'])->group(function () {
 
-    // Export (référencé dans le dropdown "Fichier Excel Imprimable" du layout)
-    Route::get('/admin/activites/export', [AdminController::class, 'export'])->name('activites.export');
+        // Onglet 1 : État d'avancement
+        Route::get('/', [ActivitesAdminDashboardController::class, 'index'])->name('dashboard');
+
+        // Onglet 2 : Projets
+        Route::get('/projets', [ActivitesAdminProjectController::class, 'index'])->name('projects.index');
+        Route::get('/projets/export-pdf', [ActivitesAdminProjectController::class, 'exportPdf'])->name('projects.export-pdf');
+        Route::get('/projets/export-excel', [ActivitesAdminProjectController::class, 'exportExcel'])->name('projects.export-excel');
+        Route::post('/projets', [ActivitesAdminProjectController::class, 'store'])->name('projects.store');
+        Route::get('/projets/{project}', [ActivitesAdminProjectController::class, 'show'])->name('projects.show');
+        Route::put('/projets/{project}', [ActivitesAdminProjectController::class, 'update'])->name('projects.update');
+        Route::delete('/projets/{project}', [ActivitesAdminProjectController::class, 'destroy'])->name('projects.destroy');
+
+        // Onglet 3 : Tâches
+        Route::get('/taches', [ActivitesAdminTaskController::class, 'index'])->name('tasks.index');
+        Route::get('/taches/export-pdf', [ActivitesAdminTaskController::class, 'exportPdf'])->name('tasks.export-pdf');
+        Route::get('/taches/export-excel', [ActivitesAdminTaskController::class, 'exportExcel'])->name('tasks.export-excel');
+        Route::post('/taches', [ActivitesAdminTaskController::class, 'store'])->name('tasks.store');
+        Route::get('/taches/{task}', [ActivitesAdminTaskController::class, 'show'])->name('tasks.show');
+        Route::put('/taches/{task}', [ActivitesAdminTaskController::class, 'update'])->name('tasks.update');
+        Route::delete('/taches/{task}', [ActivitesAdminTaskController::class, 'destroy'])->name('tasks.destroy');
+    });
 });
-

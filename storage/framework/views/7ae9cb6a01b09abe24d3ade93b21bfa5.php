@@ -253,7 +253,6 @@ endif;
 unset($__errorArgs, $__bag); ?>
                 </div>
 
-                
                 <div class="form-group">
                     <label>Genre</label>
                     <select name="genre" class="form-control">
@@ -713,11 +712,6 @@ unset($__errorArgs, $__bag); ?>
         <div class="card-header" style="display:flex;align-items:center;gap:10px;">
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24"
                  stroke="currentColor" stroke-width="2" style="color:#14b8a6;flex-shrink:0">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6
-                         11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623
-                         5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152
-                         c-3.196 0-6.1-1.248-8.25-3.285z"/>
             </svg>
             <div class="card-title" style="margin:0;">Gestion des permissions</div>
             <span style="font-size:11px;background:#f1f5f9;color:#64748b;
@@ -792,6 +786,12 @@ unset($__errorArgs, $__bag); ?>
                 'actions' => ['view','create','edit','delete'],
                 'sub'     => true,
             ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+            <?php echo $__env->make('employees._perm_row', [
+                'key'     => 'activites',
+                'label'   => "Suivi d'activité",
+                'actions' => ['view','create','edit','delete'],
+                'sub'     => true,
+            ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
             <div class="perm-group-label">Absences &amp; Congés</div>
 
@@ -811,6 +811,14 @@ unset($__errorArgs, $__bag); ?>
                 'label'   => 'Compteurs &amp; droits',
                 'actions' => ['view','edit'],
                 'sub'     => true,
+            ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+
+            <div class="perm-group-label">Notes de frais</div>
+
+            <?php echo $__env->make('employees._perm_row', [
+                'key'     => 'expenses',
+                'label'   => 'Notes de frais',
+                'actions' => ['view','create','edit','delete'],
             ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
             <div class="perm-group-label">Formations (LMS)</div>
@@ -867,7 +875,15 @@ unset($__errorArgs, $__bag); ?>
                 'sub'     => true,
             ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
-            <div class="perm-group-label">Paramétrage &amp; Rapports</div>
+            <div class="perm-group-label">Équipements</div>
+
+            <?php echo $__env->make('employees._perm_row', [
+                'key'     => 'equipements',
+                'label'   => 'Gestion des équipements',
+                'actions' => ['view','create','edit','delete'],
+            ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+
+            <div class="perm-group-label">Paramétrage</div>
 
             <?php echo $__env->make('employees._perm_row', [
                 'key'     => 'parametrage',
@@ -875,11 +891,11 @@ unset($__errorArgs, $__bag); ?>
                 'actions' => ['view','create','edit','delete'],
             ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
-            <div class="perm-group-label">Équipements</div>
+            <div class="perm-group-label">Sécurité</div>
 
             <?php echo $__env->make('employees._perm_row', [
-                'key'     => 'equipment',
-                'label'   => 'Gestion des équipements',
+                'key'     => 'securite',
+                'label'   => 'Codes de vérification',
                 'actions' => ['view','create','edit','delete'],
             ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
@@ -1180,11 +1196,13 @@ const Perms = {
         this.byModule(
             [
                 'dashboard','employees','trombinoscope','news',
-                'planning','temps_vue','pointage',
+                'planning','temps_vue','pointage','activites',
                 'absences','absences_calendar','absences_counters',
+                'expenses',
                 'lms','referentiel','lms_planning',
-                'salary','ged','ged_modeles','ged_entete',
-                'reporting','equipment',
+                'salary','reporting',
+                'ged','ged_modeles','ged_entete',
+                'equipements','parametrage',
             ],
             ['view','create','edit']
         );

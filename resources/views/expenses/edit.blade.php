@@ -195,51 +195,6 @@
     </div>
 </div>
 
-<style>
-.nf-top-tabs {
-    background:var(--surface); border-bottom:1px solid var(--border);
-    padding:0 24px; display:flex; gap:4px; margin-bottom:24px;
-}
-.nf-top-tab {
-    padding:14px 18px; font-size:0.88rem; font-weight:600; color:var(--text-muted);
-    cursor:pointer; border-bottom:2px solid transparent; transition:all .15s;
-    text-decoration:none; display:inline-block;
-}
-.nf-top-tab:hover { color:var(--primary); }
-.nf-top-tab.active { color:var(--primary); border-bottom-color:var(--primary); }
-
-.nf-view { padding:0; }
-
-.nf-dropzone {
-    border:2px dashed #93c5fd; border-radius:10px; padding:28px; text-align:center;
-    cursor:pointer; background:#f8fbff; transition:all .2s;
-}
-.nf-dropzone:hover, .nf-dropzone.dragover { background:#dbeafe; border-color:#3b82f6; }
-.nf-dropzone-icon { font-size:2rem; }
-.nf-dropzone-text { font-size:0.85rem; color:var(--text-muted); margin-top:6px; }
-
-.nf-ocr-status { margin-top:10px; font-size:0.82rem; padding:8px 12px; border-radius:8px; display:none; }
-.nf-ocr-status.loading { display:block; background:#eff6ff; color:#1e40af; }
-.nf-ocr-status.success { display:block; background:#f0fdf4; color:#166534; }
-.nf-ocr-status.error { display:block; background:#fef2f2; color:#991b1b; }
-.nf-ocr-status.warning { display:block; background:#fffbeb; color:#92400e; }
-
-.nf-field-filled { animation: nfFillPulse 1s ease; }
-@keyframes nfFillPulse { 0% { background:#fef3c7; } 100% { background:transparent; } }
-
-.nf-two-col { display:grid; grid-template-columns:360px 1fr; gap:20px; }
-@media (max-width:840px) { .nf-two-col { grid-template-columns:1fr; } .nf-grid-4 { grid-template-columns:1fr 1fr !important; } }
-
-.nf-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-.nf-grid-4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:14px; }
-.nf-spinner {
-    width: 14px; height: 14px; border-radius: 50%;
-    border: 2px solid #bfdbfe; border-top-color: #2563eb;
-    display: inline-block; animation: nfSpin .7s linear infinite;
-}
-@keyframes nfSpin { to { transform: rotate(360deg); } }
-</style>
-
 <script>
 var dropZone = document.getElementById('dropZone');
 var ocrFileInput = document.getElementById('ocrFileInput');

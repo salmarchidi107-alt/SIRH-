@@ -13,13 +13,7 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    /**
-     * Onglet "État d'avancement" : volontairement recentré sur l'essentiel —
-     * combien de tâches sont terminées / en cours / en retard, et si chaque
-     * employé a bouclé ce qui lui a été confié. Pas de graphes de temps ici :
-     * le suivi du temps loggé vit dans les onglets Projets/Tâches et dans la
-     * saisie de temps de l'employé.
-     */
+
     public function index(Request $request): View
     {
         $user = Auth::user();
@@ -60,11 +54,6 @@ class DashboardController extends Controller
         return view('activites.admin.dashboard', compact('stats', 'employeeProgress', 'projectProgress', 'globalStats'));
     }
 
-    /**
-     * Pour chaque projet ayant au moins une tâche : total, terminées, en
-     * retard, et un statut simple — sert la nouvelle section "Détails de
-     * l'avancement" (indépendante de la carte "Avancement global").
-     */
     private function buildProjectProgress(?string $tenantId, \Illuminate\Support\Collection $projects): array
     {
         $taskCounts = Task::tenant($tenantId)
@@ -102,10 +91,6 @@ class DashboardController extends Controller
         })->filter(fn (array $row) => $row['total'] > 0)->values()->all();
     }
 
-    /**
-     * Pour chaque employé ayant au moins une tâche assignée : total, terminées,
-     * en retard, et un statut simple "toutes terminées" ou "X restantes".
-     */
     private function buildEmployeeProgress(?string $tenantId, \Illuminate\Support\Collection $employees): array
     {
         $taskCounts = Task::tenant($tenantId)

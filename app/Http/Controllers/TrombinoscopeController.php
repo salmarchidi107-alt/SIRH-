@@ -42,10 +42,7 @@ class TrombinoscopeController extends Controller
         return Excel::download(new TrombinoscopeExport, 'trombinoscope.xlsx');
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Récupère les départements depuis la table departments,
-    // avec fallback sur le champ department des employés.
-    // ─────────────────────────────────────────────────────────────────────────
+
     private function getDepartmentsList()
     {
         try {

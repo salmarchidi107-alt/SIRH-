@@ -11,22 +11,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-/**
- * Contrôleur dédié au scan OCR des justificatifs de dépense.
- *
- * NOTE DE MIGRATION : ce fichier remplace app/Http/Controllers/Api/ExpenseOCRController.php.
- * Vos routes (routes/web.php) importent `App\Http\Controllers\ExpenseOCRController`
- * (namespace racine, sans "Api") — ce fichier est donc placé au bon endroit.
- * Si l'ancien fichier existe encore sous Http/Controllers/Api, supprimez-le
- * pour éviter toute confusion.
- *
- * Le contrat JSON ci-dessous a été ajusté pour correspondre exactement à ce
- * que lit resources/views/expenses/create.blade.php et edit.blade.php :
- *   - result.data.date          (et non result.data.expense_date)
- *   - result.attachment_path    (à la racine, et non result.data.receipt_path)
- *   - result.error              (en plus de result.message, les deux vues n'utilisent pas la même clé)
- *   - result.warnings           (tableau de codes, absent auparavant)
- */
 class ExpenseOCRController extends Controller
 {
     public function __construct(
@@ -34,9 +18,7 @@ class ExpenseOCRController extends Controller
     ) {
     }
 
-    /**
-     * POST /notes-frais/ocr/scan (route: expenses.ocr.scan)
-     */
+
     public function scan(ScanReceiptRequest $request): JsonResponse
     {
         $file = $request->file('receipt');

@@ -2,222 +2,6 @@
 @section('title', 'Référentiel Formations')
 @section('page-title', 'Référentiel Formations')
 
-@push('styles')
-<style>
-:root {
-    --teal:#1D9E75; --teal-l:#E1F5EE; --teal-d:#085041; --teal-m:#9FE1CB;
-    --amber:#BA7517; --amber-l:#FAEEDA;
-    --green:#639922; --green-l:#EAF3DE;
-    --red:#E24B4A;   --red-l:#FCEBEB;
-    --blue:#378ADD;  --blue-l:#E6F1FB;
-    --purple:#7F77DD;--purple-l:#EEEDFE;
-    --bd:#e5e7eb; --bg2:#f9fafb;
-}
-
-.rf { padding:28px 32px; }
-
-/* ── Header ── */
-.rf-header { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:22px; }
-.rf-title  { font-size:22px; font-weight:600; color:#111827; }
-.rf-sub    { font-size:13px; color:#6b7280; margin-top:3px; }
-
-/* ── Stats ── */
-.rf-stats { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:22px; }
-.rf-stat  {
-    background:#fff; border:0.5px solid var(--bd); border-radius:12px;
-    padding:14px 20px; display:flex; align-items:center; gap:14px; min-width:160px;
-}
-.rf-stat-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
-.rf-stat-num  { font-size:22px; font-weight:700; color:#111827; line-height:1; }
-.rf-stat-lbl  { font-size:12px; color:#6b7280; margin-top:2px; }
-
-/* ── Onglets ── */
-.rf-tabs { display:flex; border-bottom:1.5px solid var(--bd); margin-bottom:20px; gap:0; }
-.rf-tab  {
-    padding:10px 22px; font-size:13px; font-weight:400; color:#6b7280;
-    cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1.5px;
-    display:flex; align-items:center; gap:7px; text-decoration:none;
-    transition:color .12s, border-color .12s; background:none; border-top:none; border-left:none; border-right:none;
-}
-.rf-tab:hover { color:#374151; }
-.rf-tab.active { color:var(--teal); border-bottom-color:var(--teal); font-weight:500; }
-.rf-tab-count { background:#f3f4f6; color:#6b7280; font-size:11px; padding:1px 7px; border-radius:20px; font-weight:500; }
-.rf-tab.active .rf-tab-count { background:var(--teal-l); color:var(--teal-d); }
-
-/* ── Panel ── */
-.rf-panel { display:none; }
-.rf-panel.active { display:block; }
-
-/* ── Filter bar (formations) ── */
-.rf-filter-bar {
-    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-    margin-bottom:12px;
-}
-.search-wrap { position:relative; }
-.search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#9ca3af; pointer-events:none; }
-.fi-search {
-    width:220px; padding:8px 12px 8px 34px;
-    border:0.5px solid var(--bd); border-radius:8px;
-    font-size:13px; color:#111827; background:#fff;
-    outline:none; font-family:inherit; transition:border-color .12s;
-}
-.fi-search:focus { border-color:var(--teal); box-shadow:0 0 0 3px rgba(29,158,117,.08); }
-.btn-search {
-    padding:8px 14px; background:var(--teal); color:#fff; border:none;
-    border-radius:8px; font-size:13px; cursor:pointer; font-family:inherit;
-    display:flex; align-items:center; gap:5px; transition:background .12s;
-}
-.btn-search:hover { background:var(--teal-d); }
-
-/* ── Dropdown catégorie ── */
-.rf-cat-wrap { position:relative; }
-.rf-cat-btn {
-    display:flex; align-items:center; gap:8px;
-    padding:8px 14px; background:#fff; border:0.5px solid var(--bd);
-    border-radius:8px; font-size:13px; color:#374151; cursor:pointer;
-    font-family:inherit; transition:border-color .12s; white-space:nowrap;
-    min-width:160px; justify-content:space-between;
-}
-.rf-cat-btn:hover { border-color:#9ca3af; }
-.rf-cat-btn.open { border-color:var(--teal); box-shadow:0 0 0 3px rgba(29,158,117,.08); }
-.rf-cat-btn svg { transition:transform .15s; flex-shrink:0; }
-.rf-cat-btn.open svg { transform:rotate(180deg); }
-.rf-cat-btn-label { flex:1; text-align:left; overflow:hidden; text-overflow:ellipsis; }
-.rf-cat-active-dot {
-    width:7px; height:7px; border-radius:50%; background:var(--teal);
-    display:none; flex-shrink:0;
-}
-.rf-cat-active-dot.visible { display:block; }
-
-.rf-cat-dropdown {
-    display:none; position:absolute; top:calc(100% + 6px); left:0;
-    background:#fff; border:0.5px solid var(--bd); border-radius:10px;
-    box-shadow:0 8px 24px rgba(0,0,0,.10); min-width:100%; z-index:200;
-    overflow:hidden; animation:dropIn .12s ease;
-}
-.rf-cat-dropdown.open { display:block; }
-@keyframes dropIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
-
-.rf-cat-option {
-    padding:9px 14px; font-size:13px; color:#374151; cursor:pointer;
-    display:flex; align-items:center; gap:8px; transition:background .1s;
-    border-bottom:0.5px solid #f3f4f6;
-}
-.rf-cat-option:last-child { border-bottom:none; }
-.rf-cat-option:hover { background:#f9fafb; }
-.rf-cat-option.selected { color:var(--teal); font-weight:500; background:var(--teal-l); }
-.rf-cat-option-check { width:14px; height:14px; flex-shrink:0; color:var(--teal); }
-
-.rf-filter-count { font-size:12px; color:#9ca3af; margin-left:auto; white-space:nowrap; }
-
-/* ── Table card ── */
-.rf-card { background:#fff; border:0.5px solid var(--bd); border-radius:12px; overflow:hidden; }
-.rf-tbl  { width:100%; border-collapse:collapse; }
-.rf-tbl thead th { padding:11px 16px; font-size:11px; font-weight:600; color:#9ca3af; text-transform:uppercase; letter-spacing:.07em; background:var(--bg2); border-bottom:0.5px solid var(--bd); text-align:left; white-space:nowrap; }
-.rf-tbl tbody td { padding:13px 16px; font-size:13px; color:#374151; border-bottom:0.5px solid #f3f4f6; vertical-align:middle; }
-.rf-tbl tbody tr:last-child td { border-bottom:none; }
-.rf-tbl tbody tr:hover td { background:#fafafa; }
-.rf-tbl tbody tr.hidden-row { display:none; }
-
-/* ── Description expandable ── */
-.desc-cell { max-width:300px; width:300px; }
-.desc-title { font-weight:500; color:#111827; }
-.desc-preview-wrap { margin-top:4px; }
-.desc-text-preview {
-    font-size:11px; color:#9ca3af; line-height:1.45;
-    overflow:hidden; display:-webkit-box;
-    -webkit-line-clamp:1; -webkit-box-orient:vertical;
-    word-break:break-word;
-}
-.desc-text-full {
-    font-size:12px; color:#6b7280; margin-top:6px; line-height:1.6;
-    padding:10px 12px; background:#f9fafb; border-radius:8px;
-    border:0.5px solid var(--bd); display:none;
-    word-break:break-word; white-space:pre-wrap;
-    max-height:200px; overflow-y:auto;
-}
-.desc-toggle {
-    display:inline-flex; align-items:center; gap:3px;
-    font-size:11px; color:var(--teal); cursor:pointer; background:none;
-    border:none; padding:2px 0 0; margin-top:2px; font-family:inherit;
-}
-.desc-toggle:hover { color:var(--teal-d); }
-.desc-toggle svg { transition:transform .2s; }
-.desc-toggle.open svg { transform:rotate(180deg); }
-
-/* ── Empty ── */
-.rf-empty { text-align:center; padding:52px 20px; color:#9ca3af; }
-.rf-empty i { font-size:36px; display:block; margin-bottom:10px; }
-.rf-empty p { font-size:13px; margin:0; }
-.rf-empty-filter { text-align:center; padding:36px 20px; color:#9ca3af; display:none; }
-.rf-empty-filter i { font-size:28px; display:block; margin-bottom:8px; }
-.rf-empty-filter p { font-size:13px; margin:0; }
-
-/* ── Badges ── */
-.rf-badge { display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px; font-size:12px; white-space:nowrap; }
-.b-interne { background:var(--teal-l);   color:var(--teal-d); }
-.b-externe { background:var(--blue-l);   color:#185FA5; }
-.b-pres    { background:var(--teal-l);   color:var(--teal-d); }
-.b-dist    { background:var(--blue-l);   color:#185FA5; }
-.b-mixte   { background:var(--amber-l);  color:var(--amber); }
-.b-agree   { background:var(--green-l);  color:var(--green); }
-.b-non-agree { background:#f3f4f6;       color:#6b7280; }
-.b-actif   { background:var(--teal-l);   color:var(--teal-d); }
-.b-inactif { background:var(--red-l);    color:var(--red); }
-
-/* ── Buttons ── */
-.btn-rf {
-    display:inline-flex; align-items:center; gap:6px;
-    padding:7px 16px; border-radius:8px; font-size:13px;
-    cursor:pointer; border:1px solid transparent; text-decoration:none;
-    transition:background .12s; white-space:nowrap;
-}
-.btn-ghost { background:#fff; border-color:var(--bd); color:#374151; }
-.btn-ghost:hover { background:var(--bg2); color:#374151; }
-.btn-main  { background:#14B8A6; border-color:#14B8A6; color:#fff; font-weight:500; }
-.btn-main:hover { background:#0F9F90; }
-
-.rf-act { width:30px; height:30px; border-radius:7px; border:0.5px solid var(--bd); background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#6b7280; transition:all .12s; }
-.rf-act:hover { background:#f3f4f6; color:#111827; }
-
-/* ── Durée chip ── */
-.dur-chip { background:var(--purple-l); color:var(--purple); font-size:12px; padding:2px 9px; border-radius:20px; font-weight:500; white-space:nowrap; }
-
-/* ══════════ MODAL ══════════ */
-.rf-ov { display:none; position:fixed; inset:0; background:rgba(17,24,39,.48); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(2px); }
-.rf-ov.open { display:flex; }
-.rf-modal { background:#fff; border-radius:14px; border:0.5px solid var(--bd); width:560px; max-width:96vw; max-height:93vh; overflow-y:auto; box-shadow:0 24px 64px rgba(0,0,0,.18); animation:rfIn .18s ease; }
-@keyframes rfIn { from{opacity:0;transform:translateY(-12px) scale(.98)} to{opacity:1;transform:none} }
-
-.rm-head { display:flex; align-items:center; justify-content:space-between; padding:20px 24px 16px; border-bottom:0.5px solid #f3f4f6; position:sticky; top:0; background:#fff; z-index:2; border-radius:14px 14px 0 0; }
-.rm-title { font-size:16px; font-weight:600; color:#111827; display:flex; align-items:center; gap:10px; }
-.rm-icon  { width:34px; height:34px; border-radius:9px; background:var(--teal-l); color:var(--teal); display:flex; align-items:center; justify-content:center; font-size:16px; }
-.rm-close { width:30px; height:30px; border-radius:7px; border:0.5px solid var(--bd); background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#9ca3af; font-size:15px; }
-.rm-close:hover { background:#f3f4f6; color:#374151; }
-.rm-body  { padding:22px 24px; }
-.rm-foot  { display:flex; justify-content:flex-end; gap:8px; padding:16px 24px; border-top:0.5px solid #f3f4f6; position:sticky; bottom:0; background:#fff; }
-
-.fg { margin-bottom:15px; }
-.fg:last-child { margin-bottom:0; }
-.fg label { display:block; font-size:13px; font-weight:500; color:#374151; margin-bottom:6px; }
-.fg .req  { color:var(--red); margin-left:2px; }
-.fi { width:100%; padding:9px 12px; border:0.5px solid #d1d5db; border-radius:8px; background:#fff; color:#111827; font-size:13px; outline:none; font-family:inherit; transition:border-color .12s; }
-.fi:focus { border-color:var(--teal); box-shadow:0 0 0 3px rgba(29,158,117,.08); }
-/* Description textarea — plus grande par défaut */
-textarea.fi { min-height:100px; resize:vertical; line-height:1.6; }
-.frow2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-.fsec  { font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:#9ca3af; margin-bottom:12px; }
-.fdiv  { border:none; border-top:0.5px solid #f3f4f6; margin:16px 0; }
-.fi-check { display:flex; align-items:center; gap:8px; }
-.fi-check input[type=checkbox] { width:16px; height:16px; accent-color:var(--teal); }
-
-/* compteur de caractères */
-.desc-counter { font-size:11px; color:#9ca3af; text-align:right; margin-top:4px; }
-
-@media(max-width:580px) { .frow2{grid-template-columns:1fr} .rf{padding:16px} }
-</style>
-@endpush
-
 @section('content')
 <div class="rf">
 
@@ -319,14 +103,12 @@ textarea.fi { min-height:100px; resize:vertical; line-height:1.6; }
     {{-- ══════════ PANEL FORMATIONS CATALOGUE ══════════ --}}
     <div class="rf-panel {{ $onglet==='formations'?'active':'' }}" id="panel-formations">
 
-        {{-- ── Barre de filtre catégorie ── --}}
         @php
             $categories = $formations->pluck('categorie')->filter()->unique()->sort()->values();
         @endphp
 
         <div class="rf-filter-bar">
 
-            {{-- Recherche texte (déclenche sur Entrée ou clic bouton) --}}
             <div class="search-wrap">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/>
@@ -342,7 +124,6 @@ textarea.fi { min-height:100px; resize:vertical; line-height:1.6; }
                 Rechercher
             </button>
 
-            {{-- Dropdown catégorie --}}
             @if($categories->isNotEmpty())
             <div class="rf-cat-wrap" id="catWrap">
                 <button class="rf-cat-btn" id="catBtn" onclick="toggleCatDropdown()" type="button">
@@ -459,7 +240,6 @@ textarea.fi { min-height:100px; resize:vertical; line-height:1.6; }
                 @endforelse
                 </tbody>
             </table>
-            {{-- Message aucun résultat après filtre --}}
             <div class="rf-empty-filter" id="cfEmptyFilter">
                 <i class="fas fa-filter"></i>
                 <p>Aucune formation ne correspond à ce filtre.</p>
@@ -614,7 +394,7 @@ textarea.fi { min-height:100px; resize:vertical; line-height:1.6; }
 <div class="rf-modal">
     <div class="rm-head">
         <div class="rm-title">
-            <div class="rm-icon" style="background:var(--blue-l);color:var(--blue);"><i class="fas fa-book-open"></i></div>
+            <div class="rm-icon" style="background:var(--blue-l, var(--rf-blue-l));color:var(--blue);"><i class="fas fa-book-open"></i></div>
             <span id="titleFormation">Ajouter une formation</span>
         </div>
         <button class="rm-close" onclick="closeModal('ovFormation')"><i class="fas fa-times"></i></button>
@@ -640,7 +420,6 @@ textarea.fi { min-height:100px; resize:vertical; line-height:1.6; }
                     <input type="text" name="categorie" id="cfCat" class="fi"
                            placeholder="Ex: Sécurité, RH, Technique…"
                            list="cfCatList">
-                    {{-- datalist pour auto-complétion des catégories existantes --}}
                     <datalist id="cfCatList">
                         @foreach($categories ?? $formations->pluck('categorie')->filter()->unique()->sort() as $cat)
                             <option value="{{ $cat }}">
@@ -684,7 +463,7 @@ textarea.fi { min-height:100px; resize:vertical; line-height:1.6; }
 <div class="rf-modal">
     <div class="rm-head">
         <div class="rm-title">
-            <div class="rm-icon" style="background:var(--amber-l);color:var(--amber);"><i class="fas fa-building"></i></div>
+            <div class="rm-icon" style="background:var(--amber-l, var(--rf-amber-l));color:var(--amber);"><i class="fas fa-building"></i></div>
             <span id="titleOrganisme">Ajouter un organisme</span>
         </div>
         <button class="rm-close" onclick="closeModal('ovOrganisme')"><i class="fas fa-times"></i></button>
@@ -744,7 +523,6 @@ textarea.fi { min-height:100px; resize:vertical; line-height:1.6; }
 
 @push('scripts')
 <script>
-/* ── Onglets ── */
 let currentTab = '{{ $onglet }}';
 
 function switchTab(tab) {
@@ -762,19 +540,14 @@ function openAddModal() {
     window['openAdd' + map[currentTab]]();
 }
 
-/* ── Modal helpers ── */
 function openModal(id)  { document.getElementById(id).classList.add('open'); document.body.style.overflow='hidden'; }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; }
 document.addEventListener('keydown', e => {
     if (e.key === 'Escape') ['ovFormateur','ovFormation','ovOrganisme'].forEach(id => closeModal(id));
 });
 
-/* ══════════════════════════════════════
-   FILTRE FORMATIONS — dropdown catégorie + recherche sur Entrée
-══════════════════════════════════════ */
 let activeCat = '';
 
-/* ── Dropdown catégorie ── */
 function toggleCatDropdown() {
     const btn      = document.getElementById('catBtn');
     const dropdown = document.getElementById('catDropdown');
@@ -796,7 +569,6 @@ function closeCatDropdown() {
 function selectCat(el, cat, label) {
     activeCat = cat;
 
-    // Mettre à jour visuellement les options
     document.querySelectorAll('.rf-cat-option').forEach(o => {
         o.classList.remove('selected');
         const check = o.querySelector('.rf-cat-option-check');
@@ -806,7 +578,6 @@ function selectCat(el, cat, label) {
     const check = el.querySelector('.rf-cat-option-check');
     if (check) check.style.opacity = '1';
 
-    // Mettre à jour le bouton
     const btnLabel = document.getElementById('catBtnLabel');
     if (btnLabel) btnLabel.textContent = label;
     const dot = document.getElementById('catDot');
@@ -816,13 +587,11 @@ function selectCat(el, cat, label) {
     filterFormations();
 }
 
-// Fermer le dropdown en cliquant ailleurs
 document.addEventListener('click', e => {
     const wrap = document.getElementById('catWrap');
     if (wrap && !wrap.contains(e.target)) closeCatDropdown();
 });
 
-/* ── Filtrage principal ── */
 function filterFormations() {
     const search = (document.getElementById('cfSearch')?.value || '').toLowerCase().trim();
     const tbody  = document.getElementById('tbodyFormations');
@@ -855,9 +624,6 @@ function filterFormations() {
 
 document.addEventListener('DOMContentLoaded', () => filterFormations());
 
-/* ══════════════════════════════════════
-   DESCRIPTION EXPANDABLE
-══════════════════════════════════════ */
 function toggleDesc(id) {
     const full = document.getElementById('desc-full-' + id);
     const btn  = document.getElementById('desc-btn-'  + id);
@@ -878,9 +644,6 @@ function toggleDesc(id) {
     }
 }
 
-/* ══════════════════════════════════════
-   COMPTEUR CARACTÈRES — description modal
-══════════════════════════════════════ */
 function updateDescCounter() {
     const ta  = document.getElementById('cfDesc');
     const ctr = document.getElementById('descCounter');
@@ -890,7 +653,6 @@ function updateDescCounter() {
     ctr.style.color = n > 800 ? '#E24B4A' : '#9ca3af';
 }
 
-/* ══════════ FORMATEUR ══════════ */
 function openAddFormateur() {
     document.getElementById('formFormateur').reset();
     document.getElementById('formFormateur').action = '{{ route('referentiel.formateurs.store') }}';
@@ -914,7 +676,6 @@ function editFormateur(f) {
     openModal('ovFormateur');
 }
 
-/* ══════════ FORMATION CATALOGUE ══════════ */
 function openAddFormation() {
     document.getElementById('formFormation').reset();
     document.getElementById('formFormation').action = '{{ route('referentiel.formations.store') }}';
@@ -941,7 +702,6 @@ function editFormation(f) {
     openModal('ovFormation');
 }
 
-/* ══════════ ORGANISME ══════════ */
 function openAddOrganisme() {
     document.getElementById('formOrganisme').reset();
     document.getElementById('formOrganisme').action = '{{ route('referentiel.organismes.store') }}';

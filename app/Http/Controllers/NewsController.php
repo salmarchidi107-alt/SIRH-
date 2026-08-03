@@ -43,10 +43,9 @@ class NewsController extends Controller
             ];
         }
 
-        // ── CHANGEMENTS : exclut les passées + tri par date croissante ────────
         $news = News::where('is_active', true)
-                    ->whereDate('event_date', '>=', today())  // ← exclut les dates passées
-                    ->orderBy('event_date', 'asc')            // ← plus proche en premier
+                    ->whereDate('event_date', '>=', today())
+                    ->orderBy('event_date', 'asc')
                     ->paginate(10);
 
         return view('news.index', compact('news', 'holidays'));

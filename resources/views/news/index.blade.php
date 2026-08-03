@@ -6,7 +6,7 @@
 @section('content')
 <div class="card">
     <div class="card-header">
-        <div class="card-title">📰 Liste des actualités</div>
+        <div class="card-title">Liste des actualités</div>
         <a href="{{ route('news.create') }}" class="btn btn-primary">+ Nouvelle actualité</a>
     </div>
     <div class="card-body">
@@ -17,7 +17,7 @@
             <div class="calendar-column">
                 <div class="card holiday-calendar-card">
                     <div class="card-header">
-                        <div class="card-title">📅 Jours Fériés – Maroc</div>
+                        <div class="card-title">Jours Fériés – Maroc</div>
                         <div class="calendar-nav">
                             <button class="btn btn-ghost btn-sm" id="prevMonth">&#8249;</button>
                             <span id="currentMonthLabel" style="font-weight:600;font-size:.95rem;min-width:140px;text-align:center"></span>
@@ -48,7 +48,6 @@
             <div class="news-column">
                 @if($news->isEmpty())
                     <div style="padding:48px 32px;text-align:center;color:var(--text-muted);background:white;border-radius:16px;border:1px dashed #e2e8f0;">
-                        <div style="font-size:2.5rem;margin-bottom:12px">📰</div>
                         <div style="font-weight:600;margin-bottom:4px">Aucune actualité</div>
                         <div style="font-size:.875rem">Les actualités apparaîtront ici une fois créées.</div>
                     </div>
@@ -96,167 +95,6 @@
         </div>{{-- /main-layout --}}
     </div>
 </div>
-
-<style>
-/* ========== LAYOUT ========== */
-.main-layout {
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 24px;
-    align-items: start;
-}
-@media (max-width: 900px) {
-    .main-layout { grid-template-columns: 1fr; }
-    .calendar-column { order: -1; }
-}
-
-/* ========== NEWS ========== */
-.news-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 20px;
-}
-.news-card {
-    background: white;
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,.08), 0 2px 4px -1px rgba(0,0,0,.04);
-    transition: transform .2s, box-shadow .2s;
-    border: 1px solid #e2e8f0;
-    display: flex;
-    flex-direction: column;
-}
-.news-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -2px rgba(0,0,0,.05);
-}
-.news-image {
-    width: 100%;
-    height: 160px;
-    overflow: hidden;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    flex-shrink: 0;
-}
-.news-image img { width:100%; height:100%; object-fit:cover; }
-.news-content { padding: 16px; display:flex; flex-direction:column; flex:1; }
-.news-type { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
-.news-title { font-size:1.05rem; font-weight:600; margin:0 0 6px; color:#1e293b; line-height:1.4; }
-.news-description { color:#64748b; font-size:.8rem; margin:0 0 10px; line-height:1.5; flex:1; }
-.news-date { color:#94a3b8; font-size:.8rem; margin-bottom:12px; }
-.news-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:auto; }
-
-/* ========== CALENDAR ========== */
-.holiday-calendar-card {
-    position: sticky;
-    top: 16px;
-}
-.holiday-calendar-card .card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-.holiday-calendar-card .card-body { padding: 12px; }
-.calendar-nav { display:flex; align-items:center; gap:6px; }
-.calendar-grid-header {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    text-align: center;
-    font-weight: 600;
-    font-size: .7rem;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-    color: #94a3b8;
-    margin-bottom: 6px;
-}
-.calendar-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
-.cal-day {
-    position: relative;
-    aspect-ratio: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    font-size: .8rem;
-    font-weight: 500;
-    cursor: default;
-    transition: background .15s, transform .15s;
-    border: 2px solid transparent;
-    min-height: 36px;
-}
-.cal-day.empty { background:transparent; }
-.cal-day.today {
-    background: #eff6ff;
-    border-color: #3b82f6;
-    color: #1d4ed8;
-    font-weight: 700;
-}
-.cal-day.weekend { color:#94a3b8; }
-.cal-day.holiday {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    border-color: #f59e0b;
-    color: #92400e;
-    cursor: pointer;
-    font-weight: 700;
-}
-.cal-day.holiday:hover {
-    transform: scale(1.1);
-    box-shadow: 0 4px 12px rgba(245,158,11,.3);
-    z-index: 2;
-}
-.cal-day.holiday .holiday-dot {
-    width:5px; height:5px;
-    background:#f59e0b;
-    border-radius:50%;
-    position:absolute;
-    bottom:4px;
-}
-.cal-day.holiday.today {
-    background: linear-gradient(135deg,#fef3c7 0%,#fde68a 100%);
-    border-color:#f59e0b;
-    color:#92400e;
-}
-.holiday-tooltip {
-    position: fixed;
-    background: #1e293b;
-    color: white;
-    padding: 10px 14px;
-    border-radius: 10px;
-    font-size: .8rem;
-    max-width: 220px;
-    z-index: 9999;
-    pointer-events: none;
-    box-shadow: 0 8px 24px rgba(0,0,0,.2);
-    line-height: 1.5;
-}
-.holiday-tooltip::after {
-    content:'';
-    position:absolute;
-    top:100%; left:50%;
-    transform:translateX(-50%);
-    border:6px solid transparent;
-    border-top-color:#1e293b;
-}
-.calendar-loader {
-    display:flex; align-items:center; gap:12px;
-    padding:24px; color:#64748b; justify-content:center;
-}
-.spinner {
-    width:20px; height:20px;
-    border:3px solid #e2e8f0;
-    border-top-color:#3b82f6;
-    border-radius:50%;
-    animation:spin .7s linear infinite;
-}
-@keyframes spin { to { transform:rotate(360deg); } }
-.calendar-error {
-    padding:16px; text-align:center;
-    color:#ef4444; background:#fef2f2;
-    border-radius:10px; font-size:.85rem;
-}
-</style>
 
 <script>
 (function () {

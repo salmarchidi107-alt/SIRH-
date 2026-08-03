@@ -1,140 +1,12 @@
 <?php $__env->startSection('page-title', 'Codes de vérification 2FA'); ?>
 
-<?php $__env->startPush('styles'); ?>
-<style>
-    :root {
-        --primary:     #0f6b7c;
-        --primary-l:   #1a8fa5;
-        --primary-d:   #094f5c;
-        --bg:          #f4f7fa;
-        --surface:     #ffffff;
-        --border:      #e2e8f0;
-        --border-soft: #f1f5f9;
-        --text:        #0f172a;
-        --muted:       #64748b;
-        --light:       #94a3b8;
-        --green:       #10b981;
-        --red:         #ef4444;
-        --amber:       #f59e0b;
-        --indigo:      #4338ca;
-        --indigo-bg:   #eef2ff;
-        --indigo-bd:   #c7d2fe;
-    }
-
-    .stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
-    @media(max-width:768px) { .stats-row { grid-template-columns:repeat(1,1fr); } }
-    .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px; position:relative; overflow:hidden; }
-    .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:10px 10px 0 0; }
-    .stat-card.c-blue::before  { background:var(--primary-l); }
-    .stat-card.c-green::before { background:var(--green); }
-    .stat-card.c-red::before   { background:var(--red); }
-    .stat-label { font-size:11px; color:var(--muted); font-weight:500; margin-bottom:4px; }
-    .stat-val   { font-size:26px; font-weight:800; line-height:1; }
-    .stat-val.blue  { color:var(--primary-l); }
-    .stat-val.green { color:var(--green); }
-    .stat-val.red   { color:var(--red); }
-
-    .coverage-bar { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:13px 18px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
-
-    .actions-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; align-items:center; }
-    .act-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .15s; border:none; }
-    .act-btn svg { width:13px; height:13px; flex-shrink:0; }
-    .act-btn-primary { background:var(--primary); color:#fff; }
-    .act-btn-primary:hover { background:var(--primary-d); }
-    .act-btn-primary:disabled { opacity:.45; cursor:not-allowed; }
-    .act-btn-export { background:var(--surface); color:var(--muted); border:1px solid var(--border); }
-    .act-btn-export:hover { border-color:var(--primary-l); color:var(--primary); background:#e0f2fe; }
-
-    .missing-alert { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; background:#fef3c7; border:1px solid #fcd34d; font-size:12px; color:#92400e; font-weight:500; margin-left:auto; }
-    .missing-alert svg { width:14px; height:14px; flex-shrink:0; }
-
-    .filters-bar { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 14px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
-    .filters-caption { font-size:10px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--light); white-space:nowrap; }
-    .f-divider { width:1px; height:16px; background:var(--border); flex-shrink:0; }
-    .f-search { flex:1; min-width:160px; padding:6px 11px; border:1px solid var(--border); border-radius:7px; font-size:12px; color:var(--text); background:var(--bg); outline:none; font-family:inherit; transition:border-color .15s; }
-    .f-search:focus { border-color:var(--primary-l); }
-    .f-select { padding:6px 9px; border:1px solid var(--border); border-radius:7px; font-size:12px; color:var(--text); background:var(--bg); outline:none; cursor:pointer; font-family:inherit; }
-    .f-count { font-size:11px; color:var(--light); background:var(--bg); padding:4px 10px; border-radius:20px; border:1px solid var(--border); margin-left:auto; white-space:nowrap; }
-    .f-reset { display:inline-flex; align-items:center; gap:4px; padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:var(--bg); color:var(--muted); font-size:11px; font-weight:500; cursor:pointer; font-family:inherit; transition:all .15s; }
-    .f-reset:hover { border-color:var(--red); color:var(--red); background:#fef2f2; }
-    .f-reset svg { width:10px; height:10px; }
-
-    .codes-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
-    .codes-table { width:100%; border-collapse:collapse; }
-    .codes-table thead th { background:#fafafa; padding:9px 13px; text-align:left; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--light); border-bottom:1px solid var(--border); white-space:nowrap; }
-    .codes-table tbody tr { transition:background .1s; }
-    .codes-table tbody tr:hover td { background:#f0fdfa; }
-    .codes-table tbody tr:last-child td { border-bottom:none; }
-    .codes-table td { padding:9px 13px; border-bottom:1px solid var(--border-soft); vertical-align:middle; }
-
-    .user-row  { display:flex; align-items:center; gap:8px; }
-    .user-av   { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; background:#e0f2fe; color:#0f6b7c; }
-    .user-name { font-size:12px; font-weight:600; color: black !important; }
-    .user-email{ font-size:10px; color:var(--light); }
-
-    .role-badge { display:inline-flex; align-items:center; padding:2px 6px; border-radius:4px; font-size:9px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; margin-top:2px; }
-    .role-admin    { background:#e0f2fe; color:#0f6b7c; }
-    .role-rh       { background:#dbeafe; color:#1e40af; }
-    .role-employee { background:#f0fdf4; color:#166534; }
-
-    .code-digits { display:inline-flex; gap:3px; align-items:center; }
-    .code-digit  { width:24px; height:28px; border:1.5px solid var(--indigo-bd); border-radius:5px; background:var(--indigo-bg); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:var(--indigo); font-family:'Courier New',monospace; transition:all .3s; }
-    .code-digit.updated    { border-color:#6ee7b7; background:#d1fae5; color:#065f46; animation:digitFlash .5s ease; }
-    .code-digit.st-revoked { border-color:#fca5a5; background:#fee2e2; color:#991b1b; }
-    .code-digit.st-used    { border-color:#6ee7b7; background:#d1fae5; color:#065f46; }
-    @keyframes digitFlash { 0%{transform:scale(1.15)} 60%{transform:scale(1.05)} 100%{transform:scale(1)} }
-
-    .badge        { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:20px; font-size:10px; font-weight:600; white-space:nowrap; }
-    .badge-dot    { width:5px; height:5px; border-radius:50%; background:currentColor; }
-    .badge-assigned  { background:#e0f2fe; color:var(--primary-d); }
-    .badge-used-once { background:#d1fae5; color:#065f46; }
-    .badge-revoked   { background:#fee2e2; color:#991b1b; }
-
-    .actions-cell { display:flex; align-items:center; justify-content:flex-end; gap:5px; }
-    .btn-replace,
-    .btn-revoke { display:inline-flex; align-items:center; gap:4px; padding:4px 9px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--light); font-size:10px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .15s; }
-    .btn-replace:hover { border-color:var(--indigo); color:var(--indigo); background:var(--indigo-bg); }
-    .btn-revoke:hover  { border-color:var(--red); color:var(--red); background:#fef2f2; }
-    .btn-replace svg, .btn-revoke svg { width:10px; height:10px; }
-    .btn-replace.loading { opacity:.5; pointer-events:none; }
-
-    .flash-success { background:#d1fae5; color:#065f46; border:1px solid #6ee7b7; border-radius:8px; padding:10px 14px; font-size:12px; font-weight:500; display:flex; gap:8px; align-items:center; margin-bottom:14px; }
-    .flash-success svg { width:13px; height:13px; flex-shrink:0; }
-
-    .empty-state { text-align:center; padding:48px 20px; color:var(--light); }
-    .empty-state svg { margin:0 auto 12px; display:block; opacity:.35; }
-    .empty-title { font-size:14px; font-weight:600; color:var(--muted); }
-    .empty-sub   { font-size:12px; margin-top:4px; }
-
-    .overlay { position:fixed; inset:0; background:rgba(13,33,55,.5); display:flex; align-items:center; justify-content:center; z-index:9998; opacity:0; pointer-events:none; transition:opacity .2s; }
-    .overlay.show { opacity:1; pointer-events:all; }
-    .modal { background:var(--surface); border-radius:12px; padding:24px; width:420px; max-width:92vw; box-shadow:0 24px 64px rgba(0,0,0,.2); transform:scale(.96); transition:transform .2s cubic-bezier(.16,1,.3,1); }
-    .overlay.show .modal { transform:scale(1); }
-    .modal-title { font-size:15px; font-weight:700; color:var(--text); margin-bottom:8px; }
-    .modal-body  { font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:20px; }
-    .modal-acts  { display:flex; gap:8px; justify-content:flex-end; }
-    .modal-cancel { padding:8px 16px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--muted); font-size:13px; font-weight:500; cursor:pointer; font-family:inherit; }
-    .modal-cancel:hover { border-color:var(--red); color:var(--red); }
-    .modal-ok { padding:8px 16px; border-radius:8px; border:none; background:var(--primary); color:#fff; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
-    .modal-ok:hover { background:var(--primary-d); }
-    .modal-ok.danger { background:var(--red); }
-    .modal-ok.danger:hover { background:#dc2626; }
-
-    .toast { position:fixed; bottom:22px; right:22px; z-index:9999; display:flex; align-items:center; gap:8px; padding:10px 15px; border-radius:9px; font-size:12px; font-weight:500; color:#fff; background:var(--primary); box-shadow:0 8px 32px rgba(0,0,0,.18); transform:translateY(70px); opacity:0; transition:all .3s cubic-bezier(.16,1,.3,1); pointer-events:none; max-width:320px; }
-    .toast.show  { transform:translateY(0); opacity:1; }
-    .toast.error { background:var(--red); }
-    .toast.warn  { background:var(--amber); color:#451a03; }
-    .toast svg   { width:13px; height:13px; flex-shrink:0; }
-    .v-spin { animation:vSpin .6s linear infinite; display:inline-block; }
-    @keyframes vSpin { to { transform:rotate(360deg); } }
-</style>
-<?php $__env->stopPush(); ?>
-
 <?php $__env->startSection('content'); ?>
 
 <?php
     use App\Models\VerificationCode as VC;
 ?>
+
+<div class="tfa-page">
 
 <?php if(session('success')): ?>
 <div class="flash-success">
@@ -166,10 +38,10 @@
 
 <div class="coverage-bar">
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <span style="font-size:11px;color:var(--muted);">Couverture :</span>
-        <span style="font-size:14px;font-weight:800;color:<?php echo e($stats['coverage_pct'] >= 100 ? 'var(--green)' : ($stats['coverage_pct'] >= 50 ? 'var(--amber)' : 'var(--red)')); ?>;"
+        <span style="font-size:11px;color:var(--text-muted);">Couverture :</span>
+        <span style="font-size:14px;font-weight:800;color:<?php echo e($stats['coverage_pct'] >= 100 ? 'var(--green)' : ($stats['coverage_pct'] >= 50 ? 'var(--warning)' : 'var(--danger)')); ?>;"
               id="statCoverage"><?php echo e($stats['coverage_pct']); ?>%</span>
-        <span style="font-size:11px;color:var(--light);">(<?php echo e($stats['active_employees']); ?> employé(s))</span>
+        <span style="font-size:11px;color:var(--text-light);">(<?php echo e($stats['active_employees']); ?> employé(s))</span>
     </div>
 </div>
 
@@ -278,7 +150,7 @@
             <tr class="code-row"
                 data-status="<?php echo e($visualStatus); ?>"
                 data-search="<?php echo e(strtolower(($code->user?->name ?? '') . ' ' . ($code->user?->email ?? '') . ' ' . $code->code)); ?>">
-                <td style="font-size:10px;color:var(--light);"><?php echo e(str_pad($i + 1, 2, '0', STR_PAD_LEFT)); ?></td>
+                <td style="font-size:10px;color:var(--text-light);"><?php echo e(str_pad($i + 1, 2, '0', STR_PAD_LEFT)); ?></td>
                 <td>
                     <?php if($code->user): ?>
                     <div class="user-row">
@@ -293,7 +165,7 @@
                     <div class="user-row">
                         <div class="user-av" style="background:#fee2e2;color:#991b1b;">!</div>
                         <div>
-                            <div class="user-name" style="color:var(--red);font-size:11px;">Orphelin</div>
+                            <div class="user-name" style="color:var(--danger);font-size:11px;">Orphelin</div>
                             <div class="user-email">user introuvable</div>
                         </div>
                     </div>
@@ -312,8 +184,8 @@
 
                     </span>
                 </td>
-                <td style="font-size:11px;color:var(--muted);"><?php echo e($code->assigned_at?->format('d/m/Y') ?? '—'); ?></td>
-                <td style="font-size:11px;color:<?php echo e($isUsedOnce ? 'var(--green)' : 'var(--muted)'); ?>;font-weight:<?php echo e($isUsedOnce ? '600' : '400'); ?>;"
+                <td style="font-size:11px;color:var(--text-muted);"><?php echo e($code->assigned_at?->format('d/m/Y') ?? '—'); ?></td>
+                <td style="font-size:11px;color:<?php echo e($isUsedOnce ? 'var(--green)' : 'var(--text-muted)'); ?>;font-weight:<?php echo e($isUsedOnce ? '600' : '400'); ?>;"
                     id="used-cell-<?php echo e($code->id); ?>">
                     <?php if($isUsedOnce): ?>
                         <span title="<?php echo e($code->used_at?->format('d/m/Y à H:i')); ?>">
@@ -344,7 +216,7 @@
                             Révoquer
                         </button>
                         <?php else: ?>
-                        <span style="font-size:11px;color:var(--light);">—</span>
+                        <span style="font-size:11px;color:var(--text-light);">—</span>
                         <?php endif; ?>
                     </div>
                 </td>
@@ -382,6 +254,8 @@
         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
     </svg>
     <span id="vToastMsg"></span>
+</div>
+
 </div>
 
 <?php $__env->stopSection(); ?>
@@ -479,7 +353,7 @@ async function replaceForUser(userId, codeId, userName) {
             if (usedCell) {
                 usedCell.id               = 'used-cell-' + data.new_id;
                 usedCell.textContent      = '—';
-                usedCell.style.color      = 'var(--muted)';
+                usedCell.style.color      = 'var(--text-muted)';
                 usedCell.style.fontWeight = '400';
             }
 
@@ -554,7 +428,7 @@ async function doRevoke(codeId, userName) {
                     badge.innerHTML = '<span class="badge-dot"></span>Révoqué';
                 }
                 const actCell = row.querySelector('.actions-cell');
-                if (actCell) actCell.innerHTML = '<span style="font-size:11px;color:var(--light);">—</span>';
+                if (actCell) actCell.innerHTML = '<span style="font-size:11px;color:var(--text-light);">—</span>';
 
                 /* Passer la ligne en "revoked" AVANT de resync */
                 row.dataset.status = 'revoked';

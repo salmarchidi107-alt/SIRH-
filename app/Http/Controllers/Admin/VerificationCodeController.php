@@ -7,28 +7,7 @@ use App\Models\{VerificationCode, User};
 use App\Services\VerificationCodeService;
 use Illuminate\Http\{Request, JsonResponse};
 
-/**
- * Gestion des codes 2FA pour l'espace Admin.
- *
- * ─── Principe de délégation ────────────────────────────────────────────────
- * Ce contrôleur ne contient AUCUNE logique métier. Tout est délégué au
- * VerificationCodeService déjà validé dans le module SuperAdmin.
- * La seule responsabilité de cette classe est de :
- *   1. Forcer le tenant_id de l'utilisateur connecté sur chaque opération.
- *   2. Vérifier que les ressources manipulées appartiennent bien à ce tenant.
- *   3. Construire la réponse (vue ou JSON) adaptée à l'espace Admin.
- *
- * ─── Sécurité ───────────────────────────────────────────────────────────────
- * • Toutes les routes sont protégées par le middleware 'role:admin,rh' (routes/web.php).
- * • Le tenant_id est TOUJOURS lu depuis auth()->user()->tenant_id — jamais depuis
- *   la requête — ce qui garantit qu'un admin ne peut pas agir sur un autre tenant.
- * • Les model bindings (VerificationCode, User) sont vérifiés via assertBelongsToTenant()
- *   avant toute opération.
- *
- * ─── Codes permanents ───────────────────────────────────────────────────────
- * Un code est valable jusqu'à sa révocation ou son remplacement — il n'existe
- * plus de notion de trimestre ni d'expiration automatique.
- */
+
 class VerificationCodeController extends Controller
 {
     public function __construct(

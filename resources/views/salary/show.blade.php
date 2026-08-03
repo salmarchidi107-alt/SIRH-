@@ -125,6 +125,11 @@
                     border:1px solid {{ $cur==='MRU'?'#86efac':'#bfdbfe' }}">
                     {{ $cur==='MRU'?'🇲🇷 MRU':'🇲🇦 MAD' }}
                 </span>
+                @if(auth()->user()->isAdmin() && in_array($salary->status, ['validated','paid']))
+                    <span style="margin-left:8px;font-size:0.68rem;padding:2px 8px;border-radius:12px;font-weight:700;background:#fef3c7;color:#92400e;border:1px solid #fde68a">
+                        Modifiable (admin)
+                    </span>
+                @endif
             </div>
             <div style="display:flex;gap:24px;font-size:0.85rem;align-items:center">
                 <span>Brut : <strong>{{ number_format($salary->gross_salary,0,',',' ') }} {{ $cur }}</strong></span>
@@ -155,6 +160,16 @@
                             @csrf @method('DELETE')
                             <button class="btn btn-sm btn-danger">Supprimer</button>
                         </form>
+                    @endif
+
+                    {{-- Modification admin : autorisée même si le bulletin
+                         est déjà validé ou payé. --}}
+                    @if(auth()->user()->isAdmin())
+                        <a href="{{ route('salary.create', [$employee, 'month'=>$salary->month, 'year'=>$salary->year]) }}"
+                           class="btn btn-sm btn-outline" onclick="event.stopPropagation()"
+                           title="Modifier ce bulletin (admin — même si validé/payé)">
+                            Modifier
+                        </a>
                     @endif
                 @endunless
             </div>

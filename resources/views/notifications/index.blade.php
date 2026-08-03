@@ -45,7 +45,7 @@
     </div>
 </div>
 
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+<div class="notif-cards-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
     <!-- Demandes de congés en attente -->
     <div class="card">
         <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border);">
@@ -166,24 +166,4 @@
         </div>
     </div>
 </div>
-
-<style>
-.card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    overflow: hidden;
-}
-.card-header {
-    background: var(--surface-2);
-}
-.card-body {
-    padding: 0;
-}
-@media (max-width: 768px) {
-    div[style*="grid-template-columns: 1fr 1fr"] {
-        grid-template-columns: 1fr !important;
-    }
-}
-</style>
 @endsection

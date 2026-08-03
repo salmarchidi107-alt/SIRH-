@@ -2,16 +2,6 @@
 
 @section('page-title', 'Tableau de bord')
 
-@push('styles')
-<style>
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-    .content-section { @apply bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-8; }
-    .role-badge { @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium; }
-    .superadmin-badge { @apply bg-indigo-100 text-indigo-800; }
-    .admin-badge { @apply bg-teal-100 text-teal-800; }
-</style>
-@endpush
-
 @section('content')
 <div class="max-w-7xl mx-auto">
 
@@ -32,7 +22,7 @@
     </div>
 
     <!-- Common Stats Grid -->
-    <div class="stats-grid">
+    <div class="stats-grid-unified">
         <x-dashboard.stat-card
             label="Employés"
             :value="$totalEmployees"
@@ -77,7 +67,7 @@
                 <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
                     📊 Statistiques Tenants
                 </h2>
-                <div class="stats-grid">
+                <div class="stats-grid-unified">
                     <x-dashboard.stat-card
                         label="Total Tenants"
                         :value="$tenantStats['total_tenants'] ?? 0"
@@ -129,4 +119,3 @@
 
 </div>
 @endsection
-

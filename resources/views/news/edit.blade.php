@@ -6,13 +6,13 @@
 @section('content')
 <div class="card">
     <div class="card-header">
-        <div class="card-title">📰 Modifier l'actualité</div>
+        <div class="card-title">Modifier l'actualité</div>
     </div>
     <div class="card-body">
         <form action="{{ route('news.update', $news) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
-            
+
             <div class="row">
                 <div class="col-md-8">
                     <div class="form-group">
@@ -92,31 +92,6 @@
     </div>
 </div>
 
-<style>
-.image-upload-area {
-    border: 2px dashed #cbd5e1;
-    border-radius: 12px;
-    padding: 24px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background: #f8fafc;
-}
-.image-upload-area:hover {
-    border-color: #6366f1;
-    background: #eef2ff;
-}
-.image-upload-area svg {
-    color: #94a3b8;
-    margin-bottom: 8px;
-}
-.image-upload-area p {
-    margin: 0;
-    color: #475569;
-    font-weight: 500;
-}
-</style>
-
 <script>
 function previewImage(event) {
     const file = event.target.files[0];
@@ -142,4 +117,3 @@ function removeImage(event) {
 }
 </script>
 @endsection
-

@@ -148,44 +148,6 @@
 </div>
 @endsection
 
-@push('styles')
-<style>
-.ged-label { display:block;font-size:.82rem;font-weight:600;color:#0d2238;margin-bottom:6px; }
-.ged-input {
-    display:block;width:100%;height:46px;padding:0 14px;font-size:.875rem;
-    color:#0d2238;background:#fff;border:2px solid #e2e8f0;border-radius:10px;
-    transition:border-color .2s,box-shadow .2s;outline:none;
-}
-.ged-input:focus { border-color:#14b8a6;box-shadow:0 0 0 3px rgba(20,184,166,.12); }
-.ged-input::placeholder { color:#94a3b8; }
-.ged-select-wrap { position:relative; }
-.ged-select {
-    display:block;width:100%;height:46px;padding:0 40px 0 14px;font-size:.875rem;
-    color:#0d2238;background:#fff;border:2px solid #e2e8f0;border-radius:10px;
-    appearance:none;-webkit-appearance:none;cursor:pointer;
-    transition:border-color .2s,box-shadow .2s;outline:none;
-}
-.ged-select:focus { border-color:#14b8a6;box-shadow:0 0 0 3px rgba(20,184,166,.12); }
-.ged-select-icon {
-    position:absolute;right:14px;top:50%;transform:translateY(-50%);
-    font-size:11px;color:#94a3b8;pointer-events:none;
-}
-.tox-tinymce { border-radius:10px !important;border:2px solid #e2e8f0 !important; }
-.tox .tox-statusbar__text-container,
-.tox .tox-statusbar__path,
-.tox .tox-statusbar__wordcount,
-.tox .tox-statusbar__branding,
-.tox-promotion { display:none !important; }
-#btnAppliquer:hover { background:#1e3a5f !important; transform:translateY(-1px); }
-@media (max-width:1024px) {
-    form > div[style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
-}
-#modeleChangeAlert {
-    transition: opacity 0.4s ease;
-}
-</style>
-@endpush
-
 @push('scripts')
 <script>
 // ── Données PHP → JS ──────────────────────────────────────────────────────────

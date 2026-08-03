@@ -2,21 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\UserRole;
 use App\Http\Requests\StoreEmployeeRequest;
 use App\Http\Requests\UpdateEmployeeRequest;
-use App\Models\Department;
 use App\Models\Employee;
-use App\Models\User;
-use App\Models\UserPermission;
 use App\Services\EmployeeService;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use App\Exports\EmployeesExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 use Exception;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -24,18 +18,11 @@ class EmployeeController extends Controller
 {
     public function __construct(private EmployeeService $employeeService) {}
 
-    // =========================================================================
-    // index
-    // =========================================================================
     public function index(Request $request)
     {
         try {
-            $employees = $this->buildQuery($request)
-                ->with(['user', 'absences'])
-                ->defaultOrder()
-                ->paginate(100);
-
-            $departments = $this->getDepartmentsList();
+            $employees   = $this->employeeService->getPaginatedEmployees($request);
+            $departments = $this->employeeService->getDepartmentsList();
             $filter      = $request->get('filter', 'all');
 
             return view('employees.index', compact('employees', 'departments', 'filter'));
@@ -51,43 +38,12 @@ class EmployeeController extends Controller
         }
     }
 
-    // =========================================================================
-    // ajaxIndex
-    // =========================================================================
-    public function ajaxIndex(Request $request)
+    public function ajaxIndex(Request $request): JsonResponse
     {
         try {
-            $perPage = 15;
-            $page    = $request->get('page', 1);
+            $data = $this->employeeService->getAjaxEmployeesData($request);
 
-            $employees = $this->buildQuery($request)
-                ->with(['user:id,name'])
-                ->defaultOrder()
-                ->paginate($perPage, ['*'], 'page', $page);
-
-            return response()->json([
-                'employees' => $employees->map(fn($e) => [
-                    'id'            => $e->id,
-                    'matricule'     => $e->matricule     ?? 'N/A',
-                    'full_name'     => $e->full_name     ?? 'N/A',
-                    'department'    => $e->department    ?? 'N/A',
-                    'position'      => $e->position      ?? '',
-                    'status_label'  => $e->status_label  ?? ($e->status ?? 'N/A'),
-                    'status_color'  => $this->getStatusColor($e->status),
-                    'hire_date'     => $e->hire_date?->format('d/m/Y') ?? '',
-                    'contract_type' => $e->contract_type ?? '',
-                    'csrf_token'    => csrf_token(),
-                    '_method'       => 'DELETE',
-                    'base_salary'   => $e->base_salary ? number_format($e->base_salary, 0) : '0',
-                    'photo'         => $e->photo,
-                    'photo_url'     => $e->photo ? asset('storage/' . $e->photo) : null,
-                ]),
-                'pagination' => [
-                    'current_page' => $employees->currentPage(),
-                    'total'        => $employees->total(),
-                    'has_more'     => $employees->hasMorePages(),
-                ],
-            ]);
+            return response()->json($data);
 
         } catch (Exception $e) {
             Log::error('Employee ajaxIndex error', ['error' => $e->getMessage()]);
@@ -95,46 +51,7 @@ class EmployeeController extends Controller
         }
     }
 
-    // =========================================================================
-    // getStatusColor
-    // =========================================================================
-    private function getStatusColor($status): string
-    {
-        return match ($status) {
-            'active'   => 'success',
-            'leave'    => 'warning',
-            'inactive' => 'neutral',
-            default    => 'error',
-        };
-    }
-
-    // =========================================================================
-    // normalizeRole
-    // =========================================================================
-    private function normalizeRole(?string $role): string
-    {
-        if (!$role) return UserRole::Employee->value;
-
-        foreach (UserRole::cases() as $case) {
-            if ($case->value === strtolower(trim($role))) {
-                return $case->value;
-            }
-        }
-
-        foreach (UserRole::cases() as $case) {
-            if (strtolower($case->label()) === strtolower(trim($role))) {
-                return $case->value;
-            }
-        }
-
-        Log::warning('Role inconnu reçu, fallback employee', ['role' => $role]);
-        return UserRole::Employee->value;
-    }
-
-    // =========================================================================
-    // reorder
-    // =========================================================================
-    public function reorder(Request $request)
+    public function reorder(Request $request): JsonResponse
     {
         try {
             $request->validate([
@@ -142,11 +59,7 @@ class EmployeeController extends Controller
                 'order.*' => 'exists:employees,id',
             ]);
 
-            DB::transaction(function () use ($request) {
-                foreach ($request->order as $index => $id) {
-                    Employee::where('id', $id)->update(['sort_order' => $index + 1]);
-                }
-            });
+            $this->employeeService->reorderEmployees($request->order);
 
             return response()->json(['success' => true]);
 
@@ -156,20 +69,12 @@ class EmployeeController extends Controller
         }
     }
 
-    // =========================================================================
-    // create
-    // =========================================================================
     public function create()
     {
         try {
             abort_unless(auth()->user()->can('manage_employees'), 403);
 
-            return view('employees.create', [
-                'managers'    => Employee::active()->get(),
-                'users'       => User::whereDoesntHave('employee')->get(),
-                'departments' => $this->getDepartmentsList(),
-                'roles'       => UserRole::cases(),
-            ]);
+            return view('employees.create', $this->employeeService->getCreateFormData());
 
         } catch (Exception $e) {
             Log::error('Employee create error', ['error' => $e->getMessage()]);
@@ -177,67 +82,10 @@ class EmployeeController extends Controller
         }
     }
 
-    // =========================================================================
-    // store
-    // =========================================================================
     public function store(StoreEmployeeRequest $request)
     {
         try {
-            DB::transaction(function () use ($request) {
-
-                $validated = $request->validated();
-
-                // ── Photo ────────────────────────────────────────────────
-                if ($request->hasFile('photo')) {
-                    $validated['photo'] = $request->file('photo')
-                        ->store('employees/photos', 'public');
-                } else {
-                    unset($validated['photo']);
-                }
-
-                // ── Pièces jointes PDF ───────────────────────────────────
-                $docFields = ['doc_casier', 'doc_rib', 'doc_diplomes', 'doc_cin', 'doc_contrat'];
-                foreach ($docFields as $field) {
-                    if ($request->hasFile($field)) {
-                        $validated[$field . '_path'] = $request->file($field)
-                            ->store('employees/documents', 'public');
-                    }
-                    unset($validated[$field]);
-                }
-
-                $employee = $this->employeeService->create($validated);
-
-                if ($request->boolean('create_account')) {
-                    $tenantId = config('app.current_tenant_id') ?? auth()->user()->tenant_id;
-                    $role     = $this->normalizeRole($request->user_role);
-
-                    Log::info('Création compte user', [
-                        'email'      => $employee->email,
-                        'role_recu'  => $request->user_role,
-                        'role_final' => $role,
-                    ]);
-
-                    $user = User::firstOrCreate(
-                        [
-                            'email'     => $employee->email,
-                            'tenant_id' => $tenantId,
-                        ],
-                        [
-                            'name'           => $employee->first_name . ' ' . $employee->last_name,
-                            'password'       => Hash::make($request->user_password),
-                            'plain_password' => $request->user_password,
-                            'role'           => $role,
-                        ]
-                    );
-
-                    $employee->update(['user_id' => $user->id]);
-
-                    // ✅ Seul un Admin peut définir les permissions granulaires
-                    if (auth()->user()->isAdmin()) {
-                        $this->savePermissions($user, $request->input('permissions', []));
-                    }
-                }
-            });
+            $this->employeeService->storeEmployee($request);
 
             return redirect()->route('employees.index')
                 ->with('success', 'Employé créé avec succès.');
@@ -251,9 +99,6 @@ class EmployeeController extends Controller
         }
     }
 
-    // =========================================================================
-    // show
-    // =========================================================================
     public function show(Employee $employee)
     {
         if (auth()->user()->role === 'employee' && auth()->user()->employee_id != $employee->id) {
@@ -261,18 +106,7 @@ class EmployeeController extends Controller
         }
 
         try {
-            $employee->load([
-                'absences' => fn($q) => $q->latest()->take(10),
-                'salaries' => fn($q) => $q->latest()->take(6),
-            ]);
-
-            if (is_null($employee->plain_pin)) {
-                $plainPin            = sprintf('%04d%s', rand(1000, 9999), chr(rand(65, 90)) . chr(rand(65, 90)));
-                $employee->plain_pin = $plainPin;
-                $employee->pin       = Hash::make($plainPin);
-                $employee->saveQuietly();
-                Log::info("Generated PIN for employee {$employee->id}: {$plainPin}");
-            }
+            $employee = $this->employeeService->getEmployeeDetail($employee);
 
             return view('employees.show', compact('employee'));
 
@@ -282,28 +116,10 @@ class EmployeeController extends Controller
         }
     }
 
-    // =========================================================================
-    // edit
-    // =========================================================================
     public function edit(Employee $employee)
     {
         try {
-            $linkedUser = null;
-            if ($employee->user_id) {
-                $linkedUser = User::with('modulePermissions')
-                    ->find($employee->user_id);
-            }
-
-            return view('employees.edit', [
-                'employee'    => $employee,
-                'linkedUser'  => $linkedUser,
-                'managers'    => Employee::active()->where('id', '!=', $employee->id)->get(),
-                'users'       => User::whereDoesntHave('employee')
-                    ->when($employee->user_id, fn($q) => $q->orWhere('id', $employee->user_id))
-                    ->get(),
-                'departments' => $this->getDepartmentsList(),
-                'roles'       => UserRole::cases(),
-            ]);
+            return view('employees.edit', $this->employeeService->getEditFormData($employee));
 
         } catch (Exception $e) {
             Log::error('Employee edit error', ['error' => $e->getMessage()]);
@@ -311,124 +127,10 @@ class EmployeeController extends Controller
         }
     }
 
-    // =========================================================================
-    // update: ordre logique, photo gérée, Hash::make appliqué
-    // =========================================================================
     public function update(UpdateEmployeeRequest $request, Employee $employee)
     {
         try {
-            $validated = $request->validated();
-
-            // ── 1. Photo ─────────────────────────────────────────────────────
-            if ($request->hasFile('photo')) {
-                // Supprimer l'ancienne photo si elle existe
-                if ($employee->photo && Storage::disk('public')->exists($employee->photo)) {
-                    Storage::disk('public')->delete($employee->photo);
-                }
-                $validated['photo'] = $request->file('photo')
-                    ->store('employees/photos', 'public');
-            } else {
-                // Ne pas écraser la photo existante avec null
-                unset($validated['photo']);
-            }
-
-            // ── 2. Pièces jointes PDF ─────────────────────────────────────────
-            $docFields = ['doc_casier', 'doc_rib', 'doc_diplomes', 'doc_cin', 'doc_contrat'];
-            foreach ($docFields as $field) {
-                if ($request->hasFile($field)) {
-                    $oldPath = $employee->{$field . '_path'};
-                    if ($oldPath && Storage::disk('public')->exists($oldPath)) {
-                        Storage::disk('public')->delete($oldPath);
-                    }
-                    $validated[$field . '_path'] = $request->file($field)
-                        ->store('employees/documents', 'public');
-                }
-                unset($validated[$field]);
-            }
-
-            // ── 3. Bloquer conges_anterieurs pour non-admins AVANT l'update ───
-            if (!auth()->user()->isAdmin()) {
-                unset($validated['conges_anterieurs']);
-            }
-
-            // ── 4. Nettoyer les champs mot de passe avant l'update employé ────
-            unset(
-                $validated['change_password'],
-                $validated['new_password'],
-                $validated['new_password_confirmation']
-            );
-
-            // ── 4bis. Nettoyer le champ rôle avant l'update employé ───────────
-            unset($validated['user_role']);
-
-            // ── 5. Mettre à jour l'employé ────────────────────────────────────
-            $this->employeeService->update($employee, $validated);
-
-            // ── 6. Mise à jour du mot de passe (Admin uniquement) ─────────────
-            $user = null;
-            if (
-                auth()->user()->isAdmin()
-                && $request->boolean('change_password')
-                && $request->filled('new_password')
-            ) {
-                $user = $employee->user ?? ($employee->user_id ? User::find($employee->user_id) : null);
-
-                if ($user) {
-                    $user->password       = Hash::make($request->new_password);
-                    $user->plain_password = $request->new_password;
-                    $user->save();
-
-                    Log::info('Mot de passe mis à jour', [
-                        'user_id'     => $user->id,
-                        'employee_id' => $employee->id,
-                        'by_admin'    => auth()->id(),
-                    ]);
-                } else {
-                    Log::warning('Tentative MàJ mot de passe sans compte lié', [
-                        'employee_id' => $employee->id,
-                    ]);
-                }
-            }
-
-            // ── 6bis. Mise à jour du rôle utilisateur (Admin uniquement) ──────
-            if (
-                auth()->user()->isAdmin()
-                && $employee->user_id
-                && $request->filled('user_role')
-            ) {
-                $user = $user ?? ($employee->user ?? User::find($employee->user_id));
-
-                if ($user) {
-                    $previousRole = $user->role;
-                    $newRole      = $this->normalizeRole($request->user_role);
-
-                    if ($newRole !== $previousRole) {
-                        $user->role = $newRole;
-                        $user->save();
-
-                        Log::info('Rôle utilisateur mis à jour', [
-                            'user_id'      => $user->id,
-                            'employee_id'  => $employee->id,
-                            'ancien_role'  => $previousRole,
-                            'nouveau_role' => $newRole,
-                            'by_admin'     => auth()->id(),
-                        ]);
-                    }
-                }
-            }
-
-            // ── 7. Permissions (Admin uniquement) ─────────────────────────────
-            if (
-                $request->has('permissions')
-                && $employee->user_id
-                && auth()->user()->isAdmin()
-            ) {
-                $user = $user ?? User::find($employee->user_id);
-                if ($user) {
-                    $this->savePermissions($user, $request->input('permissions', []));
-                    $user->clearPermCache();
-                }
-            }
+            $this->employeeService->updateEmployee($request, $employee);
 
             return redirect()->route('employees.show', $employee)
                 ->with('success', 'Employé mis à jour avec succès.');
@@ -444,43 +146,10 @@ class EmployeeController extends Controller
         }
     }
 
-    // =========================================================================
-    // destroy
-    // =========================================================================
     public function destroy(Employee $employee)
     {
         try {
-            $docFields = ['doc_casier_path', 'doc_rib_path', 'doc_diplomes_path', 'doc_cin_path', 'doc_contrat_path'];
-            foreach ($docFields as $field) {
-                if ($employee->$field && Storage::disk('public')->exists($employee->$field)) {
-                    Storage::disk('public')->delete($employee->$field);
-                }
-            }
-
-            if ($employee->photo && Storage::disk('public')->exists($employee->photo)) {
-                Storage::disk('public')->delete($employee->photo);
-            }
-
-            $tenantId = auth()->user()->tenant_id;
-            $user     = null;
-
-            if ($employee->user_id) {
-                $user = User::find($employee->user_id);
-            }
-
-            if (!$user && $employee->email) {
-                $user = User::where('email', $employee->email)
-                            ->where('tenant_id', $tenantId)
-                            ->first();
-            }
-
-            if ($user) {
-                $user->verificationCodes()->delete();
-                $user->modulePermissions()->delete();
-                $user->delete();
-            }
-
-            $employee->delete();
+            $this->employeeService->deleteEmployee($employee);
 
             return redirect()->route('employees.index')
                 ->with('success', 'Employé supprimé.');
@@ -491,9 +160,6 @@ class EmployeeController extends Controller
         }
     }
 
-    // =========================================================================
-    // export Excel
-    // =========================================================================
     public function export()
     {
         try {
@@ -505,19 +171,11 @@ class EmployeeController extends Controller
         }
     }
 
-    // =========================================================================
-    // regeneratePin
-    // =========================================================================
-    public function regeneratePin(Request $request, Employee $employee)
+    public function regeneratePin(Request $request, Employee $employee): JsonResponse
     {
         abort_unless(auth()->user()->can('manage_employees'), 403);
 
-        $plainPin            = sprintf('%04d%s', rand(1000, 9999), chr(rand(65, 90)) . chr(rand(65, 90)));
-        $employee->plain_pin = $plainPin;
-        $employee->pin       = Hash::make($plainPin);
-        $employee->save();
-
-        Log::info("Regenerated PIN for employee {$employee->id} ({$employee->full_name}): {$plainPin}");
+        $plainPin = $this->employeeService->regeneratePin($employee);
 
         return response()->json([
             'success' => true,
@@ -526,23 +184,18 @@ class EmployeeController extends Controller
         ]);
     }
 
-    // =========================================================================
-    // exportPdf — liste globale ou filtrée
-    // =========================================================================
     public function exportPdf(Request $request)
     {
         try {
-            $employees = $this->buildQuery($request)
-                ->orderBy('department')
-                ->get();
-
-            $total       = $employees->count();
-            $generatedAt = now()->format('d/m/Y à H:i');
-            $filename    = 'employes_' . now()->format('Y-m-d_H-i') . '.pdf';
+            $employees = $this->employeeService->getEmployeesForPdfExport($request);
+            $total     = $employees->count();
 
             if ($total === 0) {
                 return back()->with('error', 'Aucun employé à exporter.');
             }
+
+            $generatedAt = now()->format('d/m/Y à H:i');
+            $filename    = 'employes_' . now()->format('Y-m-d_H-i') . '.pdf';
 
             $pdf = Pdf::loadView('pdf.employees', compact('employees', 'total', 'generatedAt'));
             return $pdf->download($filename);
@@ -553,45 +206,31 @@ class EmployeeController extends Controller
         }
     }
 
-    // =========================================================================
-    // checkUnique — CIN / Téléphone
-    // =========================================================================
-    public function checkUnique(Request $request): \Illuminate\Http\JsonResponse
+    public function checkUnique(Request $request): JsonResponse
     {
-        $tenantId = config('app.current_tenant_id') ?? auth()->user()->tenant_id;
         $ignoreId = $request->integer('ignore_id') ?: null;
 
         foreach (['cin', 'phone'] as $field) {
             if ($request->has($field)) {
                 $value = trim($request->input($field));
-                if (!$value) return response()->json(['taken' => false]);
 
-                $taken = Employee::where('tenant_id', $tenantId)
-                    ->where($field, $value)
-                    ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
-                    ->exists();
+                if (!$value) {
+                    return response()->json(['taken' => false]);
+                }
 
-                $label = $field === 'cin' ? 'CIN' : 'téléphone';
-
-                return response()->json([
-                    'taken'   => $taken,
-                    'message' => $taken
-                        ? "Ce numéro de {$label} est déjà utilisé par un autre employé."
-                        : null,
-                ]);
+                return response()->json(
+                    $this->employeeService->checkFieldUniqueness($field, $value, $ignoreId)
+                );
             }
         }
 
         return response()->json(['taken' => false]);
     }
 
-    // =========================================================================
-    // exportPdfByDept
-    // =========================================================================
     public function exportPdfByDept(Request $request, string $department)
     {
         try {
-            $employees = Employee::where('department', $department)->get();
+            $employees = $this->employeeService->getEmployeesByDepartment($department);
             $total     = $employees->count();
 
             if ($total === 0) {
@@ -610,104 +249,8 @@ class EmployeeController extends Controller
         }
     }
 
-    // =========================================================================
-    // ajax — alias de ajaxIndex
-    // =========================================================================
     public function ajax(Request $request)
     {
         return $this->ajaxIndex($request);
-    }
-
-    // =========================================================================
-    // HELPERS PRIVÉS
-    // =========================================================================
-
-    /**
-     * Persiste les permissions du formulaire pour un utilisateur donné.
-     * ⚠️ Cette méthode ne doit être appelée que si l'utilisateur courant
-     * est Admin — la vérification est faite par les appelants (store/update).
-     */
-    private function savePermissions(User $user, array $rawPerms): void
-    {
-        UserPermission::where('user_id', $user->id)->delete();
-
-        if (empty($rawPerms)) {
-            return;
-        }
-
-        $rows = [];
-        $now  = now();
-
-        foreach ($rawPerms as $module => $actions) {
-            if (
-                empty($actions['view'])   &&
-                empty($actions['create']) &&
-                empty($actions['edit'])   &&
-                empty($actions['delete'])
-            ) {
-                continue;
-            }
-
-            $rows[] = [
-                'user_id'    => $user->id,
-                'module'     => $module,
-                'can_view'   => ! empty($actions['view']),
-                'can_create' => ! empty($actions['create']),
-                'can_edit'   => ! empty($actions['edit']),
-                'can_delete' => ! empty($actions['delete']),
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
-        }
-
-        if (! empty($rows)) {
-            UserPermission::insert($rows);
-
-            Log::info('Permissions sauvegardées', [
-                'user_id' => $user->id,
-                'modules' => array_column($rows, 'module'),
-            ]);
-        }
-    }
-
-    private function buildQuery(Request $request)
-    {
-        return Employee::query()
-            ->when($request->get('filter') === 'active',   fn($q) => $q->active())
-            ->when($request->get('filter') === 'inactive', fn($q) => $q->status('inactive'))
-            ->when($request->search, function ($q, $search) {
-                $q->where(function ($q) use ($search) {
-                    $q->where('first_name', 'like', "%$search%")
-                      ->orWhere('last_name',  'like', "%$search%")
-                      ->orWhere('matricule',  'like', "%$search%")
-                      ->orWhere('email',      'like', "%$search%");
-                });
-            })
-            ->when($request->department, fn($q, $dep)    => $q->where('department', $dep))
-            ->when($request->status,     fn($q, $status) => $q->status($status));
-    }
-
-    private function getDepartmentsList()
-    {
-        try {
-            $tenantId = auth()->user()->tenant_id;
-
-            $departments = Department::where('tenant_id', $tenantId)
-                ->orderBy('name')
-                ->pluck('name');
-
-            if ($departments->isNotEmpty()) {
-                return $departments;
-            }
-
-        } catch (Exception $e) {
-            Log::warning('getDepartmentsList error: ' . $e->getMessage());
-        }
-
-        return Employee::whereNotNull('department')
-            ->where('department', '!=', '')
-            ->distinct()
-            ->orderBy('department')
-            ->pluck('department');
     }
 }

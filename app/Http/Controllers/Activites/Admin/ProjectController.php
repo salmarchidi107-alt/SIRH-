@@ -115,9 +115,7 @@ class ProjectController extends Controller
             ->get();
         $tenant = $user->tenant;
 
-        // NB : suppose que barryvdh/laravel-dompdf (ou équivalent) est déjà
-        // utilisé ailleurs dans l'appli (cf. exports absences/salaires) —
-        // à adapter si un autre package PDF est en place.
+
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('activites.admin.projects.export-pdf', compact('projects', 'tenant'));
 
         return $pdf->download('projets-' . now()->format('Y-m-d') . '.pdf');

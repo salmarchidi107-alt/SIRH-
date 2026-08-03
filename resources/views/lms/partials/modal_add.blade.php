@@ -1,6 +1,3 @@
-{{-- resources/views/lms/partials/modal_add.blade.php --}}
-{{-- Modal : Ajouter / Modifier une formation --}}
-
 <div id="modalFormation" class="modal fade" tabindex="-1" aria-labelledby="modalFormationLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content" style="border-radius:12px; border:0.5px solid var(--border-color, #e5e7eb);">

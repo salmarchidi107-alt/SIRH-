@@ -246,67 +246,6 @@
 </div>
 @endsection
 
-@push('styles')
-<style>
-.ged-label {
-    display: block;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: #0d2238;
-    margin-bottom: 6px;
-}
-.ged-input {
-    display: block;
-    width: 100%;
-    height: 46px;
-    padding: 0 14px;
-    font-size: 0.875rem;
-    color: #0d2238;
-    background: #fff;
-    border: 2px solid #e2e8f0;
-    border-radius: 10px;
-    transition: border-color .2s, box-shadow .2s;
-    outline: none;
-}
-.ged-input:focus {
-    border-color: #14b8a6;
-    box-shadow: 0 0 0 3px rgba(20,184,166,.12);
-}
-.ged-input::placeholder { color: #94a3b8; }
-
-.ged-select-wrap { position: relative; }
-.ged-select {
-    display: block;
-    width: 100%;
-    height: 46px;
-    padding: 0 40px 0 14px;
-    font-size: 0.875rem;
-    color: #0d2238;
-    background: #fff;
-    border: 2px solid #e2e8f0;
-    border-radius: 10px;
-    appearance: none;
-    -webkit-appearance: none;
-    cursor: pointer;
-    transition: border-color .2s, box-shadow .2s;
-    outline: none;
-}
-.ged-select:focus {
-    border-color: #14b8a6;
-    box-shadow: 0 0 0 3px rgba(20,184,166,.12);
-}
-.ged-select-icon {
-    position: absolute;
-    right: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 11px;
-    color: #94a3b8;
-    pointer-events: none;
-}
-</style>
-@endpush
-
 @push('scripts')
 <script>
 //  Map id → nom des modèles pour l'auto-remplissage

@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Demande de Congé Approuvée</title>
+    <title>Demande de Congé Refusée</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             min-height: 100vh;
             padding: 40px 20px;
         }
@@ -21,7 +21,7 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
         .header { 
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             color: white; 
             padding: 40px 30px; 
             text-align: center;
@@ -56,11 +56,11 @@
             margin-bottom: 24px;
         }
         .greeting strong {
-            color: #059669;
+            color: #dc2626;
         }
         .status-badge {
             display: inline-block;
-            background: linear-gradient(135deg, #10b981, #059669);
+            background: linear-gradient(135deg, #ef4444, #dc2626);
             color: white;
             padding: 8px 20px;
             border-radius: 24px;
@@ -94,6 +94,24 @@
             font-weight: 600;
             font-size: 14px;
         }
+        .reason-box {
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 16px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+        .reason-box-title {
+            font-weight: 600;
+            color: #dc2626;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .reason-box p {
+            color: #7f1d1d;
+            font-size: 14px;
+            line-height: 1.5;
+        }
         .footer { 
             background: #f9fafb;
             padding: 24px 30px;
@@ -115,60 +133,64 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="header-icon">✅</div>
-            <h1>Demande Approuvée</h1>
-            <p>Votre demande de congé a été acceptée</p>
+            <div class="header-icon">❌</div>
+            <h1>Demande Refusée</h1>
+            <p>Votre demande de congé n'a pas pu être acceptée</p>
         </div>
         
         <div class="body">
             <div class="greeting">
-                Bonjour <strong>{{ $absence->employee->full_name }}</strong>,
+                Bonjour <strong><?php echo e($absence->employee->full_name); ?></strong>,
             </div>
             
             <div style="text-align: center;">
-                <span class="status-badge">✓ Approuvée</span>
+                <span class="status-badge">✗ Refusée</span>
             </div>
             
             <p style="color: #4b5563; margin-bottom: 20px; line-height: 1.6;">
-                Nous avons le plaisir de vous informer que votre demande de congé a été <strong>approuvée</strong>. 
-                Vous pouvez désormais profiter de vos congés en toute tranquillité.
+                Nous avons le regret de vous informer que votre demande de congé a été <strong>refusée</strong>. 
+                Nous vous invitons à contacter le service des ressources humaines pour plus d'informations.
             </p>
             
             <div class="info-card">
                 <div class="info-row">
                     <span class="info-label">📅 Type de congé</span>
-                    <span class="info-value">{{ \App\Models\Absence::TYPES[$absence->type] ?? $absence->type }}</span>
+                    <span class="info-value"><?php echo e(\App\Models\Absence::TYPES[$absence->type] ?? $absence->type); ?></span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">📆 Date de début</span>
-                    <span class="info-value">{{ $absence->start_date->format('d/m/Y') }}</span>
+                    <span class="info-value"><?php echo e($absence->start_date->format('d/m/Y')); ?></span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">📆 Date de fin</span>
-                    <span class="info-value">{{ $absence->end_date->format('d/m/Y') }}</span>
+                    <span class="info-value"><?php echo e($absence->end_date->format('d/m/Y')); ?></span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">⏱️ Nombre de jours</span>
-                    <span class="info-value">{{ $absence->days }} jour(s)</span>
+                    <span class="info-value"><?php echo e($absence->days); ?> jour(s)</span>
                 </div>
+                <?php if($absence->reason): ?>
                 <div class="info-row">
-                    <span class="info-label">✅ Approuvé le</span>
-                    <span class="info-value">{{ $absence->approved_at ? $absence->approved_at->format('d/m/Y à H:i') : now()->format('d/m/Y à H:i') }}</span>
+                    <span class="info-label">📝 Motif demandé</span>
+                    <span class="info-value"><?php echo e($absence->reason); ?></span>
                 </div>
-                @if($absence->replacement)
-                <div class="info-row">
-                    <span class="info-label">🔄 Remplacé par</span>
-                    <span class="info-value">{{ $absence->replacement->full_name }}</span>
-                </div>
-                @endif
+                <?php endif; ?>
             </div>
             
+            <?php if($absence->notes): ?>
+            <div class="reason-box">
+                <div class="reason-box-title">📋 Motif du refus</div>
+                <p><?php echo e($absence->notes); ?></p>
+            </div>
+            <?php endif; ?>
+            
             <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">
-                Pour toute question, n'hésitez pas à contacter le service des ressources humaines.
+                Pour toute question ou pour soumettre une nouvelle demande, veuillez contacter le service des ressources humaines.
             </p>
             
-            <p style="color: #059669; font-weight: 600; margin-top: 20px;">
-                Bonne continuité ! 👋
+            <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+                Cordialement, 👋<br>
+                <strong>Le service des Ressources Humaines</strong>
             </p>
         </div>
         
@@ -179,3 +201,4 @@
     </div>
 </body>
 </html>
+<?php /**PATH D:\Projects\SIRH-\resources\views/emails/absence_rejected.blade.php ENDPATH**/ ?>

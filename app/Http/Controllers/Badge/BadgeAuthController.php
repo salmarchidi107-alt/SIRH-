@@ -1,22 +1,21 @@
 <?php
-// ============================================================
-//  app/Http/Controllers/Badge/BadgeAuthController.php
-// ============================================================
+
 
 namespace App\Http\Controllers\Badge;
 
 use App\Http\Controllers\Controller;
-use App\Models\Employee;
-use App\Models\User;
+use App\Services\Badge\BadgeAuthService;
+use App\Services\Badge\BadgePointageService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class BadgeAuthController extends Controller
 {
+    public function __construct(
+        private BadgeAuthService     $badgeAuthService,
+        private BadgePointageService $badgePointageService
+    ) {}
+
     // ── Afficher la page d'authentification ─────────────────────────────
     public function showAuth(Request $request)
     {
@@ -39,94 +38,47 @@ class BadgeAuthController extends Controller
         ]);
 
         // ── 1. Vérifier le PIN ──────────────────────────────────────────
-        // ✅ FIX: Utiliser plain_pin au lieu de pin
-        $employees = Employee::where('status', 'active')->get();
-        $employee  = $employees->first(function ($emp) use ($request) {
-            if (empty($emp->plain_pin)) return false;
-            return $emp->plain_pin === $request->pin;
-        });
+        $employee = $this->badgeAuthService->verifyPin($request->pin);
 
         if (! $employee) {
             return back()->withErrors(['pin' => 'PIN incorrect.'])->withInput();
         }
 
         // ── 2. Auto-créer le user si besoin ────────────────────────────
-        $user = $employee->user;
-        if (! $user) {
-            $email = $employee->email
-                ?: ('badge.emp' . $employee->id . '@hospitalrh.local');
-            $user = User::firstOrCreate(
-                ['email' => $email],
-                [
-                    'name'     => trim(($employee->first_name ?? '') . ' ' . ($employee->last_name ?? ''))
-                                    ?: 'Employee ' . $employee->id,
-                    'password' => Hash::make(Str::random(16)),
-                    'role'     => User::ROLE_EMPLOYEE,
-                ]
-            );
-            $employee->user_id = $user->id;
-            $employee->save();
-            $user->employee_id = $employee->id;
-            $user->save();
-        }
+        $user = $this->badgeAuthService->ensureUserForEmployee($employee);
 
         // ── 3. Sauvegarder la signature ─────────────────────────────────
-        $employee->update(['signature' => substr($request->signature, 0, 255)]);
+        $this->badgeAuthService->saveSignature($employee, $request->signature);
 
         // ── 4. Session badge ────────────────────────────────────────────
         $request->session()->put('badge_user_id', $user->id);
 
         // ── 5. Résoudre le type de shift (normal / garde) ───────────────
-        $shiftType = in_array($request->input('shift_type'), ['normal', 'garde'])
-            ? $request->input('shift_type')
-            : 'normal';
+        $shiftType = $this->badgeAuthService->resolveShiftType($request->input('shift_type'));
 
         // ── 6. Résoudre le type d'action ────────────────────────────────
-        $subaction  = $request->input('action_sub', $action);
-        $recordType = match ($subaction) {
-            'debut'        => 'entree',
-            'retour_pause' => 'retour_pause',
-            'sortie_pause' => 'pause',
-            'fin_shift'    => 'sortie',
-            default        => $action === 'entree' ? 'entree' : 'sortie',
-        };
+        $recordType = $this->badgeAuthService->resolveActionType(
+            $action,
+            $request->input('action_sub', $action)
+        );
 
-        // ── 7. Construire les données géo ───────────────────────────────
-        $geoData = $this->buildGeoData($request);
+        // ── 7. Construire les données géo (+ reverse geocoding fallback) ─
+        $geoData = $this->badgeAuthService->buildGeoData($request);
 
-        // ── 8. Reverse geocoding côté serveur (fallback) ────────────────
-        if (! $geoData['denied']
-            && $geoData['latitude'] !== null
-            && $geoData['longitude'] !== null
-            && empty($geoData['address'])) {
-            $geoData['address'] = $this->reverseGeocode(
-                $geoData['latitude'],
-                $geoData['longitude']
-            );
-        }
-
-        Log::info('Badge geoData final avant session', [
-            'denied'    => $geoData['denied'],
-            'latitude'  => $geoData['latitude'],
-            'longitude' => $geoData['longitude'],
-            'accuracy'  => $geoData['accuracy'],
-            'address'   => $geoData['address'],
-        ]);
-
-        // ── 9. Traiter la photo faciale ─────────────────────────────────
-        $photoData = $this->buildPhotoData(
+        // ── 8. Traiter la photo faciale ─────────────────────────────────
+        $photoData = $this->badgeAuthService->buildPhotoData(
             $request->input('face_photo'),
             $employee->id
         );
 
-        // ── 10. Enregistrer le pointage ─────────────────────────────────
+        // ── 9. Enregistrer le pointage ───────────────────────────────────
         try {
-            app(BadgePointageController::class)->recordAction(
+            $this->badgePointageService->recordAction(
                 $recordType,
                 $employee,
                 $geoData,
                 $photoData,
-                $shiftType   // ← type de shift transmis
+                $shiftType
             );
         } catch (\Exception $e) {
             Log::error('Badge pointage error', [
@@ -135,7 +87,7 @@ class BadgeAuthController extends Controller
             ]);
         }
 
-        // ── 11. Stocker en session et rediriger ─────────────────────────
+        // ── 10. Stocker en session et rediriger ─────────────────────────
         $request->session()->put('last_type',       $recordType);
         $request->session()->put('last_geo',        $geoData);
         $request->session()->put('last_shift_type', $shiftType);
@@ -151,154 +103,5 @@ class BadgeAuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect()->route('badge.pointage');
-    }
-
-    // ── Helpers privés ────────────────────────────────────────────────────
-
-    /**
-     * Traite le data-URL base64 de la photo faciale.
-     * Sauvegarde le fichier sur disque ET conserve le base64 brut.
-     */
-    private function buildPhotoData(?string $dataUrl, int $employeeId): array
-    {
-        if (empty($dataUrl)) {
-            return $this->emptyPhotoData();
-        }
-
-        try {
-            if (! preg_match('/^data:([a-z\/]+);base64,(.+)$/s', $dataUrl, $m)) {
-                Log::warning('Badge photo : format data-URL invalide');
-                return $this->emptyPhotoData();
-            }
-
-            $mime   = strtolower($m[1]);
-            $base64 = $m[2];
-
-            $allowed = ['image/jpeg', 'image/png', 'image/webp'];
-            if (! in_array($mime, $allowed, true)) {
-                Log::warning('Badge photo : MIME non autorisé', ['mime' => $mime]);
-                return $this->emptyPhotoData();
-            }
-
-            $binary = base64_decode($base64, strict: true);
-            if ($binary === false) {
-                Log::warning('Badge photo : base64 invalide');
-                return $this->emptyPhotoData();
-            }
-
-            $size = strlen($binary);
-            if ($size > 5 * 1024 * 1024) {
-                Log::warning('Badge photo : trop volumineuse', ['size' => $size]);
-                return $this->emptyPhotoData();
-            }
-
-            $ext      = match ($mime) { 'image/png' => 'png', 'image/webp' => 'webp', default => 'jpg' };
-            $filename = 'emp_' . $employeeId . '_' . now()->format('Ymd_His') . '_' . Str::random(6) . '.' . $ext;
-            $path     = 'pointages/faces/' . $filename;
-
-            Storage::disk('public')->put($path, $binary);
-
-            Log::info('Badge photo : sauvegardée', ['path' => $path, 'size' => $size, 'mime' => $mime]);
-
-            return [
-                'face_photo_path'   => $path,
-                'face_photo_disk'   => 'public',
-                'face_photo_base64' => $base64,
-                'face_photo_size'   => $size,
-                'face_photo_mime'   => $mime,
-            ];
-
-        } catch (\Exception $e) {
-            Log::error('Badge photo : erreur inattendue', ['error' => $e->getMessage()]);
-            return $this->emptyPhotoData();
-        }
-    }
-
-    private function emptyPhotoData(): array
-    {
-        return [
-            'face_photo_path'   => null,
-            'face_photo_disk'   => 'public',
-            'face_photo_base64' => null,
-            'face_photo_size'   => 0,
-            'face_photo_mime'   => null,
-        ];
-    }
-
-    private function buildGeoData(Request $request): array
-    {
-        $rawLat    = trim((string) $request->input('geo_latitude',  ''));
-        $rawLng    = trim((string) $request->input('geo_longitude', ''));
-        $rawAcc    = trim((string) $request->input('geo_accuracy',  ''));
-        $rawDenied = trim((string) $request->input('geo_denied',    '1'));
-        $rawAddr   = trim((string) $request->input('geo_address',   ''));
-
-        Log::info('Badge geo_data reçu (raw)', [
-            'geo_denied'    => $rawDenied,
-            'geo_latitude'  => $rawLat,
-            'geo_longitude' => $rawLng,
-            'geo_accuracy'  => $rawAcc,
-            'geo_address'   => $rawAddr,
-        ]);
-
-        if ($rawLat === '' || $rawLng === '') {
-            Log::warning('Badge geo : coordonnées vides → denied forcé');
-            return ['latitude' => null, 'longitude' => null, 'accuracy' => null, 'address' => null, 'denied' => true];
-        }
-
-        $lat = (float) $rawLat;
-        $lng = (float) $rawLng;
-        $acc = ($rawAcc !== '') ? (float) $rawAcc : null;
-
-        if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
-            Log::warning('Badge geo : coordonnées hors plage', ['lat' => $lat, 'lng' => $lng]);
-            return ['latitude' => null, 'longitude' => null, 'accuracy' => null, 'address' => null, 'denied' => true];
-        }
-
-        $result = [
-            'latitude'  => $lat,
-            'longitude' => $lng,
-            'accuracy'  => ($acc !== null && $acc > 0) ? (int) round($acc) : null,
-            'address'   => ($rawAddr !== '') ? $rawAddr : null,
-            'denied'    => false,
-        ];
-
-        Log::info('Badge geo : données construites', $result);
-        return $result;
-    }
-
-    private function reverseGeocode(float $lat, float $lng): ?string
-    {
-        try {
-            $response = Http::timeout(6)
-                ->withHeaders([
-                    'User-Agent'      => 'HospitalRH-Badge/1.0 contact@hospitalrh.ma',
-                    'Accept-Language' => 'fr',
-                ])
-                ->get('https://nominatim.openstreetmap.org/reverse', [
-                    'lat'             => $lat,
-                    'lon'             => $lng,
-                    'format'          => 'json',
-                    'zoom'            => 18,
-                    'accept-language' => 'fr',
-                ]);
-
-            if ($response->successful()) {
-                $data    = $response->json();
-                $a       = $data['address'] ?? [];
-                $road    = $a['road'] ?? $a['pedestrian'] ?? $a['footway'] ?? null;
-                $num     = $a['house_number'] ?? null;
-                $quarter = $a['quarter'] ?? $a['neighbourhood'] ?? $a['suburb'] ?? null;
-                $city    = $a['city'] ?? $a['town'] ?? $a['village'] ?? null;
-                $state   = $a['state'] ?? $a['region'] ?? null;
-                $country = $a['country'] ?? null;
-                $street  = $road ? ($num ? $num . ' ' . $road : $road) : null;
-                $parts   = array_filter([$street, $quarter, $city, $state, $country]);
-                return implode(', ', $parts) ?: ($data['display_name'] ?? null);
-            }
-        } catch (\Exception $e) {
-            Log::warning('Reverse geocoding failed', ['error' => $e->getMessage()]);
-        }
-        return null;
     }
 }

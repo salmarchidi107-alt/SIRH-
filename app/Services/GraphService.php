@@ -11,9 +11,7 @@ class GraphService
 {
     const PAUSE_DEJEUNER = 1.0;
 
-    // =========================================================================
-    // EMPLOYE — 12 mois pour une année donnée
-    // =========================================================================
+
     public function getGraphiqueMois(int $employeeId, int $annee): array
     {
         $moisLabels = ['Jan','Fév','Mar','Avr','Mai','Jun',
@@ -80,9 +78,7 @@ class GraphService
         return $result;
     }
 
-    // =========================================================================
-    // DEPARTEMENT — 12 mois pour une année donnée
-    // =========================================================================
+
     public function getGraphiqueMoisDepartement(string $department, int $annee): array
     {
         $moisLabels = ['Jan','Fév','Mar','Avr','Mai','Jun',
@@ -156,15 +152,13 @@ class GraphService
         return $result;
     }
 
-    // =========================================================================
-    // HELPER — même logique que VueEnsembleController::dureeShiftHeures()
-    // =========================================================================
+
     private function dureeShiftHeures(string $date, string $start, string $end): float
     {
         $d     = Carbon::parse($date);
         $debut = $d->copy()->setTimeFromTimeString($start);
         $fin   = $d->copy()->setTimeFromTimeString($end);
-   
+
         // Passage minuit
         if ($fin->lte($debut)) {
             $fin->addDay();

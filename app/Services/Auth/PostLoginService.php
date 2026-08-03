@@ -7,13 +7,7 @@ use Illuminate\Support\Facades\Log;
 use Stancl\Tenancy\Facades\Tenancy;
 
 
-/**
- * PostLoginService - Clean Architecture Service
- *
- * Key decision: Always receives and uses Tenant MODEL OBJECT (never UUID string)
- * Called after Auth::attempt() success in AuthController::login()
- * Ensures consistent tenancy initialization across the app.
- */
+
 class PostLoginService
 {
 
@@ -44,4 +38,3 @@ class PostLoginService
         ]);
     }
 }
-

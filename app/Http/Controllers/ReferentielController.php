@@ -6,36 +6,19 @@ namespace App\Http\Controllers;
 use App\Models\Formateur;
 use App\Models\CatalogueFormation;
 use App\Models\OrganismeFormation;
-use App\Models\Formation;
+use App\Services\ReferentielService;
 use Illuminate\Http\Request;
 
 class ReferentielController extends Controller
 {
-    /* ══════════════════════════════════════════
-     |  PAGE PRINCIPALE (3 onglets)
-     ══════════════════════════════════════════ */
+    public function __construct(private ReferentielService $referentielService) {}
+
 
     public function index(Request $request)
     {
-        $onglet     = $request->get('onglet', 'formateurs');
-        $formateurs = Formateur::orderBy('nom')->get();
-        $formations = CatalogueFormation::orderBy('titre')->get();
-        $organismes = OrganismeFormation::orderBy('nom')->get();
-
-        $stats = [
-            'formateurs' => Formateur::count(),
-            'formations' => CatalogueFormation::count(),
-            'organismes' => OrganismeFormation::count(),
-        ];
-
-        return view('referentiel.index', compact(
-            'formateurs', 'formations', 'organismes', 'stats', 'onglet'
-        ));
+        return view('referentiel.index', $this->referentielService->getIndexData($request));
     }
 
-    /* ══════════════════════════════════════════
-     |  FORMATEURS
-     ══════════════════════════════════════════ */
 
     public function storeFormateur(Request $request)
     {
@@ -48,8 +31,7 @@ class ReferentielController extends Controller
             'type'       => 'required|in:interne,externe',
         ]);
 
-        Formateur::create($data);
-        Formation::clearCacheFormateurs();
+        $this->referentielService->createFormateur($data);
 
         return redirect()->route('referentiel.index', ['onglet' => 'formateurs'])
             ->with('success', 'Formateur ajouté avec succès.');
@@ -67,8 +49,7 @@ class ReferentielController extends Controller
             'actif'      => 'boolean',
         ]);
 
-        $formateur->update($data);
-        Formation::clearCacheFormateurs();
+        $this->referentielService->updateFormateur($formateur, $data);
 
         return redirect()->route('referentiel.index', ['onglet' => 'formateurs'])
             ->with('success', 'Formateur mis à jour.');
@@ -76,16 +57,11 @@ class ReferentielController extends Controller
 
     public function destroyFormateur(Formateur $formateur)
     {
-        $formateur->delete();
-        Formation::clearCacheFormateurs();
+        $this->referentielService->deleteFormateur($formateur);
 
         return redirect()->route('referentiel.index', ['onglet' => 'formateurs'])
             ->with('success', 'Formateur supprimé.');
     }
-
-    /* ══════════════════════════════════════════
-     |  CATALOGUE FORMATIONS
-     ══════════════════════════════════════════ */
 
     public function storeFormation(Request $request)
     {
@@ -98,8 +74,7 @@ class ReferentielController extends Controller
             'date_creation' => 'nullable|date',
         ]);
 
-        CatalogueFormation::create($data);
-        Formation::clearCacheTitres();
+        $this->referentielService->createFormation($data);
 
         return redirect()->route('referentiel.index', ['onglet' => 'formations'])
             ->with('success', 'Formation ajoutée au catalogue.');
@@ -117,8 +92,7 @@ class ReferentielController extends Controller
             'actif'         => 'boolean',
         ]);
 
-        $formation->update($data);
-        Formation::clearCacheTitres();
+        $this->referentielService->updateFormation($formation, $data);
 
         return redirect()->route('referentiel.index', ['onglet' => 'formations'])
             ->with('success', 'Formation mise à jour.');
@@ -126,16 +100,12 @@ class ReferentielController extends Controller
 
     public function destroyFormation(CatalogueFormation $formation)
     {
-        $formation->delete();
-        Formation::clearCacheTitres();
+        $this->referentielService->deleteFormation($formation);
 
         return redirect()->route('referentiel.index', ['onglet' => 'formations'])
             ->with('success', 'Formation supprimée du catalogue.');
     }
 
-    /* ══════════════════════════════════════════
-     |  ORGANISMES
-     ══════════════════════════════════════════ */
 
     public function storeOrganisme(Request $request)
     {
@@ -149,8 +119,7 @@ class ReferentielController extends Controller
             'date_creation' => 'nullable|date',
         ]);
 
-        OrganismeFormation::create($data);
-        Formation::clearCacheOrganismes();
+        $this->referentielService->createOrganisme($data);
 
         return redirect()->route('referentiel.index', ['onglet' => 'organismes'])
             ->with('success', 'Organisme ajouté avec succès.');
@@ -169,8 +138,7 @@ class ReferentielController extends Controller
             'date_creation' => 'nullable|date',
         ]);
 
-        $organisme->update($data);
-        Formation::clearCacheOrganismes();
+        $this->referentielService->updateOrganisme($organisme, $data);
 
         return redirect()->route('referentiel.index', ['onglet' => 'organismes'])
             ->with('success', 'Organisme mis à jour.');
@@ -178,47 +146,27 @@ class ReferentielController extends Controller
 
     public function destroyOrganisme(OrganismeFormation $organisme)
     {
-        $organisme->delete();
-        Formation::clearCacheOrganismes();
+        $this->referentielService->deleteOrganisme($organisme);
 
         return redirect()->route('referentiel.index', ['onglet' => 'organismes'])
             ->with('success', 'Organisme supprimé.');
     }
 
-    /* ══════════════════════════════════════════
-     |  AJAX — utilisé par le LMS modal
-     ══════════════════════════════════════════ */
-
     /** Formateurs actifs → label = "Prénom Nom" */
     public function formateursActifs()
     {
-        return response()->json(
-            Formateur::where('actif', true)->orderBy('nom')
-                ->get(['id', 'nom', 'prenom', 'specialite', 'type'])
-                ->map(fn($f) => [
-                    'id'        => $f->id,
-                    'label'     => trim("{$f->prenom} {$f->nom}"),
-                    'specialite'=> $f->specialite,
-                    'type'      => $f->type,
-                ])
-        );
+        return response()->json($this->referentielService->getFormateursActifs());
     }
 
     /** Catalogue des formations actives */
     public function catalogueActif()
     {
-        return response()->json(
-            CatalogueFormation::where('actif', true)->orderBy('titre')
-                ->get(['id', 'titre', 'duree_heures', 'type'])
-        );
+        return response()->json($this->referentielService->getCatalogueActif());
     }
 
     /** Organismes actifs */
     public function organismesActifs()
     {
-        return response()->json(
-            OrganismeFormation::where('actif', true)->orderBy('nom')
-                ->get(['id', 'nom', 'agree'])
-        );
+        return response()->json($this->referentielService->getOrganismesActifs());
     }
 }

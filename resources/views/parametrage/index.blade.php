@@ -5,83 +5,6 @@
 
 @section('content')
 
-<style>
-.param-tabs{display:flex;gap:4px;background:#f3f4f6;padding:6px;border-radius:12px;margin-bottom:28px;width:fit-content;}
-.param-tab{padding:10px 22px;border-radius:8px;font-size:0.875rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:#6b7280;transition:all .2s;font-family:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:8px;}
-.param-tab.active{background:white;color:#0ea5e9;box-shadow:0 1px 4px rgba(0,0,0,0.1);}
-.param-tab:hover:not(.active){background:rgba(255,255,255,.6);color:#0ea5e9;}
-.param-panel{display:none;}.param-panel.active{display:block;}
-.param-grid{display:grid;grid-template-columns:380px 1fr;gap:24px;align-items:start;}
-.param-form-card{background:white;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;position:sticky;top:24px;}
-.param-form-card-header{padding:18px 20px;border-bottom:1px solid #e5e7eb;background:linear-gradient(135deg,#f0f9ff,#e0f2fe);}
-.param-form-card-header h3{font-size:0.95rem;font-weight:700;color:#0f1731;margin:0;}
-.param-form-card-body{padding:20px;}
-.param-list-card{background:white;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;}
-.param-list-header{padding:16px 20px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;}
-.param-list-header h3{font-size:0.9rem;font-weight:700;color:#111827;margin:0;}
-.param-count-badge{background:#0ea5e9;color:white;font-size:0.72rem;font-weight:700;padding:2px 10px;border-radius:20px;}
-.param-item{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #e5e7eb;transition:background .15s;}
-.param-item:last-child{border-bottom:none;}.param-item:hover{background:#f9fafb;}
-.param-item-left{display:flex;align-items:center;gap:12px;}
-.param-item-name{font-weight:600;font-size:0.875rem;color:#111827;}
-.param-item-sub{font-size:0.75rem;color:#6b7280;margin-top:2px;}
-.param-item-actions{display:flex;gap:6px;}
-.btn-sm{padding:5px 12px;border-radius:6px;border:1px solid #e5e7eb;background:white;cursor:pointer;font-size:0.75rem;font-weight:600;transition:all .15s;color:#6b7280;font-family:inherit;}
-.btn-sm:hover{background:#f3f4f6;color:#0ea5e9;}.btn-sm.danger:hover{background:#fef2f2;color:#ef4444;border-color:#fecaca;}
-.param-empty{padding:48px 20px;text-align:center;color:#6b7280;}.param-empty p{font-size:0.875rem;}
-.param-label{display:block;font-size:0.8rem;font-weight:600;color:#6b7280;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;}
-.param-input{width:100%;padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;font-size:0.9rem;background:white;transition:border-color .2s;box-sizing:border-box;font-family:inherit;}
-.param-input:focus{outline:none;border-color:#0ea5e9;box-shadow:0 0 0 3px rgba(14,165,233,.12);}
-.param-input-group{margin-bottom:16px;}
-.btn-submit{width:100%;padding:11px 16px;border:none;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;background:linear-gradient(135deg,#2dd4bf,#0f766e);color:white;}
-.btn-submit:hover{transform:translateY(-1px);}
-.param-alert{padding:10px 14px;border-radius:8px;font-size:0.82rem;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
-.param-alert.error{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;}
-.param-modal-overlay{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);align-items:center;justify-content:center;}
-.param-modal-overlay.open{display:flex;}
-.param-modal{background:white;border-radius:14px;padding:28px;width:90%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto;}
-.param-modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
-.param-modal-header h3{font-size:1rem;font-weight:700;margin:0;}
-.btn-close{background:none;border:none;font-size:1.3rem;color:#6b7280;cursor:pointer;line-height:1;font-family:inherit;}
-.btn-close:hover{color:#ef4444;}
-.param-search{padding:8px 14px;border:1px solid #e5e7eb;border-radius:8px;font-size:0.8rem;outline:none;width:200px;font-family:inherit;}
-.docs-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
-.docs-table th{padding:10px 14px;text-align:left;background:#f9fafb;border-bottom:2px solid #e5e7eb;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#6b7280;white-space:nowrap;}
-.docs-table td{padding:12px 14px;border-bottom:1px solid #f3f4f6;vertical-align:middle;}
-.docs-table tr:last-child td{border-bottom:none;}.docs-table tr:hover td{background:#f9fafb;}
-.docs-filter-bar{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid #e5e7eb;background:#f9fafb;flex-wrap:wrap;}
-.docs-filter-select{padding:7px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:0.85rem;font-family:inherit;background:white;cursor:pointer;}
-.emp-avatar{width:30px;height:30px;border-radius:50%;background:#e0f2fe;color:#0369a1;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
-.btn-add-doc{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:linear-gradient(135deg,#2dd4bf,#0f766e);color:white;border:none;border-radius:8px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;}
-.btn-add-doc:hover{transform:translateY(-1px);}
-.target-option{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:8px;cursor:pointer;background:white;width:100%;box-sizing:border-box;text-align:left;font-family:inherit;margin-bottom:8px;}
-.target-option:hover{border-color:#0ea5e9;background:#f0f9ff;}.target-option.selected{border-color:#0ea5e9;background:#f0f9ff;}
-.emp-file-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:8px;background:white;}
-.emp-file-row.ok{border-color:#10b981;background:#f0fdf4;}
-.emp-file-avatar{width:30px;height:30px;border-radius:50%;background:#e0f2fe;color:#0369a1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
-
-/* ── Localisation ── */
-.loc-card-header{padding:18px 20px;border-bottom:1px solid #e5e7eb;background:linear-gradient(135deg,#f0f9ff,#e0f2fe);}
-.loc-card-header h3{font-size:0.95rem;font-weight:700;color:#0f1731;margin:0;}
-.loc-card-header p{font-size:0.8rem;color:#475569;margin:6px 0 0;}
-.loc-card-body{padding:20px;}
-.loc-btn-locate{background:#f0fdfa;color:#0d9488;border:1px solid #ccfbf1;padding:9px 16px;border-radius:8px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:16px;display:inline-flex;align-items:center;gap:6px;}
-.loc-btn-locate:hover{background:#ccfbf1;}
-.loc-status{font-size:0.78rem;margin-bottom:14px;min-height:16px;}
-
-/* Localisations enregistrées */
-.loc-saved-row{padding:14px 20px;border-bottom:1px solid #f3f4f6;display:flex;align-items:flex-start;gap:12px;}
-.loc-saved-row:last-child{border-bottom:none;}
-.loc-saved-row:hover{background:#f9fafb;}
-.loc-saved-icon{width:36px;height:36px;border-radius:8px;background:#e0f2fe;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
-.loc-saved-dept{font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:99px;display:inline-block;margin-bottom:4px;}
-.loc-saved-dept.global{background:#f3f4f6;color:#6b7280;}
-.loc-saved-dept.specific{background:#ede9fe;color:#7c3aed;}
-.loc-saved-name{font-weight:600;font-size:0.875rem;color:#111827;}
-.loc-saved-coords{font-size:0.72rem;color:#9ca3af;margin-top:2px;}
-.loc-saved-radius{font-size:0.72rem;color:#0ea5e9;font-weight:600;margin-top:3px;}
-</style>
-
 <div class="page-header">
     <div class="page-header-left">
         <h1>Parametrage</h1>
@@ -162,10 +85,10 @@
                         </div>
                     </div>
                     <div class="param-item-actions">
-                        <button class="btn-sm" onclick="openRoomModal({{ $room->id }},'{{ addslashes($room->name) }}',{{ $room->department_id }},{{ $room->capacity ?? 'null' }},'{{ addslashes($room->description ?? '') }}')">Modifier</button>
+                        <button class="param-btn-sm" onclick="openRoomModal({{ $room->id }},'{{ addslashes($room->name) }}',{{ $room->department_id }},{{ $room->capacity ?? 'null' }},'{{ addslashes($room->description ?? '') }}')">Modifier</button>
                         <form method="POST" action="{{ route('rooms.destroy',$room) }}" style="display:inline;" onsubmit="return confirm('Supprimer ?')">
                             @csrf @method('DELETE')
-                            <button type="submit" class="btn-sm danger">Supprimer</button>
+                            <button type="submit" class="param-btn-sm danger">Supprimer</button>
                         </form>
                     </div>
                 </div>
@@ -221,10 +144,10 @@
                         </div>
                     </div>
                     <div class="param-item-actions">
-                        <button class="btn-sm" onclick="openDeptModal({{ $dept->id }},'{{ addslashes($dept->name) }}','{{ addslashes($dept->code ?? '') }}','{{ $dept->color ?? '#0ea5e9' }}','{{ addslashes($dept->chef ?? '') }}','{{ addslashes($dept->description ?? '') }}')">Modifier</button>
+                        <button class="param-btn-sm" onclick="openDeptModal({{ $dept->id }},'{{ addslashes($dept->name) }}','{{ addslashes($dept->code ?? '') }}','{{ $dept->color ?? '#0ea5e9' }}','{{ addslashes($dept->chef ?? '') }}','{{ addslashes($dept->description ?? '') }}')">Modifier</button>
                         <form method="POST" action="{{ route('departments.destroy',$dept) }}" style="display:inline;" onsubmit="return confirm('Supprimer ?')">
                             @csrf @method('DELETE')
-                            <button type="submit" class="btn-sm danger">Supprimer</button>
+                            <button type="submit" class="param-btn-sm danger">Supprimer</button>
                         </form>
                     </div>
                 </div>
@@ -357,7 +280,7 @@
         <div class="param-list-card">
             <div class="param-list-header">
                 <h3>Localisations enregistrées</h3>
-                <button type="button" class="btn-sm" id="btn-refresh-locs">↻ Rafraîchir</button>
+                <button type="button" class="param-btn-sm" id="btn-refresh-locs">↻ Rafraîchir</button>
             </div>
             <div id="locs-list-content">
                 <div style="text-align:center;padding:30px;color:#9ca3af;font-size:0.82rem;">Chargement…</div>
@@ -586,7 +509,6 @@ function delDoc(docId, empId, empName) {
 // ── ONGLET LOCALISATION ─────────────────────────────────────────────────────
 var CSRF = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-// Géoloc
 var btnLocate = document.getElementById('btn-locate-me');
 if (btnLocate) {
     btnLocate.addEventListener('click', function () {
@@ -606,7 +528,6 @@ if (btnLocate) {
     });
 }
 
-// Enregistrer une localisation
 var btnSaveLoc = document.getElementById('btn-save-location');
 if (btnSaveLoc) {
     btnSaveLoc.addEventListener('click', function () {
@@ -630,7 +551,6 @@ if (btnSaveLoc) {
         .then(function (data) {
             if (data.success) {
                 feedback.textContent = '✓ ' + data.message; feedback.style.color = '#16a34a';
-                // Reset form
                 document.getElementById('loc_site_name').value = '';
                 document.getElementById('loc_department').value = '';
                 document.getElementById('loc_lat').value = '';
@@ -647,7 +567,6 @@ if (btnSaveLoc) {
     });
 }
 
-// Charger et afficher la liste des localisations
 function fetchLocations() {
     var c = document.getElementById('locs-list-content');
     c.innerHTML = '<div style="text-align:center;padding:24px;color:#9ca3af;font-size:0.82rem;">Chargement…</div>';
@@ -675,8 +594,8 @@ function fetchLocations() {
                   + '</div>'
                   + '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0;">'
                   + '<a href="' + mapsUrl + '" target="_blank" style="font-size:0.72rem;color:#0ea5e9;text-decoration:none;font-weight:600;">🗺 Maps</a>'
-                  + '<button onclick="prefillForm(' + JSON.stringify(loc).replace(/"/g, '&quot;') + ')" class="btn-sm" style="font-size:0.7rem;"> Modifier</button>'
-                  + '<button onclick="deleteLoc(' + loc.id + ')" class="btn-sm danger" style="font-size:0.7rem;">🗑 Suppr.</button>'
+                  + '<button onclick="prefillForm(' + JSON.stringify(loc).replace(/"/g, '&quot;') + ')" class="param-btn-sm" style="font-size:0.7rem;"> Modifier</button>'
+                  + '<button onclick="deleteLoc(' + loc.id + ')" class="param-btn-sm danger" style="font-size:0.7rem;">🗑 Suppr.</button>'
                   + '</div>'
                   + '</div>';
         });
@@ -687,7 +606,6 @@ function fetchLocations() {
     });
 }
 
-// Préremplir le formulaire pour modifier une localisation existante
 function prefillForm(loc) {
     document.getElementById('loc_site_name').value = loc.site_name || '';
     document.getElementById('loc_department').value = loc.department || '';
@@ -696,12 +614,10 @@ function prefillForm(loc) {
     document.getElementById('loc_radius').value = loc.radius_meters || 300;
     document.getElementById('locate-status').textContent = '';
     document.getElementById('save-feedback').textContent = '';
-    // Scroll vers le formulaire
     document.getElementById('loc_site_name').scrollIntoView({ behavior: 'smooth', block: 'center' });
     document.getElementById('loc_site_name').focus();
 }
 
-// Supprimer une localisation
 function deleteLoc(id) {
     if (!confirm('Supprimer cette localisation ?')) return;
     fetch('{{ url("parametrage/site-location") }}/' + id, {
@@ -712,11 +628,9 @@ function deleteLoc(id) {
     .catch(function () { alert('Erreur réseau.'); });
 }
 
-// Bouton rafraîchir
 var btnRefreshLocs = document.getElementById('btn-refresh-locs');
 if (btnRefreshLocs) { btnRefreshLocs.addEventListener('click', fetchLocations); }
 
-// Chargement auto au démarrage
 fetchLocations();
 </script>
 

@@ -268,13 +268,6 @@
     </div>
 </form>
 
-<style>
-@keyframes slideDown {
-    from { opacity: 0; transform: translateY(-16px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-</style>
-
 <script>
 /* ─────────────────────────────────────────────────────────────
    Données passées depuis le contrôleur

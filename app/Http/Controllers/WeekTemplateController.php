@@ -3,25 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\WeekTemplate;
-use App\Models\Employee;
-use App\Models\Absence;
+use App\Services\WeekTemplateService;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
-use App\Models\Room;
-use Illuminate\Support\Facades\DB;
 
 class WeekTemplateController extends Controller
 {
+    public function __construct(private WeekTemplateService $weekTemplateService) {}
+
     public function index()
     {
-        $templates = WeekTemplate::all();
-        return view('planning.templates.index', compact('templates'));
+        return view('planning.templates.index', $this->weekTemplateService->getIndexData());
     }
 
     public function create()
     {
-        $rooms = Room::all();
-        return view('planning.templates.create', compact('rooms'));
+        return view('planning.templates.create', $this->weekTemplateService->getCreateData());
     }
 
     public function store(Request $request)
@@ -59,19 +55,9 @@ class WeekTemplateController extends Controller
             'sunday_room'          => 'nullable|exists:rooms,id',
         ]);
 
-        // Convert room IDs to room names
-        $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-        foreach ($days as $day) {
-            $roomId = $validated[$day . '_room'];
-            if ($roomId) {
-                $room = Room::find($roomId);
-                $validated[$day . '_room'] = $room ? $room->name : null;
-            } else {
-                $validated[$day . '_room'] = null;
-            }
-        }
+        $validated = $this->weekTemplateService->resolveRoomNames($validated);
 
-        WeekTemplate::create($validated);
+        $this->weekTemplateService->createTemplate($validated);
 
         return redirect()->route('planning.templates.index')
             ->with('success', 'Semaine type créée avec succès.');
@@ -79,20 +65,17 @@ class WeekTemplateController extends Controller
 
     public function destroy(WeekTemplate $template)
     {
-        $template->delete();
+        $this->weekTemplateService->deleteTemplate($template);
+
         return redirect()->route('planning.templates.index')
             ->with('success', 'Semaine type supprimée.');
     }
 
     public function applyForm()
     {
-        $templates        = WeekTemplate::all();
-        $employees        = Employee::active()->get();
-        $selectedTemplate = request('template_id')
-            ? WeekTemplate::find(request('template_id'))
-            : null;
+        $data = $this->weekTemplateService->getApplyFormData(request('template_id'));
 
-        return view('planning.templates.apply', compact('templates', 'employees', 'selectedTemplate'));
+        return view('planning.templates.apply', $data);
     }
 
     public function apply(Request $request)
@@ -104,78 +87,8 @@ class WeekTemplateController extends Controller
             'start_date'        => 'required|date',
         ]);
 
-        $template  = WeekTemplate::findOrFail($validated['template_id']);
-        $startDate = Carbon::parse($validated['start_date']);
-        $endDate   = $startDate->copy()->endOfWeek(Carbon::SUNDAY);
+        $result = $this->weekTemplateService->applyTemplate($validated);
 
-        // ── Récupérer les IDs des employés absents sur la semaine cible ──────
-        // Un employé est considéré absent si une absence APPROUVÉE chevauche
-        // au moins un jour de la semaine à appliquer.
-        $absentEmployeeIds = Absence::where('status', 'approved')
-            ->where(function ($q) use ($startDate, $endDate) {
-                $q->whereBetween('start_date', [$startDate, $endDate])
-                  ->orWhereBetween('end_date',   [$startDate, $endDate])
-                  ->orWhere(function ($q2) use ($startDate, $endDate) {
-                      $q2->where('start_date', '<=', $startDate)
-                         ->where('end_date',   '>=', $endDate);
-                  });
-            })
-            ->pluck('employee_id')
-            ->unique()
-            ->toArray();
-
-        DB::transaction(function () use ($validated, $template, $startDate, $absentEmployeeIds) {
-
-            if ($validated['department_target']) {
-                // ── Application par département : ignorer les absents ────────
-                $employees = Employee::where('department', $validated['department_target'])
-                    ->active()
-                    ->whereNotIn('id', $absentEmployeeIds)   // ← EXCLURE LES ABSENTS
-                    ->get();
-
-                foreach ($employees as $employee) {
-                    $template->applyToEmployee($employee->id, $startDate);
-                }
-
-            } else {
-                // ── Application individuelle : bloquer si absent ─────────────
-                if (in_array($validated['employee_id'], $absentEmployeeIds)) {
-                    // On lève une exception pour rollback et message d'erreur
-                    throw new \RuntimeException('absent');
-                }
-                $template->applyToEmployee($validated['employee_id'], $startDate);
-            }
-        });
-
-        // ── Messages de retour ───────────────────────────────────────────────
-        if ($validated['department_target']) {
-            // Recalculer le compte (hors absents) pour le message
-            $appliedCount = Employee::where('department', $validated['department_target'])
-                ->active()
-                ->whereNotIn('id', $absentEmployeeIds)
-                ->count();
-
-            $skippedCount = count($absentEmployeeIds);
-
-            $msg = "Semaine type appliquée à **{$appliedCount} employé(s)** du département {$validated['department_target']}.";
-            if ($skippedCount > 0) {
-                $msg .= " {$skippedCount} employé(s) absent(s) ignoré(s).";
-            }
-
-            return back()->with('success', $msg);
-
-        } else {
-            // Cas individuel : vérifier si on a été bloqué (l'exception est catchée
-            // par Laravel qui redirige automatiquement, mais on peut aussi gérer ici)
-            $employee = Employee::findOrFail($validated['employee_id']);
-
-            if (in_array($validated['employee_id'], $absentEmployeeIds)) {
-                return back()->with('warning',
-                    "{$employee->full_name} est absent(e) sur cette période — la semaine type n'a pas été appliquée."
-                );
-            }
-
-            return back()->with('success', 'Semaine type appliquée à ' . $employee->full_name);
-        }
+        return back()->with($result['level'], $result['message']);
     }
 }

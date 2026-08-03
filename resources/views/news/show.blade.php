@@ -50,24 +50,4 @@
         </div>
     </div>
 </div>
-
-<style>
-.news-detail {
-    max-width: 900px;
-    margin: 0 auto;
-}
-
-.news-flyer {
-    margin-bottom: 24px;
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-}
-
-.news-flyer img {
-    width: 100%;
-    height: auto;
-    display: block;
-}
-</style>
 @endsection

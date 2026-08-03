@@ -3,148 +3,6 @@
 @section('title', 'Rapport RH')
 @section('page-title', 'Rapport RH')
 
-@push('styles')
-<style>
-.rpt-filters {
-    display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;
-    background: white; border: 1px solid var(--border, #e5e7eb);
-    border-radius: 12px; padding: 16px 20px; margin-bottom: 24px;
-}
-.rpt-filter-group { display: flex; flex-direction: column; gap: 5px; min-width: 140px; }
-.rpt-filter-group label {
-    font-size: 0.75rem; font-weight: 600; color: var(--text-muted, #6b7280);
-    text-transform: uppercase; letter-spacing: .04em;
-}
-.rpt-filter-group select, .rpt-filter-group input {
-    padding: 8px 12px; border: 1px solid var(--border, #e5e7eb);
-    border-radius: 8px; font-size: 0.85rem; font-family: inherit;
-    background: white; color: var(--text, #111827);
-    outline: none; transition: border-color .2s;
-}
-.rpt-filter-group select:focus, .rpt-filter-group input:focus {
-    border-color: var(--primary, #0ea5e9);
-    box-shadow: 0 0 0 3px rgba(14,165,233,.1);
-}
-.rpt-period-pills { display: flex; gap: 4px; flex-wrap: wrap; }
-.rpt-period-pill {
-    padding: 7px 14px; border: 1px solid var(--border, #e5e7eb);
-    border-radius: 8px; font-size: 0.8rem; font-weight: 600;
-    cursor: pointer; background: white; color: var(--text-muted, #6b7280);
-    text-decoration: none; transition: all .15s;
-}
-.rpt-period-pill.active, .rpt-period-pill:hover {
-    background: var(--primary, #0ea5e9); color: white;
-    border-color: var(--primary, #0ea5e9);
-}
-.btn-rpt-apply {
-    padding: 9px 20px; background: linear-gradient(135deg, #2dd4bf, #0f766e);
-    color: white; border: none; border-radius: 8px; font-size: 0.875rem;
-    font-weight: 700; cursor: pointer; display: flex; align-items: center;
-    gap: 6px; font-family: inherit; transition: all .2s;
-    box-shadow: 0 4px 12px rgba(13,166,116,.25);
-}
-.btn-rpt-apply:hover { transform: translateY(-1px); }
-.btn-rpt-pdf {
-    padding: 9px 20px; background: white; color: #ef4444;
-    border: 1px solid #fecaca; border-radius: 8px; font-size: 0.85rem;
-    font-weight: 700; cursor: pointer; display: flex; align-items: center;
-    gap: 6px; font-family: inherit; text-decoration: none; transition: all .2s;
-}
-.btn-rpt-pdf:hover { background: #fef2f2; }
-.rpt-currency-switcher { display: flex; align-items: center; gap: 8px; }
-.rpt-currency-switcher label {
-    font-size: 0.75rem; font-weight: 600; color: var(--text-muted, #6b7280);
-    text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
-}
-.cur-btn-group { display: flex; border: 1.5px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
-.cur-btn {
-    padding: 7px 16px; font-weight: 700; font-size: 0.82rem;
-    border: none; cursor: pointer; transition: all .15s; white-space: nowrap;
-    background: #f9fafb; color: #6b7280;
-}
-.cur-btn.active-mad { background: #1d4ed8; color: white; }
-.cur-btn.active-mru { background: #065f46; color: white; }
-.cur-badge { font-size: 0.72rem; padding: 3px 10px; border-radius: 20px; font-weight: 700; white-space: nowrap; }
-.cur-badge-mad { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
-.cur-badge-mru { background: #dcfce7; color: #14532d; border: 1px solid #86efac; }
-.rpt-section-header {
-    display: flex; align-items: center; gap: 10px;
-    margin: 28px 0 16px; padding-bottom: 12px;
-    border-bottom: 2px solid var(--border, #e5e7eb);
-}
-.rpt-section-header h2 { font-size: 0.95rem; font-weight: 700; color: var(--text, #111827); margin: 0; }
-.rpt-section-header span.sub { font-size: 0.78rem; color: var(--text-muted, #6b7280); font-weight: 400; }
-.rpt-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-.rpt-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
-.rpt-list-card { background: white; border: 1px solid var(--border, #e5e7eb); border-radius: 12px; overflow: hidden; }
-.rpt-list-card-header {
-    padding: 14px 18px; border-bottom: 1px solid var(--border, #e5e7eb);
-    display: flex; align-items: center; justify-content: space-between; background: #f9fafb;
-}
-.rpt-list-card-header h3 { font-size: 0.82rem; font-weight: 700; color: var(--text, #111827); margin: 0; }
-.rpt-list-row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 11px 18px; border-bottom: 1px solid var(--border, #f3f4f6); font-size: 0.875rem;
-}
-.rpt-list-row:last-child { border-bottom: none; }
-.rpt-list-row:hover { background: #f9fafb; }
-.rpt-list-label { color: var(--text-muted, #6b7280); }
-.rpt-list-value { font-weight: 700; color: var(--text, #111827); font-size: 0.875rem; }
-.badge-ok     { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#dcfce7;color:#15803d; }
-.badge-warn   { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#fef3c7;color:#d97706; }
-.badge-bad    { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#fee2e2;color:#b91c1c; }
-.badge-blue   { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#e0f2fe;color:#0369a1; }
-.badge-teal   { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#ccfbf1;color:#0f766e; }
-.badge-purple { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#ede9fe;color:#6d28d9; }
-.badge-gray   { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:#f3f4f6;color:#4b5563; }
-.rpt-alert { padding:10px 16px;border-radius:8px;font-size:0.82rem;margin-bottom:20px;display:flex;align-items:center;gap:10px;font-weight:500; }
-.rpt-alert.warn { background:#fef3c7;border:1px solid #fde68a;color:#92400e; }
-.rpt-alert.ok   { background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d; }
-.rpt-period-info { font-size:0.82rem;color:var(--text-muted,#6b7280);margin-bottom:20px;display:flex;align-items:center;gap:6px; }
-.rpt-period-info strong { color:var(--text,#111827);font-weight:600; }
-.mini-bar-wrap { display:flex;align-items:center;gap:8px; }
-.mini-bar { flex:1;height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden; }
-.mini-bar-fill { height:100%;border-radius:3px;transition:width .8s ease; }
-.mini-bar-pct { font-size:0.72rem;color:var(--text-muted,#6b7280);width:35px;text-align:right;font-weight:600; }
-.rpt-table { width:100%;border-collapse:collapse;font-size:0.85rem; }
-.rpt-table th { padding:10px 16px;text-align:left;background:#f9fafb;border-bottom:2px solid var(--border,#e5e7eb);font-size:0.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted,#6b7280); }
-.rpt-table td { padding:10px 16px;border-bottom:1px solid var(--border,#f3f4f6);color:var(--text,#111827); }
-.rpt-table tr:last-child td { border-bottom:none; }
-.rpt-table tr:hover td { background:#f9fafb; }
-.rpt-table tr.highlight-row td { background:#f0f9ff;font-weight:700; }
-.rpt-table tr.garde-row td { background:#faf5ff; }
-
-/* Modal validation */
-.export-modal-overlay {
-    display:none;position:fixed;inset:0;z-index:9999;
-    background:rgba(0,0,0,.5);align-items:center;justify-content:center;
-}
-.export-modal-overlay.open { display:flex; }
-.export-modal {
-    background:white;border-radius:16px;padding:28px;width:90%;max-width:500px;
-    box-shadow:0 20px 60px rgba(0,0,0,.2);
-    animation:modalIn .25s cubic-bezier(0.16,1,0.3,1);
-}
-@keyframes modalIn {
-    from { opacity:0;transform:translateY(20px) scale(.97); }
-    to   { opacity:1;transform:translateY(0) scale(1); }
-}
-.problem-row {
-    display:flex;align-items:center;justify-content:space-between;
-    padding:10px 14px;border:1px solid #fde68a;border-radius:8px;
-    background:#fffbeb;margin-bottom:8px;
-}
-.problem-count {
-    width:28px;height:28px;border-radius:6px;background:#fef3c7;
-    display:flex;align-items:center;justify-content:center;
-    font-size:0.75rem;font-weight:700;color:#d97706;flex-shrink:0;
-}
-
-@media(max-width:900px){.rpt-grid-2{grid-template-columns:1fr}.rpt-grid-4{grid-template-columns:1fr 1fr}}
-@media(max-width:600px){.rpt-grid-4{grid-template-columns:1fr}.rpt-filters{flex-direction:column}}
-</style>
-@endpush
-
 @section('content')
 <div class="page-header">
     <div class="page-header-left">
@@ -200,7 +58,6 @@
 
         <button type="submit" class="btn-rpt-apply">Appliquer</button>
 
-        {{-- Bouton Export PDF --}}
         <button type="button" class="btn-rpt-pdf" onclick="checkAndExport()">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -217,7 +74,6 @@
     <div class="export-modal">
 
         @if($validation['isReady'])
-        {{-- ✅ Tout est prêt --}}
         <div style="text-align:center;padding:8px 0 20px;">
             <div style="width:60px;height:60px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
                 <svg width="30" height="30" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2.5">
@@ -245,7 +101,6 @@
         </div>
 
         @else
-        {{-- ⚠️ Données incomplètes --}}
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
             <div style="width:48px;height:48px;border-radius:50%;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                 <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#d97706" stroke-width="2">
@@ -260,7 +115,6 @@
             </div>
         </div>
 
-        {{-- Liste des problèmes --}}
         <div style="margin-bottom:20px;">
             @foreach($validation['problems'] as $problem)
             <div class="problem-row">
@@ -279,7 +133,6 @@
             @endforeach
         </div>
 
-        {{-- Boutons --}}
         <div style="border-top:1px solid #f3f4f6;padding-top:16px;">
             <p style="font-size:0.78rem;color:#9ca3af;margin:0 0 14px;text-align:center;">
                 Corrigez ces points pour un rapport complet, ou exportez quand même avec les données disponibles.

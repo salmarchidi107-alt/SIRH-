@@ -12,6 +12,11 @@ class EmployeeObserver
 {
     public function creating(Employee $employee)
     {
+        // Générer matricule si vide
+        if (empty($employee->matricule)) {
+            $employee->matricule = $this->generateMatricule($employee->tenant_id);
+        }
+
         // Générer PIN si vide
         if (empty($employee->plain_pin)) {
             $plainPin = sprintf('%04d%s', rand(1000, 9999), chr(rand(65, 90)).chr(rand(65, 90)));
@@ -33,6 +38,23 @@ class EmployeeObserver
         }
     }
 
+    /**
+     * Génère un matricule incrémental par tenant, au format EMP0001, EMP0002, ...
+     * S'appuie sur le plus grand numéro déjà utilisé pour ce tenant afin
+     * d'éviter les collisions même si des matricules ont été supprimés entre-temps.
+     */
+    protected function generateMatricule(?string $tenantId): string
+    {
+        $lastNumber = Employee::where('tenant_id', $tenantId)
+            ->where('matricule', 'like', 'EMP%')
+            ->selectRaw("MAX(CAST(SUBSTRING(matricule, 4) AS UNSIGNED)) as max_num")
+            ->value('max_num');
+
+        $nextNumber = ((int) $lastNumber) + 1;
+
+        return 'EMP' . str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
+    }
+
     protected function updateAbsenceRights(Employee $employee)
     {
         $annee = now()->year;
@@ -45,8 +67,8 @@ class EmployeeObserver
         // Calcul droits basés embauche
         $hireDate = Carbon::parse($employee->hire_date);
         $startYear = now()->startOfYear();
-$endMonth = now();
-$moisTravaillesAnnee = $hireDate->gt($endMonth) ? 0 : max(1, $hireDate->diffInMonths($endMonth) + 1);
+        $endMonth = now();
+        $moisTravaillesAnnee = $hireDate->gt($endMonth) ? 0 : max(1, $hireDate->diffInMonths($endMonth) + 1);
         $anciennete = $hireDate->diffInYears(now());
 
         // 1.5j par mois dans l'année (max 25)
@@ -63,7 +85,7 @@ $moisTravaillesAnnee = $hireDate->gt($endMonth) ? 0 : max(1, $hireDate->diffInMo
 
     protected function updateCurrentMonthCounter(Employee $employee)
     {
-$annee = now()->year;
+        $annee = now()->year;
         $mois = now()->month;
 
         $compteur = CompteurTemps::firstOrCreate(
@@ -80,7 +102,5 @@ $annee = now()->year;
             ]
         );
 
-        // TODO : Update depuis pointages
     }
 }
-

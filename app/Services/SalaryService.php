@@ -125,8 +125,19 @@ class SalaryService
      * Modifiable quel que soit son statut (draft, validated, paid) :
      * le statut du bulletin est conservé tel quel après la mise à jour,
      * il n'est jamais réinitialisé à 'draft' par cette méthode.
+     *
+     * $isAdmin contrôle le droit de modifier un bulletin déjà validé/payé :
+     * si le bulletin est verrouillé (validated/paid) et que $isAdmin est
+     * faux, on retourne null (le contrôleur redirige alors avec l'erreur
+     * "Ce bulletin est deja valide ou paye.").
+     *
+     * Quand un admin modifie un bulletin déjà validé (ou payé), on
+     * retamponne validated_by/validated_at (et paid_by/paid_at si payé)
+     * avec l'auteur de CETTE modification — sinon l'écran continue
+     * d'afficher indéfiniment le tout premier validateur, même après
+     * qu'un autre admin a tout changé ensuite.
      */
-    public function upsertSalary(Employee $employee, array $data): Salary
+    public function upsertSalary(Employee $employee, array $data, bool $isAdmin = false): ?Salary
     {
         $month = (int) $data['month'];
         $year  = (int) $data['year'];
@@ -136,6 +147,12 @@ class SalaryService
             'month'       => $month,
             'year'        => $year,
         ]);
+
+        $wasLocked = $salary->exists && in_array($salary->status, ['validated', 'paid']);
+
+        if ($wasLocked && ! $isAdmin) {
+            return null;
+        }
 
         if (! $salary->exists) {
             $salary->created_by = auth()->id();
@@ -198,6 +215,20 @@ class SalaryService
             'garde_indemnite'          => $data['garde_indemnite'] ?? 0,
             'garde_override'           => (bool) ($data['garde_override'] ?? false),
         ]);
+
+        // ── Ré-attribution de "validé par" / "payé par" au dernier admin
+        //    qui vient de corriger un bulletin déjà verrouillé, pour que
+        //    l'historique et l'écran ne montrent jamais un validateur
+        //    obsolète après une modification ultérieure.
+        if ($wasLocked) {
+            $salary->validated_by = auth()->id();
+            $salary->validated_at = now();
+
+            if ($salary->status === 'paid') {
+                $salary->paid_by = auth()->id();
+                $salary->paid_at = now();
+            }
+        }
 
         $salary->save();
 

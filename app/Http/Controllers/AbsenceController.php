@@ -121,36 +121,32 @@ class AbsenceController extends Controller
     {
         $departments  = $this->employeeFilterService->getDepartments();
         $countersData = $this->counterService->buildCountersData($request);
-        $cycle        = $request->filled('cycle') ? (int) $request->get('cycle') : null;
-        $maxCycle     = $this->counterService->getMaxCycleNumber($request);
 
         $search     = $request->get('search');
         $department = $request->get('department');
 
         return view('absences.counters', compact(
-            'countersData', 'cycle', 'maxCycle', 'departments', 'search', 'department'
+            'countersData', 'departments', 'search', 'department'
         ));
     }
 
     public function countersExport(Request $request)
     {
-        $cycle        = $request->filled('cycle') ? (int) $request->get('cycle') : 'actuel';
         $countersData = $this->counterService->buildCountersData($request);
 
         return Excel::download(
-            new CountersExport($countersData, $cycle),
-            "compteurs_absences_cycle_{$cycle}.xlsx"
+            new CountersExport($countersData),
+            'compteurs_absences_' . now()->format('Y-m-d') . '.xlsx'
         );
     }
 
     public function droitsExport(Request $request)
     {
-        $cycle        = $request->filled('cycle') ? (int) $request->get('cycle') : 'actuel';
         $countersData = $this->counterService->buildCountersData($request);
 
         return Excel::download(
             new DroitsAbsenceExport($countersData),
-            "droits_absences_cycle_{$cycle}.xlsx"
+            'droits_absences_' . now()->format('Y-m-d') . '.xlsx'
         );
     }
 

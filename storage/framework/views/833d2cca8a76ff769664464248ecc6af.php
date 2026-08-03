@@ -6,7 +6,7 @@
     <div class="page-header-left">
         <h1>Compteurs de Congés</h1>
         <p>
-            Cycle <?php echo e($cycle ?? 'en cours'); ?> — Droits acquis sur 24 mois glissants depuis l'embauche
+            Droits acquis sur 24 mois glissants depuis l'embauche
             <?php echo e($search ? ' | Recherche: ' . $search : ''); ?>
 
             <?php echo e($department ? ' | Service: ' . $department : ''); ?>
@@ -34,17 +34,9 @@
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </select>
 
-            
-            <select name="cycle" style="padding:10px 12px;border:1px solid var(--border);border-radius:8px">
-                <option value="">Cycle en cours (auto)</option>
-                <?php for($c = 1; $c <= $maxCycle; $c++): ?>
-                    <option value="<?php echo e($c); ?>" <?php echo e((int) $cycle === $c ? 'selected' : ''); ?>>Cycle <?php echo e($c); ?> (24 mois)</option>
-                <?php endfor; ?>
-            </select>
-
             <button type="submit" class="btn btn-primary" style="padding:10px 24px">Filtrer</button>
 
-            <?php if($search || $department || $cycle): ?>
+            <?php if($search || $department): ?>
                 <a href="<?php echo e(route('absences.counters')); ?>" class="btn btn-ghost">✕ Réinitialiser</a>
             <?php endif; ?>
         </form>
@@ -54,14 +46,14 @@
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px">
     <div class="card" style="background:linear-gradient(135deg, #10b981, #059669);color:white;padding:24px;border-radius:12px">
-        <div style="font-size:0.875rem;opacity:0.9">Droits acquis (cycle)</div>
+        <div style="font-size:0.875rem;opacity:0.9">Droits acquis</div>
         <div style="font-size:2.5rem;font-weight:700"><?php echo e(number_format(array_sum(array_column($countersData, 'acquis')), 0, ',', '')); ?> <span style="font-size:1rem">jours</span></div>
         <div style="font-size:0.8rem;opacity:0.8">Pour <?php echo e(count($countersData)); ?> employés</div>
     </div>
     <div class="card" style="background:linear-gradient(135deg, #f59e0b, #d97706);color:white;padding:24px;border-radius:12px">
         <div style="font-size:0.875rem;opacity:0.9">Congés pris</div>
         <div style="font-size:2.5rem;font-weight:700"><?php echo e(number_format(array_sum(array_column($countersData, 'taken')), 0, ',', '')); ?> <span style="font-size:1rem">jours</span></div>
-        <div style="font-size:0.8rem;opacity:0.8">Sur ce cycle</div>
+        <div style="font-size:0.8rem;opacity:0.8">Sur la période en cours</div>
     </div>
     <div class="card" style="background:linear-gradient(135deg, #3b82f6, #1d4ed8);color:white;padding:24px;border-radius:12px">
         <div style="font-size:0.875rem;opacity:0.9">En attente</div>
@@ -71,7 +63,7 @@
     <div class="card" style="background:linear-gradient(135deg, #8b5cf6, #7c3aed);color:white;padding:24px;border-radius:12px">
         <div style="font-size:0.875rem;opacity:0.9">Solde total</div>
         <div style="font-size:2.5rem;font-weight:700"><?php echo e(number_format(array_sum(array_column($countersData, 'solde')), 0, ',', '')); ?> <span style="font-size:1rem">jours</span></div>
-        <div style="font-size:0.8rem;opacity:0.8">Restants sur le cycle</div>
+        <div style="font-size:0.8rem;opacity:0.8">Restants sur la période</div>
     </div>
 </div>
 
@@ -81,8 +73,8 @@
         <div style="font-weight:600;color:#065f46;margin-bottom:8px">Règle de calcul</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;font-size:0.875rem;color:#047857">
             <div>✓ <strong>1,5 jour</strong> acquis par mois travaillé</div>
-            <div>✓ <strong>36 jours</strong> maximum par cycle de <strong>24 mois</strong></div>
-            <div>✓ Chaque cycle repart à zéro à partir de la date d'embauche</div>
+            <div>✓ <strong>36 jours</strong> maximum par période de <strong>24 mois</strong></div>
+            <div>✓ La période se réinitialise automatiquement tous les 24 mois depuis la date d'embauche</div>
         </div>
     </div>
 </div>
@@ -98,13 +90,12 @@
                 <tr>
                     <th>Employé</th>
                     <th>Service</th>
-                    <th style="text-align:center">Cycle</th>
+                    <th style="text-align:center">Période</th>
                     <th style="text-align:center">Mois</th>
                     <th style="text-align:center">Droits</th>
                     <th style="text-align:center">Pris</th>
                     <th style="text-align:center">En attente</th>
                     <th style="text-align:center">Solde</th>
-                    <th style="text-align:center">Statut</th>
                 </tr>
             </thead>
             <tbody>
@@ -133,8 +124,7 @@
                         <span style="background:var(--bg-secondary);padding:4px 10px;border-radius:20px;font-size:0.75rem"><?php echo e($emp->department ?? 'N/A'); ?></span>
                     </td>
                     <td style="text-align:center">
-                        <div style="font-weight:600">Cycle <?php echo e($row['cycle_number']); ?></div>
-                        <div style="font-size:0.7rem;color:var(--text-muted)"><?php echo e($row['cycle_start']->format('d/m/Y')); ?> → <?php echo e($row['cycle_end']->format('d/m/Y')); ?></div>
+                        <div style="font-size:0.7rem;color:var(--text-muted)"><?php echo e($row['period_start']->format('d/m/Y')); ?> → <?php echo e($row['period_end']->format('d/m/Y')); ?></div>
                     </td>
                     <td style="text-align:center">
                         <span style="font-weight:600"><?php echo e(number_format($row['months_worked'], 0, ',', '')); ?> / 24</span>
@@ -158,19 +148,10 @@
                     <td style="text-align:center">
                         <span style="font-weight:700;font-size:1.1rem;color:<?php echo e($soldeColor); ?>"><?php echo e(number_format($row['solde'], 0, ',', '')); ?> j</span>
                     </td>
-                    <td style="text-align:center">
-                        <?php if($row['is_future']): ?>
-                            <span style="background:#e5e7eb;color:#4b5563;padding:2px 10px;border-radius:10px;font-size:0.75rem;font-weight:600">À venir</span>
-                        <?php elseif($row['is_completed']): ?>
-                            <span style="background:#dbeafe;color:#1d4ed8;padding:2px 10px;border-radius:10px;font-size:0.75rem;font-weight:600">Terminé</span>
-                        <?php else: ?>
-                            <span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:10px;font-size:0.75rem;font-weight:600">En cours</span>
-                        <?php endif; ?>
-                    </td>
                 </tr>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                 <tr>
-                    <td colspan="9" style="text-align:center;padding:48px;color:var(--text-muted)">
+                    <td colspan="8" style="text-align:center;padding:48px;color:var(--text-muted)">
                         <div style="font-size:3rem;margin-bottom:12px">👥</div>
                         <div>Aucun collaborateur actif trouvé</div>
                     </td>

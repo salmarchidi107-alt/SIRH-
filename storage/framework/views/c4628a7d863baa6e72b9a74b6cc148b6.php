@@ -1,43 +1,42 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Éléments Variables'); ?>
+<?php $__env->startSection('page-title', 'Éléments Variables'); ?>
 
-@section('title', 'Éléments Variables')
-@section('page-title', 'Éléments Variables')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 
 <div class="page-header">
     <div class="page-header-left">
         <h1>Éléments Variables</h1>
-        <p>{{ \Carbon\Carbon::create($year,$month)->locale('fr')->isoFormat('MMMM YYYY') }} — Primes, absences, avances</p>
+        <p><?php echo e(\Carbon\Carbon::create($year,$month)->locale('fr')->isoFormat('MMMM YYYY')); ?> — Primes, absences, avances</p>
     </div>
-    <a href="{{ route('salary.index', ['month'=>$month,'year'=>$year]) }}" class="btn btn-ghost">← Retour</a>
+    <a href="<?php echo e(route('salary.index', ['month'=>$month,'year'=>$year])); ?>" class="btn btn-ghost">← Retour</a>
 </div>
 
 <div style="display:grid;grid-template-columns:380px 1fr;gap:20px">
 
-    {{-- Formulaire --}}
+    
     <div class="card">
         <div class="card-header"><div class="card-title">Ajouter un élément</div></div>
         <div class="card-body">
-            <form action="{{ route('variables.store') }}" method="POST">
-                @csrf
+            <form action="<?php echo e(route('variables.store')); ?>" method="POST">
+                <?php echo csrf_field(); ?>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
                     <div class="form-group">
                         <label>Mois</label>
                         <select name="month" class="form-control">
-                            @for($m=1; $m<=12; $m++)
-                                <option value="{{ $m }}" {{ $m==$month?'selected':'' }}>
-                                    {{ \Carbon\Carbon::create(null,$m)->locale('fr')->monthName }}
+                            <?php for($m=1; $m<=12; $m++): ?>
+                                <option value="<?php echo e($m); ?>" <?php echo e($m==$month?'selected':''); ?>>
+                                    <?php echo e(\Carbon\Carbon::create(null,$m)->locale('fr')->monthName); ?>
+
                                 </option>
-                            @endfor
+                            <?php endfor; ?>
                         </select>
                     </div>
                     <div class="form-group">
                         <label>Année</label>
                         <select name="year" class="form-control">
-                            @for($y=now()->year; $y>=now()->year-2; $y--)
-                                <option value="{{ $y }}" {{ $y==$year?'selected':'' }}>{{ $y }}</option>
-                            @endfor
+                            <?php for($y=now()->year; $y>=now()->year-2; $y--): ?>
+                                <option value="<?php echo e($y); ?>" <?php echo e($y==$year?'selected':''); ?>><?php echo e($y); ?></option>
+                            <?php endfor; ?>
                         </select>
                     </div>
                 </div>
@@ -46,9 +45,9 @@
                     <label>Employé</label>
                     <select name="employee_id" class="form-control" required>
                         <option value="">— Sélectionner —</option>
-                        @foreach($employees as $emp)
-                            <option value="{{ $emp->id }}">{{ $emp->full_name }}</option>
-                        @endforeach
+                        <?php $__currentLoopData = $employees; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $emp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($emp->id); ?>"><?php echo e($emp->full_name); ?></option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
                 </div>
 
@@ -111,43 +110,43 @@
         </div>
     </div>
 
-    {{-- Tableau des éléments --}}
+    
     <div>
-        {{-- Résumé --}}
+        
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
             <div class="salary-card" style="padding:12px 16px">
                 <div class="salary-label">Total gains ajoutés</div>
                 <div class="salary-net bonus" style="font-size:1.3rem">
-                    +{{ number_format($elements->where('type','gain')->sum('amount'),0,',',' ') }} MAD
+                    +<?php echo e(number_format($elements->where('type','gain')->sum('amount'),0,',',' ')); ?> MAD
                 </div>
-                <div style="font-size:0.75rem;opacity:0.6">{{ $elements->where('type','gain')->count() }} éléments</div>
+                <div style="font-size:0.75rem;opacity:0.6"><?php echo e($elements->where('type','gain')->count()); ?> éléments</div>
             </div>
             <div class="salary-card" style="padding:12px 16px">
                 <div class="salary-label">Total retenues ajoutées</div>
                 <div class="salary-net deduction" style="font-size:1.3rem">
-                    -{{ number_format($elements->where('type','retenue')->sum('amount'),0,',',' ') }} MAD
+                    -<?php echo e(number_format($elements->where('type','retenue')->sum('amount'),0,',',' ')); ?> MAD
                 </div>
-                <div style="font-size:0.75rem;opacity:0.6">{{ $elements->where('type','retenue')->count() }} éléments</div>
+                <div style="font-size:0.75rem;opacity:0.6"><?php echo e($elements->where('type','retenue')->count()); ?> éléments</div>
             </div>
             <div class="salary-card" style="padding:12px 16px">
                 <div class="salary-label">Impact net sur la paie</div>
                 <div class="salary-net" style="font-size:1.3rem">
-                    {{ number_format($elements->where('type','gain')->sum('amount') - $elements->where('type','retenue')->sum('amount'),0,',',' ') }} MAD
+                    <?php echo e(number_format($elements->where('type','gain')->sum('amount') - $elements->where('type','retenue')->sum('amount'),0,',',' ')); ?> MAD
                 </div>
             </div>
         </div>
 
         <div class="card">
             <div class="card-header">
-                <div class="card-title">Éléments du mois ({{ $elements->count() }})</div>
+                <div class="card-title">Éléments du mois (<?php echo e($elements->count()); ?>)</div>
             </div>
             <div class="card-body" style="padding:0">
-                @if($elements->isEmpty())
+                <?php if($elements->isEmpty()): ?>
                     <div style="padding:60px;text-align:center;color:var(--text-muted)">
                         <div>Aucun élément variable pour cette période.</div>
                         <div style="font-size:0.8rem;margin-top:6px">Utilisez le formulaire pour ajouter des primes ou retenues.</div>
                     </div>
-                @else
+                <?php else: ?>
                 <div class="table-container">
                     <table>
                         <thead>
@@ -162,35 +161,38 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($elements as $el)
+                            <?php $__currentLoopData = $elements; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $el): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                             <tr>
                                 <td class="font-semibold">
-                                    {{ $el->employee->full_name ?? 'Employé supprimé' }}
+                                    <?php echo e($el->employee->full_name ?? 'Employé supprimé'); ?>
+
                                 </td>
                                 <td>
-                                    <span class="badge badge-{{ $el->type->value === 'gain' ? 'success' : 'danger' }}">
-                                        {{ $el->type->label() }}
+                                    <span class="badge badge-<?php echo e($el->type->value === 'gain' ? 'success' : 'danger'); ?>">
+                                        <?php echo e($el->type->label()); ?>
+
                                     </span>
                                 </td>
-                                <td style="font-size:0.82rem;color:var(--text-muted)">{{ $el->rubrique ?? '—' }}</td>
-                                <td>{{ $el->label }}</td>
-                                <td class="{{ $el->type->value === 'gain' ? 'bonus' : 'deduction' }} font-semibold">
-                                    {{ $el->type->value === 'gain' ? '+' : '-' }}{{ number_format($el->amount, 2, ',', ' ') }}
+                                <td style="font-size:0.82rem;color:var(--text-muted)"><?php echo e($el->rubrique ?? '—'); ?></td>
+                                <td><?php echo e($el->label); ?></td>
+                                <td class="<?php echo e($el->type->value === 'gain' ? 'bonus' : 'deduction'); ?> font-semibold">
+                                    <?php echo e($el->type->value === 'gain' ? '+' : '-'); ?><?php echo e(number_format($el->amount, 2, ',', ' ')); ?>
+
                                 </td>
-                                <td style="font-size:0.82rem">{{ $el->unit ?? 'MAD' }}</td>
+                                <td style="font-size:0.82rem"><?php echo e($el->unit ?? 'MAD'); ?></td>
                                 <td>
-                                    <form method="POST" action="{{ route('variables.destroy', $el) }}"
+                                    <form method="POST" action="<?php echo e(route('variables.destroy', $el)); ?>"
                                           onsubmit="return confirm('Supprimer cet élément ?')">
-                                        @csrf @method('DELETE')
+                                        <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
                                         <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
                                     </form>
                                 </td>
                             </tr>
-                            @endforeach
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </tbody>
                     </table>
                 </div>
-                @endif
+                <?php endif; ?>
             </div>
         </div>
 
@@ -237,4 +239,6 @@ function updateLabel() {
 }
 </script>
 
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\Projects\SIRH-\resources\views/variable-elements/index.blade.php ENDPATH**/ ?>

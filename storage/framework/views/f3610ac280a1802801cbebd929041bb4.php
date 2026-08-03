@@ -207,7 +207,9 @@
                         <th>IR</th>
                         <th style="color:var(--success)">Net à payer</th>
                         <th>Statut</th>
+                        <?php if(auth()->user()->role !== 'rh'): ?>
                         <th>Actions</th>
+                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
@@ -225,12 +227,15 @@
                                 <td><?php echo e(number_format($emp->base_salary,0,',',' ')); ?></td>
                                 <td>—</td><td>—</td><td>—</td><td>—</td>
                                 <td><span class="badge badge-secondary">Non généré</span></td>
+                                
+                                <?php if(auth()->user()->role !== 'rh'): ?>
                                 <td>
                                     <?php if (! (auth()->user()->isEmployee())): ?>
                                     <a href="<?php echo e(route('salary.create', [$emp,'month'=>$month,'year'=>$year])); ?>" class="btn btn-sm btn-primary">Saisir</a>
                                     <?php endif; ?>
                                     <a href="<?php echo e(route('salary.show', $emp)); ?>" class="btn btn-sm btn-ghost">Historique</a>
                                 </td>
+                                <?php endif; ?>
                             </tr>
                         <?php else: ?>
                             <?php $__currentLoopData = $salList; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $sal): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
@@ -325,6 +330,8 @@
                                     </div>
                                 </td>
 
+                                
+                                <?php if(auth()->user()->role !== 'rh'): ?>
                                 <td>
                                     <div style="display:flex;gap:4px">
                                         <?php if (! (auth()->user()->isEmployee())): ?>
@@ -335,6 +342,7 @@
                                         <a href="<?php echo e(route('salary.pdf', $sal)); ?>" class="btn btn-sm btn-ghost">PDF</a>
                                     </div>
                                 </td>
+                                <?php endif; ?>
                             </tr>
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         <?php endif; ?>

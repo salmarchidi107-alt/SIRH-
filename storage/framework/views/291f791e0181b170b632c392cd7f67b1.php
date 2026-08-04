@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', config('app.name', 'HospitalRH')) — {{ config('app.name', 'HospitalRH') }}</title>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
+    <title><?php echo $__env->yieldContent('title', config('app.name', 'HospitalRH')); ?> — <?php echo e(config('app.name', 'HospitalRH')); ?></title>
+    <link rel="stylesheet" href="<?php echo e(asset('css/app.css')); ?>">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    @stack('styles')
+    <?php echo $__env->yieldPushContent('styles'); ?>
     <style>
         .app-wrapper {
             display: flex;
@@ -129,7 +129,7 @@
         </button>
 
         <div class="sidebar-header">
-            @php
+            <?php
                 $tenant     = auth()->user()?->tenant;
                 $brandColor = $tenant?->brand_color ?? '#14b8a6';
                 $appName    = $tenant?->name ?? config('app.name', 'HospitalRH');
@@ -144,46 +144,44 @@
                     elseif (in_array($role, ['admin', 'rh']))     $dashboardHref = route('admin.dashboard');
                     else                                           $dashboardHref = route('employee.dashboard');
                 }
-            @endphp
+            ?>
 
-            <a href="{{ $dashboardHref }}" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
-                @if($logoPath)
-                    <img src="{{ asset('storage/' . $logoPath) }}" alt="logo"
+            <a href="<?php echo e($dashboardHref); ?>" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
+                <?php if($logoPath): ?>
+                    <img src="<?php echo e(asset('storage/' . $logoPath)); ?>" alt="logo"
                          style="width:36px;height:36px;object-fit:contain;border-radius:8px;flex-shrink:0;">
-                @else
-                    <div class="brand-icon-custom" style="background:{{ $brandColor }};">
-                        {{ $initials }}
+                <?php else: ?>
+                    <div class="brand-icon-custom" style="background:<?php echo e($brandColor); ?>;">
+                        <?php echo e($initials); ?>
+
                     </div>
-                @endif
+                <?php endif; ?>
                 <div class="brand-name">
-                    {{ $appName }}
-                    <span>{{ $appSub }}</span>
+                    <?php echo e($appName); ?>
+
+                    <span><?php echo e($appSub); ?></span>
                 </div>
             </a>
         </div>
 
         <nav class="sidebar-nav">
 
-            {{-- ══════════════════════════════════════════════════════════
-                 SUPERADMIN
-            ══════════════════════════════════════════════════════════ --}}
-            @if(Auth::check() && Auth::user()->role === 'superadmin')
-            <a href="{{ route('superadmin.dashboard') }}"
-               class="nav-item {{ request()->routeIs('superadmin.dashboard') ? 'active' : '' }}">
+            
+            <?php if(Auth::check() && Auth::user()->role === 'superadmin'): ?>
+            <a href="<?php echo e(route('superadmin.dashboard')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('superadmin.dashboard') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/>
                 </svg>
                 <span>Dashboard SuperAdmin</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            {{-- ══════════════════════════════════════════════════════════
-                 PRINCIPAL (tous)
-            ══════════════════════════════════════════════════════════ --}}
+            
             <div class="nav-section-label">Principal</div>
 
-            <a href="{{ $dashboardHref }}"
-               class="nav-item {{ request()->routeIs(['admin.dashboard', 'employee.dashboard', 'superadmin.dashboard']) ? 'active' : '' }}">
+            <a href="<?php echo e($dashboardHref); ?>"
+               class="nav-item <?php echo e(request()->routeIs(['admin.dashboard', 'employee.dashboard', 'superadmin.dashboard']) ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="7" height="7" rx="1"/>
                     <rect x="14" y="3" width="7" height="7" rx="1"/>
@@ -193,32 +191,28 @@
                 <span>Tableau de bord</span>
             </a>
 
-            {{-- Mon Profil (employee uniquement) --}}
-            @if(Auth::check() && Auth::user()->role === 'employee')
-            <a href="{{ route('profile') }}" class="nav-item {{ request()->routeIs('profile') ? 'active' : '' }}">
+            
+            <?php if(Auth::check() && Auth::user()->role === 'employee'): ?>
+            <a href="<?php echo e(route('profile')); ?>" class="nav-item <?php echo e(request()->routeIs('profile') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
                 </svg>
                 <span>Mon Profil</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            {{-- ══════════════════════════════════════════════════════════
-                 ADMIN / RH — PERSONNEL
-                 Admin : accès total
-                 RH    : vérifie les permissions en base
-            ══════════════════════════════════════════════════════════ --}}
-            @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
-            @php $navUser = Auth::user(); @endphp
+            
+            <?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh'])): ?>
+            <?php $navUser = Auth::user(); ?>
 
-            @if($navUser->canView('employees') || $navUser->canView('trombinoscope') || $navUser->canView('news'))
+            <?php if($navUser->canView('employees') || $navUser->canView('trombinoscope') || $navUser->canView('news')): ?>
             <div class="nav-section-label">Personnel</div>
-            @endif
+            <?php endif; ?>
 
-            @if($navUser->canView('employees'))
-            <a href="{{ route('employees.index') }}"
-               class="nav-item {{ request()->routeIs('employees.*') ? 'active' : '' }}">
+            <?php if($navUser->canView('employees')): ?>
+            <a href="<?php echo e(route('employees.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('employees.*') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                     <circle cx="9" cy="7" r="4"/>
@@ -226,11 +220,11 @@
                 </svg>
                 <span>Liste du Personnel</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($navUser->canView('trombinoscope'))
-            <a href="{{ route('trombinoscope') }}"
-               class="nav-item {{ request()->routeIs('trombinoscope') ? 'active' : '' }}">
+            <?php if($navUser->canView('trombinoscope')): ?>
+            <a href="<?php echo e(route('trombinoscope')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('trombinoscope') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="18" height="18" rx="2"/>
                     <circle cx="9" cy="10" r="2"/><circle cx="15" cy="10" r="2"/>
@@ -238,33 +232,31 @@
                 </svg>
                 <span>Trombinoscope</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($navUser->canView('news'))
-            <a href="{{ route('news.index') }}"
-               class="nav-item {{ request()->routeIs('news.*') ? 'active' : '' }}">
+            <?php if($navUser->canView('news')): ?>
+            <a href="<?php echo e(route('news.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('news.*') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                     <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                 </svg>
                 <span>Actualités</span>
             </a>
-            @endif
-            @endif
+            <?php endif; ?>
+            <?php endif; ?>
 
-            {{-- ══════════════════════════════════════════════════════════
-                 EMPLOYEE — sections conditionnelles selon permissions
-            ══════════════════════════════════════════════════════════ --}}
-            @if(Auth::check() && Auth::user()->role === 'employee')
-            @php $u = Auth::user(); @endphp
+            
+            <?php if(Auth::check() && Auth::user()->role === 'employee'): ?>
+            <?php $u = Auth::user(); ?>
 
-            {{-- ── Trombinoscope / Actualités ── --}}
-            @if($u->canView('trombinoscope') || $u->canView('news'))
+            
+            <?php if($u->canView('trombinoscope') || $u->canView('news')): ?>
             <div class="nav-section-label">Personnel</div>
 
-            @if($u->canView('trombinoscope'))
-            <a href="{{ route('trombinoscope') }}"
-               class="nav-item {{ request()->routeIs('trombinoscope') ? 'active' : '' }}">
+            <?php if($u->canView('trombinoscope')): ?>
+            <a href="<?php echo e(route('trombinoscope')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('trombinoscope') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="18" height="18" rx="2"/>
                     <circle cx="9" cy="10" r="2"/><circle cx="15" cy="10" r="2"/>
@@ -272,27 +264,27 @@
                 </svg>
                 <span>Trombinoscope</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($u->canView('news'))
-            <a href="{{ route('news.index') }}"
-               class="nav-item {{ request()->routeIs('news.*') ? 'active' : '' }}">
+            <?php if($u->canView('news')): ?>
+            <a href="<?php echo e(route('news.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('news.*') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                     <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                 </svg>
                 <span>Actualités</span>
             </a>
-            @endif
-            @endif
+            <?php endif; ?>
+            <?php endif; ?>
 
-            {{-- ── Temps & Présence ── --}}
-            @if($u->canView('planning') || $u->canView('temps_vue') || $u->canView('pointage'))
+            
+            <?php if($u->canView('planning') || $u->canView('temps_vue') || $u->canView('pointage')): ?>
             <div class="nav-section-label">Temps &amp; Présence</div>
 
-            @if($u->canView('planning'))
-            <a href="{{ route('planning.show', ['employee' => $u->employee_id ?? 0]) }}"
-               class="nav-item {{ request()->routeIs('planning.show') ? 'active' : '' }}">
+            <?php if($u->canView('planning')): ?>
+            <a href="<?php echo e(route('planning.show', ['employee' => $u->employee_id ?? 0])); ?>"
+               class="nav-item <?php echo e(request()->routeIs('planning.show') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                     <line x1="16" y1="2" x2="16" y2="6"/>
@@ -301,22 +293,22 @@
                 </svg>
                 <span>Mon Planning</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($u->canView('temps_vue'))
-            <a href="{{ route('temps.vue-ensemble') }}"
-               class="nav-item {{ request()->routeIs('temps.vue-ensemble') ? 'active' : '' }}">
+            <?php if($u->canView('temps_vue')): ?>
+            <a href="<?php echo e(route('temps.vue-ensemble')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('temps.vue-ensemble') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"/>
                     <polyline points="12 6 12 12 16 14"/>
                 </svg>
                 <span>Vue d'ensemble</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($u->canView('pointage'))
-            <a href="{{ route('pointage.index') }}"
-               class="nav-item {{ request()->routeIs('pointage.*') ? 'active' : '' }}">
+            <?php if($u->canView('pointage')): ?>
+            <a href="<?php echo e(route('pointage.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('pointage.*') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="8" height="18" rx="1.5"/>
                     <rect x="13" y="3" width="8" height="8" rx="1.5"/>
@@ -324,11 +316,11 @@
                 </svg>
                 <span>Pointage</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($u->canView('activites'))
-            <a href="{{ route('activites.my-tasks.index') }}"
-   class="nav-item {{ request()->routeIs('activites.my-tasks.*') ? 'active' : '' }}">
+            <?php if($u->canView('activites')): ?>
+            <a href="<?php echo e(route('activites.my-tasks.index')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('activites.my-tasks.*') ? 'active' : ''); ?>">
     <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path d="M9 11l3 3L22 4"/>
         <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
@@ -336,35 +328,35 @@
     <span>Mes tâches</span>
 </a>
 
-<a href="{{ route('activites.time-entries.index') }}"
-   class="nav-item {{ request()->routeIs('activites.time-entries.*') ? 'active' : '' }}">
+<a href="<?php echo e(route('activites.time-entries.index')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('activites.time-entries.*') ? 'active' : ''); ?>">
     <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="9"/>
         <polyline points="12 7 12 12 15 14"/>
     </svg>
     <span>Saisie de temps</span>
 </a>
-            @endif
-            @endif
+            <?php endif; ?>
+            <?php endif; ?>
 
-            {{-- ── Absences & Congés ── --}}
-            @if($u->canView('absences') || $u->canCreate('absences') || $u->canView('absences_calendar') || $u->canView('absences_counters'))
+            
+            <?php if($u->canView('absences') || $u->canCreate('absences') || $u->canView('absences_calendar') || $u->canView('absences_counters')): ?>
             <div class="nav-section-label">Absences &amp; Congés</div>
 
-            @if($u->canView('absences') || $u->canCreate('absences'))
-            <a href="{{ route('absences.index') }}"
-               class="nav-item {{ request()->routeIs('absences.index') || request()->routeIs('absences.show') ? 'active' : '' }}">
+            <?php if($u->canView('absences') || $u->canCreate('absences')): ?>
+            <a href="<?php echo e(route('absences.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('absences.index') || request()->routeIs('absences.show') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path d="M9 11l3 3L22 4"/>
                     <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
                 </svg>
                 <span>Mes demandes</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($u->canView('absences_calendar'))
-            <a href="{{ route('absences.calendar') }}"
-               class="nav-item {{ request()->routeIs('absences.calendar') ? 'active' : '' }}">
+            <?php if($u->canView('absences_calendar')): ?>
+            <a href="<?php echo e(route('absences.calendar')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('absences.calendar') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                     <line x1="16" y1="2" x2="16" y2="6"/>
@@ -373,11 +365,11 @@
                 </svg>
                 <span>État visuel absences</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($u->canView('absences_counters'))
-            <a href="{{ route('absences.counters') }}"
-               class="nav-item {{ request()->routeIs('absences.counters') ? 'active' : '' }}">
+            <?php if($u->canView('absences_counters')): ?>
+            <a href="<?php echo e(route('absences.counters')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('absences.counters') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="20" x2="18" y2="10"/>
                     <line x1="12" y1="20" x2="12" y2="4"/>
@@ -385,15 +377,15 @@
                 </svg>
                 <span>Compteurs &amp; droits</span>
             </a>
-            @endif
-            @endif
+            <?php endif; ?>
+            <?php endif; ?>
 
-            {{-- ── Notes de frais ── --}}
-@if($u->canView('expenses'))
+            
+<?php if($u->canView('expenses')): ?>
 <div class="nav-section-label">Notes de frais</div>
 
-<a href="{{ route('expenses.index') }}"
-   class="nav-item {{ request()->routeIs('expenses.*') ? 'active' : '' }}">
+<a href="<?php echo e(route('expenses.index')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('expenses.*') ? 'active' : ''); ?>">
     <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" d="M6 2l1.5 1.5L9 2l1.5 1.5L12 2l1.5 1.5L15 2l1.5 1.5L18 2v20l-1.5-1.5L15 22l-1.5-1.5L12 22l-1.5-1.5L9 22l-1.5-1.5L6 22V2z"/>
         <line x1="9" y1="8" x2="15" y2="8"/>
@@ -402,15 +394,15 @@
     </svg>
     <span>Mes notes de frais</span>
 </a>
-@endif
+<?php endif; ?>
 
-            {{-- ── Formations ── --}}
-            @if($u->canView('lms') || $u->canView('referentiel') || $u->canView('lms_planning'))
+            
+            <?php if($u->canView('lms') || $u->canView('referentiel') || $u->canView('lms_planning')): ?>
             <div class="nav-section-label">Formations</div>
 
-            @if($u->canView('lms'))
-            <a href="{{ route('lms.index') }}"
-               class="nav-item {{ request()->routeIs('lms.index') ? 'active' : '' }}">
+            <?php if($u->canView('lms')): ?>
+            <a href="<?php echo e(route('lms.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('lms.index') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0
@@ -419,11 +411,11 @@
                 </svg>
                 <span>Mes formations</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($u->canView('referentiel'))
-            <a href="{{ route('referentiel.index') }}"
-               class="nav-item {{ request()->routeIs('referentiel.*') ? 'active' : '' }}">
+            <?php if($u->canView('referentiel')): ?>
+            <a href="<?php echo e(route('referentiel.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('referentiel.*') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0
@@ -434,11 +426,11 @@
                 </svg>
                 <span>Référentiel Formations</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($u->canView('lms_planning'))
-            <a href="{{ route('lms.planning') }}"
-               class="nav-item {{ request()->routeIs('lms.planning') ? 'active' : '' }}">
+            <?php if($u->canView('lms_planning')): ?>
+            <a href="<?php echo e(route('lms.planning')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('lms.planning') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                     <line x1="16" y1="2" x2="16" y2="6"/>
@@ -447,46 +439,44 @@
                 </svg>
                 <span>Planning formations</span>
             </a>
-            @endif
-            @endif
+            <?php endif; ?>
+            <?php endif; ?>
 
-            {{-- ── Paie ── --}}
-            @if($u->canView('salary') && $u->employee_id)
+            
+            <?php if($u->canView('salary') && $u->employee_id): ?>
             <div class="nav-section-label">Paie</div>
 
-            <a href="{{ route('salary.show', $u->employee_id) }}"
-               class="nav-item {{ request()->routeIs('salary.show') ? 'active' : '' }}">
+            <a href="<?php echo e(route('salary.show', $u->employee_id)); ?>"
+               class="nav-item <?php echo e(request()->routeIs('salary.show') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <line x1="12" y1="1" x2="12" y2="23"/>
                     <path d="M17 5H9.5a3.5 3.5 0 00 0 7h5a3.5 3.5 0 01 0 7H6"/>
                 </svg>
                 <span>Mon Salaire</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            {{-- ══════════════════════════════════════════════════════════
-                 EMPLOYEE — Équipements
-            ══════════════════════════════════════════════════════════ --}}
-            @if($u->canView('equipements'))
+            
+            <?php if($u->canView('equipements')): ?>
             <div class="nav-section-label">Équipements</div>
 
-            <a href="{{ route('equipements.index', ['tab' => 'salarie', 'employee_id_view' => $u->employee_id ?? 0]) }}"
-               class="nav-item {{ request()->routeIs('equipements.*') ? 'active' : '' }}">
+            <a href="<?php echo e(route('equipements.index', ['tab' => 'salarie', 'employee_id_view' => $u->employee_id ?? 0])); ?>"
+               class="nav-item <?php echo e(request()->routeIs('equipements.*') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="2" y="3" width="20" height="14" rx="2"/>
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M12 17v4"/>
                 </svg>
                 <span>Mes équipements</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            {{-- ── GED ── --}}
-            @if($u->canView('ged') || $u->canView('ged_modeles') || $u->canView('ged_entete'))
+            
+            <?php if($u->canView('ged') || $u->canView('ged_modeles') || $u->canView('ged_entete')): ?>
             <div class="nav-section-label">GED</div>
 
-            @if($u->canView('ged'))
-            <a href="{{ route('ged.index') }}"
-               class="nav-item {{ request()->routeIs('ged.index') ? 'active' : '' }}">
+            <?php if($u->canView('ged')): ?>
+            <a href="<?php echo e(route('ged.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('ged.index') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round"
                         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586
@@ -495,11 +485,11 @@
                 </svg>
                 <span>Documents</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($u->canView('ged_modeles'))
-            <a href="{{ route('ged.modeles.index') }}"
-               class="nav-item {{ request()->routeIs('ged.modeles.*') ? 'active' : '' }}">
+            <?php if($u->canView('ged_modeles')): ?>
+            <a href="<?php echo e(route('ged.modeles.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('ged.modeles.*') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="8" height="8" rx="1.5"/>
                     <rect x="13" y="3" width="8" height="8" rx="1.5"/>
@@ -508,11 +498,11 @@
                 </svg>
                 <span>Modèles</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($u->canView('ged_entete'))
-            <a href="{{ route('ged.entete.index') }}"
-               class="nav-item {{ request()->routeIs('ged.entete.*') ? 'active' : '' }}">
+            <?php if($u->canView('ged_entete')): ?>
+            <a href="<?php echo e(route('ged.entete.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('ged.entete.*') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="4" y="4" width="16" height="16" rx="2"/>
                     <line x1="4" y1="9" x2="20" y2="9"/>
@@ -521,16 +511,16 @@
                 </svg>
                 <span>Entête</span>
             </a>
-            @endif
-            @endif
+            <?php endif; ?>
+            <?php endif; ?>
 
-            {{-- ── Paramétrage & Rapports ── --}}
-            @if($u->canView('parametrage') || $u->canView('securite') || $u->canView('reporting'))
+            
+            <?php if($u->canView('parametrage') || $u->canView('securite') || $u->canView('reporting')): ?>
 <div class="nav-section-label">Paramétrage</div>
 
-@if($u->canView('parametrage'))
-<a href="{{ route('parametrage.index') }}"
-   class="nav-item {{ request()->routeIs('parametrage.*') ? 'active' : '' }}">
+<?php if($u->canView('parametrage')): ?>
+<a href="<?php echo e(route('parametrage.index')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('parametrage.*') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0
@@ -545,22 +535,22 @@
                 </svg>
                 <span>Paramétrage</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($u->canView('securite'))
-<a href="{{ route('admin.codes.index') }}"
-   class="nav-item {{ request()->routeIs('admin.codes.*') ? 'active' : '' }}">
+            <?php if($u->canView('securite')): ?>
+<a href="<?php echo e(route('admin.codes.index')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('admin.codes.*') ? 'active' : ''); ?>">
     <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <rect x="5" y="11" width="14" height="10" rx="2"/>
         <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
     </svg>
     <span>Codes de vérification</span>
 </a>
-@endif
+<?php endif; ?>
 
-            @if($u->canView('reporting'))
-            <a href="{{ route('reporting.index') }}"
-               class="nav-item {{ request()->routeIs('reporting.*') ? 'active' : '' }}">
+            <?php if($u->canView('reporting')): ?>
+            <a href="<?php echo e(route('reporting.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('reporting.*') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586
@@ -568,24 +558,22 @@
                 </svg>
                 <span>Rapport RH</span>
             </a>
-            @endif
-            @endif
+            <?php endif; ?>
+            <?php endif; ?>
 
-            @endif {{-- fin employee --}}
+            <?php endif; ?> 
 
-            {{-- ══════════════════════════════════════════════════════════
-                 ADMIN / RH — Temps & Présence
-            ══════════════════════════════════════════════════════════ --}}
-            @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
-            @php $navUser = Auth::user(); @endphp
+            
+            <?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh'])): ?>
+            <?php $navUser = Auth::user(); ?>
 
-            @if($navUser->canView('planning') || $navUser->canView('temps_vue') || $navUser->canView('pointage'))
+            <?php if($navUser->canView('planning') || $navUser->canView('temps_vue') || $navUser->canView('pointage')): ?>
             <div class="nav-section-label">Temps &amp; Présence</div>
-            @endif
+            <?php endif; ?>
 
-            @if($navUser->canView('planning'))
-            <a href="{{ route('planning.weekly') }}"
-               class="nav-item {{ request()->routeIs('planning.*') ? 'active' : '' }}">
+            <?php if($navUser->canView('planning')): ?>
+            <a href="<?php echo e(route('planning.weekly')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('planning.*') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                     <line x1="16" y1="2" x2="16" y2="6"/>
@@ -594,21 +582,21 @@
                 </svg>
                 <span>Planning</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($navUser->canView('temps_vue'))
-            <a href="{{ route('temps.vue-ensemble') }}"
-               class="nav-item {{ request()->routeIs('temps.vue-ensemble') ? 'active' : '' }}">
+            <?php if($navUser->canView('temps_vue')): ?>
+            <a href="<?php echo e(route('temps.vue-ensemble')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('temps.vue-ensemble') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"/>
                     <polyline points="12 6 12 12 16 14"/>
                 </svg>
                 <span>Vue d'ensemble</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($navUser->canView('pointage'))
-            @php
+            <?php if($navUser->canView('pointage')): ?>
+            <?php
                 $pointageEnAttente = 0;
                 try {
                     $currentTenantId = config('app.current_tenant_id')
@@ -621,24 +609,24 @@
                 } catch (\Exception $e) {
                     $pointageEnAttente = 0;
                 }
-            @endphp
+            ?>
 
-            <a href="{{ route('pointage.index') }}"
-               class="nav-item {{ request()->routeIs('pointage.*') ? 'active' : '' }}">
+            <a href="<?php echo e(route('pointage.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('pointage.*') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="8" height="18" rx="1.5"/>
                     <rect x="13" y="3" width="8" height="8" rx="1.5"/>
                     <rect x="13" y="13" width="8" height="8" rx="1.5"/>
                 </svg>
                 <span>Pointage</span>
-                @if($pointageEnAttente > 0)
-                <span class="nav-badge-live">{{ $pointageEnAttente }}</span>
-                @endif
+                <?php if($pointageEnAttente > 0): ?>
+                <span class="nav-badge-live"><?php echo e($pointageEnAttente); ?></span>
+                <?php endif; ?>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($navUser->canView('activites'))
-            @php
+            <?php if($navUser->canView('activites')): ?>
+            <?php
     $activitesEnRetard = 0;
     try {
         $actTenantId = config('app.current_tenant_id')
@@ -650,46 +638,44 @@
     } catch (\Exception $e) {
         $activitesEnRetard = 0;
     }
-@endphp
+?>
 
-<a href="{{ route('activites.admin.dashboard') }}"
-   class="nav-item {{ request()->routeIs('activites.admin.*') ? 'active' : '' }}">
+<a href="<?php echo e(route('activites.admin.dashboard')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('activites.admin.*') ? 'active' : ''); ?>">
     <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="9"/>
         <polyline points="12 7 12 12 15 14"/>
     </svg>
     <span>Suivi d'activité</span>
-    @if($activitesEnRetard > 0)
-    <span class="nav-badge-live">{{ $activitesEnRetard }}</span>
-    @endif
+    <?php if($activitesEnRetard > 0): ?>
+    <span class="nav-badge-live"><?php echo e($activitesEnRetard); ?></span>
+    <?php endif; ?>
 </a>
-            @endif
-            @endif
+            <?php endif; ?>
+            <?php endif; ?>
 
-            {{-- ══════════════════════════════════════════════════════════
-                 ADMIN / RH — Absences & Congés
-            ══════════════════════════════════════════════════════════ --}}
-            @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
-            @php $navUser = Auth::user(); @endphp
+            
+            <?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh'])): ?>
+            <?php $navUser = Auth::user(); ?>
 
-            @if($navUser->canView('absences') || $navUser->canView('absences_calendar') || $navUser->canView('absences_counters'))
+            <?php if($navUser->canView('absences') || $navUser->canView('absences_calendar') || $navUser->canView('absences_counters')): ?>
             <div class="nav-section-label">Absences &amp; Congés</div>
-            @endif
+            <?php endif; ?>
 
-            @if($navUser->canView('absences'))
-            <a href="{{ route('absences.index') }}"
-               class="nav-item {{ request()->routeIs('absences.index') || request()->routeIs('absences.show') ? 'active' : '' }}">
+            <?php if($navUser->canView('absences')): ?>
+            <a href="<?php echo e(route('absences.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('absences.index') || request()->routeIs('absences.show') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path d="M9 11l3 3L22 4"/>
                     <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
                 </svg>
                 <span>Liste des demandes</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($navUser->canView('absences_calendar'))
-            <a href="{{ route('absences.calendar') }}"
-               class="nav-item {{ request()->routeIs('absences.calendar') ? 'active' : '' }}">
+            <?php if($navUser->canView('absences_calendar')): ?>
+            <a href="<?php echo e(route('absences.calendar')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('absences.calendar') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                     <line x1="16" y1="2" x2="16" y2="6"/>
@@ -698,11 +684,11 @@
                 </svg>
                 <span>État visuel des absences</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($navUser->canView('absences_counters'))
-            <a href="{{ route('absences.counters') }}"
-               class="nav-item {{ request()->routeIs('absences.counters') ? 'active' : '' }}">
+            <?php if($navUser->canView('absences_counters')): ?>
+            <a href="<?php echo e(route('absences.counters')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('absences.counters') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="20" x2="18" y2="10"/>
                     <line x1="12" y1="20" x2="12" y2="4"/>
@@ -710,20 +696,18 @@
                 </svg>
                 <span>Compteurs et droits d'absences</span>
             </a>
-            @endif
-            @endif
+            <?php endif; ?>
+            <?php endif; ?>
 
 
-            {{-- ══════════════════════════════════════════════════════════
-     ADMIN / RH — Notes de frais
-══════════════════════════════════════════════════════════ --}}
-@if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
-@php $navUser = Auth::user(); @endphp
+            
+<?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh'])): ?>
+<?php $navUser = Auth::user(); ?>
 
-@if($navUser->canView('expenses'))
+<?php if($navUser->canView('expenses')): ?>
 <div class="nav-section-label">Notes de frais</div>
 
-@php
+<?php
     $expensesEnAttente = 0;
     try {
         $expTenantId = config('app.current_tenant_id')
@@ -734,10 +718,10 @@
     } catch (\Exception $e) {
         $expensesEnAttente = 0;
     }
-@endphp
+?>
 
-<a href="{{ route('expenses.index') }}"
-   class="nav-item {{ request()->routeIs('expenses.*') ? 'active' : '' }}">
+<a href="<?php echo e(route('expenses.index')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('expenses.*') ? 'active' : ''); ?>">
     <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" d="M6 2l1.5 1.5L9 2l1.5 1.5L12 2l1.5 1.5L15 2l1.5 1.5L18 2v20l-1.5-1.5L15 22l-1.5-1.5L12 22l-1.5-1.5L9 22l-1.5-1.5L6 22V2z"/>
         <line x1="9" y1="8" x2="15" y2="8"/>
@@ -745,25 +729,23 @@
         <line x1="9" y1="16" x2="12" y2="16"/>
     </svg>
     <span>Notes de frais</span>
-    @if($expensesEnAttente > 0)
-    <span class="nav-badge-live">{{ $expensesEnAttente }}</span>
-    @endif
+    <?php if($expensesEnAttente > 0): ?>
+    <span class="nav-badge-live"><?php echo e($expensesEnAttente); ?></span>
+    <?php endif; ?>
 </a>
-@endif
-@endif
+<?php endif; ?>
+<?php endif; ?>
 
-            {{-- ══════════════════════════════════════════════════════════
-                 ADMIN / RH — Formations LMS
-            ══════════════════════════════════════════════════════════ --}}
-            @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
-            @php $navUser = Auth::user(); @endphp
+            
+            <?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh'])): ?>
+            <?php $navUser = Auth::user(); ?>
 
-            @if($navUser->canView('lms') || $navUser->canView('referentiel') || $navUser->canView('lms_planning'))
+            <?php if($navUser->canView('lms') || $navUser->canView('referentiel') || $navUser->canView('lms_planning')): ?>
             <div class="nav-section-label">Formations</div>
-            @endif
+            <?php endif; ?>
 
-            @if($navUser->canView('lms'))
-            @php
+            <?php if($navUser->canView('lms')): ?>
+            <?php
                 $lmsEnAttente = 0;
                 try {
                     $lmsTenantId = config('app.current_tenant_id')
@@ -775,10 +757,10 @@
                 } catch (\Exception $e) {
                     $lmsEnAttente = 0;
                 }
-            @endphp
+            ?>
 
-            <a href="{{ route('lms.index') }}"
-               class="nav-item {{ request()->routeIs('lms.index') || request()->routeIs('lms.store') || request()->routeIs('lms.update') || request()->routeIs('lms.destroy') ? 'active' : '' }}">
+            <a href="<?php echo e(route('lms.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('lms.index') || request()->routeIs('lms.store') || request()->routeIs('lms.update') || request()->routeIs('lms.destroy') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0
@@ -786,15 +768,15 @@
                              2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
                 </svg>
                 <span>Liste des formations</span>
-                @if($lmsEnAttente > 0)
-                <span class="nav-badge-live">{{ $lmsEnAttente }}</span>
-                @endif
+                <?php if($lmsEnAttente > 0): ?>
+                <span class="nav-badge-live"><?php echo e($lmsEnAttente); ?></span>
+                <?php endif; ?>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($navUser->canView('referentiel'))
-            <a href="{{ route('referentiel.index') }}"
-               class="nav-item {{ request()->routeIs('referentiel.*') ? 'active' : '' }}">
+            <?php if($navUser->canView('referentiel')): ?>
+            <a href="<?php echo e(route('referentiel.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('referentiel.*') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0
@@ -805,11 +787,11 @@
                 </svg>
                 <span>Référentiel Formations</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($navUser->canView('lms_planning'))
-            <a href="{{ route('lms.planning') }}"
-               class="nav-item {{ request()->routeIs('lms.planning') ? 'active' : '' }}">
+            <?php if($navUser->canView('lms_planning')): ?>
+            <a href="<?php echo e(route('lms.planning')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('lms.planning') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                     <line x1="16" y1="2" x2="16" y2="6"/>
@@ -818,33 +800,31 @@
                 </svg>
                 <span>Planning formations</span>
             </a>
-            @endif
-            @endif
+            <?php endif; ?>
+            <?php endif; ?>
 
-            {{-- ══════════════════════════════════════════════════════════
-                 ADMIN / RH — Paie
-            ══════════════════════════════════════════════════════════ --}}
-            @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
-            @php $navUser = Auth::user(); @endphp
+            
+            <?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh'])): ?>
+            <?php $navUser = Auth::user(); ?>
 
-            @if($navUser->canView('salary') || $navUser->canView('reporting'))
+            <?php if($navUser->canView('salary') || $navUser->canView('reporting')): ?>
             <div class="nav-section-label">Paie</div>
-            @endif
+            <?php endif; ?>
 
-            @if($navUser->canView('salary'))
-            <a href="{{ route('salary.index') }}"
-               class="nav-item {{ request()->routeIs('salary.index') || request()->routeIs('salary.show') || request()->routeIs('salary.create') ? 'active' : '' }}">
+            <?php if($navUser->canView('salary')): ?>
+            <a href="<?php echo e(route('salary.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('salary.index') || request()->routeIs('salary.show') || request()->routeIs('salary.create') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <line x1="12" y1="1" x2="12" y2="23"/>
                     <path d="M17 5H9.5a3.5 3.5 0 00 0 7h5a3.5 3.5 0 01 0 7H6"/>
                 </svg>
                 <span>Salaires</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($navUser->canView('reporting'))
-            <a href="{{ route('reporting.index') }}"
-               class="nav-item {{ request()->routeIs('reporting.*') ? 'active' : '' }}">
+            <?php if($navUser->canView('reporting')): ?>
+            <a href="<?php echo e(route('reporting.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('reporting.*') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586
@@ -852,22 +832,20 @@
                 </svg>
                 <span>Rapport RH</span>
             </a>
-            @endif
-            @endif
+            <?php endif; ?>
+            <?php endif; ?>
 
-            {{-- ══════════════════════════════════════════════════════════
-                 ADMIN / RH — GED
-            ══════════════════════════════════════════════════════════ --}}
-            @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
-            @php $navUser = Auth::user(); @endphp
+            
+            <?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh'])): ?>
+            <?php $navUser = Auth::user(); ?>
 
-            @if($navUser->canView('ged') || $navUser->canView('ged_modeles') || $navUser->canView('ged_entete'))
+            <?php if($navUser->canView('ged') || $navUser->canView('ged_modeles') || $navUser->canView('ged_entete')): ?>
             <div class="nav-section-label">GED</div>
-            @endif
+            <?php endif; ?>
 
-            @if($navUser->canView('ged'))
-            <a href="{{ route('ged.index') }}"
-               class="nav-item {{ request()->routeIs('ged.index') ? 'active' : '' }}">
+            <?php if($navUser->canView('ged')): ?>
+            <a href="<?php echo e(route('ged.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('ged.index') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round"
                         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586
@@ -876,11 +854,11 @@
                 </svg>
                 <span>Documents</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($navUser->canView('ged_modeles'))
-            <a href="{{ route('ged.modeles.index') }}"
-               class="nav-item {{ request()->routeIs('ged.modeles.*') ? 'active' : '' }}">
+            <?php if($navUser->canView('ged_modeles')): ?>
+            <a href="<?php echo e(route('ged.modeles.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('ged.modeles.*') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="8" height="8" rx="1.5"/>
                     <rect x="13" y="3" width="8" height="8" rx="1.5"/>
@@ -889,11 +867,11 @@
                 </svg>
                 <span>Modèles</span>
             </a>
-            @endif
+            <?php endif; ?>
 
-            @if($navUser->canView('ged_entete'))
-            <a href="{{ route('ged.entete.index') }}"
-               class="nav-item {{ request()->routeIs('ged.entete.*') ? 'active' : '' }}">
+            <?php if($navUser->canView('ged_entete')): ?>
+            <a href="<?php echo e(route('ged.entete.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('ged.entete.*') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="4" y="4" width="16" height="16" rx="2"/>
                     <line x1="4" y1="9" x2="20" y2="9"/>
@@ -902,19 +880,17 @@
                 </svg>
                 <span>Entête</span>
             </a>
-            @endif
-            @endif
+            <?php endif; ?>
+            <?php endif; ?>
 
-{{-- ══════════════════════════════════════════════════════════
-                 ADMIN / RH — Équipements
-            ══════════════════════════════════════════════════════════ --}}
-            @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
-            @php $navUser = Auth::user(); @endphp
 
-            @if($navUser->canView('equipements'))
+            <?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh'])): ?>
+            <?php $navUser = Auth::user(); ?>
+
+            <?php if($navUser->canView('equipements')): ?>
             <div class="nav-section-label">Équipements</div>
 
-            @php
+            <?php
                 $equipAlertes = 0;
                 try {
                     $eqTenantId = auth()->user()->tenant_id;
@@ -925,32 +901,30 @@
                 } catch (\Exception $e) {
                     $equipAlertes = 0;
                 }
-            @endphp
+            ?>
 
-            <a href="{{ route('equipements.index') }}"
-               class="nav-item {{ request()->routeIs('equipements.*') ? 'active' : '' }}">
+            <a href="<?php echo e(route('equipements.index')); ?>"
+               class="nav-item <?php echo e(request()->routeIs('equipements.*') ? 'active' : ''); ?>">
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="2" y="3" width="20" height="14" rx="2"/>
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M12 17v4"/>
                 </svg>
                 <span>Équipements</span>
-                @if($equipAlertes > 0)
-                <span class="nav-badge-live">{{ $equipAlertes }}</span>
-                @endif
+                <?php if($equipAlertes > 0): ?>
+                <span class="nav-badge-live"><?php echo e($equipAlertes); ?></span>
+                <?php endif; ?>
             </a>
-            @endif
-            @endif
-            {{-- ══════════════════════════════════════════════════════════
-                 ADMIN / RH — Paramétrage
-            ══════════════════════════════════════════════════════════ --}}
-      @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh']))
-@php $navUser = Auth::user(); @endphp
+            <?php endif; ?>
+            <?php endif; ?>
+            
+      <?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh'])): ?>
+<?php $navUser = Auth::user(); ?>
 
-@if($navUser->canView('parametrage'))
+<?php if($navUser->canView('parametrage')): ?>
 <div class="nav-section-label">Paramétre</div>
 
-<a href="{{ route('parametrage.index') }}"
-   class="nav-item {{ request()->routeIs('parametrage.*') || request()->routeIs('rooms.*') || request()->routeIs('departments.*') ? 'active' : '' }}">
+<a href="<?php echo e(route('parametrage.index')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('parametrage.*') || request()->routeIs('rooms.*') || request()->routeIs('departments.*') ? 'active' : ''); ?>">
     <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round"
               d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0
@@ -965,36 +939,36 @@
     </svg>
     <span>Paramétrage</span>
 </a>
-@endif
+<?php endif; ?>
 
-@if($navUser->canView('securite'))
+<?php if($navUser->canView('securite')): ?>
 <div class="nav-section-label">Sécurité</div>
 
-<a href="{{ route('admin.codes.index') }}"
-   class="nav-item {{ request()->routeIs('admin.codes.*') ? 'active' : '' }}">
+<a href="<?php echo e(route('admin.codes.index')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('admin.codes.*') ? 'active' : ''); ?>">
     <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <rect x="5" y="11" width="14" height="10" rx="2"/>
         <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
     </svg>
     <span>Codes de vérification</span>
 </a>
-@endif
-@endif
+<?php endif; ?>
+<?php endif; ?>
 
         </nav>
 
-        {{-- ── Footer sidebar ── --}}
+        
         <div class="sidebar-footer">
-            @auth
+            <?php if(auth()->guard()->check()): ?>
             <div class="user-card">
-                <div class="user-avatar">{{ substr(Auth::user()->name, 0, 1) }}</div>
+                <div class="user-avatar"><?php echo e(substr(Auth::user()->name, 0, 1)); ?></div>
                 <div class="user-info">
-                    <div class="user-namee">{{ Auth::user()->name }}</div>
-                    <div class="user-role">{{ Auth::user()->getRoleDisplayName() }}</div>
+                    <div class="user-namee"><?php echo e(Auth::user()->name); ?></div>
+                    <div class="user-role"><?php echo e(Auth::user()->getRoleDisplayName()); ?></div>
                 </div>
             </div>
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
+            <form method="POST" action="<?php echo e(route('logout')); ?>">
+                <?php echo csrf_field(); ?>
                 <button type="submit" class="btn btn-sm btn-outline w-100">
                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -1004,29 +978,29 @@
                     <span>Déconnexion</span>
                 </button>
             </form>
-            @else
-            <a href="{{ route('login') }}" class="btn btn-sm btn-outline w-100">Connexion</a>
-            @endauth
+            <?php else: ?>
+            <a href="<?php echo e(route('login')); ?>" class="btn btn-sm btn-outline w-100">Connexion</a>
+            <?php endif; ?>
         </div>
 
     </aside>
 
-    {{-- MAIN CONTENT --}}
+    
     <div class="main-content">
 
         <header class="topbar">
             <button class="btn-ghost btn btn-icon" id="menuToggle" style="display:none">
                 <i class="fa-solid fa-bars" aria-hidden="true"></i>
             </button>
-            <div class="topbar-title">@yield('page-title', 'Tableau de bord')</div>
+            <div class="topbar-title"><?php echo $__env->yieldContent('page-title', 'Tableau de bord'); ?></div>
             <div style="flex:1; display:flex; justify-content:flex-end; align-items:center; margin-right:12px;">
-                <img src="{{ asset('images/medstaff-logo.jpeg') }}"
+                <img src="<?php echo e(asset('images/medstaff-logo.jpeg')); ?>"
                      alt="medstaff HR Solutions"
                      style="height:50px; object-fit:contain;">
             </div>
             <div class="topbar-actions">
 
-                {{-- Notifications --}}
+                
                 <div class="notification-wrapper" style="position:relative;">
                     <button class="topbar-btn" id="notifBtn" title="Notifications" onclick="toggleNotifications()" style="position:relative;">
                         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1044,15 +1018,15 @@
                             <div style="padding:20px;text-align:center;color:#888;">Chargement…</div>
                         </div>
                         <div style="padding:8px 16px;border-top:1px solid #eee;text-align:center;">
-                            <a href="{{ route('notifications.index') }}" style="font-size:0.8rem;color:var(--primary);text-decoration:none;">
+                            <a href="<?php echo e(route('notifications.index')); ?>" style="font-size:0.8rem;color:var(--primary);text-decoration:none;">
                                 Voir toutes les notifications
                             </a>
                         </div>
                     </div>
                 </div>
 
-                {{-- Export Dropdown — masqué pour les employees --}}
-                @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh', 'superadmin']))
+                
+                <?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh', 'superadmin'])): ?>
                 <div class="export-wrapper" style="position: relative;">
                     <button class="topbar-btn" id="exportBtn" title="Fichier Excel Imprimable" onclick="toggleExportDropdown()">
                         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1061,21 +1035,21 @@
                     </button>
                     <div class="export-dropdown" id="exportDropdown" style="display: none; position: absolute; top: 100%; right: 0; width: 280px; background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 1000; margin-top: 8px; max-height: 400px; overflow-y: auto;">
                         <div style="padding: 12px 16px; border-bottom: 1px solid #eee; font-weight: 600; color: var(--primary);"><i class="fa-solid fa-chart-column" aria-hidden="true"></i> Fichier Excel Imprimable</div>
-                        <a href="{{ route('employees.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Liste du Personnel</a>
-                        <a href="{{ route('trombinoscope.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Trombinoscope</a>
-                        <a href="{{ route('absences.droits.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Droits d'Absences</a>
-                        <a href="{{ route('absences.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Demandes d'Absences</a>
-                        <a href="{{ route('absences.counters.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Compteurs Absences</a>
-                        <a href="{{ route('planning.monthly.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Planning Mensuel</a>
-                        <a href="{{ route('planning.weekly.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Planning Hebdomadaire</a>
-                        <a href="{{ route('pointage.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Pointages</a>
-                        <a href="{{ route('salary.export') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Salaires</a>
-                        <a href="{{ route('lms.exportPdf') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Formations (LMS)</a>
-                        <a href="{{ route('activites.admin.tasks.export-excel') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Suivi d'activité — Tâches</a>
-                        <a href="{{ route('activites.admin.projects.export-excel') }}" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Suivi d'activité — Projets</a>
+                        <a href="<?php echo e(route('employees.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Liste du Personnel</a>
+                        <a href="<?php echo e(route('trombinoscope.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Trombinoscope</a>
+                        <a href="<?php echo e(route('absences.droits.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Droits d'Absences</a>
+                        <a href="<?php echo e(route('absences.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Demandes d'Absences</a>
+                        <a href="<?php echo e(route('absences.counters.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Compteurs Absences</a>
+                        <a href="<?php echo e(route('planning.monthly.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Planning Mensuel</a>
+                        <a href="<?php echo e(route('planning.weekly.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Planning Hebdomadaire</a>
+                        <a href="<?php echo e(route('pointage.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Pointages</a>
+                        <a href="<?php echo e(route('salary.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Salaires</a>
+                        <a href="<?php echo e(route('lms.exportPdf')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Formations (LMS)</a>
+                        <a href="<?php echo e(route('activites.admin.tasks.export-excel')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Suivi d'activité — Tâches</a>
+                        <a href="<?php echo e(route('activites.admin.projects.export-excel')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Suivi d'activité — Projets</a>
                     </div>
                 </div>
-                @endif
+                <?php endif; ?>
 
             </div>
         </header>
@@ -1083,16 +1057,16 @@
         <main class="page-content">
            
 
-            @if(session('warning'))
-            <div class="alert alert-warning">⚠️ {{ session('warning') }}</div>
-            @endif
+            <?php if(session('warning')): ?>
+            <div class="alert alert-warning">⚠️ <?php echo e(session('warning')); ?></div>
+            <?php endif; ?>
 
-            @if(session('error'))
-            <div class="alert alert-danger">{{ session('error') }}</div>
-            @endif
+            <?php if(session('error')): ?>
+            <div class="alert alert-danger"><?php echo e(session('error')); ?></div>
+            <?php endif; ?>
 
-            @yield('content')
-            @include('components.chatbot')
+            <?php echo $__env->yieldContent('content'); ?>
+            <?php echo $__env->make('components.chatbot', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
             <div id="chatPopup" class="whatsapp-chat" style="display:none;">
                 <div class="whatsapp-header">
@@ -1280,7 +1254,7 @@ document.addEventListener('click', function(e) {
 });
 
 function loadNotifications() {
-    fetch('{{ route("api.notifications.data") }}')
+    fetch('<?php echo e(route("api.notifications.data")); ?>')
         .then(r => r.json())
         .then(data => {
             const notifList  = document.getElementById('notifList');
@@ -1325,6 +1299,7 @@ document.querySelectorAll('[data-count]').forEach(el => {
 });
 </script>
 
-@stack('scripts')
+<?php echo $__env->yieldPushContent('scripts'); ?>
 </body>
 </html>
+<?php /**PATH C:\Users\HP\Medstaff-second-main\resources\views/layouts/app.blade.php ENDPATH**/ ?>

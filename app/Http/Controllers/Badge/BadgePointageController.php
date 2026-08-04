@@ -46,8 +46,9 @@ class BadgePointageController extends Controller
     public function handleAction(Request $request)
     {
         $request->validate([
-            'action'     => 'required|string',
-            'shift_type' => 'nullable|string|in:normal,garde',
+            'action'       => 'required|string',
+            'shift_type'   => 'nullable|string|in:normal,garde',
+            'photo_base64' => 'nullable|string', // data URI: "data:image/jpeg;base64,...."
         ]);
 
         $employee  = $this->getAuthEmployee();
@@ -55,7 +56,13 @@ class BadgePointageController extends Controller
         $shiftType = $this->badgeService->resolveShiftType($request->input('shift_type'));
         $geoData   = $this->badgeService->buildGeoDataFromRequest($request);
 
-        $this->badgeService->recordAction($realType, $employee, $geoData, [], $shiftType);
+        $photoData = $this->badgeService->storeFacePhoto(
+            $employee,
+            $realType,
+            $request->input('photo_base64')
+        );
+
+        $this->badgeService->recordAction($realType, $employee, $geoData, $photoData, $shiftType);
 
         $request->session()->put('last_type',       $realType);
         $request->session()->put('last_geo',        $geoData);

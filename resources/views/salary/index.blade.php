@@ -195,7 +195,9 @@
                         <th>IR</th>
                         <th style="color:var(--success)">Net à payer</th>
                         <th>Statut</th>
+                        @if(auth()->user()->role !== 'rh')
                         <th>Actions</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody>
@@ -213,12 +215,15 @@
                                 <td>{{ number_format($emp->base_salary,0,',',' ') }}</td>
                                 <td>—</td><td>—</td><td>—</td><td>—</td>
                                 <td><span class="badge badge-secondary">Non généré</span></td>
+                                {{-- rh : aucune des actions (Saisir/Historique/PDF), consultation uniquement --}}
+                                @if(auth()->user()->role !== 'rh')
                                 <td>
                                     @unless(auth()->user()->isEmployee())
                                     <a href="{{ route('salary.create', [$emp,'month'=>$month,'year'=>$year]) }}" class="btn btn-sm btn-primary">Saisir</a>
                                     @endunless
                                     <a href="{{ route('salary.show', $emp) }}" class="btn btn-sm btn-ghost">Historique</a>
                                 </td>
+                                @endif
                             </tr>
                         @else
                             @foreach($salList as $sal)
@@ -305,6 +310,8 @@
                                     </div>
                                 </td>
 
+                                {{-- rh : aucune des actions (Saisir/Historique/PDF), consultation uniquement --}}
+                                @if(auth()->user()->role !== 'rh')
                                 <td>
                                     <div style="display:flex;gap:4px">
                                         @unless(auth()->user()->isEmployee())
@@ -315,6 +322,7 @@
                                         <a href="{{ route('salary.pdf', $sal) }}" class="btn btn-sm btn-ghost">PDF</a>
                                     </div>
                                 </td>
+                                @endif
                             </tr>
                             @endforeach
                         @endif

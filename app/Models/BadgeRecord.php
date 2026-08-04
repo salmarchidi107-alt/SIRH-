@@ -23,10 +23,13 @@ class BadgeRecord extends Model
         'location_address',
         'geolocation_denied',
 
-        // Photo faciale
+        // Photo faciale — uniquement le fichier sur disque, jamais le
+        // contenu base64. 'face_photo_base64' est volontairement absente
+        // d'ici : même si un autre endroit du code tente un
+        // BadgeRecord::create($request->all()) ou ->fill(), Laravel
+        // ignorera silencieusement ce champ tant qu'il n'est pas fillable.
         'face_photo_path',
         'face_photo_disk',
-        'face_photo_base64',
         'face_photo_size',
         'face_photo_mime',
     ];

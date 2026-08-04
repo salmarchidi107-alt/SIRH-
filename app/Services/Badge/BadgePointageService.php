@@ -9,6 +9,8 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class BadgePointageService
 {
@@ -121,6 +123,66 @@ class BadgePointageService
         };
     }
 
+    // ─── Photo faciale : écriture directe sur le disque, jamais en base64 en DB ──
+
+    /**
+     * Décode une image data URI envoyée par la caméra ("data:image/jpeg;base64,...")
+     * et l'écrit sur le disque 'public'. Ne renvoie jamais de contenu binaire ni de
+     * base64 — uniquement le chemin relatif (et ses métadonnées) à stocker en base.
+     *
+     * @return array{face_photo_path: ?string, face_photo_disk: string, face_photo_size: int, face_photo_mime: ?string}
+     */
+    public function storeFacePhoto(Employee $employee, string $type, ?string $dataUri): array
+    {
+        $empty = [
+            'face_photo_path' => null,
+            'face_photo_disk' => 'public',
+            'face_photo_size' => 0,
+            'face_photo_mime' => null,
+        ];
+
+        if (blank($dataUri) || ! str_starts_with($dataUri, 'data:image/')) {
+            return $empty;
+        }
+
+        if (! preg_match('/^data:(image\/\w+);base64,(.+)$/', $dataUri, $matches)) {
+            return $empty;
+        }
+
+        $mime   = $matches[1];
+        $binary = base64_decode($matches[2], true);
+
+        if ($binary === false || strlen($binary) === 0) {
+            return $empty;
+        }
+
+        $extension = match ($mime) {
+            'image/png'  => 'png',
+            'image/webp' => 'webp',
+            default      => 'jpg',
+        };
+
+        $tenantId = $this->resolveTenantId($employee);
+        $path = sprintf(
+            'badges/%s/%s/%s/%s_%s.%s',
+            $tenantId ?: 'default',
+            $employee->id,
+            $this->todayCasa()->format('Y-m-d'),
+            $type,
+            now()->format('His') . '_' . Str::random(6),
+            $extension
+        );
+
+        Storage::disk('public')->put($path, $binary);
+
+        return [
+            'face_photo_path' => $path,
+            'face_photo_disk' => 'public',
+            'face_photo_size' => strlen($binary),
+            'face_photo_mime' => $mime,
+        ];
+    }
+
     // ─── Enregistrement principal ─────────────────────────────────────────
 
     /**
@@ -129,8 +191,7 @@ class BadgePointageService
      * @param  string   $type       entree | pause | retour_pause | sortie
      * @param  Employee $employee
      * @param  array    $geoData    latitude, longitude, accuracy, address, denied
-     * @param  array    $photoData  face_photo_path, face_photo_disk, face_photo_base64,
-     *                              face_photo_size, face_photo_mime
+     * @param  array    $photoData  face_photo_path, face_photo_disk, face_photo_size, face_photo_mime
      * @param  string   $shiftType  normal | garde
      */
     public function recordAction(
@@ -159,13 +220,12 @@ class BadgePointageService
                                             : null,
                 'geolocation_denied' => $geoData['denied']    ?? false,
             ],
-            // Photo faciale
+            // Photo faciale — fichier sur disque uniquement
             $photoData ?: [
-                'face_photo_path'   => null,
-                'face_photo_disk'   => 'public',
-                'face_photo_base64' => null,
-                'face_photo_size'   => 0,
-                'face_photo_mime'   => null,
+                'face_photo_path' => null,
+                'face_photo_disk' => 'public',
+                'face_photo_size' => 0,
+                'face_photo_mime' => null,
             ]
         ));
 

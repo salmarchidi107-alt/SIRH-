@@ -761,6 +761,10 @@ class PointageService
      * chaque ligne du tableau (jeudi / vendredi) récupère naturellement sa
      * propre photo, sans chevauchement.
      *
+     * La photo n'existe jamais qu'en fichier sur le disque de stockage
+     * ('face_photo_path' + 'face_photo_disk') : il n'y a plus aucun
+     * fallback base64 en base de données.
+     *
      * @return array{status: string, photo_url?: string, employee?: string, type?: string, recorded_at?: string}
      */
     public function getPhotoData(Employee $employee, mixed $tenantId, ?string $rawDate): array
@@ -778,10 +782,7 @@ class PointageService
 
         $record = BadgeRecord::where('employee_id', $employee->id)
             ->whereDate('created_at', $date->toDateString())
-            ->where(function ($q) {
-                $q->whereNotNull('face_photo_path')
-                  ->orWhereNotNull('face_photo_base64');
-            })
+            ->whereNotNull('face_photo_path')
             ->orderByDesc('created_at')
             ->first();
 
@@ -789,26 +790,18 @@ class PointageService
             return ['status' => 'not_found'];
         }
 
-        $photoUrl = null;
-
-        if ($record->face_photo_path) {
-            try {
-                $disk     = $record->face_photo_disk ?: 'public';
-                $photoUrl = Storage::disk($disk)->url($record->face_photo_path);
-            } catch (\Throwable $e) {
-                Log::warning('lastPhoto: impossible de générer l\'URL disque', [
-                    'badge_record_id' => $record->id,
-                    'error'           => $e->getMessage(),
-                ]);
-            }
+        if (! $record->face_photo_path) {
+            return ['status' => 'photo_missing'];
         }
 
-        if (! $photoUrl && $record->face_photo_base64) {
-            $mime     = $record->face_photo_mime ?: 'image/jpeg';
-            $photoUrl = 'data:' . $mime . ';base64,' . $record->face_photo_base64;
-        }
-
-        if (! $photoUrl) {
+        try {
+            $disk     = $record->face_photo_disk ?: 'public';
+            $photoUrl = Storage::disk($disk)->url($record->face_photo_path);
+        } catch (\Throwable $e) {
+            Log::warning('lastPhoto: impossible de générer l\'URL disque', [
+                'badge_record_id' => $record->id,
+                'error'           => $e->getMessage(),
+            ]);
             return ['status' => 'photo_missing'];
         }
 

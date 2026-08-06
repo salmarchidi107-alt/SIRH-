@@ -95,7 +95,7 @@ class AbsenceController extends Controller
 
         $this->absenceService->approve($absence, auth()->id());
 
-        return back()->with('success', "Demande approuvée. Un email a été envoyé à l'employé.");
+        return back()->with('success', "Demande approuvée. ");
     }
 
     public function reject(Absence $absence)

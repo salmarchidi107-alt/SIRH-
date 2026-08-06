@@ -32,6 +32,17 @@ class BadgeRecord extends Model
         'face_photo_disk',
         'face_photo_size',
         'face_photo_mime',
+
+        // IMPORTANT : created_at/updated_at DOIVENT être fillable ici.
+        // BadgePointageService::recordAction() passe explicitement un
+        // 'created_at' calculé dans le fuseau horaire du TENANT (nowTenant()),
+        // et non l'heure serveur par défaut. Sans ces deux champs en
+        // fillable, Laravel les ignore silencieusement lors du
+        // mass-assignment et retombe sur son timestamp automatique
+        // (Carbon::now() dans le fuseau par défaut de l'app, PAS celui du
+        // tenant) — ce qui décale systématiquement l'heure enregistrée.
+        'created_at',
+        'updated_at',
     ];
 
     protected $hidden = [

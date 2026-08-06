@@ -5,6 +5,7 @@ namespace App\Services\Badge;
 use App\Models\BadgeRecord;
 use App\Models\Employee;
 use App\Models\Pointage;
+use App\Models\Tenant;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -14,7 +15,11 @@ use Illuminate\Support\Str;
 
 class BadgePointageService
 {
-    private const TZ = 'Africa/Casablanca';
+    /** Fuseau de repli si le tenant n'a pas de timezone configuré */
+    private const DEFAULT_TZ = 'Africa/Casablanca';
+
+    /** Cache local (par instance/requête) des fuseaux déjà résolus, clé = tenant_id */
+    private array $tzCache = [];
 
     // ─── Résolution employé ──────────────────────────────────────────────
 
@@ -47,10 +52,59 @@ class BadgePointageService
             ->value('tenant_id');
     }
 
-    // ─── Helpers Carbon ──────────────────────────────────────────────────
+    // ─── Résolution fuseau horaire du tenant ──────────────────────────────
 
-    public function nowCasa(): Carbon   { return Carbon::now(self::TZ); }
-    public function todayCasa(): Carbon { return Carbon::today(self::TZ); }
+    private function resolveTimezone(Employee $employee): string
+    {
+        $tenantId = $this->resolveTenantId($employee);
+
+        if (blank($tenantId)) {
+            return self::DEFAULT_TZ;
+        }
+
+        if (array_key_exists($tenantId, $this->tzCache)) {
+            return $this->tzCache[$tenantId];
+        }
+
+        $timezone = Tenant::where('id', $tenantId)->value('timezone');
+
+        if (blank($timezone) || ! in_array($timezone, \DateTimeZone::listIdentifiers(), true)) {
+            $timezone = self::DEFAULT_TZ;
+        }
+
+        return $this->tzCache[$tenantId] = $timezone;
+    }
+
+    // ─── Helpers Carbon (fuseau dynamique par tenant) ─────────────────────
+
+    public function nowTenant(Employee $employee): Carbon
+    {
+        return Carbon::now($this->resolveTimezone($employee));
+    }
+
+    public function todayTenant(Employee $employee): Carbon
+    {
+        return Carbon::now($this->resolveTimezone($employee));
+    }
+
+    /**
+     * Retourne l'heure (H:i) telle qu'enregistrée en base pour un BadgeRecord,
+     * en lisant l'attribut BRUT (getRawOriginal) plutôt que la valeur castée
+     * par Eloquent. Depuis que created_at/updated_at sont fillable sur
+     * BadgeRecord, la chaîne brute représente déjà l'heure locale correcte
+     * du tenant (écrite via nowTenant()) — AUCUNE conversion supplémentaire
+     * ne doit lui être appliquée. Un ->setTimezone() ici reproduirait le même
+     * bug de double-décalage que dans PointageService : Eloquent réinterprète
+     * la chaîne brute selon config('app.timezone') à la lecture, donc
+     * setTimezone($tz) déciderait un DEUXIÈME décalage sur une valeur déjà
+     * correcte.
+     */
+    private function badgeTimeString(?BadgeRecord $record): ?string
+    {
+        if (! $record) return null;
+        $raw = $record->getRawOriginal('created_at');
+        return $raw ? substr($raw, 11, 5) : null; // H:i
+    }
 
     // ─── Données pour les pages ────────────────────────────────────────────
 
@@ -60,7 +114,7 @@ class BadgePointageService
 
         return [
             'employee'   => $employee,
-            'todayShift' => $this->buildShiftSummary($shift),
+            'todayShift' => $this->buildShiftSummary($shift, $employee),
             'canEntree'  => $shift->where('type', 'entree')->isEmpty()
                             || $shift->last()?->type === 'sortie',
             'canSortie'  => $shift->where('type', 'entree')->isNotEmpty()
@@ -76,10 +130,10 @@ class BadgePointageService
         $retourRecords = $shift->where('type', 'retour_pause')->values();
 
         $todayShift = array_merge(
-            $this->buildShiftSummary($shift),
+            $this->buildShiftSummary($shift, $employee),
             [
-                'pause_start'       => $pauseRecords->first()?->created_at?->setTimezone(self::TZ)->format('H:i'),
-                'pause_end'         => $retourRecords->first()?->created_at?->setTimezone(self::TZ)->format('H:i'),
+                'pause_start'       => $this->badgeTimeString($pauseRecords->first()),
+                'pause_end'         => $this->badgeTimeString($retourRecords->first()),
                 'total_pause_human' => $this->calcTotalPause($pauseRecords, $retourRecords),
                 'shift_type'        => $shiftType,
             ]
@@ -125,13 +179,6 @@ class BadgePointageService
 
     // ─── Photo faciale : écriture directe sur le disque, jamais en base64 en DB ──
 
-    /**
-     * Décode une image data URI envoyée par la caméra ("data:image/jpeg;base64,...")
-     * et l'écrit sur le disque 'public'. Ne renvoie jamais de contenu binaire ni de
-     * base64 — uniquement le chemin relatif (et ses métadonnées) à stocker en base.
-     *
-     * @return array{face_photo_path: ?string, face_photo_disk: string, face_photo_size: int, face_photo_mime: ?string}
-     */
     public function storeFacePhoto(Employee $employee, string $type, ?string $dataUri): array
     {
         $empty = [
@@ -163,13 +210,15 @@ class BadgePointageService
         };
 
         $tenantId = $this->resolveTenantId($employee);
+        $now      = $this->nowTenant($employee);
+
         $path = sprintf(
             'badges/%s/%s/%s/%s_%s.%s',
             $tenantId ?: 'default',
             $employee->id,
-            $this->todayCasa()->format('Y-m-d'),
+            $now->format('Y-m-d'),
             $type,
-            now()->format('His') . '_' . Str::random(6),
+            $now->format('His') . '_' . Str::random(6),
             $extension
         );
 
@@ -185,15 +234,6 @@ class BadgePointageService
 
     // ─── Enregistrement principal ─────────────────────────────────────────
 
-    /**
-     * Enregistre un BadgeRecord + synchronise le Pointage RH.
-     *
-     * @param  string   $type       entree | pause | retour_pause | sortie
-     * @param  Employee $employee
-     * @param  array    $geoData    latitude, longitude, accuracy, address, denied
-     * @param  array    $photoData  face_photo_path, face_photo_disk, face_photo_size, face_photo_mime
-     * @param  string   $shiftType  normal | garde
-     */
     public function recordAction(
         string   $type,
         Employee $employee,
@@ -201,17 +241,21 @@ class BadgePointageService
         array    $photoData = [],
         string   $shiftType = 'normal'
     ): void {
-        $now     = $this->nowCasa();
+        $now     = $this->nowTenant($employee);
         $today   = $now->format('Y-m-d');
         $nowTime = $now->format('H:i:s');
 
-        // ── 1. BadgeRecord avec géolocalisation + photo + shift_type ────
+        // IMPORTANT : ceci ne fonctionne que parce que 'created_at' et
+        // 'updated_at' sont désormais dans $fillable de BadgeRecord — sans ça
+        // Laravel les ignore silencieusement et retombe sur son timestamp
+        // automatique (heure serveur, pas heure tenant).
         BadgeRecord::create(array_merge(
             [
                 'employee_id'        => $employee->id,
                 'type'               => $type,
                 'shift_type'         => $shiftType,
-                // Géolocalisation
+                'created_at'         => $now,
+                'updated_at'         => $now,
                 'latitude'           => $geoData['latitude']  ?? null,
                 'longitude'          => $geoData['longitude'] ?? null,
                 'accuracy'           => $geoData['accuracy']  ?? null,
@@ -220,7 +264,6 @@ class BadgePointageService
                                             : null,
                 'geolocation_denied' => $geoData['denied']    ?? false,
             ],
-            // Photo faciale — fichier sur disque uniquement
             $photoData ?: [
                 'face_photo_path' => null,
                 'face_photo_disk' => 'public',
@@ -229,7 +272,6 @@ class BadgePointageService
             ]
         ));
 
-        // ── 2. Synchronisation Pointage RH ───────────────────────────────
         $pointage = Pointage::firstOrCreate(
             ['employee_id' => $employee->id, 'date' => $today],
             [
@@ -241,7 +283,6 @@ class BadgePointageService
             ]
         );
 
-        // Mettre à jour shift_type si le pointage existait déjà
         if (! $pointage->wasRecentlyCreated && $pointage->shift_type !== $shiftType) {
             $pointage->shift_type = $shiftType;
         }
@@ -266,12 +307,12 @@ class BadgePointageService
     private function getTodayShift(Employee $employee): Collection
     {
         return BadgeRecord::where('employee_id', $employee->id)
-            ->whereDate('created_at', $this->todayCasa())
+            ->whereDate('created_at', $this->todayTenant($employee))
             ->orderBy('created_at')
             ->get();
     }
 
-    private function buildShiftSummary(Collection $shift): array
+    private function buildShiftSummary(Collection $shift, Employee $employee): array
     {
         $entrees = $shift->where('type', 'entree')->values();
         $sorties = $shift->where('type', 'sortie')->values();
@@ -279,22 +320,18 @@ class BadgePointageService
         $retours = $shift->where('type', 'retour_pause')->values();
 
         return [
-            'first_entree'  => $entrees->first()?->created_at?->setTimezone(self::TZ)->format('H:i'),
-            'last_sortie'   => $sorties->last()?->created_at?->setTimezone(self::TZ)->format('H:i'),
+            'first_entree'  => $this->badgeTimeString($entrees->first()),
+            'last_sortie'   => $this->badgeTimeString($sorties->last()),
             'pause_display' => $pauses->count() ? $pauses->count() . ' pause(s)' : null,
             'total_human'   => $this->calcTotalTime($entrees, $sorties, $pauses, $retours),
             'shift_type'    => $shift->last()?->shift_type ?? 'normal',
         ];
     }
 
-    /**
-     * Calcule le temps de travail net = (Sortie - Entrée) - durée_pause
-     */
     private function calcTotalTime($entrees, $sorties, $pauses = null, $retours = null): string
     {
         if ($entrees->isEmpty() || $sorties->isEmpty()) return '0h 0m';
 
-        // ── Temps brut (Sortie - Entrée) ─────────────────────────────────
         $total = 0;
         $count = min($entrees->count(), $sorties->count());
 
@@ -303,7 +340,6 @@ class BadgePointageService
             if ($diff > 0) $total += $diff;
         }
 
-        // ── Déduction des pauses ──────────────────────────────────────────
         if ($pauses && $retours && $pauses->isNotEmpty() && $retours->isNotEmpty()) {
             $pauseCount = min($pauses->count(), $retours->count());
             for ($i = 0; $i < $pauseCount; $i++) {

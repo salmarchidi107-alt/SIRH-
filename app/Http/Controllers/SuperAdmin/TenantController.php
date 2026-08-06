@@ -168,6 +168,7 @@ class TenantController extends Controller
             'logo_path'     => $logoPath,
             'brand_color'   => $data['brand_color']   ?? $tenant->brand_color   ?? '#0d9488',
             'sidebar_color' => $data['sidebar_color'] ?? $tenant->sidebar_color ?? '#0d2238',
+            'timezone'      => $data['timezone'],
         ]);
 
         $admin = $tenant->admin;

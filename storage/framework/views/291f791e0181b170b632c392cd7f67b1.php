@@ -1055,7 +1055,13 @@
         </header>
 
         <main class="page-content">
-           
+            <?php if(session('success')): ?>
+            <div class="alert alert-success">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                <?php echo e(session('success')); ?>            </div>
+            <?php endif; ?>
 
             <?php if(session('warning')): ?>
             <div class="alert alert-warning">⚠️ <?php echo e(session('warning')); ?></div>

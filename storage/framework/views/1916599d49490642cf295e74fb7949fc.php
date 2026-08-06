@@ -252,8 +252,20 @@
 
 <?php $__env->startSection('content'); ?>
 <?php
-  $tz      = 'Africa/Casablanca';
-  $nowCasa = \Carbon\Carbon::now($tz)->locale('fr');
+  /*
+   * ── Fuseau horaire ────────────────────────────────────────────────────
+   * Avant : Africa/Casablanca était codé en dur ici, ce qui désynchronisait
+   * l'affichage (date, "Localisé à ...") du reste du pointage dès qu'un
+   * tenant utilisait un autre fuseau (Cairo, etc.).
+   * Maintenant : résolution inline directe (pas de dépendance à un helper
+   * global externe, pour éviter les soucis de chargement de fichier) —
+   * on lit le tenant_id de l'employé, puis son timezone en base.
+   */
+  $tenantId = $employee?->user?->tenant_id;
+  $tz       = $tenantId
+      ? (\App\Models\Tenant::where('id', $tenantId)->value('timezone') ?: 'Africa/Casablanca')
+      : 'Africa/Casablanca';
+  $nowCasa  = \Carbon\Carbon::now($tz)->locale('fr');
 
   $jours  = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
   $mois   = ['','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
@@ -561,5 +573,4 @@
 })();
 </script>
 <?php $__env->stopPush(); ?>
-
 <?php echo $__env->make('layouts.badge', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\HP\Medstaff-second-main\resources\views/badge/result.blade.php ENDPATH**/ ?>

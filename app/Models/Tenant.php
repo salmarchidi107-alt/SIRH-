@@ -32,6 +32,13 @@ class Tenant extends BaseTenant
         'database_name',
     ];
 
+    /**
+     * IMPORTANT (Stancl Tenancy) : toute colonne absente de cette liste est
+     * automatiquement redirigée vers la colonne JSON `data` au lieu de sa
+     * vraie colonne SQL, même si $fillable l'autorise. `timezone` doit donc
+     * impérativement figurer ici pour être écrit dans la vraie colonne
+     * `timezone` de la table `tenants`.
+     */
     public static function getCustomColumns(): array
     {
         return [
@@ -47,6 +54,7 @@ class Tenant extends BaseTenant
             'logo_path',
             'brand_color',
             'sidebar_color',
+            'timezone',
             'database_name',
         ];
     }

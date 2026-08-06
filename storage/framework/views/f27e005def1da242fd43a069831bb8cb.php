@@ -178,7 +178,16 @@
             </div>
             <div class="geo-modal-footer">
                 <span>Site de référence : <strong><?php echo e($siteName); ?></strong></span>
-                <span><?php echo e(now()->setTimezone('Africa/Casablanca')->format('d/m/Y H:i')); ?></span>
+                <?php
+                    // Résolution inline du fuseau tenant (sans dépendre d'un helper externe) :
+                    // config('app.current_tenant_id') est déjà positionné par le middleware
+                    // tenant sur les pages admin classiques.
+                    $__tenantId = config('app.current_tenant_id');
+                    $__tz = $__tenantId
+                        ? (\App\Models\Tenant::where('id', $__tenantId)->value('timezone') ?: 'Africa/Casablanca')
+                        : 'Africa/Casablanca';
+                ?>
+                <span><?php echo e(\Carbon\Carbon::now($__tz)->format('d/m/Y H:i')); ?></span>
             </div>
         </div>
     </div>
@@ -247,7 +256,6 @@
             <table class="pt-table">
                 <thead>
                     <tr>
-                        <th style="width:44px">Validé</th>
                         <th style="width:32px" title="Géolocalisation GPS">GPS</th>
                         <th>Employé</th>
                         <th style="width:80px">Absence</th>
@@ -280,22 +288,6 @@
                 ?>
                 <tr class="<?php echo e($isDimmed ? 'pt-row-dimmed' : ''); ?> <?php echo e($rowClass); ?> <?php echo e($isGeoAlert ? 'row-geo-alert' : ''); ?>"
                     id="row-emp-<?php echo e($emp['id']); ?>">
-
-                    
-                    <td>
-                        <?php if($p): ?>
-                        <button class="pt-check <?php echo e($valide ? 'ok' : 'pending'); ?>"
-                                data-id="<?php echo e($p->id); ?>"
-                                data-url="<?php echo e(route('pointage.toggle-valider', $p->id)); ?>"
-                                onclick="toggleValider(this)"
-                                title="<?php echo e($valide ? 'Validé – cliquer pour annuler' : 'Cliquer pour valider'); ?>">
-                            <?php echo e($valide ? '✓' : '○'); ?>
-
-                        </button>
-                        <?php else: ?>
-                        <div class="pt-check pending">○</div>
-                        <?php endif; ?>
-                    </td>
 
                     
                     <td style="text-align:center;padding:10px 6px;">
@@ -601,17 +593,6 @@ function updateDaySidebarValidation(validatorName, validatedAt) {
     activeDay.style.borderLeftColor = '#0d9488';
 }
 
-// ── Toggle valider ───────────────────────────────────────────────────────────
-async function toggleValider(btn) {
-    try {
-        const res  = await fetch(btn.dataset.url, { method: 'POST', headers: {'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json'} });
-        const data = await res.json();
-        btn.classList.toggle('ok', data.valide);
-        btn.classList.toggle('pending', !data.valide);
-        btn.textContent = data.valide ? '✓' : '○';
-    } catch(e) { console.error(e); }
-}
-
 // ── Toggle absence ───────────────────────────────────────────────────────────
 async function toggleAbsence(checkbox) {
     const empId = checkbox.dataset.employee, date = checkbox.dataset.date;
@@ -720,5 +701,4 @@ document.addEventListener('keydown', function (e) {
 });
 </script>
 <?php $__env->stopPush(); ?>
-
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\HP\Medstaff-second-main\resources\views/pointage/index.blade.php ENDPATH**/ ?>

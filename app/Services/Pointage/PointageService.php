@@ -6,6 +6,7 @@ use App\Models\BadgeRecord;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Pointage;
+use App\Models\Tenant;
 use App\Scopes\TenantScope;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -27,7 +28,41 @@ use Illuminate\Support\Str;
  */
 class PointageService
 {
-    private const TZ = 'Africa/Casablanca';
+    /** Fuseau de repli si le tenant n'a pas de timezone configuré */
+    private const DEFAULT_TZ = 'Africa/Casablanca';
+
+    /** Cache local (par instance/requête) des fuseaux déjà résolus, clé = tenant_id */
+    private array $tzCache = [];
+
+    // =========================================================================
+    // FUSEAU HORAIRE DU TENANT
+    // =========================================================================
+
+    /**
+     * Résout le fuseau horaire du tenant courant (colonne `timezone` sur la
+     * table tenants). Remplace l'ancienne constante self::TZ = 'Africa/Casablanca'
+     * qui était codée en dur et ignorait la configuration du tenant.
+     */
+    private function resolveTimezone(mixed $tenantId = null): string
+    {
+        $tenantId ??= $this->getCurrentTenantId();
+
+        if (blank($tenantId)) {
+            return self::DEFAULT_TZ;
+        }
+
+        if (array_key_exists($tenantId, $this->tzCache)) {
+            return $this->tzCache[$tenantId];
+        }
+
+        $timezone = Tenant::where('id', $tenantId)->value('timezone');
+
+        if (blank($timezone) || ! in_array($timezone, \DateTimeZone::listIdentifiers(), true)) {
+            $timezone = self::DEFAULT_TZ;
+        }
+
+        return $this->tzCache[$tenantId] = $timezone;
+    }
 
     // =========================================================================
     // TENANT
@@ -158,7 +193,24 @@ class PointageService
         ];
     }
 
-    private function extractGeoFromBadgeRecords(Collection $shift): ?array
+    /**
+     * Retourne l'heure (HH:MM:SS) telle qu'enregistrée en base pour un BadgeRecord,
+     * en lisant l'attribut BRUT (getRawOriginal) plutôt que la valeur castée par
+     * Eloquent. C'est indispensable : le cast 'datetime' d'Eloquent réinterprète
+     * la chaîne stockée selon config('app.timezone') à la lecture, ce qui fausse
+     * l'heure dès que le fuseau du tenant diffère de app.timezone (Carbon::parse()
+     * + ->setTimezone() partirait alors d'une base déjà incorrecte).
+     * Ici on ne fait AUCUNE conversion : la chaîne brute représente déjà l'heure
+     * locale correcte du tenant (elle a été écrite ainsi par BadgePointageService).
+     */
+    private function badgeTimeString(?BadgeRecord $record): ?string
+    {
+        if (! $record) return null;
+        $raw = $record->getRawOriginal('created_at');
+        return $raw ? substr($raw, 11, 8) : null;
+    }
+
+    private function extractGeoFromBadgeRecords(Collection $shift, mixed $tenantId = null): ?array
     {
         if ($shift->isEmpty()) return null;
 
@@ -195,9 +247,7 @@ class PointageService
             'accuracy'    => $record->accuracy ? (int) $record->accuracy : null,
             'address'     => $record->location_address,
             'reason'      => '',
-            'recorded_at' => $record->created_at
-                ? Carbon::parse($record->created_at)->setTimezone(self::TZ)->format('H:i:s')
-                : null,
+            'recorded_at' => $this->badgeTimeString($record),
         ];
     }
 
@@ -231,6 +281,7 @@ class PointageService
         mixed $tenantId = null
     ): Pointage {
 
+        $tz        = $this->resolveTimezone($tenantId);
         $shiftType = $this->resolveShiftType($shift);
 
         $hasEntreeToday = $shift->where('type', 'entree')->isNotEmpty();
@@ -246,28 +297,29 @@ class PointageService
             $openPointage = $this->findOpenOvernightPointage($employeeId, $date, $tenantId);
 
             if ($openPointage) {
-                $lastSortie  = $shift->where('type', 'sortie')->last()?->created_at;
-                $firstPause  = $shift->where('type', 'pause')->first()?->created_at;
-                $firstRetour = $shift->where('type', 'retour_pause')->first()?->created_at;
+                $lastSortieTime  = $this->badgeTimeString($shift->where('type', 'sortie')->last());
+                $firstPauseTime  = $this->badgeTimeString($shift->where('type', 'pause')->first());
+                $firstRetourTime = $this->badgeTimeString($shift->where('type', 'retour_pause')->first());
 
                 $updateData = [
                     'statut'     => 'present',
                     'updated_at' => now(),
                 ];
 
-                if ($lastSortie) {
-                    $updateData['heure_sortie'] = Carbon::parse($lastSortie)->setTimezone(self::TZ)->format('H:i:s');
+                if ($lastSortieTime) {
+                    $updateData['heure_sortie'] = $lastSortieTime;
                 }
                 // Pause éventuelle prise côté "lendemain" (avant la sortie), seulement
                 // si aucune pause n'a déjà été enregistrée la veille.
-                if ($firstPause && ! $openPointage->pause_start) {
-                    $updateData['pause_start'] = Carbon::parse($firstPause)->setTimezone(self::TZ)->format('H:i:s');
+                if ($firstPauseTime && ! $openPointage->pause_start) {
+                    $updateData['pause_start'] = $firstPauseTime;
                 }
-                if ($firstRetour) {
-                    $updateData['pause_end'] = Carbon::parse($firstRetour)->setTimezone(self::TZ)->format('H:i:s');
+                if ($firstRetourTime) {
+                    $updateData['pause_end'] = $firstRetourTime;
                 }
-                if ($firstPause && $firstRetour && ! $openPointage->pause_minutes) {
-                    $diff = Carbon::parse($firstPause)->diffInMinutes(Carbon::parse($firstRetour));
+                if ($firstPauseTime && $firstRetourTime && ! $openPointage->pause_minutes) {
+                    $diff = Carbon::createFromFormat('H:i:s', $firstPauseTime)
+                        ->diffInMinutes(Carbon::createFromFormat('H:i:s', $firstRetourTime));
                     $updateData['pause_minutes'] = $diff > 0 ? $diff : 0;
                 }
 
@@ -298,29 +350,48 @@ class PointageService
             ])->toArray(),
         ]);
 
-       $pointage = Pointage::withoutGlobalScope(TenantScope::class)
-            ->updateOrCreate(
-                [
-                    'employee_id' => $employeeId,
-                    'date'        => $date->toDateString(),
-                    'tenant_id'   => $tenantId,
-                ],
-                [
-                    'statut'     => 'present',
-                    'valide'     => false,
-                    'source'     => 'badge',
-                    'shift_type' => $shiftType,
-                ]
-            );
+        // ─────────────────────────────────────────────────────────────────
+        // IMPORTANT : on ne touche JAMAIS au champ 'valide' d'un pointage
+        // déjà existant ici. Cette méthode est appelée à CHAQUE chargement
+        // de la page (index, export, PDF) dès qu'il y a des badge records
+        // pour l'employé du jour. Si on remettait 'valide' à false sur un
+        // updateOrCreate, on écraserait systématiquement une validation
+        // faite via "Valider la journée" au refresh suivant.
+        // ─────────────────────────────────────────────────────────────────
+        $pointage = Pointage::withoutGlobalScope(TenantScope::class)
+            ->where('employee_id', $employeeId)
+            ->where('date', $date->toDateString())
+            ->where('tenant_id', $tenantId)
+            ->first();
+
+        if (! $pointage) {
+            $pointage = Pointage::withoutGlobalScope(TenantScope::class)->create([
+                'employee_id' => $employeeId,
+                'date'        => $date->toDateString(),
+                'tenant_id'   => $tenantId,
+                'statut'      => 'present',
+                'valide'      => false,
+                'source'      => 'badge',
+                'shift_type'  => $shiftType,
+            ]);
+        } else {
+            DB::table('pointages')->where('id', $pointage->id)->update([
+                'statut'     => 'present',
+                'source'     => 'badge',
+                'shift_type' => $shiftType,
+                'updated_at' => now(),
+            ]);
+            $pointage = $pointage->fresh();
+        }
 
         if (in_array($pointage->statut, ['absent', 'absence_injustifiee'])) {
             return $pointage;
         }
 
-        $firstEntree = $shift->where('type', 'entree')->first()?->created_at;
-        $lastSortie  = $shift->where('type', 'sortie')->last()?->created_at;
-        $firstPause  = $shift->where('type', 'pause')->first()?->created_at;
-        $firstRetour = $shift->where('type', 'retour_pause')->first()?->created_at;
+        $firstEntreeTime = $this->badgeTimeString($shift->where('type', 'entree')->first());
+        $lastSortieTime  = $this->badgeTimeString($shift->where('type', 'sortie')->last());
+        $firstPauseTime  = $this->badgeTimeString($shift->where('type', 'pause')->first());
+        $firstRetourTime = $this->badgeTimeString($shift->where('type', 'retour_pause')->first());
 
         $updateData = [
             'statut'     => 'present',
@@ -328,12 +399,13 @@ class PointageService
             'updated_at' => now(),
         ];
 
-        if ($firstEntree) $updateData['heure_entree'] = Carbon::parse($firstEntree)->setTimezone(self::TZ)->format('H:i:s');
-        if ($lastSortie)  $updateData['heure_sortie'] = Carbon::parse($lastSortie)->setTimezone(self::TZ)->format('H:i:s');
-        if ($firstPause)  $updateData['pause_start']  = Carbon::parse($firstPause)->setTimezone(self::TZ)->format('H:i:s');
-        if ($firstRetour) $updateData['pause_end']    = Carbon::parse($firstRetour)->setTimezone(self::TZ)->format('H:i:s');
-        if ($firstPause && $firstRetour) {
-            $diff = Carbon::parse($firstPause)->diffInMinutes(Carbon::parse($firstRetour));
+        if ($firstEntreeTime) $updateData['heure_entree'] = $firstEntreeTime;
+        if ($lastSortieTime)  $updateData['heure_sortie'] = $lastSortieTime;
+        if ($firstPauseTime)  $updateData['pause_start']  = $firstPauseTime;
+        if ($firstRetourTime) $updateData['pause_end']    = $firstRetourTime;
+        if ($firstPauseTime && $firstRetourTime) {
+            $diff = Carbon::createFromFormat('H:i:s', $firstPauseTime)
+                ->diffInMinutes(Carbon::createFromFormat('H:i:s', $firstRetourTime));
             $updateData['pause_minutes'] = $diff > 0 ? $diff : 0;
         }
 
@@ -419,6 +491,7 @@ class PointageService
 
     private function buildWeekDays(Carbon $startOfWeek, Carbon $endOfWeek, Carbon $currentDate, mixed $tenantId): Collection
     {
+        $tz       = $this->resolveTimezone($tenantId);
         $weekDays = collect();
 
         for ($d = $startOfWeek->copy(); $d->lte($endOfWeek); $d->addDay()) {
@@ -450,7 +523,7 @@ class PointageService
                 'valide'       => $isValide,
                 'validated_by' => $validationInfo?->validator_name ?? null,
                 'validated_at' => $validationInfo?->validated_at
-                    ? Carbon::parse($validationInfo->validated_at)->setTimezone(self::TZ)->format('H\hi')
+                    ? Carbon::parse($validationInfo->validated_at)->setTimezone($tz)->format('H\hi')
                     : null,
             ]);
         }
@@ -512,7 +585,7 @@ class PointageService
                     }
                 }
 
-                $geo      = $this->extractGeoFromBadgeRecords($shift);
+                $geo      = $this->extractGeoFromBadgeRecords($shift, $tenantId);
                 $geoCheck = $this->checkGeoAlert($geo, $tenantId, $emp->department);
 
                 return [
@@ -669,7 +742,7 @@ class PointageService
 
         $dept        = $request->get('department', 'Tous');
         $filterInfo  = 'Département: ' . $dept . ' | Vue: ' . ucfirst($vue) . ($shiftFilter ? ' | Shift: ' . $shiftFilter : '');
-        $generatedAt = now()->format('d/m/Y H:i');
+        $generatedAt = now()->setTimezone($this->resolveTimezone($tenantId))->format('d/m/Y H:i');
         $filename    = 'pointage_' . $periode . '_' . $startDate->format('Y-m-d') . '_' . Str::slug($dept) . '.pdf';
 
         return compact('rows', 'summary', 'stats', 'periode', 'periodeLabel', 'filterInfo', 'generatedAt', 'filename');
@@ -810,8 +883,8 @@ class PointageService
             'photo_url'   => $photoUrl,
             'employee'    => $employee->first_name . ' ' . $employee->last_name,
             'type'        => $record->type,
-            'recorded_at' => $record->created_at
-                ? Carbon::parse($record->created_at)->setTimezone(self::TZ)->format('d/m/Y à H:i:s')
+            'recorded_at' => ($raw = $record->getRawOriginal('created_at'))
+                ? Carbon::createFromFormat('Y-m-d H:i:s', $raw)->format('d/m/Y à H:i:s')
                 : null,
         ];
     }
@@ -851,35 +924,62 @@ class PointageService
         }
     }
 
-    public function validerJournee(string $date): array
+  public function validerJournee(string $date): array
     {
         $tenantId = $this->getCurrentTenantId();
         $userId   = auth()->id();
         $userName = auth()->user()->name;
 
-        $count = DB::table('pointages')
-            ->where('date', $date)
-            ->where('tenant_id', $tenantId)
-            ->where('statut', 'present')
-            ->update([
+        // On parcourt TOUS les employés actifs (pas seulement ceux qui ont déjà
+        // un pointage avec statut='present'), pour que "Valider la journée"
+        // fonctionne même quand un employé n'a aucune ligne pointage ce jour-là
+        // (pas de badge, absence non enregistrée, etc.).
+        $employees = Employee::active()->get(['id']);
+
+        $count = 0;
+
+        foreach ($employees as $emp) {
+            $pointage = Pointage::withoutGlobalScope(TenantScope::class)
+                ->where('employee_id', $emp->id)
+                ->where('date', $date)
+                ->where('tenant_id', $tenantId)
+                ->first();
+
+            if (! $pointage) {
+                // Aucun pointage ce jour-là : on en crée un minimal pour
+                // pouvoir quand même le marquer comme validé.
+                $pointage = Pointage::withoutGlobalScope(TenantScope::class)->create([
+                    'employee_id' => $emp->id,
+                    'date'        => $date,
+                    'tenant_id'   => $tenantId,
+                    'statut'      => 'pas_de_badge',
+                    'valide'      => false,
+                ]);
+            }
+
+            DB::table('pointages')->where('id', $pointage->id)->update([
                 'valide'       => 1,
                 'validated_by' => $userId,
                 'validated_at' => now(),
                 'updated_at'   => now(),
             ]);
 
+            $count++;
+        }
+
         return [
             'success'      => true,
             'count'        => $count,
             'message'      => $count . ' pointage(s) validé(s)',
             'validator'    => $userName,
-            'validated_at' => now()->setTimezone(self::TZ)->format('H\hi'),
+            'validated_at' => now()->setTimezone($this->resolveTimezone($tenantId))->format('H\hi'),
         ];
     }
 
     public function toggleValider(Pointage $pointage): array
     {
         $newValide = ! ((bool) $pointage->valide);
+        $tz        = $this->resolveTimezone($pointage->tenant_id);
 
         DB::table('pointages')
             ->where('id', $pointage->id)
@@ -895,7 +995,7 @@ class PointageService
             'valide'       => $newValide,
             'validator'    => $newValide ? auth()->user()->name : null,
             'validated_at' => $newValide
-                ? now()->setTimezone(self::TZ)->format('H\hi')
+                ? now()->setTimezone($tz)->format('H\hi')
                 : null,
         ];
     }
@@ -1034,7 +1134,7 @@ class PointageService
         }
 
         $byDept      = $employees->groupBy('department');
-        $generatedAt = now()->format('d/m/Y H:i');
+        $generatedAt = now()->setTimezone($this->resolveTimezone($this->getCurrentTenantId()))->format('d/m/Y H:i');
         $deptFilter  = $request->get('department', 'Tous');
 
         $filename = 'badges-pin_' . now()->format('Y-m-d_H-i-s')

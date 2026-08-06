@@ -1,9 +1,7 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', "Suivi d'activité"); ?>
+<?php $__env->startSection('page-title', "Suivi d'activité — Saisie de temps"); ?>
 
-@section('title', "Suivi d'activité")
-@section('page-title', "Suivi d'activité — Saisie de temps")
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <style>
   #sa-app{
     --sa-teal:#14b8a6; --sa-teal-dark:#0d9488; --sa-teal-light:#e6f7f5;
@@ -63,65 +61,107 @@
   </div>
 
   <div class="sa-tabs">
-    <a href="{{ route('activites.my-tasks.index') }}" class="sa-tab {{ request()->routeIs('activites.my-tasks.*') ? 'active' : '' }}">Mes tâches</a>
-    <a href="{{ route('activites.time-entries.index') }}" class="sa-tab {{ request()->routeIs('activites.time-entries.*') ? 'active' : '' }}">Saisie de temps</a>
+    <a href="<?php echo e(route('activites.my-tasks.index')); ?>" class="sa-tab <?php echo e(request()->routeIs('activites.my-tasks.*') ? 'active' : ''); ?>">Mes tâches</a>
+    <a href="<?php echo e(route('activites.time-entries.index')); ?>" class="sa-tab <?php echo e(request()->routeIs('activites.time-entries.*') ? 'active' : ''); ?>">Saisie de temps</a>
   </div>
 
   <div class="sa-card">
     <h3>Nouvelle saisie</h3>
 
-    @if ($projects->isEmpty())
+    <?php if($projects->isEmpty()): ?>
       <p class="sa-hint">Aucune tâche ne t'est encore assignée sur un projet : impossible de saisir du temps pour l'instant.</p>
-    @else
-      <form method="POST" action="{{ route('activites.time-entries.store') }}" id="sa-time-form">
-        @csrf
+    <?php else: ?>
+      <form method="POST" action="<?php echo e(route('activites.time-entries.store')); ?>" id="sa-time-form">
+        <?php echo csrf_field(); ?>
         <div class="sa-form-grid">
           <div class="sa-field">
             <label>Projet</label>
             <select name="project_id" id="sa-project-select" required>
               <option value="" disabled selected>Choisir un projet</option>
-              @foreach ($projects as $proj)
-                <option value="{{ $proj->id }}" @selected((int) old('project_id') === $proj->id)>{{ $proj->name }}</option>
-              @endforeach
+              <?php $__currentLoopData = $projects; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $proj): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <option value="<?php echo e($proj->id); ?>" <?php if((int) old('project_id') === $proj->id): echo 'selected'; endif; ?>><?php echo e($proj->name); ?></option>
+              <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </select>
-            @error('project_id') <div class="sa-field-error">{{ $message }}</div> @enderror
+            <?php $__errorArgs = ['project_id'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <div class="sa-field-error"><?php echo e($message); ?></div> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
           </div>
           <div class="sa-field">
             <label>Tâche</label>
             <select name="task_id" id="sa-task-select" required>
               <option value="" disabled selected>Choisis d'abord un projet</option>
             </select>
-            @error('task_id') <div class="sa-field-error">{{ $message }}</div> @enderror
+            <?php $__errorArgs = ['task_id'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <div class="sa-field-error"><?php echo e($message); ?></div> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
           </div>
           <div class="sa-field sa-w-sm">
             <label>Date</label>
-            <input type="date" name="activity_date" value="{{ old('activity_date', now()->toDateString()) }}" required>
-            @error('activity_date') <div class="sa-field-error">{{ $message }}</div> @enderror
+            <input type="date" name="activity_date" value="<?php echo e(old('activity_date', now()->toDateString())); ?>" required>
+            <?php $__errorArgs = ['activity_date'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <div class="sa-field-error"><?php echo e($message); ?></div> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
           </div>
         </div>
 
         <div class="sa-form-grid">
           <div class="sa-field sa-w-sm">
             <label>Heure de début</label>
-            <input type="time" name="start_time" value="{{ old('start_time') }}">
+            <input type="time" name="start_time" value="<?php echo e(old('start_time')); ?>">
           </div>
           <div class="sa-field sa-w-sm">
             <label>Heure de fin</label>
-            <input type="time" name="end_time" value="{{ old('end_time') }}">
-            @error('end_time') <div class="sa-field-error">{{ $message }}</div> @enderror
+            <input type="time" name="end_time" value="<?php echo e(old('end_time')); ?>">
+            <?php $__errorArgs = ['end_time'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <div class="sa-field-error"><?php echo e($message); ?></div> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
           </div>
           <div class="sa-field sa-w-sm">
             <label>… ou durée</label>
-            <input type="text" name="duration" placeholder="ex: 1h30" value="{{ old('duration') }}">
+            <input type="text" name="duration" placeholder="ex: 1h30" value="<?php echo e(old('duration')); ?>">
           </div>
         </div>
-        @error('duration') <div class="sa-field-error" style="margin-top:-8px; margin-bottom:12px;">{{ $message }}</div> @enderror
+        <?php $__errorArgs = ['duration'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <div class="sa-field-error" style="margin-top:-8px; margin-bottom:12px;"><?php echo e($message); ?></div> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
 
         <div class="sa-form-grid">
           <div class="sa-field">
             <label>Description du travail réalisé</label>
-            <textarea name="comment" rows="2" required>{{ old('comment') }}</textarea>
-            @error('comment') <div class="sa-field-error">{{ $message }}</div> @enderror
+            <textarea name="comment" rows="2" required><?php echo e(old('comment')); ?></textarea>
+            <?php $__errorArgs = ['comment'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <div class="sa-field-error"><?php echo e($message); ?></div> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
           </div>
         </div>
 
@@ -130,14 +170,14 @@
           <button type="submit" class="sa-btn">Enregistrer la saisie</button>
         </div>
       </form>
-    @endif
+    <?php endif; ?>
   </div>
 
   <div class="sa-card">
     <h3>Historique de mes saisies</h3>
-    @if ($entries->isEmpty())
+    <?php if($entries->isEmpty()): ?>
       <div class="sa-empty-hint">Aucune saisie de temps enregistrée pour l'instant.</div>
-    @else
+    <?php else: ?>
       <div class="sa-table-wrap">
         <table class="sa-table">
           <thead>
@@ -152,31 +192,31 @@
             </tr>
           </thead>
           <tbody>
-            @foreach ($entries as $entry)
+            <?php $__currentLoopData = $entries; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $entry): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
               <tr>
-                <td class="sa-cell-muted">{{ $entry->activity_date->format('d/m/Y') }}</td>
-                <td class="sa-cell-muted">{{ $entry->task->project->name ?? '—' }}</td>
-                <td class="sa-cell-title">{{ $entry->task->title ?? '—' }}</td>
-                <td class="sa-cell-muted">{{ \App\Support\Duration::toHuman($entry->duration_minutes) }}</td>
-                <td class="sa-cell-muted">{{ \Illuminate\Support\Str::limit($entry->comment, 50) }}</td>
-                <td><span class="sa-badge {{ $entry->statusBadgeClass() }}">{{ $entry->statusLabel() }}</span></td>
+                <td class="sa-cell-muted"><?php echo e($entry->activity_date->format('d/m/Y')); ?></td>
+                <td class="sa-cell-muted"><?php echo e($entry->task->project->name ?? '—'); ?></td>
+                <td class="sa-cell-title"><?php echo e($entry->task->title ?? '—'); ?></td>
+                <td class="sa-cell-muted"><?php echo e(\App\Support\Duration::toHuman($entry->duration_minutes)); ?></td>
+                <td class="sa-cell-muted"><?php echo e(\Illuminate\Support\Str::limit($entry->comment, 50)); ?></td>
+                <td><span class="sa-badge <?php echo e($entry->statusBadgeClass()); ?>"><?php echo e($entry->statusLabel()); ?></span></td>
                 <td>
-                  @if ($entry->status !== 'validee')
-                    <form method="POST" action="{{ route('activites.time-entries.destroy', $entry) }}" onsubmit="return confirm('Supprimer cette saisie ?');">
-                      @csrf @method('DELETE')
+                  <?php if($entry->status !== 'validee'): ?>
+                    <form method="POST" action="<?php echo e(route('activites.time-entries.destroy', $entry)); ?>" onsubmit="return confirm('Supprimer cette saisie ?');">
+                      <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
                       <button type="submit" class="sa-icon-btn" title="Supprimer">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/></svg>
                       </button>
                     </form>
-                  @endif
+                  <?php endif; ?>
                 </td>
               </tr>
-            @endforeach
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
           </tbody>
         </table>
       </div>
-      <div style="margin-top:16px;">{{ $entries->links() }}</div>
-    @endif
+      <div style="margin-top:16px;"><?php echo e($entries->links()); ?></div>
+    <?php endif; ?>
   </div>
 
 </div>
@@ -187,7 +227,7 @@
     const taskSelect = document.getElementById('sa-task-select');
     if (!projectSelect || !taskSelect) return;
 
-    const urlTemplate = @json(route('activites.time-entries.tasks-for-project', ['project' => '__ID__']));
+    const urlTemplate = <?php echo json_encode(route('activites.time-entries.tasks-for-project', ['project' => '__ID__']), 512) ?>;
 
     projectSelect.addEventListener('change', function () {
       const projectId = this.value;
@@ -210,4 +250,6 @@
     });
   })();
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\HP\Medstaff-second-main\resources\views/activites/employee/time-entries.blade.php ENDPATH**/ ?>

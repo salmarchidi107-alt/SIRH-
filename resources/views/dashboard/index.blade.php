@@ -4,6 +4,41 @@
 @section('page-title', 'Tableau de bord')
 
 @section('content')
+@section('content')
+@if(isset($myTasks) && $myTasks->isNotEmpty())
+<div class="emp-alert-tasks {{ $myTasksLate > 0 ? 'is-late' : 'is-info' }}">
+    <div class="emp-alert-head">
+        <span class="emp-alert-title">
+            @if($myTasksLate > 0)
+                 {{ $myTasksLate }} tâche(s) en retard sur {{ $myTasks->count() }} en attente
+            @else
+                📋 {{ $myTasks->count() }} tâche(s) à réaliser
+            @endif
+        </span>
+        <a href="{{ route('activites.my-tasks.index') }}" class="emp-alert-link">Voir mes tâches →</a>
+    </div>
+    @foreach($myTasks->take(3) as $task)
+        <div class="emp-alert-row">
+            <div>
+                <div class="emp-alert-task-name">{{ $task->title }}</div>
+                <div class="emp-alert-task-meta">
+                    {{ $task->project->name }}
+                    @if($task->due_date)
+                        · Échéance {{ $task->due_date->format('d/m/Y') }}
+                    @endif
+                </div>
+            </div>
+            @if($task->isLate())
+                <span class="emp-alert-late-badge">En retard</span>
+            @else
+                <span class="emp-alert-task-meta">{{ \App\Models\Task::PRIORITY_LABELS[$task->priority] }}</span>
+            @endif
+        </div>
+    @endforeach
+</div>
+@endif
+
+
 <!-- Notifications Section -->
 @if($recentNews->isNotEmpty() || $birthdays->isNotEmpty() || isset($conflicts) && count($conflicts) > 0)
 <div class="notifications-container" style="margin-bottom: 24px;">
@@ -80,6 +115,7 @@
     @endif
 </div>
 @endif
+
 
 <!-- Stats Grid -->
 <div class="stats-grid">

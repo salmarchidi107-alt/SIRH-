@@ -106,7 +106,7 @@
     <div class="header-brand">
       <div class="brand-icon">⏱</div>
       <div>
-        <div class="brand-name">HospitalRH Pointage</div>
+        <div class="brand-name">MedStaff Pointage</div>
         <div class="brand-sub">Badgeuse tactile</div>
       </div>
     </div>

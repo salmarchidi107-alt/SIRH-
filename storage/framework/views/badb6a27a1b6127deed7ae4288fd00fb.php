@@ -1,9 +1,7 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', "Suivi d'activité"); ?>
+<?php $__env->startSection('page-title', "Suivi d'activité — Mes tâches"); ?>
 
-@section('title', "Suivi d'activité")
-@section('page-title', "Suivi d'activité — Mes tâches")
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <style>
   #sa-app{
     --sa-teal:#14b8a6; --sa-teal-dark:#0d9488; --sa-teal-light:#e6f7f5;
@@ -74,13 +72,13 @@
   </div>
 
   <div class="sa-tabs">
-    <a href="{{ route('activites.my-tasks.index') }}" class="sa-tab {{ request()->routeIs('activites.my-tasks.*') ? 'active' : '' }}">Mes tâches</a>
-    <a href="{{ route('activites.time-entries.index') }}" class="sa-tab {{ request()->routeIs('activites.time-entries.*') ? 'active' : '' }}">Saisie de temps</a>
+    <a href="<?php echo e(route('activites.my-tasks.index')); ?>" class="sa-tab <?php echo e(request()->routeIs('activites.my-tasks.*') ? 'active' : ''); ?>">Mes tâches</a>
+    <a href="<?php echo e(route('activites.time-entries.index')); ?>" class="sa-tab <?php echo e(request()->routeIs('activites.time-entries.*') ? 'active' : ''); ?>">Saisie de temps</a>
   </div>
 
   <div class="sa-stats">
-    <div class="sa-stat"><div class="sa-stat-label">Tâches en cours</div><div class="sa-stat-value">{{ $stats['remaining'] }}</div></div>
-    <div class="sa-stat sa-warn"><div class="sa-stat-label">En retard</div><div class="sa-stat-value">{{ $stats['late'] }}</div></div>
+    <div class="sa-stat"><div class="sa-stat-label">Tâches en cours</div><div class="sa-stat-value"><?php echo e($stats['remaining']); ?></div></div>
+    <div class="sa-stat sa-warn"><div class="sa-stat-label">En retard</div><div class="sa-stat-value"><?php echo e($stats['late']); ?></div></div>
   </div>
 
   <details class="sa-disclosure">
@@ -90,119 +88,142 @@
       <svg class="sa-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
     </summary>
     <div class="sa-disclosure-body">
-      @if ($projects->isEmpty())
+      <?php if($projects->isEmpty()): ?>
         <p class="sa-sub">Aucun projet actif pour l'instant : demande à un admin d'en créer un.</p>
-      @else
-        <form method="POST" action="{{ route('activites.my-tasks.store') }}">
-          @csrf
+      <?php else: ?>
+        <form method="POST" action="<?php echo e(route('activites.my-tasks.store')); ?>">
+          <?php echo csrf_field(); ?>
           <div class="sa-form-grid">
             <div class="sa-field sa-grow">
               <label>Titre de la tâche</label>
-              <input type="text" name="title" value="{{ old('title') }}" placeholder="Ex : Préparer le compte-rendu" required>
-              @error('title') <div class="sa-field-error">{{ $message }}</div> @enderror
+              <input type="text" name="title" value="<?php echo e(old('title')); ?>" placeholder="Ex : Préparer le compte-rendu" required>
+              <?php $__errorArgs = ['title'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <div class="sa-field-error"><?php echo e($message); ?></div> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
             </div>
             <div class="sa-field sa-grow">
               <label>Projet</label>
               <select name="project_id" required>
                 <option value="" disabled selected>Choisir un projet</option>
-                @foreach ($projects as $proj)
-                  <option value="{{ $proj->id }}" @selected((int) old('project_id') === $proj->id)>{{ $proj->name }}</option>
-                @endforeach
+                <?php $__currentLoopData = $projects; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $proj): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                  <option value="<?php echo e($proj->id); ?>" <?php if((int) old('project_id') === $proj->id): echo 'selected'; endif; ?>><?php echo e($proj->name); ?></option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
               </select>
-              @error('project_id') <div class="sa-field-error">{{ $message }}</div> @enderror
+              <?php $__errorArgs = ['project_id'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <div class="sa-field-error"><?php echo e($message); ?></div> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
             </div>
           </div>
           <div class="sa-form-grid">
             <div class="sa-field sa-w-sm">
               <label>Priorité</label>
               <select name="priority">
-                @foreach (\App\Models\Task::PRIORITIES as $p)
-                  <option value="{{ $p }}" @selected(old('priority') === $p)>{{ \App\Models\Task::PRIORITY_LABELS[$p] }}</option>
-                @endforeach
+                <?php $__currentLoopData = \App\Models\Task::PRIORITIES; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                  <option value="<?php echo e($p); ?>" <?php if(old('priority') === $p): echo 'selected'; endif; ?>><?php echo e(\App\Models\Task::PRIORITY_LABELS[$p]); ?></option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
               </select>
             </div>
             <div class="sa-field sa-w-sm">
               <label>Échéance</label>
-              <input type="date" name="due_date" value="{{ old('due_date') }}">
+              <input type="date" name="due_date" value="<?php echo e(old('due_date')); ?>">
             </div>
             <div class="sa-field sa-w-sm">
               <label>Durée estimée *</label>
-              <input type="text" name="estimated_duration" placeholder="ex: 4h" value="{{ old('estimated_duration') }}" required>
-              @error('estimated_duration') <div class="sa-field-error">{{ $message }}</div> @enderror
+              <input type="text" name="estimated_duration" placeholder="ex: 4h" value="<?php echo e(old('estimated_duration')); ?>" required>
+              <?php $__errorArgs = ['estimated_duration'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <div class="sa-field-error"><?php echo e($message); ?></div> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
             </div>
           </div>
           <div class="sa-form-grid">
             <div class="sa-field sa-grow">
               <label>Description</label>
-              <textarea name="description" rows="2" placeholder="Optionnel">{{ old('description') }}</textarea>
+              <textarea name="description" rows="2" placeholder="Optionnel"><?php echo e(old('description')); ?></textarea>
             </div>
           </div>
           <div class="sa-form-foot">
             <button type="submit" class="sa-btn">Créer la tâche</button>
           </div>
         </form>
-      @endif
+      <?php endif; ?>
     </div>
   </details>
 
   <form method="GET" class="sa-filters">
     <select name="status" onchange="this.form.submit()">
       <option value="">Tous les statuts</option>
-      @foreach (\App\Models\Task::STATUSES as $status)
-        <option value="{{ $status }}" @selected(request('status') === $status)>{{ \App\Models\Task::STATUS_LABELS[$status] }}</option>
-      @endforeach
+      <?php $__currentLoopData = \App\Models\Task::STATUSES; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $status): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+        <option value="<?php echo e($status); ?>" <?php if(request('status') === $status): echo 'selected'; endif; ?>><?php echo e(\App\Models\Task::STATUS_LABELS[$status]); ?></option>
+      <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
     </select>
   </form>
 
-  @forelse ($tasks as $task)
+  <?php $__empty_1 = true; $__currentLoopData = $tasks; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $task): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
     <div class="sa-task-card">
       <div class="sa-task-head">
         <div>
-          <div class="sa-task-title">{{ $task->title }}</div>
+          <div class="sa-task-title"><?php echo e($task->title); ?></div>
           <div class="sa-task-meta">
-            Projet <b>{{ $task->project->name }}</b>
-            · Priorité <b>{{ $task->priorityLabel() }}</b>
-            @if ($task->due_date)
-              · Échéance <b>{{ $task->due_date->format('d/m/Y') }}</b>
-              @if ($task->isLate())
+            Projet <b><?php echo e($task->project->name); ?></b>
+            · Priorité <b><?php echo e($task->priorityLabel()); ?></b>
+            <?php if($task->due_date): ?>
+              · Échéance <b><?php echo e($task->due_date->format('d/m/Y')); ?></b>
+              <?php if($task->isLate()): ?>
                 · <span style="color:var(--sa-red); font-weight:700;">En retard</span>
-              @endif
-            @endif
-            @if ($task->estimated_minutes)
-              · Temps <b>{{ \App\Support\Duration::toHuman($task->logged_minutes) }} / {{ \App\Support\Duration::toHuman($task->estimated_minutes) }}</b> estimé
-            @endif
+              <?php endif; ?>
+            <?php endif; ?>
+            <?php if($task->estimated_minutes): ?>
+              · Temps <b><?php echo e(\App\Support\Duration::toHuman($task->logged_minutes)); ?> / <?php echo e(\App\Support\Duration::toHuman($task->estimated_minutes)); ?></b> estimé
+            <?php endif; ?>
           </div>
-          @if ($task->description)
-            <div class="sa-task-meta" style="margin-top:6px;">{{ $task->description }}</div>
-          @endif
+          <?php if($task->description): ?>
+            <div class="sa-task-meta" style="margin-top:6px;"><?php echo e($task->description); ?></div>
+          <?php endif; ?>
         </div>
-        <span class="sa-badge {{ $task->statusBadgeClass() }}">{{ $task->statusLabel() }}</span>
+        <span class="sa-badge <?php echo e($task->statusBadgeClass()); ?>"><?php echo e($task->statusLabel()); ?></span>
       </div>
 
-      <form method="POST" action="{{ route('activites.my-tasks.update', $task) }}" class="sa-update-form">
-        @csrf @method('PATCH')
+      <form method="POST" action="<?php echo e(route('activites.my-tasks.update', $task)); ?>" class="sa-update-form">
+        <?php echo csrf_field(); ?> <?php echo method_field('PATCH'); ?>
         <div class="sa-field">
           <label>Statut</label>
           <select name="status">
-            @foreach (\App\Models\Task::STATUSES as $status)
-              <option value="{{ $status }}" @selected($task->status === $status)>{{ \App\Models\Task::STATUS_LABELS[$status] }}</option>
-            @endforeach
+            <?php $__currentLoopData = \App\Models\Task::STATUSES; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $status): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+              <option value="<?php echo e($status); ?>" <?php if($task->status === $status): echo 'selected'; endif; ?>><?php echo e(\App\Models\Task::STATUS_LABELS[$status]); ?></option>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
           </select>
         </div>
         <div class="sa-field sa-percent">
           <label>Avancement (%)</label>
-          <input type="number" name="percent_complete" min="0" max="100" value="{{ $task->percent_complete }}">
+          <input type="number" name="percent_complete" min="0" max="100" value="<?php echo e($task->percent_complete); ?>">
         </div>
         <div class="sa-field sa-grow">
           <label>Commentaire</label>
-          <input type="text" name="employee_comment" value="{{ $task->employee_comment }}" placeholder="Optionnel">
+          <input type="text" name="employee_comment" value="<?php echo e($task->employee_comment); ?>" placeholder="Optionnel">
         </div>
         <button type="submit" class="sa-btn">Mettre à jour</button>
       </form>
     </div>
-  @empty
+  <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
     <div class="sa-empty-hint">Aucune tâche ne t'est assignée pour l'instant.</div>
-  @endforelse
+  <?php endif; ?>
 
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\HP\Medstaff-second-main\resources\views/activites/employee/my-tasks.blade.php ENDPATH**/ ?>

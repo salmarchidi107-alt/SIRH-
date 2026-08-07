@@ -15,12 +15,9 @@ return new class extends Migration
                 $table->string('nom');
                 $table->string('categorie')->default('autre');
                 $table->longText('contenu')->nullable();
-                $table->string('fichier_path')->nullable();
-                $table->string('fichier_nom_original')->nullable();
-                $table->text('description')->nullable();
                 $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
                 $table->timestamps();
-    
+
                 $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
             });
         }

@@ -14,7 +14,6 @@ class DepartmentController extends Controller
 
         $request->validate([
             'name'        => 'required|string|max:255|unique:departments,name,NULL,id,tenant_id,' . $tenantId,
-            'code'        => 'nullable|string|max:10',
             'color'       => 'nullable|string|max:7',
             'chef'        => 'nullable|string|max:255',
             'description' => 'nullable|string|max:500',
@@ -25,7 +24,7 @@ class DepartmentController extends Controller
         Department::create([
             'name'        => $request->name,
             'tenant_id' => Auth::user()->tenant_id,
-            'code'        => $request->code ? strtoupper($request->code) : null,
+            //'code'        => $request->code ? strtoupper($request->code) : null,
             'color'       => $request->color ?? '#0ea5e9',
             'chef'        => $request->chef,
             'description' => $request->description,
@@ -42,7 +41,7 @@ class DepartmentController extends Controller
 
         $request->validate([
             'name'        => 'required|string|max:255|unique:departments,name,' . $department->id . ',id,tenant_id,' . $tenantId,
-            'code'        => 'nullable|string|max:10',
+            //'code'        => 'nullable|string|max:10',
             'color'       => 'nullable|string|max:7',
             'chef'        => 'nullable|string|max:255',
             'description' => 'nullable|string|max:500',
@@ -50,7 +49,7 @@ class DepartmentController extends Controller
 
         $department->update([
             'name'        => $request->name,
-            'code'        => $request->code ? strtoupper($request->code) : null,
+          //  'code'        => $request->code ? strtoupper($request->code) : null,
             'color'       => $request->color ?? $department->color,
             'chef'        => $request->chef,
             'description' => $request->description,

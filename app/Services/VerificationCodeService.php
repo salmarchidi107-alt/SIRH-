@@ -114,7 +114,7 @@ class VerificationCodeService
                 }
 
                 $code = VerificationCode::create([
-                    'code'         => VerificationCode::generateUniqueCode(),
+                    'code'         => VerificationCode::generateUniqueCode($tenantId),
                     'tenant_id'    => $tenantId,
                     'status'       => VerificationCode::STATUS_ASSIGNED,
                     'user_id'      => $user->id,
@@ -152,7 +152,7 @@ class VerificationCodeService
             }
 
             return VerificationCode::create([
-                'code'         => VerificationCode::generateUniqueCode(),
+                'code'         => VerificationCode::generateUniqueCode($user->tenant_id),
                 'tenant_id'    => $user->tenant_id,
                 'status'       => VerificationCode::STATUS_ASSIGNED,
                 'user_id'      => $user->id,
@@ -193,7 +193,7 @@ class VerificationCodeService
                 ->each(fn ($c) => $c->revoke($replacedBy, 'Remplacement manuel'));
 
             return VerificationCode::create([
-                'code'         => VerificationCode::generateUniqueCode(),
+                'code'         => VerificationCode::generateUniqueCode($user->tenant_id),
                 'tenant_id'    => $user->tenant_id,
                 'status'       => VerificationCode::STATUS_ASSIGNED,
                 'user_id'      => $user->id,

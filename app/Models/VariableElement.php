@@ -4,9 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use \App\Traits\HasTenantScope;
 
 class VariableElement extends Model
 {
+use HasFactory, HasTenantScope;
+
     protected $fillable = [
         'employee_id', 'month', 'year',
         'category', 'rubrique', 'label', 'amount', 'unit', 'type', 'tenant_id',

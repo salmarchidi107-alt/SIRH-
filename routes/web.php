@@ -52,6 +52,8 @@ use App\Http\Controllers\Activites\Admin\ProjectController as ActivitesAdminProj
 use App\Http\Controllers\Activites\Admin\TaskController as ActivitesAdminTaskController;
 use App\Http\Controllers\Activites\Employee\MyTaskController;
 use App\Http\Controllers\Activites\Employee\TimeEntryController;
+use App\Http\Controllers\SuperAdmin\TenantDiagnosticController;
+use App\Http\Controllers\DataLeakAlertController;
 
 
 Route::get('/debug-ai-key', function () {
@@ -112,6 +114,11 @@ Route::middleware(['auth', 'superadmin'])
 
         Route::get('/dashboard', [SuperAdminDashboard::class, 'index'])->name('dashboard');
 
+        Route::get('/tenant-diagnostic', [TenantDiagnosticController::class, 'index'])
+            ->name('tenant-diagnostic.index');
+
+        Route::get('/data-leak-alerts', [DataLeakAlertController::class, 'index'])->name('data-leak-alerts.index');
+
         Route::get('/personnalise',  [SuperAdminSettings::class, 'index'])->name('personnalise.index');
         Route::post('/personnalise', [SuperAdminSettings::class, 'update'])->name('personnalise.update');
 
@@ -168,6 +175,7 @@ Route::middleware(['web', 'auth', 'identify-tenant', '2fa'])->group(function () 
         Route::post('/assistant-rh/chat', AssistantRhController::class);
 
         Route::get('/profile',                [ProfileController::class,       'index'])->name('profile');
+        Route::post('/api/data-leak/report', [DataLeakAlertController::class, 'store'])->name('data-leak.report');
         Route::get('/notifications',          [NotificationController::class,  'index'])->name('notifications.index');
         Route::get('/api/notifications/data', [NotificationController::class,  'data']) ->name('api.notifications.data');
         Route::get('/trombinoscope',          [TrombinoscopeController::class, 'index'])->name('trombinoscope');

@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use \App\Traits\HasTenantScope;
+
 
 class DroitAbsence extends Model
 {
-    use HasFactory;
+    use HasFactory , HasTenantScope;
 
     protected $table = 'droits_absences';
 

@@ -8,10 +8,13 @@
         <h1><?php echo e($employee->full_name); ?></h1>
         <p><?php echo e($employee->department); ?> — <?php echo e($employee->position); ?></p>
     </div>
+    
     <?php if (! (auth()->user()->isEmployee())): ?>
         <div style="display:flex;gap:8px">
-            <a href="<?php echo e(route('salary.create', [$employee,'month'=>now()->month,'year'=>now()->year])); ?>"
-               class="btn btn-primary">Saisir la paie du mois</a>
+            <?php if(auth()->user()->role !== 'rh'): ?>
+                <a href="<?php echo e(route('salary.create', [$employee,'month'=>now()->month,'year'=>now()->year])); ?>"
+                   class="btn btn-primary">Saisir la paie du mois</a>
+            <?php endif; ?>
             <a href="<?php echo e(route('salary.index')); ?>" class="btn btn-ghost">← Retour</a>
         </div>
     <?php endif; ?>
@@ -146,8 +149,9 @@
             </div>
             <div style="display:flex;gap:6px">
                 <a href="<?php echo e(route('salary.pdf',$salary)); ?>" class="btn btn-sm btn-ghost" download="bulletin.pdf" onclick="event.stopPropagation()">PDF</a>
+
                 <?php if (! (auth()->user()->isEmployee())): ?>
-                    <?php if($salary->status==='draft'): ?>
+                    <?php if($salary->status==='draft' && auth()->user()->role !== 'rh'): ?>
                         <form method="POST" action="<?php echo e(route('salary.validate',$salary)); ?>" onclick="event.stopPropagation()">
                             <?php echo csrf_field(); ?> <?php echo method_field('PATCH'); ?>
                             <button class="btn btn-sm btn-success">Valider</button>
@@ -171,7 +175,7 @@
                     <?php if(auth()->user()->isAdmin()): ?>
                         <a href="<?php echo e(route('salary.create', [$employee, 'month'=>$salary->month, 'year'=>$salary->year])); ?>"
                            class="btn btn-sm btn-outline" onclick="event.stopPropagation()"
-                           title="Modifier ce bulletin (admin — même si validé/payé)">
+                           title="Modifier ce bulletin (même si validé/payé)">
                             Modifier
                         </a>
                     <?php endif; ?>

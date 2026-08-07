@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Traits\HasTenantScope;
 use Illuminate\Database\Eloquent\Model;
 
+
 class Room extends Model
 {
     use HasTenantScope;

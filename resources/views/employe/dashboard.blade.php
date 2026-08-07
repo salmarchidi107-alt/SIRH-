@@ -14,7 +14,7 @@
     <div class="emp-alert-head">
         <span class="emp-alert-title">
             @if($myTasksLate > 0)
-                ⚠️ {{ $myTasksLate }} tâche(s) en retard sur {{ $myTasks->count() }} en attente
+                 {{ $myTasksLate }} tâche(s) en retard sur {{ $myTasks->count() }} en attente
             @else
                 📋 {{ $myTasks->count() }} tâche(s) à réaliser
             @endif

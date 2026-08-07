@@ -2,6 +2,43 @@
 <?php $__env->startSection('page-title', 'Tableau de bord'); ?>
 
 <?php $__env->startSection('content'); ?>
+<?php $__env->startSection('content'); ?>
+<?php if(isset($myTasks) && $myTasks->isNotEmpty()): ?>
+<div class="emp-alert-tasks <?php echo e($myTasksLate > 0 ? 'is-late' : 'is-info'); ?>">
+    <div class="emp-alert-head">
+        <span class="emp-alert-title">
+            <?php if($myTasksLate > 0): ?>
+                 <?php echo e($myTasksLate); ?> tâche(s) en retard sur <?php echo e($myTasks->count()); ?> en attente
+            <?php else: ?>
+                📋 <?php echo e($myTasks->count()); ?> tâche(s) à réaliser
+            <?php endif; ?>
+        </span>
+        <a href="<?php echo e(route('activites.my-tasks.index')); ?>" class="emp-alert-link">Voir mes tâches →</a>
+    </div>
+    <?php $__currentLoopData = $myTasks->take(3); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $task): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+        <div class="emp-alert-row">
+            <div>
+                <div class="emp-alert-task-name"><?php echo e($task->title); ?></div>
+                <div class="emp-alert-task-meta">
+                    <?php echo e($task->project->name); ?>
+
+                    <?php if($task->due_date): ?>
+                        · Échéance <?php echo e($task->due_date->format('d/m/Y')); ?>
+
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php if($task->isLate()): ?>
+                <span class="emp-alert-late-badge">En retard</span>
+            <?php else: ?>
+                <span class="emp-alert-task-meta"><?php echo e(\App\Models\Task::PRIORITY_LABELS[$task->priority]); ?></span>
+            <?php endif; ?>
+        </div>
+    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+</div>
+<?php endif; ?>
+
+
 <!-- Notifications Section -->
 <?php if($recentNews->isNotEmpty() || $birthdays->isNotEmpty() || isset($conflicts) && count($conflicts) > 0): ?>
 <div class="notifications-container" style="margin-bottom: 24px;">
@@ -78,6 +115,7 @@
     <?php endif; ?>
 </div>
 <?php endif; ?>
+
 
 <!-- Stats Grid -->
 <div class="stats-grid">

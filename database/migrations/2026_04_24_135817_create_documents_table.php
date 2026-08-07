@@ -21,7 +21,7 @@ return new class extends Migration
                 $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
                 $table->date('date_document')->default(now());
                 $table->timestamps();
-    
+
                 $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
             });
         }

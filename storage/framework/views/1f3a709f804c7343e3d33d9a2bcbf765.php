@@ -1,0 +1,309 @@
+<?php $__env->startSection('title', 'Badges PIN — Employés'); ?>
+
+<?php $__env->startSection('content'); ?>
+
+<div class="pin-wrap">
+
+    
+    <div class="pin-topbar">
+        <div class="pin-title">
+            Badges PIN — Employés
+        </div>
+        <a href="<?php echo e(route('pointage.index')); ?>" class="pin-back">← Retour Pointage</a>
+    </div>
+
+    
+    <div class="pin-filters">
+        <strong style="font-size:13px;color:var(--pin-muted)">Filtrer :</strong>
+        <input type="text" id="searchInput" class="pin-search"
+               placeholder="Nom, prénom ou matricule…"
+               value="<?php echo e(request('search')); ?>"
+               oninput="filterTable()">
+        <select id="deptFilter" class="pin-select" onchange="filterByDept()">
+            <option value="">Tous les départements</option>
+            <?php $__currentLoopData = $departments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dept): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <option value="<?php echo e($dept); ?>" <?php echo e(request('department') == $dept ? 'selected' : ''); ?>>
+                <?php echo e($dept); ?>
+
+            </option>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+        </select>
+    </div>
+
+    
+    <div class="pin-action-bar">
+        <button class="pin-btn pin-btn-regen-all" id="btnRegenAll" onclick="doRegenAll(null)">
+            🔄 Régénérer tous les PINs
+        </button>
+        <button class="pin-btn pin-btn-regen-all" id="btnRegenDept"
+                onclick="doRegenAll(this.dataset.dept)" style="background:#0f766e;display:none;">
+             Régénérer ce département
+        </button>
+        <button class="pin-btn pin-btn-print" onclick="exportPdf()">
+             Exporter PDF
+        </button>
+        <span class="pin-count-badge" id="totalCount">
+            <?php echo e($byDept->flatten()->count()); ?> employés
+        </span>
+    </div>
+
+    
+    <div class="pin-content" id="pinContent">
+        <?php $__empty_1 = true; $__currentLoopData = $byDept; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dept => $employees): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+        <div class="dept-card" data-dept="<?php echo e(strtolower($dept)); ?>" id="dept-<?php echo e(Str::slug($dept)); ?>">
+
+            <div class="dept-header" onclick="toggleDept(this)">
+                <div class="dept-header-left">
+                    <div class="dept-icon"><?php echo e(strtoupper(substr($dept ?: 'N', 0, 1))); ?></div>
+                    <div>
+                        <div class="dept-name"><?php echo e($dept ?: 'Sans département'); ?></div>
+                        <div class="dept-count"><?php echo e($employees->count()); ?> employé<?php echo e($employees->count() > 1 ? 's' : ''); ?></div>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:.75rem">
+                    <button class="dept-regen-btn"
+                            onclick="event.stopPropagation(); doRegenDept('<?php echo e($dept); ?>')"
+                            title="Régénérer tous les PINs de ce département">
+                        🔄 Régénérer dept.
+                    </button>
+                    <span class="dept-chevron">▾</span>
+                </div>
+            </div>
+
+            <div class="dept-body">
+                <table class="pin-table">
+                    <thead>
+                        <tr>
+                            <th style="width:44px">#</th>
+                            <th>Employé</th>
+                            <th>Matricule</th>
+                            <th style="width:160px">PIN Badge</th>
+                            <th style="width:130px">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php $__currentLoopData = $employees; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $i => $emp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <tr id="emp-row-<?php echo e($emp->id); ?>" class="emp-row"
+                            data-name="<?php echo e(strtolower($emp->first_name . ' ' . $emp->last_name)); ?>"
+                            data-matricule="<?php echo e(strtolower($emp->matricule ?? '')); ?>"
+                            data-dept="<?php echo e(strtolower($dept)); ?>">
+                            <td style="color:var(--pin-muted);font-size:12px"><?php echo e($i + 1); ?></td>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:8px">
+                                    <div class="pin-emp-avatar">
+                                        <?php echo e(strtoupper(substr($emp->first_name,0,1).substr($emp->last_name,0,1))); ?>
+
+                                    </div>
+                                    <div class="emp-name"><?php echo e($emp->first_name); ?> <?php echo e($emp->last_name); ?></div>
+                                </div>
+                            </td>
+                            <td><span class="emp-matricule"><?php echo e($emp->matricule ?? '—'); ?></span></td>
+                            <td>
+                                <span class="pin-code" id="pin-<?php echo e($emp->id); ?>">
+                                    <?php echo e($emp->plain_pin ?? '——'); ?>
+
+                                </span>
+                            </td>
+                            <td>
+                                <button class="pin-regen-single"
+                                        id="regen-btn-<?php echo e($emp->id); ?>"
+                                        onclick="regenSingle(<?php echo e($emp->id); ?>)">
+                                    🔄 Nouveau PIN
+                                </button>
+                            </td>
+                        </tr>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+        <div class="pin-empty">
+            <div style="font-size:48px;margin-bottom:1rem">🔍</div>
+            <div>Aucun employé trouvé.</div>
+        </div>
+        <?php endif; ?>
+    </div>
+
+</div>
+
+
+<div class="pin-toast" id="pinToast"></div>
+
+<script>
+var CSRF = document.querySelector('meta[name="csrf-token"]').content;
+var REGEN_SINGLE_URL = '<?php echo e(route('pointage.regenerer-pin')); ?>';
+var REGEN_ALL_URL    = '<?php echo e(route('pointage.regenerer-tous-pins')); ?>';
+var EXPORT_PDF_URL   = '<?php echo e(route('pointage.export-badges-pin-pdf')); ?>';
+
+/* ══════════════════════════════════════════
+   TOGGLE DÉPARTEMENT
+══════════════════════════════════════════ */
+function toggleDept(header) {
+    var body = header.nextElementSibling;
+    var isCollapsed = header.classList.contains('collapsed');
+    header.classList.toggle('collapsed', !isCollapsed);
+    body.style.display = isCollapsed ? '' : 'none';
+}
+
+/* ══════════════════════════════════════════
+   FILTRE NOM / MATRICULE
+══════════════════════════════════════════ */
+function filterTable() {
+    var q = document.getElementById('searchInput').value.toLowerCase().trim();
+    document.querySelectorAll('.emp-row').forEach(function(row) {
+        var match = row.dataset.name.indexOf(q) !== -1 || row.dataset.matricule.indexOf(q) !== -1;
+        row.style.display = match ? '' : 'none';
+    });
+    updateCount();
+}
+
+/* ══════════════════════════════════════════
+   FILTRE DÉPARTEMENT
+══════════════════════════════════════════ */
+function filterByDept() {
+    var dept = document.getElementById('deptFilter').value.toLowerCase();
+    var regenDeptBtn = document.getElementById('btnRegenDept');
+
+    document.querySelectorAll('.dept-card').forEach(function(card) {
+        card.style.display = (!dept || card.dataset.dept === dept) ? '' : 'none';
+    });
+
+    if (dept) {
+        regenDeptBtn.style.display = '';
+        regenDeptBtn.dataset.dept = document.getElementById('deptFilter').value;
+    } else {
+        regenDeptBtn.style.display = 'none';
+    }
+    updateCount();
+}
+
+function updateCount() {
+    var visible = document.querySelectorAll('.emp-row:not([style*="display: none"])').length;
+    document.getElementById('totalCount').textContent = visible + ' employé' + (visible > 1 ? 's' : '');
+}
+
+/* ══════════════════════════════════════════
+   EXPORT PDF
+══════════════════════════════════════════ */
+function exportPdf() {
+    var deptFilter = document.getElementById('deptFilter').value;
+    var searchFilter = document.getElementById('searchInput').value;
+    var url = EXPORT_PDF_URL;
+    if (deptFilter) url += '?department=' + encodeURIComponent(deptFilter);
+    if (searchFilter) url += (deptFilter ? '&' : '?') + 'search=' + encodeURIComponent(searchFilter);
+    window.location.href = url;
+}
+
+/* ══════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════ */
+var toastTimer = null;
+function showToast(msg, isError) {
+    var el = document.getElementById('pinToast');
+    el.textContent = msg;
+    el.className = 'pin-toast' + (isError ? ' error' : '') + ' show';
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() {
+        el.className = 'pin-toast' + (isError ? ' error' : '');
+    }, 3000);
+}
+
+/* ══════════════════════════════════════════
+   RÉGÉNÉRER UN SEUL PIN
+══════════════════════════════════════════ */
+function regenSingle(empId) {
+    var btn = document.getElementById('regen-btn-' + empId);
+    var pinEl = document.getElementById('pin-' + empId);
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin">⟳</span> Génération…';
+
+    fetch(REGEN_SINGLE_URL, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': CSRF,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ employee_id: empId })
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data.success) {
+            pinEl.textContent = data.new_pin;
+            pinEl.classList.add('updated');
+            setTimeout(function() { pinEl.classList.remove('updated'); }, 2000);
+            showToast('✓ PIN mis à jour : ' + data.new_pin);
+        } else {
+            showToast('Erreur lors de la régénération', true);
+        }
+    })
+    .catch(function() { showToast('Erreur réseau', true); })
+    .finally(function() {
+        btn.disabled = false;
+        btn.innerHTML = '🔄 Nouveau PIN';
+    });
+}
+
+/* ══════════════════════════════════════════
+   RÉGÉNÉRER DÉPARTEMENT (depuis bouton dept header)
+══════════════════════════════════════════ */
+function doRegenDept(dept) {
+    doRegenAll(dept);
+}
+
+/* ══════════════════════════════════════════
+   RÉGÉNÉRER TOUS (ou par département)
+══════════════════════════════════════════ */
+function doRegenAll(department) {
+    var btnAll  = document.getElementById('btnRegenAll');
+    var btnDept = document.getElementById('btnRegenDept');
+
+    btnAll.disabled  = true;
+    btnDept.disabled = true;
+    btnAll.innerHTML  = '<span class="spin">⟳</span> En cours…';
+    btnDept.innerHTML = '<span class="spin">⟳</span> En cours…';
+
+    var body = department ? { department: department } : {};
+
+    fetch(REGEN_ALL_URL, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': CSRF,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(body)
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data.success) {
+            data.pins.forEach(function(item) {
+                var el = document.getElementById('pin-' + item.id);
+                if (el) {
+                    el.textContent = item.pin;
+                    el.classList.add('updated');
+                    setTimeout(function() { el.classList.remove('updated'); }, 2500);
+                }
+            });
+            showToast('✓ ' + data.count + ' PINs régénérés avec succès');
+        } else {
+            showToast('Erreur lors de la régénération', true);
+        }
+    })
+    .catch(function(err) {
+        console.error('Erreur:', err);
+        showToast('Erreur réseau', true);
+    })
+    .finally(function() {
+        btnAll.disabled  = false;
+        btnDept.disabled = false;
+        btnAll.innerHTML  = '🔄 Régénérer tous les PINs';
+        btnDept.innerHTML = '🔄 Régénérer ce département';
+    });
+}
+</script>
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\Projects\SIRH-\resources\views/pointage/badges-pin.blade.php ENDPATH**/ ?>

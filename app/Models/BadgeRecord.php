@@ -1,7 +1,4 @@
 <?php
-// ============================================================
-//  app/Models/BadgeRecord.php
-// ============================================================
 
 namespace App\Models;
 
@@ -23,16 +20,13 @@ class BadgeRecord extends Model
         'location_address',
         'geolocation_denied',
 
-        // Photo faciale
-        'face_photo_path',
-        'face_photo_disk',
-        'face_photo_base64',
-        'face_photo_size',
-        'face_photo_mime',
+
+        'created_at',
+        'updated_at',
     ];
 
     protected $hidden = [
-        'face_photo_base64', // trop lourd pour les sérialisations JSON
+        'face_photo_base64',
     ];
 
     protected $casts = [
@@ -41,7 +35,7 @@ class BadgeRecord extends Model
         'accuracy'           => 'float',
         'geolocation_denied' => 'boolean',
         'face_photo_size'    => 'integer',
-        'shift_type'         => 'string',  // ← AJOUTÉ
+        'shift_type'         => 'string',
     ];
 
     // ── Relations ─────────────────────────────────────────────────────────

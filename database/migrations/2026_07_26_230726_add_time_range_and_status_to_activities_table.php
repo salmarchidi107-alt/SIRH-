@@ -8,27 +8,47 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('activities', function (Blueprint $table) {
-            // Heure de début / fin, saisies quand l'employé les renseigne plutôt
-            // qu'une durée brute. Les deux restent nullable : soit l'employé
-            // saisit une plage horaire, soit il saisit directement une durée
-            // (cf. App\Support\Duration::toMinutes) — duration_minutes reste
-            // la source de vérité pour tous les calculs de temps.
-            $table->time('start_time')->nullable()->after('activity_date');
-            $table->time('end_time')->nullable()->after('start_time');
+        // Ne rien faire si la table n'existe pas
+        if (!Schema::hasTable('activities')) {
+            return;
+        }
 
-            // Statut de la saisie : l'employé la soumet, l'admin/RH la valide
-            // ou la rejette (pour un suivi précis, cf. besoin exprimé).
-            $table->enum('status', ['soumise', 'validee', 'rejetee'])
-                  ->default('soumise')
-                  ->after('comment');
+        Schema::table('activities', function (Blueprint $table) {
+
+            if (!Schema::hasColumn('activities', 'start_time')) {
+                $table->time('start_time')->nullable();
+            }
+
+            if (!Schema::hasColumn('activities', 'end_time')) {
+                $table->time('end_time')->nullable();
+            }
+
+            if (!Schema::hasColumn('activities', 'status')) {
+                $table->enum('status', ['soumise', 'validee', 'rejetee'])
+                      ->default('soumise');
+            }
         });
     }
 
     public function down(): void
     {
+        if (!Schema::hasTable('activities')) {
+            return;
+        }
+
         Schema::table('activities', function (Blueprint $table) {
-            $table->dropColumn(['start_time', 'end_time', 'status']);
+
+            if (Schema::hasColumn('activities', 'start_time')) {
+                $table->dropColumn('start_time');
+            }
+
+            if (Schema::hasColumn('activities', 'end_time')) {
+                $table->dropColumn('end_time');
+            }
+
+            if (Schema::hasColumn('activities', 'status')) {
+                $table->dropColumn('status');
+            }
         });
     }
 };

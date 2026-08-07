@@ -13,22 +13,18 @@ class EquipementController extends Controller
 {
     public function __construct(private EquipementService $equipementService) {}
 
-    // tenant_id est un UUID (string) dans ce projet — nécessaire ici pour
-    // les vérifications d'autorisation (abort_if) qui doivent rester au
-    // niveau du contrôleur.
+
     private function tenantId(): string
     {
         return (string) Auth::user()->tenant_id;
     }
 
-    // ─── Tableau de bord ──────────────────────────────────────────────────────
 
     public function index(Request $request)
     {
         return view('equipements.index', $this->equipementService->getDashboardData($request));
     }
 
-    // ─── Export (CSV natif — pas de dépendance externe) ───────────────────────
 
     public function export(Request $request)
     {
@@ -136,7 +132,6 @@ class EquipementController extends Controller
                          ->with('success', "Équipement {$reference} — {$designation} supprimé avec succès.");
     }
 
-    // ─── Affectation ──────────────────────────────────────────────────────────
 
     public function affecter(Request $request)
     {
@@ -161,7 +156,6 @@ class EquipementController extends Controller
                          ->with('success', 'Affectation enregistrée. Décharge générée.');
     }
 
-    // ─── Restitution ──────────────────────────────────────────────────────────
 
     public function restituer(Request $request, AffectationEquipement $affectation)
     {
@@ -181,7 +175,6 @@ class EquipementController extends Controller
                          ->with('success', 'Restitution enregistrée.');
     }
 
-    // ─── Valider sortie ───────────────────────────────────────────────────────
 
     public function validerSortie(Request $request, int $employeeId)
     {
@@ -193,7 +186,6 @@ class EquipementController extends Controller
                          ->with('success', 'Sortie validée. Processus RH finalisé.');
     }
 
-    // ─── Signer décharge ──────────────────────────────────────────────────────
 
     public function signerDecharge(AffectationEquipement $affectation)
     {
@@ -204,7 +196,6 @@ class EquipementController extends Controller
         return back()->with('success', 'Décharge marquée comme signée.');
     }
 
-    // ─── Déclarer perte ───────────────────────────────────────────────────────
 
     public function declarerPerte(AffectationEquipement $affectation)
     {
@@ -215,7 +206,6 @@ class EquipementController extends Controller
         return back()->with('success', 'Perte déclarée.');
     }
 
-    // ─── Fiche salarié ────────────────────────────────────────────────────────
 
     public function ficheSalarie(int $employeeId)
     {

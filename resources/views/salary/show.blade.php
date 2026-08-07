@@ -10,10 +10,13 @@
         <h1>{{ $employee->full_name }}</h1>
         <p>{{ $employee->department }} — {{ $employee->position }}</p>
     </div>
+    {{-- Saisie de la paie : cachée pour le profil rh --}}
     @unless(auth()->user()->isEmployee())
         <div style="display:flex;gap:8px">
-            <a href="{{ route('salary.create', [$employee,'month'=>now()->month,'year'=>now()->year]) }}"
-               class="btn btn-primary">Saisir la paie du mois</a>
+            @if(auth()->user()->role !== 'rh')
+                <a href="{{ route('salary.create', [$employee,'month'=>now()->month,'year'=>now()->year]) }}"
+                   class="btn btn-primary">Saisir la paie du mois</a>
+            @endif
             <a href="{{ route('salary.index') }}" class="btn btn-ghost">← Retour</a>
         </div>
     @endunless
@@ -141,8 +144,9 @@
             </div>
             <div style="display:flex;gap:6px">
                 <a href="{{ route('salary.pdf',$salary) }}" class="btn btn-sm btn-ghost" download="bulletin.pdf" onclick="event.stopPropagation()">PDF</a>
+
                 @unless(auth()->user()->isEmployee())
-                    @if($salary->status==='draft')
+                    @if($salary->status==='draft' && auth()->user()->role !== 'rh')
                         <form method="POST" action="{{ route('salary.validate',$salary) }}" onclick="event.stopPropagation()">
                             @csrf @method('PATCH')
                             <button class="btn btn-sm btn-success">Valider</button>
@@ -162,12 +166,12 @@
                         </form>
                     @endif
 
-                    {{-- Modification admin : autorisée même si le bulletin
-                         est déjà validé ou payé. --}}
+                    {{-- Modification : autorisée même si le bulletin est déjà
+                         validé ou payé, réservée aux admins. --}}
                     @if(auth()->user()->isAdmin())
                         <a href="{{ route('salary.create', [$employee, 'month'=>$salary->month, 'year'=>$salary->year]) }}"
                            class="btn btn-sm btn-outline" onclick="event.stopPropagation()"
-                           title="Modifier ce bulletin (admin — même si validé/payé)">
+                           title="Modifier ce bulletin (même si validé/payé)">
                             Modifier
                         </a>
                     @endif

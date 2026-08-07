@@ -15,7 +15,6 @@ return new class extends Migration
         $tenants = DB::table('tenants')
             ->where(function ($q) {
                 $q->whereNull('data')
-                  ->orWhereRaw('JSON_LENGTH(data) = 0')
                   ->orWhereRaw('data = "{}"')
                   ->orWhereRaw('data = "[]"');
             })

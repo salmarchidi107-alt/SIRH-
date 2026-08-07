@@ -75,6 +75,7 @@ class EmployeeService
     {
         return [
             'id'            => $e->id,
+            'tenant_id'     => $e->tenant_id,
             'matricule'     => $e->matricule ?? 'N/A',
             'full_name'     => $e->full_name ?? 'N/A',
             'department'    => $e->department ?? 'N/A',
@@ -194,7 +195,7 @@ class EmployeeService
 
     private function createLinkedUserAccount(Employee $employee, Request $request): void
     {
-        $tenantId = config('app.current_tenant_id') ?? auth()->user()->tenant_id;
+        $tenantId = auth()->user()->tenant_id ?? config('app.current_tenant_id');
         $role     = $this->normalizeRole($request->user_role);
 
         Log::info('Création compte user', [

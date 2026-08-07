@@ -18,7 +18,7 @@ class TaskController extends Controller
     public function index(Request $request): View
     {
         $user = Auth::user();
-        abort_unless($user->isAdminOrRh(), 403);
+        abort_unless($user->isAdmin(), 403);
 
         $tasks = $this->filteredQuery($request, $user->tenant_id)
             ->with(['owner', 'assignee', 'project'])
@@ -26,8 +26,11 @@ class TaskController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $employees = User::where('tenant_id', $user->tenant_id)->orderBy('name')->get(['id', 'name']);
-        $projects = Project::tenant($user->tenant_id)->orderBy('name')->get(['id', 'name']);
+        $employees = User::where('tenant_id', $user->tenant_id)
+    ->whereHas('employee', fn ($q) => $q->active())
+    ->orderBy('name')
+    ->get(['id', 'name']);
+        $projects = Project::query()->tenant($user->tenant_id)->orderBy('name')->get(['id', 'name']);
         // Seuls les projets actifs sont proposés pour créer une NOUVELLE tâche
         // (un projet archivé n'est plus une cible valide pour du nouveau travail).
         $activeProjects = $projects->where('status', 'actif')->values();
@@ -51,12 +54,15 @@ class TaskController extends Controller
     public function show(Request $request, Task $task): View
     {
         $user = Auth::user();
-        abort_unless($user->isAdminOrRh() && $task->tenant_id === $user->tenant_id, 403);
+        abort_unless($user->isAdmin() && $task->tenant_id === $user->tenant_id, 403);
 
         $task->load(['project', 'owner', 'assignee', 'activities.user']);
 
-        $employees = User::where('tenant_id', $user->tenant_id)->orderBy('name')->get(['id', 'name']);
-        $projects = Project::tenant($user->tenant_id)->orderBy('name')->get(['id', 'name']);
+        $employees = User::where('tenant_id', $user->tenant_id)
+    ->whereHas('employee', fn ($q) => $q->active())
+    ->orderBy('name')
+    ->get(['id', 'name']);
+        $projects = Project::query()->tenant($user->tenant_id)->orderBy('name')->get(['id', 'name']);
 
         return view('activites.admin.tasks.show', compact('task', 'employees', 'projects'));
     }
@@ -64,7 +70,7 @@ class TaskController extends Controller
     public function update(StoreAdminTaskRequest $request, Task $task): RedirectResponse
     {
         $user = Auth::user();
-        abort_unless($user->isAdminOrRh() && $task->tenant_id === $user->tenant_id, 403);
+        abort_unless($user->isAdmin() && $task->tenant_id === $user->tenant_id, 403);
 
         $this->assertBelongsToTenant($request->input('project_id'), $request->input('assigned_to'), $user->tenant_id);
 
@@ -78,7 +84,7 @@ class TaskController extends Controller
     public function destroy(Request $request, Task $task): RedirectResponse
     {
         $user = Auth::user();
-        abort_unless($user->isAdminOrRh() && $task->tenant_id === $user->tenant_id, 403);
+        abort_unless($user->isAdmin() && $task->tenant_id === $user->tenant_id, 403);
 
         $task->delete();
 
@@ -88,7 +94,7 @@ class TaskController extends Controller
     public function exportExcel(Request $request)
     {
         $user = Auth::user();
-        abort_unless($user->isAdminOrRh(), 403);
+        abort_unless($user->isAdmin(), 403);
 
         $tasks = $this->filteredQuery($request, $user->tenant_id)->with(['owner', 'assignee', 'project'])->get();
 
@@ -128,7 +134,7 @@ class TaskController extends Controller
     public function exportPdf(Request $request)
     {
         $user = Auth::user();
-        abort_unless($user->isAdminOrRh(), 403);
+        abort_unless($user->isAdmin(), 403);
 
         $tasks = $this->filteredQuery($request, $user->tenant_id)->with(['owner', 'assignee', 'project'])->get();
         $tenant = $user->tenant;

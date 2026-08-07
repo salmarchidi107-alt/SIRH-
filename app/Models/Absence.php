@@ -9,7 +9,7 @@ use \App\Traits\HasTenantScope;
 
 class Absence extends Model
 {
-    use HasFactory;
+    use HasFactory, HasTenantScope;
 
     protected $fillable = [
         'tenant_id',

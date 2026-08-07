@@ -7,10 +7,12 @@ use App\DTOs\CompteurMoisDTO;
 use App\Models\Employee;
 use App\Models\Pointage;
 use Illuminate\Database\Eloquent\Model;
+use \App\Traits\HasTenantScope;
+
 
 class CompteurTemps extends Model
 {
-    use HasFactory;
+    use HasFactory , HasTenantScope;
 
     protected $table = 'compteurs_temps';
 

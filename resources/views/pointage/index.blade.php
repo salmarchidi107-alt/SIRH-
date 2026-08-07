@@ -182,7 +182,16 @@
             </div>
             <div class="geo-modal-footer">
                 <span>Site de référence : <strong>{{ $siteName }}</strong></span>
-                <span>{{ now()->setTimezone('Africa/Casablanca')->format('d/m/Y H:i') }}</span>
+                @php
+                    // Résolution inline du fuseau tenant (sans dépendre d'un helper externe) :
+                    // config('app.current_tenant_id') est déjà positionné par le middleware
+                    // tenant sur les pages admin classiques.
+                    $__tenantId = config('app.current_tenant_id');
+                    $__tz = $__tenantId
+                        ? (\App\Models\Tenant::where('id', $__tenantId)->value('timezone') ?: 'Africa/Casablanca')
+                        : 'Africa/Casablanca';
+                @endphp
+                <span>{{ \Carbon\Carbon::now($__tz)->format('d/m/Y H:i') }}</span>
             </div>
         </div>
     </div>
@@ -252,7 +261,6 @@
             <table class="pt-table">
                 <thead>
                     <tr>
-                        <th style="width:44px">Validé</th>
                         <th style="width:32px" title="Géolocalisation GPS">GPS</th>
                         <th>Employé</th>
                         <th style="width:80px">Absence</th>
@@ -283,23 +291,7 @@
                     $isGarde    = $shiftType === 'garde';
                     $rowClass   = $isGarde ? 'row-shift-garde' : 'row-shift-normal';
                 @endphp
-                <tr class="{{ $isDimmed ? 'pt-row-dimmed' : '' }} {{ $rowClass }} {{ $isGeoAlert ? 'row-geo-alert' : '' }}"
-                    id="row-emp-{{ $emp['id'] }}">
-
-                    {{-- Validé --}}
-                    <td>
-                        @if($p)
-                        <button class="pt-check {{ $valide ? 'ok' : 'pending' }}"
-                                data-id="{{ $p->id }}"
-                                data-url="{{ route('pointage.toggle-valider', $p->id) }}"
-                                onclick="toggleValider(this)"
-                                title="{{ $valide ? 'Validé – cliquer pour annuler' : 'Cliquer pour valider' }}">
-                            {{ $valide ? '✓' : '○' }}
-                        </button>
-                        @else
-                        <div class="pt-check pending">○</div>
-                        @endif
-                    </td>
+                 <tr id="row-emp-{{ $emp['id'] }}" data-row-tenant-id="{{ $emp['tenant_id'] ?? '' }}" class="{{ $isDimmed ? 'pt-row-dimmed' : '' }} {{ $rowClass }} {{ $isGeoAlert ? 'row-geo-alert' : '' }}">
 
                     {{-- Géoloc --}}
                     <td style="text-align:center;padding:10px 6px;">
@@ -592,17 +584,6 @@ function updateDaySidebarValidation(validatorName, validatedAt) {
         if (nv) nv.remove();
     }
     activeDay.style.borderLeftColor = '#0d9488';
-}
-
-// ── Toggle valider ───────────────────────────────────────────────────────────
-async function toggleValider(btn) {
-    try {
-        const res  = await fetch(btn.dataset.url, { method: 'POST', headers: {'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json'} });
-        const data = await res.json();
-        btn.classList.toggle('ok', data.valide);
-        btn.classList.toggle('pending', !data.valide);
-        btn.textContent = data.valide ? '✓' : '○';
-    } catch(e) { console.error(e); }
 }
 
 // ── Toggle absence ───────────────────────────────────────────────────────────

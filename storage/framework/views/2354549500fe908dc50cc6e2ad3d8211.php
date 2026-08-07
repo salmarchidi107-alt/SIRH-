@@ -4,6 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
+<?php if(auth()->guard()->check()): ?>
+<script>
+    window.currentUser = {
+        id: <?php echo e(auth()->id()); ?>,
+        tenantId: <?php echo json_encode(auth()->user()->tenant_id, 15, 512) ?>,
+        role: <?php echo json_encode(auth()->user()->role, 15, 512) ?>,
+        isSuperAdmin: <?php echo e(auth()->user()->role === 'superadmin' ? 'true' : 'false'); ?>
+
+    };
+    window.currentPageModule = <?php echo json_encode(
+        optional(request()->route())->getName()
+            ? explode('.', request()->route()->getName())[0]
+            : null, 512) ?>;
+</script>
+<?php endif; ?>
     <title><?php echo $__env->yieldContent('title', config('app.name', 'HospitalRH')); ?> — <?php echo e(config('app.name', 'HospitalRH')); ?></title>
     <link rel="stylesheet" href="<?php echo e(asset('css/app.css')); ?>">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -119,6 +134,7 @@
         }
     </style>
 </head>
+
 <body>
 <div class="app-wrapper">
 
@@ -317,10 +333,9 @@
                 <span>Pointage</span>
             </a>
             <?php endif; ?>
-
-            <?php if($u->canView('activites')): ?>
-            <a href="<?php echo e(route('activites.my-tasks.index')); ?>"
-   class="nav-item <?php echo e(request()->routeIs('activites.my-tasks.*') ? 'active' : ''); ?>">
+<?php if($u->canView('activites')): ?>
+<a href="<?php echo e(route('activites.my-tasks.index')); ?>"
+   class="nav-item <?php echo e(request()->routeIs('activites.my-tasks.*') || request()->routeIs('activites.time-entries.*') ? 'active' : ''); ?>">
     <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path d="M9 11l3 3L22 4"/>
         <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
@@ -328,14 +343,12 @@
     <span>Mes tâches</span>
 </a>
 
-<a href="<?php echo e(route('activites.time-entries.index')); ?>"
-   class="nav-item <?php echo e(request()->routeIs('activites.time-entries.*') ? 'active' : ''); ?>">
-    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="9"/>
-        <polyline points="12 7 12 12 15 14"/>
-    </svg>
-    <span>Saisie de temps</span>
-</a>
+<div class="nav-submenu">
+    <a href="<?php echo e(route('activites.time-entries.index')); ?>"
+       class="nav-sublink <?php echo e(request()->routeIs('activites.time-entries.*') ? 'active' : ''); ?>">
+        Saisie de temps
+    </a>
+</div>
             <?php endif; ?>
             <?php endif; ?>
 
@@ -626,33 +639,46 @@
             <?php endif; ?>
 
             <?php if($navUser->canView('activites')): ?>
-            <?php
-    $activitesEnRetard = 0;
-    try {
-        $actTenantId = config('app.current_tenant_id')
-            ?? (auth()->check() ? auth()->user()->tenant_id : null);
-        $activitesEnRetard = \App\Models\Task::tenant($actTenantId)
-            ->whereNotIn('status', ['terminee', 'annulee'])
-            ->whereDate('due_date', '<', today())
-            ->count();
-    } catch (\Exception $e) {
-        $activitesEnRetard = 0;
-    }
-?>
 
-<a href="<?php echo e(route('activites.admin.dashboard')); ?>"
-   class="nav-item <?php echo e(request()->routeIs('activites.admin.*') ? 'active' : ''); ?>">
-    <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="9"/>
-        <polyline points="12 7 12 12 15 14"/>
-    </svg>
-    <span>Suivi d'activité</span>
-    <?php if($activitesEnRetard > 0): ?>
-    <span class="nav-badge-live"><?php echo e($activitesEnRetard); ?></span>
+    <?php if($navUser->isAdmin()): ?>
+        <?php
+            $activitesEnRetard = 0;
+            try {
+                $actTenantId = config('app.current_tenant_id')
+                    ?? (auth()->check() ? auth()->user()->tenant_id : null);
+                $activitesEnRetard = \App\Models\Task::query()->tenant($actTenantId)
+                ->whereNotIn('status', ['terminee', 'annulee'])
+                ->whereDate('due_date', '<', today())
+                ->count();
+            } catch (\Exception $e) {
+                $activitesEnRetard = 0;
+            }
+        ?>
+
+        <a href="<?php echo e(route('activites.admin.dashboard')); ?>"
+           class="nav-item <?php echo e(request()->routeIs('activites.admin.*') ? 'active' : ''); ?>">
+            <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="9"/>
+                <polyline points="12 7 12 12 15 14"/>
+            </svg>
+            <span>Suivi d'activité</span>
+            <?php if($activitesEnRetard > 0): ?>
+            <span class="nav-badge-live"><?php echo e($activitesEnRetard); ?></span>
+            <?php endif; ?>
+        </a>
+    <?php elseif($navUser->isRh()): ?>
+        <a href="<?php echo e(route('activites.my-tasks.index')); ?>"
+           class="nav-item <?php echo e(request()->routeIs('activites.my-tasks.*') ? 'active' : ''); ?>">
+            <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path d="M9 11l3 3L22 4"/>
+                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+            </svg>
+            <span>Mes tâches</span>
+        </a>
     <?php endif; ?>
-</a>
-            <?php endif; ?>
-            <?php endif; ?>
+
+<?php endif; ?>
+<?php endif; ?>
 
             
             <?php if(Auth::check() && in_array(Auth::user()->role, ['admin', 'rh'])): ?>
@@ -1045,8 +1071,10 @@
                         <a href="<?php echo e(route('pointage.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Pointages</a>
                         <a href="<?php echo e(route('salary.export')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Salaires</a>
                         <a href="<?php echo e(route('lms.exportPdf')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Formations (LMS)</a>
+                        <?php if(Auth::user()->isAdmin()): ?>
                         <a href="<?php echo e(route('activites.admin.tasks.export-excel')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid #f0f0f0;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Suivi d'activité — Tâches</a>
                         <a href="<?php echo e(route('activites.admin.projects.export-excel')); ?>" style="display: block; padding: 12px 16px; text-decoration: none; color: inherit;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">Suivi d'activité — Projets</a>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -1305,6 +1333,7 @@ document.querySelectorAll('[data-count]').forEach(el => {
 });
 </script>
 
+<script src="<?php echo e(asset('js/data-leak-guard.js')); ?>"></script>
 <?php echo $__env->yieldPushContent('scripts'); ?>
 </body>
 </html>

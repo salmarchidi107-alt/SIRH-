@@ -17,22 +17,22 @@ class DashboardController extends Controller
     public function index(Request $request): View
     {
         $user = Auth::user();
-        abort_unless($user->isAdminOrRh(), 403);
+        abort_unless($user->isAdmin(), 403);
 
         $tenantId = $user->tenant_id;
 
-        $totalTasks = Task::tenant($tenantId)->count();
-        $doneTasks = Task::tenant($tenantId)->where('status', 'terminee')->count();
-        $lateTasks = Task::tenant($tenantId)
+        $totalTasks = Task::query()->tenant($tenantId)->count();
+        $doneTasks = Task::query()->tenant($tenantId)->where('status', 'terminee')->count();
+        $lateTasks = Task::query()->tenant($tenantId)
             ->whereNotIn('status', ['terminee', 'annulee'])
             ->whereDate('due_date', '<', now()->toDateString())
             ->count();
         // "En cours" au sens large : tout ce qui n'est ni terminé, ni annulé, ni en retard.
         $inProgressTasks = $totalTasks - $doneTasks - $lateTasks
-            - Task::tenant($tenantId)->where('status', 'annulee')->count();
+            - Task::query()->tenant($tenantId)->where('status', 'annulee')->count();
 
         $stats = [
-            'total_projects' => Project::tenant($tenantId)->count(),
+            'total_projects' => Project::query()->tenant($tenantId)->count(),
             'total_tasks' => $totalTasks,
             'done_tasks' => $doneTasks,
             'in_progress_tasks' => max(0, $inProgressTasks),
@@ -43,7 +43,7 @@ class DashboardController extends Controller
         $employees = User::where('tenant_id', $tenantId)->orderBy('name')->get(['id', 'name']);
         $employeeProgress = $this->buildEmployeeProgress($tenantId, $employees);
 
-        $projects = Project::tenant($tenantId)->orderBy('name')->get(['id', 'name', 'status']);
+        $projects = Project::query()->tenant($tenantId)->orderBy('name')->get(['id', 'name', 'status']);
         $projectProgress = $this->buildProjectProgress($tenantId, $projects);
 
         $globalStats = [
@@ -56,13 +56,13 @@ class DashboardController extends Controller
 
     private function buildProjectProgress(?string $tenantId, \Illuminate\Support\Collection $projects): array
     {
-        $taskCounts = Task::tenant($tenantId)
+        $taskCounts = Task::query()->tenant($tenantId)
             ->select('project_id', 'status', DB::raw('count(*) as total'))
             ->groupBy('project_id', 'status')
             ->get()
             ->groupBy('project_id');
 
-        $lateCounts = Task::tenant($tenantId)
+        $lateCounts = Task::query()->tenant($tenantId)
             ->whereNotIn('status', ['terminee', 'annulee'])
             ->whereDate('due_date', '<', now()->toDateString())
             ->select('project_id', DB::raw('count(*) as total'))
@@ -93,14 +93,14 @@ class DashboardController extends Controller
 
     private function buildEmployeeProgress(?string $tenantId, \Illuminate\Support\Collection $employees): array
     {
-        $taskCounts = Task::tenant($tenantId)
+        $taskCounts = Task::query()->tenant($tenantId)
             ->select('assigned_to', 'status', DB::raw('count(*) as total'))
             ->whereNotNull('assigned_to')
             ->groupBy('assigned_to', 'status')
             ->get()
             ->groupBy('assigned_to');
 
-        $lateCounts = Task::tenant($tenantId)
+        $lateCounts = Task::query()->tenant($tenantId)
             ->whereNotIn('status', ['terminee', 'annulee'])
             ->whereDate('due_date', '<', now()->toDateString())
             ->select('assigned_to', DB::raw('count(*) as total'))

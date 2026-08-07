@@ -1,6 +1,5 @@
-{{-- resources/views/badge/pointage.blade.php --}}
 @extends('layouts.badge')
-@section('title', 'Pointage HospitalRH')
+@section('title', 'Pointage MedStaff')
 
 @push('styles')
 {{-- Copy styles from dashboard.blade.php --}}
@@ -9,6 +8,8 @@
 .badge-wrap {
   flex: 1; display: flex; flex-direction: column;
   min-height: 100vh; padding: 0;
+  justify-content: center; align-items: center; gap: 48px;
+  position: relative;
 }
 
 /* ── Header ──────────────────────────────────────────────────────────── */
@@ -17,6 +18,7 @@
   padding: 24px 28px;
   border-bottom: 1px solid rgba(255,255,255,.08);
   background: rgba(255,255,255,.03);
+  width: 100%; position: absolute; top: 0; left: 0;
 }
 .header-brand {
   display: flex; align-items: center; gap: 12px; text-align: center;
@@ -31,7 +33,7 @@
 
 /* ── Status info ────────────────────────────────────────────────────── */
 .welcome-status {
-  text-align: center; max-width: 480px; margin: 0 auto 40px;
+  text-align: center; max-width: 480px; margin: 0 auto;
 }
 .status-welcome { font-size: 16px; font-weight: 600; color: rgba(255,255,255,.8); margin-bottom: 8px; }
 .status-subtitle { font-size: 14px; color: rgba(255,255,255,.4); }
@@ -81,20 +83,11 @@
 
 .btn-action:active { transform: translateY(-2px) scale(1.01) !important; }
 
-/* Horloge centrale */
-.central-clock {
-  font-family: 'DM Mono', monospace;
-  font-size: 72px; font-weight: 700; letter-spacing: -4px;
-  color: rgba(255,255,255,.15); margin: 40px 0;
-  text-align: center;
-}
-
 /* Responsive */
 @media (max-width: 600px) {
   .btn-action { width: 200px; height: 200px; }
   .btn-action .action-icon { font-size: 50px; }
   .btn-action .action-label { font-size: 22px; }
-  .central-clock { font-size: 52px; }
 }
 </style>
 @endpush
@@ -106,7 +99,7 @@
     <div class="header-brand">
       <div class="brand-icon">⏱</div>
       <div>
-        <div class="brand-name">HospitalRH Pointage</div>
+        <div class="brand-name">MedStaff Pointage</div>
         <div class="brand-sub">Badgeuse tactile</div>
       </div>
     </div>
@@ -117,9 +110,6 @@
     <div class="status-welcome">Sélectionnez votre action</div>
     <div class="status-subtitle">Pointer votre arrivée ou votre départ</div>
   </div>
-
-  {{-- Horloge centrale --}}
-  <div class="central-clock" id="liveClock">--:--</div>
 
   {{-- Boutons --}}
   <div class="action-buttons">
@@ -143,16 +133,3 @@
   </div>
 </div>
 @endsection
-
-@push('scripts')
-<script>
-// Horloge live
-function updateClock() {
-  document.getElementById('liveClock').textContent =
-    new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
-}
-updateClock();
-setInterval(updateClock, 1000);
-</script>
-@endpush
-

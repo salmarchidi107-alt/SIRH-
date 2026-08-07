@@ -6,10 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Facades\DB;
+use \App\Traits\HasTenantScope;
+
 
 class Equipement extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes , HasTenantScope;
 
     protected $table = 'equipements';
 

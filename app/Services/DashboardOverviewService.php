@@ -22,59 +22,80 @@ class DashboardOverviewService
      * DashboardController::index().
      */
     public function getIndexData($user): array
-    {
-        $tenantId    = $user?->tenant_id;
-        $isAdminOrRH = $user && ($user->isAdmin() || $user->isRh());
+{
+    $tenantId    = $user?->tenant_id;
+    $isAdminOrRH = $user && ($user->isAdmin() || $user->isRh());
 
-        $absentTodayIds = $this->getAbsentTodayIds($tenantId);
+    $absentTodayIds = $this->getAbsentTodayIds($tenantId);
 
-        $stats = $this->getBaseStats($tenantId);
+    $stats = $this->getBaseStats($tenantId);
 
-        $recentAbsences = collect();
-        $contractTypes  = collect();
+    $recentAbsences = collect();
+    $contractTypes  = collect();
 
-        if ($isAdminOrRH) {
-            $stats['pending_absences'] = $this->getPendingAbsencesCount($tenantId);
-            $recentAbsences            = $this->getRecentPendingAbsences($tenantId);
-            $contractTypes             = $this->getContractTypeDistribution($tenantId);
-        }
-
-        $departments = $this->getDepartmentDistribution($tenantId);
-
-        $todayPlanning           = $this->getTodayPlanning($tenantId, $absentTodayIds);
-        $stats['today_present'] = $todayPlanning->count();
-
-        $monthlyAbsences = $this->getMonthlyAbsences($tenantId);
-
-        $birthdays = $this->getTodayBirthdays($tenantId);
-
-        $upcomingNews = $this->getUpcomingNews();
-        $recentNews   = $this->getRecentNews();
-
-        $conflicts = $this->getAbsenceConflicts($tenantId);
-
-        $employee = $this->resolveEmployee($user, $tenantId);
-
-        [$tempsWidget, $droitsWidget] = $this->getEmployeeWidgets($employee);
-
-        return [
-            'stats'            => $stats,
-            'holidays'         => [],
-            'departments'      => $departments,
-            'today_planning'   => $todayPlanning,
-            'monthly_absences' => $monthlyAbsences,
-            'birthdays'        => $birthdays,
-            'upcomingNews'     => $upcomingNews,
-            'recentNews'       => $recentNews,
-            'conflicts'        => $conflicts,
-            'employee'         => $employee,
-            'tempsWidget'      => $tempsWidget,
-            'droitsWidget'     => $droitsWidget,
-            'isAdminOrRH'      => $isAdminOrRH,
-            'recent_absences'  => $recentAbsences,
-            'contract_types'   => $contractTypes,
-        ];
+    if ($isAdminOrRH) {
+        $stats['pending_absences'] = $this->getPendingAbsencesCount($tenantId);
+        $recentAbsences            = $this->getRecentPendingAbsences($tenantId);
+        $contractTypes             = $this->getContractTypeDistribution($tenantId);
     }
+
+    $departments = $this->getDepartmentDistribution($tenantId);
+
+    $todayPlanning           = $this->getTodayPlanning($tenantId, $absentTodayIds);
+    $stats['today_present'] = $todayPlanning->count();
+
+    $monthlyAbsences = $this->getMonthlyAbsences($tenantId);
+
+    $birthdays = $this->getTodayBirthdays($tenantId);
+
+    $upcomingNews = $this->getUpcomingNews();
+    $recentNews   = $this->getRecentNews();
+
+    $conflicts = $this->getAbsenceConflicts($tenantId);
+
+    $employee = $this->resolveEmployee($user, $tenantId);
+
+    [$tempsWidget, $droitsWidget] = $this->getEmployeeWidgets($employee);
+
+    // Le RH partage ce tableau de bord avec l'Admin mais peut, comme un employé,
+    // avoir des tâches qui lui sont assignées (module Suivi d'activité) : à afficher
+    // avec le même bloc visuel que employee.dashboard.
+    $myTasks     = collect();
+    $myTasksLate = 0;
+
+    if ($user && $user->isRh()) {
+        $myTasks = \App\Models\Task::query()
+            ->tenant($tenantId)
+            ->assignedTo($user->id)
+            ->whereNotIn('status', ['terminee', 'annulee'])
+            ->with('project')
+            ->orderByRaw("FIELD(status, 'en_cours','en_pause','a_faire')")
+            ->orderByDesc('updated_at')
+            ->get();
+
+        $myTasksLate = $myTasks->filter(fn (\App\Models\Task $t) => $t->isLate())->count();
+    }
+
+    return [
+        'stats'            => $stats,
+        'holidays'         => [],
+        'departments'      => $departments,
+        'today_planning'   => $todayPlanning,
+        'monthly_absences' => $monthlyAbsences,
+        'birthdays'        => $birthdays,
+        'upcomingNews'     => $upcomingNews,
+        'recentNews'       => $recentNews,
+        'conflicts'        => $conflicts,
+        'employee'         => $employee,
+        'tempsWidget'      => $tempsWidget,
+        'droitsWidget'     => $droitsWidget,
+        'isAdminOrRH'      => $isAdminOrRH,
+        'recent_absences'  => $recentAbsences,
+        'contract_types'   => $contractTypes,
+        'myTasks'          => $myTasks,
+        'myTasksLate'      => $myTasksLate,
+    ];
+}
 
     /**
      * Statistiques légères utilisées par DashboardController::stats().

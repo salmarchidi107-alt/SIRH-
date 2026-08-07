@@ -16,7 +16,7 @@ class ProjectController extends Controller
     public function index(Request $request): View
     {
         $user = Auth::user();
-        abort_unless($user->isAdminOrRh(), 403);
+        abort_unless($user->isAdmin(), 403);
 
         $projects = $this->filteredQuery($request, $user->tenant_id)
             ->orderByDesc('updated_at')
@@ -40,7 +40,7 @@ class ProjectController extends Controller
     public function show(Request $request, Project $project): View
     {
         $user = Auth::user();
-        abort_unless($user->isAdminOrRh() && $project->tenant_id === $user->tenant_id, 403);
+        abort_unless($user->isAdmin() && $project->tenant_id === $user->tenant_id, 403);
 
         $project->load(['tasks.assignee', 'tasks.owner']);
 
@@ -50,7 +50,7 @@ class ProjectController extends Controller
     public function update(StoreAdminProjectRequest $request, Project $project): RedirectResponse
     {
         $user = Auth::user();
-        abort_unless($user->isAdminOrRh() && $project->tenant_id === $user->tenant_id, 403);
+        abort_unless($user->isAdmin() && $project->tenant_id === $user->tenant_id, 403);
 
         $project->update($request->validatedForUpdate());
 
@@ -60,19 +60,23 @@ class ProjectController extends Controller
     }
 
     public function destroy(Request $request, Project $project): RedirectResponse
-    {
-        $user = Auth::user();
-        abort_unless($user->isAdminOrRh() && $project->tenant_id === $user->tenant_id, 403);
+{
+    $user = Auth::user();
+    abort_unless($user->isAdmin() && $project->tenant_id === $user->tenant_id, 403);
 
-        $project->delete();
-
-        return redirect()->route('activites.admin.projects.index')->with('success', 'Projet supprimé.');
+    if ($project->tasks()->exists()) {
+        return back()->with('error', "Impossible de supprimer « {$project->name} » : des tâches y sont encore rattachées. Supprimez ou déplacez-les d'abord.");
     }
+
+    $project->delete();
+
+    return redirect()->route('activites.admin.projects.index')->with('success', 'Projet supprimé.');
+}
 
     public function exportExcel(Request $request)
     {
         $user = Auth::user();
-        abort_unless($user->isAdminOrRh(), 403);
+        abort_unless($user->isAdmin(), 403);
 
         $projects = $this->filteredQuery($request, $user->tenant_id)
             ->withCount(['tasks', 'tasks as done_tasks_count' => fn ($q) => $q->where('status', 'terminee')])
@@ -107,7 +111,7 @@ class ProjectController extends Controller
     public function exportPdf(Request $request)
     {
         $user = Auth::user();
-        abort_unless($user->isAdminOrRh(), 403);
+        abort_unless($user->isAdmin(), 403);
 
         $projects = $this->filteredQuery($request, $user->tenant_id)
             ->withCount(['tasks', 'tasks as done_tasks_count' => fn ($q) => $q->where('status', 'terminee')])

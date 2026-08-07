@@ -13,16 +13,6 @@ class IdentifyTenant
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $currentTenantId = config('app.current_tenant_id');
-
-        // ── Cas 1 : déjà résolu par DomainTenant (domaine tenant réel) ───
-        if (filled($currentTenantId)) {
-            $tenant = Tenant::find($currentTenantId);
-            $this->applyTenantTimezone($tenant);
-
-            return $next($request);
-        }
-
         // ── Pas connecté → passer (login page, etc.) ─────────────────────
         if (! Auth::check()) {
             return $next($request);
@@ -30,13 +20,13 @@ class IdentifyTenant
 
         $user = Auth::user();
 
-        // ── Cas 2 : Superadmin ou sans tenant ────────────────────────────
+        // ── Cas 1 : Superadmin ou sans tenant ────────────────────────────
         if ($user->isSuperAdmin() || is_null($user->tenant_id)) {
             config(['app.current_tenant_id' => null]);
             return $next($request);
         }
 
-        // ── Cas 3 : User avec tenant_id → résoudre et setter ─────────────
+        // ── Cas 2 : User avec tenant_id → résoudre et setter ─────────────
         $tenant = Tenant::find($user->tenant_id);
 
         if (! $tenant) {

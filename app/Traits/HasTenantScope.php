@@ -35,4 +35,9 @@ trait HasTenantScope
     {
         return $this->belongsTo(\App\Models\Tenant::class, 'tenant_id');
     }
+
+    public function leakGuardAttribute(): array
+    {
+        return ['tenant_id' => $this->tenant_id];
+    }
 }

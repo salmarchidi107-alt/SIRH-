@@ -4,9 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use \App\Traits\HasTenantScope;
+
 
 class PayrollSetting extends Model
 {
+    use HasFactory, HasTenantScope;
     protected $fillable = ['key', 'value', 'label', 'category', 'type'];
 
     protected $casts = ['value' => 'decimal:4'];

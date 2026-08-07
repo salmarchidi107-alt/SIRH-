@@ -3,9 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use \App\Traits\HasTenantScope;
+
 
 class UserPermission extends Model
 {
+    use HasTenantScope;
+
     protected $fillable = [
         'user_id',
         'module',

@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Crypt;
 use App\Traits\HasModulePermissions;
+use Illuminate\Database\Eloquent\Builder;
 
 class User extends Authenticatable
 {
@@ -107,9 +108,9 @@ class User extends Authenticatable
     // ─── Role Helpers ─────────────────────────────────────────────────────────
 
     public function isSuperAdmin(): bool
-    {
-        return $this->role === self::ROLE_SUPERADMIN || is_null($this->tenant_id);
-    }
+{
+    return $this->role === self::ROLE_SUPERADMIN;
+}
 
     public function isAdmin(): bool
     {

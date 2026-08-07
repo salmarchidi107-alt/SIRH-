@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use \App\Traits\HasTenantScope;
 
 class VerificationCode extends Model
 {
+        use HasTenantScope;
+
     // ─── Statuts ──────────────────────────────────────────────────────────────
 
     const STATUS_ASSIGNED = 'assigned';
@@ -188,18 +191,21 @@ class VerificationCode extends Model
 
     // ─── Génération de code unique ────────────────────────────────────────────
 
-    public static function generateUniqueCode(int $maxAttempts = 100): string
-    {
-        for ($i = 0; $i < $maxAttempts; $i++) {
-            $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    public static function generateUniqueCode(string $tenantId, int $maxAttempts = 100): string
+{
+    for ($i = 0; $i < $maxAttempts; $i++) {
+        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
-            if (!static::where('code', $code)->exists()) {
-                return $code;
-            }
+        if (!static::withoutTenantScope()
+                ->where('code', $code)
+                ->where('tenant_id', $tenantId)
+                ->exists()) {
+            return $code;
         }
-
-        throw new \RuntimeException(
-            "Impossible de générer un code unique après {$maxAttempts} tentatives."
-        );
     }
+
+    throw new \RuntimeException("Impossible de générer un code unique après {$maxAttempts} tentatives.");
 }
+
+
+    }

@@ -7,17 +7,7 @@ namespace App\Services\OCR;
 use App\Services\OCR\Providers\OCRSpaceProvider;
 use InvalidArgumentException;
 
-/**
- * Gestionnaire central des fournisseurs OCR.
- *
- * Azure Document Intelligence et Google Document AI ont été retirés
- * intentionnellement : ce module ne dépend plus que d'OCR.space.
- *
- * Pour ajouter un nouveau fournisseur (Mindee, AWS Textract...) plus tard :
- *   1. Créer une classe implémentant OCRProviderInterface dans OCR/Providers
- *   2. Ajouter un "case" dans make() ci-dessous
- *   3. Ajouter sa configuration dans config/services.php et le .env
- */
+
 final class OCRManager
 {
     /** @var array<string, OCRProviderInterface> */

@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use \App\Traits\HasTenantScope;
 
 class Task extends Model
 {
-    use HasFactory;
+    use HasFactory , HasTenantScope;
 
     protected $fillable = [
         'tenant_id',

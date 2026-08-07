@@ -1,4 +1,3 @@
-{{-- resources/views/badge/login.blade.php --}}
 @extends('layouts.badge')
 @section('title', 'Authentification — Pointage')
 
@@ -362,12 +361,6 @@
   font-size: 13px; line-height: 1.6;
 }
 
-.bg-clock {
-  position: fixed; bottom: 36px; right: 36px; z-index: 0;
-  font-size: 76px; font-weight: 800; color: rgba(255,255,255,.025);
-  font-family: 'DM Mono', monospace; letter-spacing: -4px;
-  pointer-events: none; user-select: none;
-}
 </style>
 @endpush
 
@@ -547,7 +540,6 @@
   </div>
 </div>
 
-<div class="bg-clock" id="bgClock"></div>
 @endsection
 
 @push('scripts')
@@ -667,7 +659,7 @@ function resolveGeo(ok, lat, lng, acc, addr, title, sub){
 function reverseGeocode(lat, lng){
   return fetch(
     'https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lng + '&format=json&zoom=18&accept-language=fr',
-    { headers: { 'Accept-Language': 'fr', 'User-Agent': 'HospitalRH-Badge/1.0' } }
+    { headers: { 'Accept-Language': 'fr', 'User-Agent': 'MedStaff-Badge/1.0' } }
   )
   .then(function(r) { return r.ok ? r.json() : null; })
   .then(function(data) {

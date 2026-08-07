@@ -3,44 +3,73 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
+        $driver = DB::connection()->getDriverName();
+
         Schema::table('absences', function (Blueprint $table) {
             if (!Schema::hasColumn('absences', 'tenant_id')) {
                 $table->uuid('tenant_id')->nullable()->after('id');
             }
         });
 
-        // La contrainte de clé étrangère est ajoutée séparément : si la colonne
-        // existait déjà mais sans contrainte, celle-ci sera bien créée quand même.
-        $foreignKeyExists = collect(
-            \DB::select("SHOW KEYS FROM absences WHERE Key_name = 'absences_tenant_id_foreign'")
-        )->isNotEmpty();
+        // Vérification compatible avec SQLite et MySQL
+        $foreignKeyExists = false;
+
+        if ($driver === 'sqlite') {
+            // SQLite: use PRAGMA foreign_key_list
+            $foreignKeys = DB::select("PRAGMA foreign_key_list(absences)");
+            foreach ($foreignKeys as $fk) {
+                if ($fk->from === 'tenant_id' && $fk->table === 'tenants') {
+                    $foreignKeyExists = true;
+                    break;
+                }
+            }
+        } else {
+            // MySQL/PostgreSQL: use information_schema
+            $foreignKeyExists = DB::table('information_schema.TABLE_CONSTRAINTS')
+                ->where('CONSTRAINT_SCHEMA', DB::getDatabaseName())
+                ->where('TABLE_NAME', 'absences')
+                ->where('CONSTRAINT_NAME', 'absences_tenant_id_foreign')
+                ->where('CONSTRAINT_TYPE', 'FOREIGN KEY')
+                ->exists();
+        }
 
         if (!$foreignKeyExists) {
-            Schema::table('absences', function (Blueprint $table) {
-                $table->foreign('tenant_id')
-                      ->references('id')
-                      ->on('tenants')
-                      ->onDelete('cascade');
-            });
+            try {
+                Schema::table('absences', function (Blueprint $table) {
+                    $table->foreign('tenant_id')
+                          ->references('id')
+                          ->on('tenants')
+                          ->onDelete('cascade');
+                });
+            } catch (\Illuminate\Database\QueryException $e) {
+                // Si la contrainte existe déjà sous un nom différent, ignorer l'erreur
+                if (!str_contains($e->getMessage(), 'errno: 121') &&
+                    !str_contains($e->getMessage(), 'Duplicate') &&
+                    !str_contains($e->getMessage(), 'UNIQUE constraint failed')) {
+                    throw $e;
+                }
+            }
         }
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('absences', function (Blueprint $table) {
-            $table->dropForeign(['tenant_id']);
-            $table->dropColumn('tenant_id');
+            // Vérifier avant de supprimer pour éviter les erreurs
+            if (Schema::hasColumn('absences', 'tenant_id')) {
+                try {
+                    $table->dropForeign(['tenant_id']);
+                } catch (\Exception $e) {
+                    // Ignorer si la FK n'existe pas
+                }
+                $table->dropColumn('tenant_id');
+            }
         });
     }
 };

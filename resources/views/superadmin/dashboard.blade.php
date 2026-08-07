@@ -9,6 +9,32 @@
 
 @section('content')
 
+@php
+    $leakAlertsToday = \App\Models\DataLeakAlert::whereDate('created_at', today())->count();
+@endphp
+@if($leakAlertsToday > 0)
+<div class="sa-stat" style="border-color:var(--danger);">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+        <div class="sa-stat-icon" style="background:var(--danger-bg);color:var(--danger);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+        </div>
+        <a href="{{ route('superadmin.data-leak-alerts.index') }}"
+           title="Voir le détail des alertes"
+           style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--danger);text-decoration:none;">
+            Voir plus
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+            </svg>
+        </a>
+    </div>
+    <div class="sa-stat-val">{{ $leakAlertsToday }}</div>
+    <div class="sa-stat-lbl">Alertes de fuite (aujourd'hui)</div>
+</div>
+@endif
+
 <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:22px;">
 @php
     $cards = [

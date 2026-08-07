@@ -1,42 +1,94 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
+namespace App\Models;
 
-// Tenant routes (tenant context)
-Route::middleware([
-    'web',
-    \App\Http\Middleware\DomainTenant::class,
-])->group(function () {
-    Route::get('/', function () {
-        return view('welcome');
-    });
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
+use Stancl\Tenancy\Database\Concerns\HasDomains;
 
-    // Tenant dashboard
-    Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('tenant.dashboard');
+class Tenant extends BaseTenant
+{
+    use HasFactory, HasDomains;
 
-    // Auth
-    Route::get('/login', [\App\Http\Controllers\Auth\LoginController::class, 'showLoginForm'])->name('tenant.login');
-    Route::post('/login', [\App\Http\Controllers\Auth\LoginController::class, 'login']);
-    Route::post('/logout', [\App\Http\Controllers\Auth\LoginController::class, 'logout'])->name('tenant.logout');
+    public $incrementing = false;
+    protected $keyType   = 'string';
 
-    // Employee (DISABLED - use web.php protected routes)
-    // Route::resource('employees', \App\Http\Controllers\EmployeeController::class);
+    protected $fillable = [
+        'id',
+        'name',
+        'sector',
+        'region',
+        'address',
+        'phone',
+        'ice',
+        'email_societe',
+        'website',
+        'logo_path',
+        'brand_color',
+        'sidebar_color',
+        'timezone',
+        'database_name',
+    ];
 
-    // Absences (DISABLED - use web.php tenant-user/admin)
-    // Route::resource('absences', \App\Http\Controllers\AbsenceController::class);
+    /**
+     * IMPORTANT (Stancl Tenancy) : toute colonne absente de cette liste est
+     * automatiquement redirigée vers la colonne JSON `data` au lieu de sa
+     * vraie colonne SQL, même si $fillable l'autorise. `timezone` doit donc
+     * impérativement figurer ici pour être écrit dans la vraie colonne
+     * `timezone` de la table `tenants`.
+     */
+    public static function getCustomColumns(): array
+    {
+        return [
+            'id',
+            'name',
+            'sector',
+            'region',
+            'address',
+            'phone',
+            'ice',
+            'email_societe',
+            'website',
+            'logo_path',
+            'brand_color',
+            'sidebar_color',
+            'timezone',
+            'database_name',
+        ];
+    }
 
-    // Salary (DISABLED - admin only)
-    // Route::resource('salaries', \App\Http\Controllers\SalaryController::class);
+    // ─── Relations ────────────────────────────────────────────────────────────
 
-    // Planning (DISABLED - use web.php tenant-user/admin)
-    // Route::resource('planning', \App\Http\Controllers\PlanningController::class);
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class, 'tenant_id');
+    }
 
-    // Pointage (DISABLED - admin only)
-    // Route::resource('pointages', \App\Http\Controllers\PointageController::class);
+    public function admin(): HasOne
+    {
+        return $this->hasOne(User::class, 'tenant_id')->where('role', 'admin');
+    }
 
-    // API routes for scan
-    Route::post('/api/pointage/scan', [\App\Http\Controllers\API\PointageScanController::class, 'scan']);
-});
 
-// Note: Add your existing tenant routes here or include tenant-routes.php if exists
+// ─── Accessors ────────────────────────────────────────────────────────────
 
+    public function getInitialsAttribute(): string
+    {
+        $words = array_filter(explode(' ', $this->name ?? ''));
+        $ini   = implode('', array_map(
+            fn($w) => strtoupper($w[0]),
+            array_slice(array_values($words), 0, 2)
+        ));
+        return $ini ?: '?';
+    }
+
+    public function getStorageUsageAttribute(): int { return 0; }
+    public function getApiUsageAttribute(): int     { return 0; }
+
+    public function getUsersCountAttribute(): int
+    {
+        return $this->users()->count();
+    }
+}

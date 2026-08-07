@@ -9,9 +9,13 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use \App\Traits\HasTenantScope;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 
 class Pointage extends Model
 {
+    use HasFactory, HasTenantScope;
+
     protected $fillable = [
         'tenant_id',
         'employee_id',

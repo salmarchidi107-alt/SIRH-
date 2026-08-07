@@ -92,7 +92,7 @@
             </thead>
             <tbody id="employees-tbody">
                 <?php $__empty_1 = true; $__currentLoopData = $employees; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $employee): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-                <tr data-employee-id="<?php echo e($employee->id); ?>">
+                <tr data-employee-id="<?php echo e($employee->id); ?>" data-row-tenant-id="<?php echo e($employee->tenant_id); ?>">
                     <td>
                         <span style="font-family:monospace;font-size:0.8rem;background:var(--surface-2);padding:2px 8px;border-radius:4px;border:1px solid var(--border)">
                             <?php echo e($employee->matricule); ?>
@@ -339,7 +339,8 @@ function ajaxEmployees(page, append) {
 
 function buildEmployeeRow(emp) {
     var tr = document.createElement('tr');
-    tr.dataset.employeeId = emp.id;
+   tr.dataset.employeeId  = emp.id;
+   tr.dataset.rowTenantId = emp.tenant_id;   // dépend de la modif EmployeeService ci-dessus
 
     // ── Avatar : photo si disponible, sinon initiales ────────
     // On utilise photo_url (renvoyé par ajaxIndex) pour l'URL réelle

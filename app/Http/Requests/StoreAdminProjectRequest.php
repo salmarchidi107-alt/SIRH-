@@ -8,7 +8,7 @@ class StoreAdminProjectRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->isAdminOrRh() ?? false;
+        return $this->user()?->isAdmin() ?? false;
     }
 
     public function rules(): array

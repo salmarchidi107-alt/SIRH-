@@ -612,7 +612,6 @@ class PointageService
                 if ($absencePointage) {
                     return [
                         'id'           => $emp->id,
-                        'tenant_id'    => $emp->tenant_id,
                         'nom'          => $emp->first_name . ' ' . $emp->last_name,
                         'avatar'       => strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1)),
                         'department'   => $emp->department,
@@ -641,7 +640,6 @@ class PointageService
                 if ($pointage && in_array($pointage->statut, ['absent', 'absence_injustifiee'])) {
                     return [
                         'id'           => $emp->id,
-                        'tenant_id'    => $emp->tenant_id,
                         'nom'          => $emp->first_name . ' ' . $emp->last_name,
                         'avatar'       => strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1)),
                         'department'   => $emp->department,

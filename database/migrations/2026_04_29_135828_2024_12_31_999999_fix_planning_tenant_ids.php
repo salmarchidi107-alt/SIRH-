@@ -10,32 +10,13 @@ return new class extends Migration
     public function up(): void
     {
         // First, delete duplicate plannings (keep lowest ID)
-        $driver = DB::connection()->getDriverName();
-
-        if ($driver === 'sqlite') {
-            // SQLite compatible version
-            $deleted = DB::delete("
-                DELETE FROM plannings
-                WHERE id IN (
-                    SELECT t1.id FROM plannings t1
-                    INNER JOIN plannings t2
-                    WHERE
-                        t1.id > t2.id AND
-                        t1.employee_id = t2.employee_id AND
-                        t1.date = t2.date AND
-                        (t1.tenant_id = t2.tenant_id OR (t1.tenant_id IS NULL AND t2.tenant_id IS NULL))
-                )
-            ");
-        } else {
-            // MySQL/PostgreSQL version
-            $deleted = DB::delete("DELETE t1 FROM plannings t1
-                INNER JOIN plannings t2
-                WHERE
-                    t1.id > t2.id AND
-                    t1.employee_id = t2.employee_id AND
-                    t1.date = t2.date AND
-                    t1.tenant_id <=> t2.tenant_id");
-        }
+        $deleted = DB::delete("DELETE t1 FROM plannings t1
+            INNER JOIN plannings t2
+            WHERE
+                t1.id > t2.id AND
+                t1.employee_id = t2.employee_id AND
+                t1.date = t2.date AND
+                t1.tenant_id <=> t2.tenant_id");
 
         echo "Deleted $deleted duplicate plannings\n";
 

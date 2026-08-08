@@ -75,7 +75,6 @@ class EmployeeService
     {
         return [
             'id'            => $e->id,
-            'tenant_id'     => $e->tenant_id,
             'matricule'     => $e->matricule ?? 'N/A',
             'full_name'     => $e->full_name ?? 'N/A',
             'department'    => $e->department ?? 'N/A',
@@ -195,7 +194,7 @@ class EmployeeService
 
     private function createLinkedUserAccount(Employee $employee, Request $request): void
     {
-        $tenantId = auth()->user()->tenant_id ?? config('app.current_tenant_id');
+        $tenantId = config('app.current_tenant_id') ?? auth()->user()->tenant_id;
         $role     = $this->normalizeRole($request->user_role);
 
         Log::info('Création compte user', [
@@ -524,47 +523,50 @@ class EmployeeService
      * est Admin — la vérification est faite par les appelants.
      */
     private function savePermissions(User $user, array $rawPerms): void
-    {
-        UserPermission::where('user_id', $user->id)->delete();
+{
+    UserPermission::withoutTenantScope()
+        ->where('user_id', $user->id)
+        ->delete();
 
-        if (empty($rawPerms)) {
-            return;
-        }
-
-        $rows = [];
-        $now  = now();
-
-        foreach ($rawPerms as $module => $actions) {
-            if (
-                empty($actions['view'])
-                && empty($actions['create'])
-                && empty($actions['edit'])
-                && empty($actions['delete'])
-            ) {
-                continue;
-            }
-
-            $rows[] = [
-                'user_id'    => $user->id,
-                'module'     => $module,
-                'can_view'   => !empty($actions['view']),
-                'can_create' => !empty($actions['create']),
-                'can_edit'   => !empty($actions['edit']),
-                'can_delete' => !empty($actions['delete']),
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
-        }
-
-        if (!empty($rows)) {
-            UserPermission::insert($rows);
-
-            Log::info('Permissions sauvegardées', [
-                'user_id' => $user->id,
-                'modules' => array_column($rows, 'module'),
-            ]);
-        }
+    if (empty($rawPerms)) {
+        return;
     }
+
+    $rows = [];
+    $now  = now();
+
+    foreach ($rawPerms as $module => $actions) {
+        if (
+            empty($actions['view'])
+            && empty($actions['create'])
+            && empty($actions['edit'])
+            && empty($actions['delete'])
+        ) {
+            continue;
+        }
+
+        $rows[] = [
+            'user_id'    => $user->id,
+            'tenant_id'  => $user->tenant_id,
+            'module'     => $module,
+            'can_view'   => !empty($actions['view']),
+            'can_create' => !empty($actions['create']),
+            'can_edit'   => !empty($actions['edit']),
+            'can_delete' => !empty($actions['delete']),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+    }
+
+    if (!empty($rows)) {
+        UserPermission::insert($rows);
+
+        Log::info('Permissions sauvegardées', [
+            'user_id' => $user->id,
+            'modules' => array_column($rows, 'module'),
+        ]);
+    }
+}
 
     private function normalizeRole(?string $role): string
     {

@@ -30,6 +30,7 @@ return new class extends Migration
             $tenantData = [
                 'id'         => 'default-superadmin-tenant',
                 'name'       => 'Superadmin Central',
+                'slug'       => 'superadmin',
                 'created_at' => now(),
                 'updated_at' => now(),
             ];

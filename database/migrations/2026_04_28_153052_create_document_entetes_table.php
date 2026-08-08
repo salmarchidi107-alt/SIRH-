@@ -13,6 +13,14 @@ return new class extends Migration
                 $table->id();
                 $table->uuid('tenant_id')->nullable()->index();
                 $table->string('nom')->default('Entête principale');
+                $table->string('logo_path')->nullable();
+                $table->string('nom_societe')->nullable();
+                $table->string('adresse')->nullable();
+                $table->string('telephone')->nullable();
+                $table->string('email')->nullable();
+                $table->string('site_web')->nullable();
+                $table->string('rc')->nullable();
+                $table->string('ice')->nullable();
                 $table->text('contenu_libre')->nullable();
                 $table->text('contenu_pied_de_page')->nullable();
                 $table->boolean('actif')->default(true);

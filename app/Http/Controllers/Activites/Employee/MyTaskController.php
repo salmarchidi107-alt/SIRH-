@@ -36,7 +36,7 @@ class MyTaskController extends Controller
             'late' => $tasks->filter(fn (Task $t) => $t->isLate())->count(),
         ];
 
-        $projects = Project::tenant($user->tenant_id)->where('status', 'actif')->orderBy('name')->get(['id', 'name']);
+        $projects = Project::where('tenant_id', $user->tenant_id)->where('status', 'actif')->orderBy('name')->get(['id', 'name']);
 
         return view('activites.employee.my-tasks', compact('tasks', 'stats', 'projects'));
     }

@@ -36,7 +36,7 @@ class BadgeRecord extends Model
         'accuracy'           => 'float',
         'geolocation_denied' => 'boolean',
         'face_photo_size'    => 'integer',
-        'shift_type'         => 'string',  // ← AJOUTÉ
+        'shift_type'         => 'string',
     ];
 
     // ── Relations ─────────────────────────────────────────────────────────

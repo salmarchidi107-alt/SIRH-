@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BadgeRecord;
 use App\Models\Employee;
 use App\Models\Pointage;
 use App\Services\Pointage\PointageService;
@@ -9,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
 
@@ -154,7 +156,14 @@ class PointageController extends Controller
         );
 
         if (! $result['success']) {
-            return response()->json(['success' => false, 'error' => $result['error']], 500);
+            // Verrouillé par un congé approuvé -> 403, pas une vraie erreur serveur.
+            $status = ! empty($result['locked']) ? 403 : 500;
+
+            return response()->json([
+                'success' => false,
+                'locked'  => $result['locked'] ?? false,
+                'error'   => $result['error'],
+            ], $status);
         }
 
         return response()->json([

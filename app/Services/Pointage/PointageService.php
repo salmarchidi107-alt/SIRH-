@@ -38,11 +38,6 @@ class PointageService
     // FUSEAU HORAIRE DU TENANT
     // =========================================================================
 
-    /**
-     * Résout le fuseau horaire du tenant courant (colonne `timezone` sur la
-     * table tenants). Remplace l'ancienne constante self::TZ = 'Africa/Casablanca'
-     * qui était codée en dur et ignorait la configuration du tenant.
-     */
     private function resolveTimezone(mixed $tenantId = null): string
     {
         $tenantId ??= $this->getCurrentTenantId();
@@ -124,6 +119,11 @@ class PointageService
      * badger la sortie de veille, etc.). Retourne null si aucune absence
      * approuvée ne couvre cette date (comportement normal, badge inchangé).
      *
+     * Ce statut est également VERROUILLÉ côté UI (case à cocher désactivée,
+     * cf. buildEmployeesCollection -> 'absence_locked') et côté serveur
+     * (cf. toggleAbsence) : un congé approuvé ne peut pas être décoché
+     * manuellement.
+     *
      * IMPORTANT : cette méthode doit être appelée AVANT tout appel à
      * syncPointageFromBadgeRecords(), sinon un badge scanné le même jour
      * écraserait le statut 'absent' avec 'present'.
@@ -185,10 +185,6 @@ class PointageService
         return $earthRadius * $c;
     }
 
-    /**
-     * Charge toutes les localisations du tenant depuis la table site_locations
-     * (multi-département), avec cache 10 min.
-     */
     private function getTenantSiteLocations(mixed $tenantId): Collection
     {
         if (! $tenantId) return collect();
@@ -204,10 +200,6 @@ class PointageService
         );
     }
 
-    /**
-     * Trouve la localisation de référence selon le département de l'employé
-     * et compare avec sa position GPS.
-     */
     private function checkGeoAlert(?array $geo, mixed $tenantId, ?string $department = null): array
     {
         $locations = $this->getTenantSiteLocations($tenantId);
@@ -339,12 +331,6 @@ class PointageService
         $hasEntreeToday = $shift->where('type', 'entree')->isNotEmpty();
         $hasSortieToday = $shift->where('type', 'sortie')->isNotEmpty();
 
-        // ─────────────────────────────────────────────────────────────────
-        // Cas garde à cheval sur minuit (ex: 19h -> 07h le lendemain) :
-        // une "sortie" badgée aujourd'hui SANS "entree" aujourd'hui doit être
-        // rattachée au pointage encore ouvert de la veille, plutôt que de créer
-        // une nouvelle ligne "pas de badge" pour aujourd'hui.
-        // ─────────────────────────────────────────────────────────────────
         if (! $hasEntreeToday && $hasSortieToday) {
             $openPointage = $this->findOpenOvernightPointage($employeeId, $date, $tenantId);
 
@@ -361,8 +347,6 @@ class PointageService
                 if ($lastSortieTime) {
                     $updateData['heure_sortie'] = $lastSortieTime;
                 }
-                // Pause éventuelle prise côté "lendemain" (avant la sortie), seulement
-                // si aucune pause n'a déjà été enregistrée la veille.
                 if ($firstPauseTime && ! $openPointage->pause_start) {
                     $updateData['pause_start'] = $firstPauseTime;
                 }
@@ -402,14 +386,6 @@ class PointageService
             ])->toArray(),
         ]);
 
-        // ─────────────────────────────────────────────────────────────────
-        // IMPORTANT : on ne touche JAMAIS au champ 'valide' d'un pointage
-        // déjà existant ici. Cette méthode est appelée à CHAQUE chargement
-        // de la page (index, export, PDF) dès qu'il y a des badge records
-        // pour l'employé du jour. Si on remettait 'valide' à false sur un
-        // updateOrCreate, on écraserait systématiquement une validation
-        // faite via "Valider la journée" au refresh suivant.
-        // ─────────────────────────────────────────────────────────────────
         $pointage = Pointage::withoutGlobalScope(TenantScope::class)
             ->where('employee_id', $employeeId)
             ->where('date', $date->toDateString())
@@ -607,20 +583,26 @@ class PointageService
                 // et avant syncPointageFromBadgeRecords, pour qu'un employé
                 // en congé ne se retrouve jamais affiché "En cours"/"Présent"
                 // à cause d'un badge scanné par erreur.
+                //
+                // absence_locked = true ici : la case "Absent" doit être
+                // désactivée côté vue, ce statut ne peut pas être décoché
+                // manuellement tant que le congé reste approuvé.
                 // ─────────────────────────────────────────────────────────
                 $absencePointage = $this->ensureAbsenceStatus($emp, $currentDate, $tenantId);
                 if ($absencePointage) {
                     return [
-                        'id'           => $emp->id,
-                        'nom'          => $emp->first_name . ' ' . $emp->last_name,
-                        'avatar'       => strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1)),
-                        'department'   => $emp->department,
-                        'pointage'     => $absencePointage,
-                        'geo'          => null,
-                        'shift_type'   => $this->resolveShiftType($shift, $absencePointage),
-                        'geo_alert'    => false,
-                        'geo_distance' => null,
-                        'site_name'    => null,
+                        'id'             => $emp->id,
+                        'tenant_id'      => $emp->tenant_id,
+                        'nom'            => $emp->first_name . ' ' . $emp->last_name,
+                        'avatar'         => strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1)),
+                        'department'     => $emp->department,
+                        'pointage'       => $absencePointage,
+                        'geo'            => null,
+                        'shift_type'     => $this->resolveShiftType($shift, $absencePointage),
+                        'geo_alert'      => false,
+                        'geo_distance'   => null,
+                        'site_name'      => null,
+                        'absence_locked' => true,
                     ];
                 }
 
@@ -637,18 +619,22 @@ class PointageService
                     }
                 }
 
+                // Absence manuelle (cochée à la main par un admin, sans congé
+                // approuvé derrière) : reste librement modifiable.
                 if ($pointage && in_array($pointage->statut, ['absent', 'absence_injustifiee'])) {
                     return [
-                        'id'           => $emp->id,
-                        'nom'          => $emp->first_name . ' ' . $emp->last_name,
-                        'avatar'       => strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1)),
-                        'department'   => $emp->department,
-                        'pointage'     => $pointage,
-                        'geo'          => null,
-                        'shift_type'   => $this->resolveShiftType($shift, $pointage),
-                        'geo_alert'    => false,
-                        'geo_distance' => null,
-                        'site_name'    => null,
+                        'id'             => $emp->id,
+                        'tenant_id'      => $emp->tenant_id,
+                        'nom'            => $emp->first_name . ' ' . $emp->last_name,
+                        'avatar'         => strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1)),
+                        'department'     => $emp->department,
+                        'pointage'       => $pointage,
+                        'geo'            => null,
+                        'shift_type'     => $this->resolveShiftType($shift, $pointage),
+                        'geo_alert'      => false,
+                        'geo_distance'   => null,
+                        'site_name'      => null,
+                        'absence_locked' => false,
                     ];
                 }
 
@@ -664,16 +650,18 @@ class PointageService
                 $geoCheck = $this->checkGeoAlert($geo, $tenantId, $emp->department);
 
                 return [
-                    'id'           => $emp->id,
-                    'nom'          => $emp->first_name . ' ' . $emp->last_name,
-                    'avatar'       => strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1)),
-                    'department'   => $emp->department,
-                    'pointage'     => $pointage,
-                    'geo'          => $geo,
-                    'shift_type'   => $this->resolveShiftType($shift, $pointage),
-                    'geo_alert'    => $geoCheck['alert'],
-                    'geo_distance' => $geoCheck['distance'],
-                    'site_name'    => $geoCheck['site_name'],
+                    'id'             => $emp->id,
+                    'tenant_id'      => $emp->tenant_id,
+                    'nom'            => $emp->first_name . ' ' . $emp->last_name,
+                    'avatar'         => strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1)),
+                    'department'     => $emp->department,
+                    'pointage'       => $pointage,
+                    'geo'            => $geo,
+                    'shift_type'     => $this->resolveShiftType($shift, $pointage),
+                    'geo_alert'      => $geoCheck['alert'],
+                    'geo_distance'   => $geoCheck['distance'],
+                    'site_name'      => $geoCheck['site_name'],
+                    'absence_locked' => false,
                 ];
             });
     }
@@ -710,7 +698,6 @@ class PointageService
                 $pointage = $emp->pointages->first();
                 $shift    = $allBadgeRecords->get($emp->id, collect());
 
-                // Congé approuvé : même règle prioritaire que dans index()
                 $absencePointage = $this->ensureAbsenceStatus($emp, $currentDate, $tenantId);
                 if ($absencePointage) {
                     return [
@@ -725,7 +712,6 @@ class PointageService
                     ];
                 }
 
-                // Garde de la veille toujours ouverte : même règle que dans index()
                 if (! $pointage && $shift->isEmpty()) {
                     $openPointage = $this->findOpenOvernightPointage($emp->id, $currentDate, $tenantId);
                     if ($openPointage) {
@@ -771,10 +757,6 @@ class PointageService
     // RAPPORT PDF — jour / semaine / mois
     // =========================================================================
 
-    /**
-     * Retourne null si aucune ligne ne correspond aux filtres (le contrôleur
-     * doit alors répondre par un back()->with('error', ...)).
-     */
     public function buildReport(Request $request): ?array
     {
         $date        = $request->get('date', today()->toDateString());
@@ -875,19 +857,12 @@ class PointageService
                 $pointage = $pointages->get($emp->id);
                 $shift    = $badgeRecords->get($emp->id, collect());
 
-                // Congé approuvé : même règle prioritaire que dans index()/export().
                 $absencePointage = $this->ensureAbsenceStatus($emp, $d, $tenantId);
                 if ($absencePointage) {
                     $pointage = $absencePointage;
                 } elseif (! $pointage && $shift->isNotEmpty()) {
                     $pointage = $this->syncPointageFromBadgeRecords($emp->id, $d, $shift, $tenantId);
                 }
-
-                // NB: on ne "reporte" pas ici la garde ouverte de la veille comme
-                // dans index()/export() — le but de ce rapport période est de
-                // sommer les heures une seule fois par garde (déjà comptées sous
-                // la date où elle a démarré). La rattacher aussi au jour suivant
-                // doublerait le total_heures dans les sommes hebdo/mensuelles.
 
                 $shiftType = $this->resolveShiftType($shift, $pointage);
                 $statut    = $pointage?->statut ?? 'pas_de_badge';
@@ -922,15 +897,13 @@ class PointageService
 
     /**
      * Photo prise à la badgeuse pour un employé, strictement bornée au jour
-     * calendaire sélectionné. Chaque jour garde sa propre photo : pour une
-     * garde à cheval sur minuit, l'entrée (jeudi 19h) et la sortie
-     * (vendredi 07h) ont des created_at sur des jours différents, donc
-     * chaque ligne du tableau (jeudi / vendredi) récupère naturellement sa
-     * propre photo, sans chevauchement.
+     * calendaire sélectionné. Chaque jour garde sa propre photo.
      *
-     * La photo n'existe jamais qu'en fichier sur le disque de stockage
-     * ('face_photo_path' + 'face_photo_disk') : il n'y a plus aucun
-     * fallback base64 en base de données.
+     * NB : `face_photo_path`/`face_photo_disk`/`face_photo_size`/
+     * `face_photo_mime`/`face_photo_base64` sont volontairement retirés du
+     * $fillable de BadgeRecord (rien n'est actuellement écrit dedans) —
+     * cette méthode renverra donc systématiquement 'not_found' tant que
+     * l'écriture de ces champs n'est pas réactivée.
      *
      * @return array{status: string, photo_url?: string, employee?: string, type?: string, recorded_at?: string}
      */
@@ -1018,16 +991,12 @@ class PointageService
         }
     }
 
-  public function validerJournee(string $date): array
+    public function validerJournee(string $date): array
     {
         $tenantId = $this->getCurrentTenantId();
         $userId   = auth()->id();
         $userName = auth()->user()->name;
 
-        // On parcourt TOUS les employés actifs (pas seulement ceux qui ont déjà
-        // un pointage avec statut='present'), pour que "Valider la journée"
-        // fonctionne même quand un employé n'a aucune ligne pointage ce jour-là
-        // (pas de badge, absence non enregistrée, etc.).
         $employees = Employee::active()->get(['id']);
 
         $count = 0;
@@ -1040,8 +1009,6 @@ class PointageService
                 ->first();
 
             if (! $pointage) {
-                // Aucun pointage ce jour-là : on en crée un minimal pour
-                // pouvoir quand même le marquer comme validé.
                 $pointage = Pointage::withoutGlobalScope(TenantScope::class)->create([
                     'employee_id' => $emp->id,
                     'date'        => $date,
@@ -1113,13 +1080,32 @@ class PointageService
     }
 
     /**
-     * @return array{success: bool, statut?: string, id?: int, error?: string}
+     * ─────────────────────────────────────────────────────────────────
+     * VERROU : si l'employé a une absence APPROUVÉE couvrant cette date,
+     * on refuse toute modification manuelle du statut d'absence — le
+     * congé approuvé est la source de vérité et ne doit pas pouvoir être
+     * décoché, même via un appel direct à cet endpoint (contournement de
+     * la case désactivée côté vue). C'est le pendant serveur du
+     * `disabled` posé sur la checkbox dans pointage/index.blade.php.
+     * ─────────────────────────────────────────────────────────────────
+     *
+     * @return array{success: bool, statut?: string, id?: int, error?: string, locked?: bool}
      */
     public function toggleAbsence(int $employeeId, string $date, bool $isAbsent): array
     {
         $tenantId = $this->getCurrentTenantId();
 
         try {
+            $employee = Employee::find($employeeId);
+
+            if ($employee && $employee->hasApprovedAbsenceOn(Carbon::parse($date))) {
+                return [
+                    'success' => false,
+                    'locked'  => true,
+                    'error'   => "Cette absence provient d'un congé approuvé et ne peut pas être modifiée ici.",
+                ];
+            }
+
             $pointage = Pointage::withoutGlobalScope(TenantScope::class)
                 ->where('employee_id', $employeeId)
                 ->where('date', $date)
@@ -1211,10 +1197,6 @@ class PointageService
         return ['success' => true, 'count' => count($updated), 'pins' => $updated];
     }
 
-    /**
-     * Retourne null si aucun employé ne correspond aux filtres (le contrôleur
-     * doit alors répondre par un back()->with('error', ...)).
-     */
     public function getExportPinData(Request $request): ?array
     {
         $employees = Employee::active()

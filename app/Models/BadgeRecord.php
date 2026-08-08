@@ -9,21 +9,22 @@ use Illuminate\Support\Facades\Storage;
 class BadgeRecord extends Model
 {
     protected $fillable = [
-        'tenant_id',
-        'employee_id',
-        'type',
-        'shift_type',
-        // Géolocalisation
-        'latitude',
-        'longitude',
-        'accuracy',
-        'location_address',
-        'geolocation_denied',
+    'tenant_id',
+    'employee_id',
+    'type',
+    'shift_type',
+    'latitude',
+    'longitude',
+    'accuracy',
+    'location_address',
+    'geolocation_denied',
+    'face_photo_path',
+    'face_photo_disk',
+    'face_photo_size',
+    'created_at',
+    'updated_at',
+];
 
-
-        'created_at',
-        'updated_at',
-    ];
 
     protected $hidden = [
         'face_photo_base64',
@@ -35,7 +36,7 @@ class BadgeRecord extends Model
         'accuracy'           => 'float',
         'geolocation_denied' => 'boolean',
         'face_photo_size'    => 'integer',
-        'shift_type'         => 'string',
+        'shift_type'         => 'string',  // ← AJOUTÉ
     ];
 
     // ── Relations ─────────────────────────────────────────────────────────

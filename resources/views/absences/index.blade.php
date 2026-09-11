@@ -46,7 +46,7 @@
 
 @if($pending_count > 0)
 <div class="alert alert-warning mb-5">
-    ⚠️ <strong>{{ $pending_count }}</strong> demande(s) en attente d'approbation
+    <strong>{{ $pending_count }}</strong> demande(s) en attente d'approbation
 </div>
 @endif
 

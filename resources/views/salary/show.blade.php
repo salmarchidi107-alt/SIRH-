@@ -10,10 +10,9 @@
         <h1>{{ $employee->full_name }}</h1>
         <p>{{ $employee->department }} — {{ $employee->position }}</p>
     </div>
-    {{-- Saisie de la paie : cachée pour le profil rh --}}
     @unless(auth()->user()->isEmployee())
         <div style="display:flex;gap:8px">
-            @if(auth()->user()->role !== 'rh')
+            @if(auth()->user()->canCreate('salary') || auth()->user()->canEdit('salary'))
                 <a href="{{ route('salary.create', [$employee,'month'=>now()->month,'year'=>now()->year]) }}"
                    class="btn btn-primary">Saisir la paie du mois</a>
             @endif
@@ -38,7 +37,6 @@
             </strong></div>
             <div><div style="color:var(--text-muted);font-size:0.75rem">Salaire base</div><strong>{{ number_format($employee->base_salary,0,',',' ') }} </strong></div>
 
-            {{-- ── CORRECTION : family_situation au lieu de family_status ── --}}
             <div><div style="color:var(--text-muted);font-size:0.75rem">Situation familiale</div><strong>{{ ucfirst($employee->family_situation ?? 'Célibataire') }}</strong></div>
 
             <div><div style="color:var(--text-muted);font-size:0.75rem">Enfants</div><strong>{{ $employee->children_count ?? 0 }}</strong></div>
@@ -101,8 +99,10 @@
             <div style="font-size:3rem;margin-bottom:12px">💰</div>
             <div style="font-size:1rem;margin-bottom:8px">Aucun bulletin de paie</div>
             @unless(auth()->user()->isEmployee())
-                <a href="{{ route('salary.create',[$employee,'month'=>now()->month,'year'=>now()->year]) }}"
-                   class="btn btn-primary" style="margin-top:12px">Générer le premier bulletin</a>
+                @if(auth()->user()->canCreate('salary'))
+                    <a href="{{ route('salary.create',[$employee,'month'=>now()->month,'year'=>now()->year]) }}"
+                       class="btn btn-primary" style="margin-top:12px">Générer le premier bulletin</a>
+                @endif
             @endunless
         </div>
     </div>
@@ -121,7 +121,6 @@
                     {{ $salary->month_name }} {{ $salary->year }}
                 </span>
                 <span class="badge badge-{{ $salary->status_color }}" style="margin-left:8px">{{ $salary->status_label }}</span>
-                {{-- Badge devise --}}
                 <span style="margin-left:8px;font-size:0.72rem;padding:2px 8px;border-radius:12px;font-weight:700;
                     background:{{ $cur==='MRU'?'#f0fdf4':'#eff6ff' }};
                     color:{{ $cur==='MRU'?'#14532d':'#1e40af' }};
@@ -146,19 +145,24 @@
                 <a href="{{ route('salary.pdf',$salary) }}" class="btn btn-sm btn-ghost" download="bulletin.pdf" onclick="event.stopPropagation()">PDF</a>
 
                 @unless(auth()->user()->isEmployee())
-                    @if($salary->status==='draft' && auth()->user()->role !== 'rh')
+                    {{-- Valider : nécessite la permission "edit" sur salary --}}
+                    @if($salary->status==='draft' && auth()->user()->canEdit('salary'))
                         <form method="POST" action="{{ route('salary.validate',$salary) }}" onclick="event.stopPropagation()">
                             @csrf @method('PATCH')
                             <button class="btn btn-sm btn-success">Valider</button>
                         </form>
                     @endif
-                    @if($salary->status==='validated')
+
+                    {{-- Marquer rémunéré : nécessite la permission "edit" sur salary --}}
+                    @if($salary->status==='validated' && auth()->user()->canEdit('salary'))
                         <form method="POST" action="{{ route('salary.paid',$salary) }}" onclick="event.stopPropagation()">
                             @csrf @method('PATCH')
                             <button class="btn btn-sm btn-primary">Marquer rémunéré</button>
                         </form>
                     @endif
-                    @if($salary->status==='draft')
+
+                    {{-- Supprimer : nécessite la permission "delete" sur salary, brouillon uniquement --}}
+                    @if($salary->status==='draft' && auth()->user()->canDelete('salary'))
                         <form method="POST" action="{{ route('salary.destroy',$salary) }}"
                               onsubmit="return confirm('Supprimer ce bulletin ?')" onclick="event.stopPropagation()">
                             @csrf @method('DELETE')
@@ -166,12 +170,19 @@
                         </form>
                     @endif
 
-                    {{-- Modification : autorisée même si le bulletin est déjà
-                         validé ou payé, réservée aux admins. --}}
+                    {{-- Modifier : admin toujours autorisé (même bulletin verrouillé) ;
+                         RH avec permission "edit" autorisé uniquement sur les brouillons,
+                         car le contrôleur bloque toute modification d'un bulletin
+                         validé/payé pour les non-admins. --}}
                     @if(auth()->user()->isAdmin())
                         <a href="{{ route('salary.create', [$employee, 'month'=>$salary->month, 'year'=>$salary->year]) }}"
                            class="btn btn-sm btn-outline" onclick="event.stopPropagation()"
                            title="Modifier ce bulletin (même si validé/payé)">
+                            Modifier
+                        </a>
+                    @elseif(auth()->user()->canEdit('salary') && $salary->status === 'draft')
+                        <a href="{{ route('salary.create', [$employee, 'month'=>$salary->month, 'year'=>$salary->year]) }}"
+                           class="btn btn-sm btn-outline" onclick="event.stopPropagation()">
                             Modifier
                         </a>
                     @endif

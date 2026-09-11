@@ -196,7 +196,7 @@ unset($__errorArgs, $__bag); ?>
                   <div class="sa-cell-muted">créée par <?php echo e($task->owner->name); ?></div>
                 <?php endif; ?>
               </td>
-              <td class="sa-cell-muted"><?php echo e($task->project->name); ?></td>
+              <td class="sa-cell-muted"><?php echo e($task->project->name ?? '—'); ?></td>
               <td>
                 <span style="display:flex; align-items:center; gap:6px;">
                   <span class="sa-avatar"><?php echo e(strtoupper(substr($task->assignee->name ?? '?', 0, 1))); ?></span>

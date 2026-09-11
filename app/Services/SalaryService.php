@@ -15,81 +15,80 @@ class SalaryService
     public function __construct(private PayrollService $payrollService) {}
 
     public function getIndexData(Request $request): array
-    {
-        $month      = (int) $request->get('month', now()->month);
-        $year       = (int) $request->get('year',  now()->year);
-        $status     = $request->get('status');
-        $search     = $request->get('search');
-        $department = $request->get('department');
+{
+    $month      = (int) $request->get('month', now()->month);
+    $year       = (int) $request->get('year',  now()->year);
+    $status     = $request->get('status');
+    $search     = $request->get('search');
+    $department = $request->get('department');
 
-        $period       = $this->resolvePeriod($request->get('date_debut'), $request->get('date_fin'), $month, $year);
-        $periodesMois = $period['periodesMois'];
+    $period       = $this->resolvePeriod($request->get('date_debut'), $request->get('date_fin'), $month, $year);
+    $periodesMois = $period['periodesMois'];
 
-        $employees = $this->buildEmployeeQuery($periodesMois, $status, $search, $department)
-            ->orderByRaw("CONCAT(first_name, ' ', last_name) ASC")
-            ->paginate(50);
+    $employees = $this->buildEmployeeQuery($periodesMois, $status, $search, $department)
+        ->orderByRaw("CONCAT(first_name, ' ', last_name) ASC")
+        ->paginate(50);
 
-        $summary     = $this->getSummaryPeriode($periodesMois, $status);
-        $departments = Department::names();
+    $summary     = $this->getSummaryPeriode($periodesMois, $status, $department, $search);
+    $departments = Department::names();
 
-        return [
-            'employees'    => $employees,
-            'month'        => $month,
-            'year'         => $year,
-            'summary'      => $summary,
-            'status'       => $status,
-            'search'       => $search,
-            'department'   => $department,
-            'departments'  => $departments,
-            'dateDebut'    => $period['dateDebut'],
-            'dateFin'      => $period['dateFin'],
-            'periodesMois' => $periodesMois,
-        ];
+    return [
+        'employees'    => $employees,
+        'month'        => $month,
+        'year'         => $year,
+        'summary'      => $summary,
+        'status'       => $status,
+        'search'       => $search,
+        'department'   => $department,
+        'departments'  => $departments,
+        'dateDebut'    => $period['dateDebut'],
+        'dateFin'      => $period['dateFin'],
+        'periodesMois' => $periodesMois,
+    ];
+}
+
+public function getExportPdfData(Request $request): array
+{
+    $month      = (int) $request->get('month', now()->month);
+    $year       = (int) $request->get('year',  now()->year);
+    $status     = $request->get('status');
+    $department = $request->get('department');
+
+    $period       = $this->resolvePeriod($request->get('date_debut'), $request->get('date_fin'), $month, $year);
+    $periodesMois = $period['periodesMois'];
+    $dateDebut    = $period['dateDebut'];
+    $dateFin      = $period['dateFin'];
+
+    // Note : contrairement à index(), l'export PDF n'applique pas de filtre "search".
+    $allEmployees = $this->buildEmployeeQuery($periodesMois, $status, null, $department)
+        ->orderByRaw("CONCAT(first_name, ' ', last_name) ASC")
+        ->get();
+
+    $summary = $this->getSummaryPeriode($periodesMois, $status, $department);
+
+    if ($dateDebut && $dateFin) {
+        $periodLabel = Carbon::parse($dateDebut)->locale('fr')->isoFormat('D MMM YYYY')
+            . ' → '
+            . Carbon::parse($dateFin)->locale('fr')->isoFormat('D MMM YYYY');
+    } else {
+        $periodLabel = ucfirst(
+            Carbon::create($year, $month)->locale('fr')->isoFormat('MMMM YYYY')
+        );
     }
 
-    public function getExportPdfData(Request $request): array
-    {
-        $month      = (int) $request->get('month', now()->month);
-        $year       = (int) $request->get('year',  now()->year);
-        $status     = $request->get('status');
-        $department = $request->get('department');
-
-        $period       = $this->resolvePeriod($request->get('date_debut'), $request->get('date_fin'), $month, $year);
-        $periodesMois = $period['periodesMois'];
-        $dateDebut    = $period['dateDebut'];
-        $dateFin      = $period['dateFin'];
-
-        // Note : contrairement à index(), l'export PDF n'applique pas de filtre "search".
-        $allEmployees = $this->buildEmployeeQuery($periodesMois, $status, null, $department)
-            ->orderByRaw("CONCAT(first_name, ' ', last_name) ASC")
-            ->get();
-
-        $summary = $this->getSummaryPeriode($periodesMois, $status);
-
-        if ($dateDebut && $dateFin) {
-            $periodLabel = Carbon::parse($dateDebut)->locale('fr')->isoFormat('D MMM YYYY')
-                . ' → '
-                . Carbon::parse($dateFin)->locale('fr')->isoFormat('D MMM YYYY');
-        } else {
-            $periodLabel = ucfirst(
-                Carbon::create($year, $month)->locale('fr')->isoFormat('MMMM YYYY')
-            );
-        }
-
-        return [
-            'allEmployees' => $allEmployees,
-            'summary'      => $summary,
-            'periodLabel'  => $periodLabel,
-            'month'        => $month,
-            'year'         => $year,
-            'department'   => $department,
-            'status'       => $status,
-            'dateDebut'    => $dateDebut,
-            'dateFin'      => $dateFin,
-            'tenant'       => auth()->user()?->tenant,
-        ];
-    }
-
+    return [
+        'allEmployees' => $allEmployees,
+        'summary'      => $summary,
+        'periodLabel'  => $periodLabel,
+        'month'        => $month,
+        'year'         => $year,
+        'department'   => $department,
+        'status'       => $status,
+        'dateDebut'    => $dateDebut,
+        'dateFin'      => $dateFin,
+        'tenant'       => auth()->user()?->tenant,
+    ];
+}
 
     public function getEmployeeSalaries(Employee $employee): Collection
     {
@@ -410,16 +409,29 @@ class SalaryService
     /**
      * Summary agrégé sur plusieurs mois (ou délégué à PayrollService pour un seul mois).
      */
-    private function getSummaryPeriode(array $periodesMois, ?string $status = null): array
-    {
-        if (count($periodesMois) === 1) {
-            return $this->payrollService->getMonthlySummary(
-                $periodesMois[0]['month'],
-                $periodesMois[0]['year']
-            );
-        }
+    private function getSummaryPeriode(array $periodesMois, ?string $status = null, ?string $department = null, ?string $search = null): array
+{
+    if (count($periodesMois) === 1 && !$department && !$search) {
+        return $this->payrollService->getMonthlySummary(
+            $periodesMois[0]['month'],
+            $periodesMois[0]['year']
+        );
+    }
 
-        $query = Salary::where(function ($q) use ($periodesMois) {
+    $query = Salary::query()
+        ->whereHas('employee', function ($q) use ($department, $search) {
+            if ($department) {
+                $q->where('department', $department);
+            }
+            if ($search) {
+                $q->where(function ($sub) use ($search) {
+                    $sub->where('first_name', 'like', "%$search%")
+                        ->orWhere('last_name',  'like', "%$search%")
+                        ->orWhere('matricule',  'like', "%$search%");
+                });
+            }
+        })
+        ->where(function ($q) use ($periodesMois) {
             foreach ($periodesMois as $pm) {
                 $q->orWhere(function ($inner) use ($pm) {
                     $inner->where('month', $pm['month'])->where('year', $pm['year']);
@@ -427,23 +439,23 @@ class SalaryService
             }
         });
 
-        if ($status) {
-            $query->where('status', $status);
-        }
-
-        $salaries = $query->get();
-
-        return [
-            'total_gross'         => $salaries->sum('gross_salary'),
-            'total_net'           => $salaries->sum('net_salary'),
-            'total_cnss_sal'      => $salaries->sum('cnss_deduction'),
-            'total_amo_sal'       => $salaries->sum('amo_deduction'),
-            'total_ir'            => $salaries->sum('ir_deduction'),
-            'total_employer_cost' => $salaries->sum('employer_total_cost'),
-            'count'               => $salaries->count(),
-            'count_draft'         => $salaries->where('status', 'draft')->count(),
-            'count_validated'     => $salaries->where('status', 'validated')->count(),
-            'count_paid'          => $salaries->where('status', 'paid')->count(),
-        ];
+    if ($status) {
+        $query->where('status', $status);
     }
+
+    $salaries = $query->get();
+
+    return [
+        'total_gross'         => $salaries->sum('gross_salary'),
+        'total_net'           => $salaries->sum('net_salary'),
+        'total_cnss_sal'      => $salaries->sum('cnss_deduction'),
+        'total_amo_sal'       => $salaries->sum('amo_deduction'),
+        'total_ir'            => $salaries->sum('ir_deduction'),
+        'total_employer_cost' => $salaries->sum('employer_total_cost'),
+        'count'               => $salaries->count(),
+        'count_draft'         => $salaries->where('status', 'draft')->count(),
+        'count_validated'     => $salaries->where('status', 'validated')->count(),
+        'count_paid'          => $salaries->where('status', 'paid')->count(),
+    ];
+}
 }

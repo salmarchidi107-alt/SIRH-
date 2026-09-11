@@ -7,14 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * Middleware CheckModulePermission
- *
- * Usage : ->middleware('permission:employees,view')
- *
- * - superadmin / admin → accès total sans consultation de la base
- * - rh / employee      → vérifie la table user_permissions
- */
+
 class CheckModulePermission
 {
     public function handle(Request $request, Closure $next, string $module, string $action = 'view'): Response

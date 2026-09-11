@@ -30,6 +30,9 @@ class AbsenceService
     // =========================================================================
     public function getIndexData(Request $request): array
     {
+        // Récupérer le nombre d'éléments par page (par défaut 20)
+        $perPage = $request->get('per_page', 20000);
+
         $query = Absence::with([
             'employee:id,first_name,last_name,matricule,department',
             'replacement:id,first_name,last_name,matricule,department',
@@ -49,7 +52,8 @@ class AbsenceService
                     ->orWhere('last_name', 'like', "%{$request->search}%");
               }));
 
-        $absences = $query->latest()->paginate(20);
+        // Utiliser la pagination dynamique
+        $absences = $query->latest()->paginate($perPage);
 
         $employeesQuery = Employee::active()
             ->when(auth()->user()->isEmployee(), fn ($q) => $q->where('id', auth()->user()->employee_id))

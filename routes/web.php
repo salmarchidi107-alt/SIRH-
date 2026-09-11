@@ -213,13 +213,10 @@ Route::middleware(['web', 'auth', 'identify-tenant', '2fa'])->group(function () 
 
         // ── Salary — lecture
         Route::prefix('salary')->name('salary.')->group(function () {
-            Route::get('/{salary}/pdf', [SalaryController::class, 'pdf'])
-                ->where('salary', '[0-9]+')
-                ->name('pdf');
-            Route::get('/{employee}',   [SalaryController::class, 'show'])
-                ->where('employee', '[0-9]+')
-                ->name('show');
-        });
+            Route::get('/{salary}/pdf', [SalaryController::class, 'pdf']) ->where('salary', '[0-9]+') ->name('pdf');
+            Route::get('/{employee}',   [SalaryController::class, 'show']) ->where('employee', '[0-9]+') ->name('show');
+});
+        Route::post('/salaries/copy-previous-month', [SalaryController::class, 'copyPreviousMonth']) ->name('salary.copyPreviousMonth');
 
         // ── Vue d'ensemble temps
         Route::get('/temps/vue-ensemble', [VueEnsembleController::class, 'index'])
@@ -244,18 +241,19 @@ Route::middleware(['web', 'auth', 'identify-tenant', '2fa'])->group(function () 
         });
 
         // ── Salary — rh + admin
-        Route::prefix('salary')->name('salary.')->middleware(['role:admin,rh'])->group(function () {
-            Route::get('/',              [SalaryController::class, 'index'])       ->name('index');
-            Route::get('/export',        [SalaryController::class, 'export'])      ->name('export');
-            Route::get('/export-pdf',    [SalaryController::class, 'exportPdf'])   ->name('export-pdf');
-            Route::get('/setting',       [SalaryController::class, 'setting'])     ->name('setting');
-            Route::post('/generate-all', [SalaryController::class, 'generateAll']) ->name('generate-all');
-            Route::get('/{employee}/create',   [SalaryController::class, 'create'])         ->name('create')  ->where('employee', '[0-9]+');
-            Route::post('/{employee}',         [SalaryController::class, 'store'])          ->name('update')  ->where('employee', '[0-9]+');
-            Route::patch('/{salary}/validate', [SalaryController::class, 'validateSalary']) ->name('validate')->where('salary', '[0-9]+');
-            Route::patch('/{salary}/paid',     [SalaryController::class, 'markPaid'])       ->name('paid')    ->where('salary', '[0-9]+');
-            Route::delete('/{salary}',         [SalaryController::class, 'destroy'])        ->name('destroy') ->where('salary', '[0-9]+');
-        });
+Route::prefix('salary')->name('salary.')->middleware(['role:admin,rh'])->group(function () {
+    Route::get('/',              [SalaryController::class, 'index'])       ->name('index');
+    Route::get('/export',        [SalaryController::class, 'export'])      ->name('export');
+    Route::get('/export-pdf',    [SalaryController::class, 'exportPdf'])   ->name('export-pdf');
+    Route::get('/setting',       [SalaryController::class, 'setting'])     ->name('setting');
+    Route::post('/generate-all', [SalaryController::class, 'generateAll']) ->name('generate-all');
+    Route::get('/{employee}/create',   [SalaryController::class, 'create'])         ->name('create')  ->where('employee', '[0-9]+');
+    Route::post('/{employee}',         [SalaryController::class, 'store'])          ->name('store')   ->where('employee', '[0-9]+');
+    Route::put('/{employee}',          [SalaryController::class, 'update'])         ->name('update')  ->where('employee', '[0-9]+');
+    Route::patch('/{salary}/validate', [SalaryController::class, 'validateSalary']) ->name('validate')->where('salary', '[0-9]+');
+    Route::patch('/{salary}/paid',     [SalaryController::class, 'markPaid'])       ->name('paid')    ->where('salary', '[0-9]+');
+    Route::delete('/{salary}',         [SalaryController::class, 'destroy'])        ->name('destroy') ->where('salary', '[0-9]+');
+});
 
         // ── Absences approve/reject — rh + admin
         Route::prefix('absences')->name('absences.')->middleware(['role:admin,rh'])->group(function () {
@@ -509,12 +507,12 @@ Route::middleware(['auth'])->group(function () {
     // ═══════════════════════════════════════════════════════════════════
     Route::prefix('mes-activites')->name('activites.')->group(function () {
 
-        // Onglet 1 : Mes tâches
+        // Mes tâches
         Route::get('/mes-taches', [MyTaskController::class, 'index'])->name('my-tasks.index');
         Route::post('/mes-taches', [MyTaskController::class, 'store'])->name('my-tasks.store');
         Route::patch('/mes-taches/{task}', [MyTaskController::class, 'update'])->name('my-tasks.update');
 
-        // Onglet 2 : Saisie de temps (fonctionnalité principale du module)
+        //  Saisie de temps (fonctionnalité principale du module)
         Route::get('/saisie-temps', [TimeEntryController::class, 'index'])->name('time-entries.index');
         Route::post('/saisie-temps', [TimeEntryController::class, 'store'])->name('time-entries.store');
         Route::delete('/saisie-temps/{activity}', [TimeEntryController::class, 'destroy'])->name('time-entries.destroy');
@@ -522,14 +520,14 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // ═══════════════════════════════════════════════════════════════════
-    // ESPACE ADMIN / RH — 3 onglets
+    // ESPACE ADMIN / RH
     // ═══════════════════════════════════════════════════════════════════
     Route::prefix('admin/activites')->name('activites.admin.')->middleware(['role:admin,rh'])->group(function () {
 
-        // Onglet 1 : État d'avancement
+        // État d'avancement
         Route::get('/', [ActivitesAdminDashboardController::class, 'index'])->name('dashboard');
 
-        // Onglet 2 : Projets
+        //  Projets
         Route::get('/projets', [ActivitesAdminProjectController::class, 'index'])->name('projects.index');
         Route::get('/projets/export-pdf', [ActivitesAdminProjectController::class, 'exportPdf'])->name('projects.export-pdf');
         Route::get('/projets/export-excel', [ActivitesAdminProjectController::class, 'exportExcel'])->name('projects.export-excel');
@@ -538,7 +536,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/projets/{project}', [ActivitesAdminProjectController::class, 'update'])->name('projects.update');
         Route::delete('/projets/{project}', [ActivitesAdminProjectController::class, 'destroy'])->name('projects.destroy');
 
-        // Onglet 3 : Tâches
+        // Tâches
         Route::get('/taches', [ActivitesAdminTaskController::class, 'index'])->name('tasks.index');
         Route::get('/taches/export-pdf', [ActivitesAdminTaskController::class, 'exportPdf'])->name('tasks.export-pdf');
         Route::get('/taches/export-excel', [ActivitesAdminTaskController::class, 'exportExcel'])->name('tasks.export-excel');

@@ -67,6 +67,21 @@
             <button type="submit" class="btn btn-ghost">Filtrer</button>
         </form>
 
+        {{-- ── Reprendre les bulletins du mois précédent ──
+             Volontairement restreint aux admins uniquement, en cohérence
+             avec le blocage du même nom dans SalaryController::copyPreviousMonth() --}}
+        {{-- ── Reprendre les bulletins du mois précédent ── --}}
+        {{-- ── Reprendre les bulletins du mois précédent ── --}}
+@if(! auth()->user()->isEmployee())
+<form action="{{ route('salary.copyPreviousMonth') }}" method="POST"
+      onsubmit="return confirm('Copier les bulletins du mois précédent pour tous les employés sans saisie ce mois-ci ?');"
+      style="display:inline">
+    @csrf
+    <input type="hidden" name="month" value="{{ $month }}">
+    <input type="hidden" name="year"  value="{{ $year }}">
+    <button type="submit" class="btn btn-ghost">Reprendre le mois précédent</button>
+</form>
+@endif
 
         <a href="{{ route('variables.index', ['month'=>$month,'year'=>$year]) }}" class="btn btn-ghost">
             Éléments variables
@@ -77,6 +92,18 @@
         </a>
     </div>
 </div>
+
+{{-- ── Bulletins non copiés lors de la reprise du mois précédent ── --}}
+@if(session('errors_copy') && count(session('errors_copy')) > 0)
+<div class="alert alert-warning mb-4">
+    <strong>Certains bulletins n'ont pas pu être copiés :</strong>
+    <ul style="margin:6px 0 0 18px">
+        @foreach(session('errors_copy') as $err)
+            <li>{{ $err }}</li>
+        @endforeach
+    </ul>
+</div>
+@endif
 
 {{-- ── Badge filtre actif ── --}}
 @if($dateDebut && $dateFin)
@@ -195,7 +222,7 @@
                         <th>IR</th>
                         <th style="color:var(--success)">Net à payer</th>
                         <th>Statut</th>
-                        @if(auth()->user()->role !== 'rh')
+                        @if(!auth()->user()->isEmployee())
                         <th>Actions</th>
                         @endif
                     </tr>
@@ -215,12 +242,11 @@
                                 <td>{{ number_format($emp->base_salary,0,',',' ') }}</td>
                                 <td>—</td><td>—</td><td>—</td><td>—</td>
                                 <td><span class="badge badge-secondary">Non généré</span></td>
-                                {{-- rh : aucune des actions (Saisir/Historique/PDF), consultation uniquement --}}
-                                @if(auth()->user()->role !== 'rh')
+                                @if(!auth()->user()->isEmployee())
                                 <td>
-                                    @unless(auth()->user()->isEmployee())
+                                    @if(auth()->user()->canCreate('salary'))
                                     <a href="{{ route('salary.create', [$emp,'month'=>$month,'year'=>$year]) }}" class="btn btn-sm btn-primary">Saisir</a>
-                                    @endunless
+                                    @endif
                                     <a href="{{ route('salary.show', $emp) }}" class="btn btn-sm btn-ghost">Historique</a>
                                 </td>
                                 @endif
@@ -310,14 +336,13 @@
                                     </div>
                                 </td>
 
-                                {{-- rh : aucune des actions (Saisir/Historique/PDF), consultation uniquement --}}
-                                @if(auth()->user()->role !== 'rh')
+                                @if(!auth()->user()->isEmployee())
                                 <td>
                                     <div style="display:flex;gap:4px">
-                                        @unless(auth()->user()->isEmployee())
+                                        @if(auth()->user()->canCreate('salary') || auth()->user()->canEdit('salary'))
                                         <a href="{{ route('salary.create', [$emp,'month'=>$sal->month,'year'=>$sal->year]) }}"
                                            class="btn btn-sm btn-primary">Saisir</a>
-                                        @endunless
+                                        @endif
                                         <a href="{{ route('salary.show', $emp) }}" class="btn btn-sm btn-ghost">Historique</a>
                                         <a href="{{ route('salary.pdf', $sal) }}" class="btn btn-sm btn-ghost">PDF</a>
                                     </div>
@@ -337,7 +362,7 @@
             </table>
         </div>
 
-        {{-- ── Pagination custom en français (remplace ->links() par défaut) ── --}}
+        {{-- ── Pagination custom en français ── --}}
         @if($employees->hasPages())
         @php
             $currentPage = $employees->currentPage();
@@ -350,14 +375,12 @@
             Affichage de {{ $employees->firstItem() }} à {{ $employees->lastItem() }} sur {{ $employees->total() }} employés
         </div>
         <div class="custom-pagination">
-            {{-- Précédent --}}
             @if($employees->onFirstPage())
                 <span class="page-btn disabled">‹ Précédent</span>
             @else
                 <a href="{{ $employees->appends(request()->query())->previousPageUrl() }}" class="page-btn">‹ Précédent</a>
             @endif
 
-            {{-- Première page + ellipsis --}}
             @if($rangeStart > 1)
                 <a href="{{ $employees->appends(request()->query())->url(1) }}" class="page-btn">1</a>
                 @if($rangeStart > 2)
@@ -365,7 +388,6 @@
                 @endif
             @endif
 
-            {{-- Pages autour de la page courante --}}
             @for($p = $rangeStart; $p <= $rangeEnd; $p++)
                 @if($p == $currentPage)
                     <span class="page-btn active">{{ $p }}</span>
@@ -374,7 +396,6 @@
                 @endif
             @endfor
 
-            {{-- Ellipsis + dernière page --}}
             @if($rangeEnd < $lastPage)
                 @if($rangeEnd < $lastPage - 1)
                     <span class="page-dots">…</span>
@@ -382,7 +403,6 @@
                 <a href="{{ $employees->appends(request()->query())->url($lastPage) }}" class="page-btn">{{ $lastPage }}</a>
             @endif
 
-            {{-- Suivant --}}
             @if($employees->hasMorePages())
                 <a href="{{ $employees->appends(request()->query())->nextPageUrl() }}" class="page-btn">Suivant ›</a>
             @else
@@ -411,7 +431,6 @@ function applyLabels() {
     document.getElementById('btnMRU').classList.toggle('active', currentCurrency === 'MRU');
 }
 
-// Applique au chargement
 applyLabels();
 </script>
 

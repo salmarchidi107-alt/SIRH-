@@ -131,14 +131,15 @@ class AbsenceController extends Controller
     }
 
     public function countersExport(Request $request)
-    {
-        $countersData = $this->counterService->buildCountersData($request);
+{
+    $countersData = $this->counterService->buildCountersData($request);
+    $year = $request->get('year', now()->year);
 
-        return Excel::download(
-            new CountersExport($countersData),
-            'compteurs_absences_' . now()->format('Y-m-d') . '.xlsx'
-        );
-    }
+    return Excel::download(
+        new CountersExport($countersData, $year),
+        'compteurs_absences_' . now()->format('Y-m-d') . '.xlsx'
+    );
+}
 
     public function droitsExport(Request $request)
     {

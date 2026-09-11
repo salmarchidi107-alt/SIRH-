@@ -19,9 +19,7 @@ class PlanningService
     // INDEX
     // =========================================================================
 
-    /**
-     * Construit toutes les données nécessaires à la vue planning.index.
-     */
+
     public function getIndexData(Request $request): array
     {
         $month      = $request->month ?? now()->month;
@@ -53,9 +51,7 @@ class PlanningService
     // WEEKLY
     // =========================================================================
 
-    /**
-     * Construit toutes les données nécessaires à la vue planning.weekly.
-     */
+
     public function getWeeklyData(Request $request, $authUser): array
     {
         $rooms      = Room::all();
@@ -98,9 +94,7 @@ class PlanningService
     // MONTHLY
     // =========================================================================
 
-    /**
-     * Construit toutes les données nécessaires à la vue planning.monthly.
-     */
+
     public function getMonthlyData(Request $request, $authUser): array
     {
         $month      = $request->month      ?? now()->month;
@@ -205,10 +199,6 @@ class PlanningService
     // EXPORT PDF - PREPARATION DES DONNEES
     // =========================================================================
 
-    /**
-     * Prépare les données pour l'export PDF hebdomadaire.
-     * Le contrôleur se charge de l'appel à Pdf::loadView()->download().
-     */
     public function getWeeklyPdfData(Request $request): array
     {
         $week       = $request->week ?? now()->weekOfYear;
@@ -252,9 +242,7 @@ class PlanningService
         ];
     }
 
-    /**
-     * Prépare les données pour l'export PDF mensuel.
-     */
+
     public function getMonthlyPdfData(Request $request): array
     {
         $month      = $request->month      ?? now()->month;
@@ -294,11 +282,8 @@ class PlanningService
     // EXPORT EXCEL - PREPARATION DES EXPORTS
     // =========================================================================
 
-    /**
-     * Prépare l'export Excel mensuel (instance Export + nom de fichier).
-     * Le contrôleur se charge de l'appel à Excel::download().
-     */
-    public function getMonthlyExcelExport(Request $request, int $tenantId): array
+
+    public function getMonthlyExcelExport(Request $request, string $tenantId): array
     {
         $month    = (int) ($request->month ?? now()->month);
         $year     = (int) ($request->year  ?? now()->year);
@@ -317,10 +302,8 @@ class PlanningService
         ];
     }
 
-    /**
-     * Prépare l'export Excel hebdomadaire (instance Export + nom de fichier).
-     */
-    public function getWeeklyExcelExport(Request $request, int $tenantId): array
+
+    public function getWeeklyExcelExport(Request $request, string $tenantId): array
     {
         $week     = (int) ($request->week ?? now()->weekOfYear);
         $year     = (int) ($request->year ?? now()->year);
@@ -343,15 +326,7 @@ class PlanningService
     // FILTER EMPLOYEES
     // =========================================================================
 
-    /**
-     * Filtre les employés actifs.
-     *
-     * Le filtre salle ne s'active que si $roomId est fourni ET $showAllRooms = false.
-     * Dans weekly(), $showAllRooms = empty($roomId), donc quand une salle est
-     * sélectionnée $showAllRooms = false → le filtre s'applique.
-     *
-     * La colonne `room` dans plannings stocke le NOM de la salle (texte).
-     */
+
     public function filterEmployees(
         ?string $search,
         ?string $department,
@@ -389,12 +364,7 @@ class PlanningService
     // GET DEPARTMENTS
     // =========================================================================
 
-    /**
-     * Retourne la liste des départements.
-     *
-     * Utilise la table departments si elle existe et contient des données,
-     * sinon retombe sur les départements distincts dans la table employees.
-     */
+
     public function getDepartments(): Collection
     {
         // Essayer d'abord la table departments
@@ -556,9 +526,7 @@ class PlanningService
     // HELPERS PRIVES — filtrage shift_type (réutilisés par les exports PDF)
     // =========================================================================
 
-    /**
-     * Filtre absence / sans_shift / shift_type simple, utilisé par l'export PDF hebdomadaire.
-     */
+
     private function applyWeeklyShiftTypeFilter(Collection $employees, Collection $plannings, ?string $shiftType, Carbon $start, Carbon $end): array
     {
         if ($shiftType === 'absence') {

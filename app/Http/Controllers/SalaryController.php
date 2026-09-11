@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\Salary;
 use App\Services\SalaryService;
+use App\Services\PayrollService;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Exports\SalariesExport;
@@ -18,12 +19,16 @@ class SalaryController extends Controller
 
     public function index(Request $request)
     {
+        abort_unless(auth()->user()->canView('salary'), 403);
+
         return view('salary.index', $this->salaryService->getIndexData($request));
     }
 
 
     public function exportPdf(Request $request)
     {
+        abort_unless(auth()->user()->canView('salary'), 403);
+
         $data = $this->salaryService->getExportPdfData($request);
 
         $pdf = Pdf::loadView('salary.export_pdf', $data)
@@ -41,6 +46,8 @@ class SalaryController extends Controller
 
     public function show(Employee $employee)
     {
+        abort_unless(auth()->user()->canView('salary'), 403);
+
         if (auth()->user()->isEmployee() && auth()->user()->employee_id !== $employee->id) {
             abort(403);
         }
@@ -53,6 +60,8 @@ class SalaryController extends Controller
 
     public function create(Employee $employee, Request $request)
     {
+        abort_unless(auth()->user()->canCreate('salary') || auth()->user()->canEdit('salary'), 403);
+
         $month = (int) $request->get('month', now()->month);
         $year  = (int) $request->get('year',  now()->year);
 
@@ -74,6 +83,17 @@ class SalaryController extends Controller
 
     private function _upsert(Request $request, Employee $employee)
     {
+        $existing = $employee->salaries()
+            ->where('month', $request->input('month'))
+            ->where('year', $request->input('year'))
+            ->exists();
+
+        $allowed = $existing
+            ? auth()->user()->canEdit('salary')
+            : auth()->user()->canCreate('salary');
+
+        abort_unless($allowed, 403);
+
         $data = $request->validate([
             'month'                    => 'required|integer|min:1|max:12',
             'year'                     => 'required|integer|min:2000',
@@ -149,6 +169,7 @@ class SalaryController extends Controller
     public function validateSalary(Salary $salary)
     {
         abort_if(auth()->user()->isEmployee(), 403);
+        abort_unless(auth()->user()->canEdit('salary'), 403);
         abort_if($salary->status !== 'draft', 403, 'Ce bulletin ne peut pas etre valide.');
 
         $this->salaryService->markValidated($salary);
@@ -160,6 +181,7 @@ class SalaryController extends Controller
     public function markPaid(Salary $salary)
     {
         abort_if(auth()->user()->isEmployee(), 403);
+        abort_unless(auth()->user()->canEdit('salary'), 403);
         abort_if($salary->status !== 'validated', 403, "Valider d'abord le bulletin.");
 
         $this->salaryService->markAsPaid($salary);
@@ -170,6 +192,7 @@ class SalaryController extends Controller
 
     public function destroy(Salary $salary)
     {
+        abort_unless(auth()->user()->canDelete('salary'), 403);
         abort_if($salary->status !== 'draft', 403, 'Seuls les bulletins brouillon peuvent etre supprimes.');
 
         $employee = $this->salaryService->deleteSalary($salary);
@@ -181,6 +204,8 @@ class SalaryController extends Controller
 
     public function pdf(Salary $salary)
     {
+        abort_unless(auth()->user()->canView('salary'), 403);
+
         if (auth()->user()->isEmployee() && auth()->user()->employee_id !== $salary->employee_id) {
             abort(403);
         }
@@ -196,6 +221,8 @@ class SalaryController extends Controller
 
     public function generateAll(Request $request)
     {
+        abort_unless(auth()->user()->canCreate('salary'), 403);
+
         $request->validate([
             'month' => 'required|integer|min:1|max:12',
             'year'  => 'required|integer|min:2000',
@@ -208,8 +235,50 @@ class SalaryController extends Controller
             ->with('success', 'Generation des paies lancee en arriere-plan.');
     }
 
+
+    /**
+     * Reprend les bulletins du mois précédent pour tous les employés
+     * qui n'ont pas encore de saisie pour le mois demandé. Les
+     * éléments fixes (primes, indemnités, retenues récurrentes, mode
+     * de cotisation) sont copiés ; les heures (pointage, HS, absences,
+     * retards, gardes) sont toujours recalculées depuis les données
+     * réelles du mois courant — jamais copiées.
+     *
+     * PayrollService est injecté ici via l'injection de méthode
+     * Laravel plutôt que dans le constructeur, pour ne pas toucher au
+     * reste du contrôleur qui repose sur SalaryService.
+     */
+
+
+    public function copyPreviousMonth(Request $request, PayrollService $payroll)
+{
+    abort_if(auth()->user()->isEmployee(), 403);
+
+    $request->validate([
+        'month' => 'required|integer|min:1|max:12',
+        'year'  => 'required|integer|min:2000',
+    ]);
+
+    $month = (int) $request->input('month');
+    $year  = (int) $request->input('year');
+
+    $result = $payroll->copyAllFromPreviousMonth($month, $year);
+
+    $message = "{$result['copied']} bulletin(s) repris du mois précédent.";
+    if ($result['skipped'] > 0) {
+        $message .= " {$result['skipped']} déjà existant(s) ou sans historique — ignoré(s).";
+    }
+
+    return redirect()
+        ->route('salary.index', ['month' => $month, 'year' => $year])
+        ->with('success', $message)
+        ->with('errors_copy', $result['errors']);
+}
+
     public function export()
     {
+        abort_unless(auth()->user()->canView('salary'), 403);
+
         return Excel::download(new SalariesExport, 'salaires.xlsx');
     }
 }

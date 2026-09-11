@@ -44,7 +44,7 @@ class EmployeeService
     // LISTING / AJAX
     // =========================================================================
 
-    public function getPaginatedEmployees(Request $request, int $perPage = 100)
+    public function getPaginatedEmployees(Request $request, int $perPage = 1000)
     {
         return $this->buildQuery($request)
             ->with(['user', 'absences'])
@@ -517,11 +517,7 @@ class EmployeeService
         return ['doc_casier_path', 'doc_rib_path', 'doc_diplomes_path', 'doc_cin_path', 'doc_contrat_path'];
     }
 
-    /**
-     * Persiste les permissions du formulaire pour un utilisateur donné.
-     * ⚠️ Cette méthode ne doit être appelée que si l'utilisateur courant
-     * est Admin — la vérification est faite par les appelants.
-     */
+
     private function savePermissions(User $user, array $rawPerms): void
 {
     UserPermission::withoutTenantScope()
@@ -591,21 +587,45 @@ class EmployeeService
     }
 
     private function buildQuery(Request $request)
-    {
-        return Employee::query()
-            ->when($request->get('filter') === 'active', fn ($q) => $q->active())
-            ->when($request->get('filter') === 'inactive', fn ($q) => $q->status('inactive'))
-            ->when($request->search, function ($q, $search) {
-                $q->where(function ($q) use ($search) {
-                    $q->where('first_name', 'like', "%$search%")
-                      ->orWhere('last_name', 'like', "%$search%")
-                      ->orWhere('matricule', 'like', "%$search%")
-                      ->orWhere('email', 'like', "%$search%");
-                });
-            })
-            ->when($request->department, fn ($q, $dep) => $q->where('department', $dep))
-            ->when($request->status, fn ($q, $status) => $q->status($status));
-    }
+{
+    $search = trim((string) $request->input('search', ''));
+
+    return Employee::query()
+        ->when(
+            $request->input('filter') === 'active',
+            fn ($q) => $q->active()
+        )
+        ->when(
+            $request->input('filter') === 'inactive',
+            fn ($q) => $q->status('inactive')
+        )
+        ->when($search !== '', function ($q) use ($search) {
+            $like = '%' . $search . '%';
+
+            $q->where(function ($q) use ($like) {
+                $q->where('first_name', 'like', $like)
+                    ->orWhere('last_name', 'like', $like)
+                    ->orWhere('matricule', 'like', $like)
+                    ->orWhere('email', 'like', $like)
+                    ->orWhereRaw(
+                        "CONCAT(first_name, ' ', last_name) LIKE ?",
+                        [$like]
+                    )
+                    ->orWhereRaw(
+                        "CONCAT(last_name, ' ', first_name) LIKE ?",
+                        [$like]
+                    );
+            });
+        })
+        ->when(
+            $request->filled('department'),
+            fn ($q) => $q->where('department', $request->input('department'))
+        )
+        ->when(
+            $request->filled('status'),
+            fn ($q) => $q->status($request->input('status'))
+        );
+}
 
     public function getDepartmentsList()
     {

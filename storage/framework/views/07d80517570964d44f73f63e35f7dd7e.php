@@ -53,7 +53,7 @@
                 </svg>
             </div>
             <div style="flex: 1;">
-                <div style="font-weight: 600; font-size: 0.9rem;">⚠️ Conflits d'absences détectés ce mois</div>
+                <div style="font-weight: 600; font-size: 0.9rem;"> Conflits d'absences détectés ce mois</div>
                 <div style="font-size: 0.8rem; opacity: 0.9;">
                     <?php $__currentLoopData = $conflicts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $conflict): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                         <span><?php echo e($conflict['employee']); ?> (<?php echo e($conflict['start']); ?> - <?php echo e($conflict['end']); ?>)</span><?php if(!$loop->last): ?>, <?php endif; ?>
@@ -75,7 +75,7 @@
                 </svg>
             </div>
             <div style="flex: 1;">
-                <div style="font-weight: 600; font-size: 0.9rem;">📢 Actualités récentes</div>
+                <div style="font-weight: 600; font-size: 0.9rem;">Actualités récentes</div>
                 <div style="font-size: 0.8rem; opacity: 0.9;">
                     <?php $__currentLoopData = $recentNews; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $news): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                         <span><?php echo e($news->title); ?></span><?php if(!$loop->last): ?>, <?php endif; ?>
@@ -212,7 +212,7 @@
     <!-- Pending Absences (Admin/RH only) -->
     <div class="card">
         <div class="card-header">
-            <div class="card-title">⏳ Demandes en attente</div>
+            <div class="card-title">Demandes en attente</div>
             <a href="<?php echo e(route('absences.index', ['status' => 'pending'])); ?>" class="btn btn-ghost btn-sm">Voir tout</a>
         </div>
         <div class="card-body" style="padding:0">
@@ -261,7 +261,7 @@
     <!-- Today's Planning -->
     <div class="card">
         <div class="card-header">
-            <div class="card-title">📅 Planning du jour — <?php echo e(now()->format('d F Y')); ?></div>
+            <div class="card-title">Planning du jour — <?php echo e(now()->format('d F Y')); ?></div>
             <a href="<?php echo e(route('planning.weekly')); ?>" class="btn btn-ghost btn-sm">Planning complet</a>
         </div>
         <div class="card-body" style="padding:0">
@@ -304,7 +304,7 @@
 <?php if($upcomingNews->isNotEmpty()): ?>
 <div class="card mt-6" style="border: none; box-shadow: none; background: transparent; padding: 0;">
     <div class="card-header" style="background: transparent; padding: 0 0 16px 0;">
-        <div class="card-title" style="font-size: 1.25rem; font-weight: 700;">📰 Événements à venir</div>
+        <div class="card-title" style="font-size: 1.25rem; font-weight: 700;">Événements à venir</div>
         <a href="<?php echo e(route('news.index')); ?>" class="btn btn-ghost btn-sm">Voir tout →</a>
     </div>
     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">

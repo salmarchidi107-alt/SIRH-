@@ -170,7 +170,7 @@
                   <div class="sa-cell-muted">créée par {{ $task->owner->name }}</div>
                 @endif
               </td>
-              <td class="sa-cell-muted">{{ $task->project->name }}</td>
+              <td class="sa-cell-muted">{{ $task->project->name ?? '—' }}</td>
               <td>
                 <span style="display:flex; align-items:center; gap:6px;">
                   <span class="sa-avatar">{{ strtoupper(substr($task->assignee->name ?? '?', 0, 1)) }}</span>

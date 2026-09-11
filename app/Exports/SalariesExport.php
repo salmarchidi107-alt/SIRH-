@@ -17,20 +17,22 @@ class SalariesExport implements FromCollection, WithHeadings, WithMapping
         return Salary::with('employee')->get();
     }
 
-    public function map($salary): array
-    {
-        return [
-            $salary->month_name . ' ' . $salary->year,
-            $salary->employee->matricule,
-            $salary->employee->full_name,
-            $salary->employee->department,
-            $salary->gross_salary,
-            $salary->cnss_deduction + $salary->amo_deduction,
-            $salary->ir_deduction,
-            $salary->net_salary,
-            $salary->status_label,
-        ];
-    }
+  public function map($salary): array
+{
+    $employee = $salary->employee;
+
+    return [
+        $salary->month_name . ' ' . $salary->year,
+        $employee->matricule ?? '',
+        $employee->full_name ?? '(Employé introuvable)',
+        $employee->department ?? '',
+        $salary->gross_salary,
+        $salary->cnss_deduction + $salary->amo_deduction,
+        $salary->ir_deduction,
+        $salary->net_salary,
+        $salary->status_label,
+    ];
+}
 
     public function headings(): array
     {

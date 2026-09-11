@@ -23,7 +23,7 @@ tenancy()->raw(function () {
                 ]
             );
 
-            $this->command->info('✅ Tenant Admin created: admin@' . $tenant->slug . '.local / password123');
+            $this->command->info(' Tenant Admin created: admin@' . $tenant->slug . '.local / password123');
         });
     }
 }

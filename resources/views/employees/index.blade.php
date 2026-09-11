@@ -64,7 +64,7 @@
             </svg>
             <input type="text" name="search" placeholder="Rechercher un employé..." value="{{ request('search') }}">
         </div>
-        <select name="department" class="filter-select" onchange="this.form.submit()">
+        <select name="department" class="filter-select">
             <option value="">Departements</option>
             @foreach($departments as $dept)
                 <option value="{{ $dept }}" {{ request('department') == $dept ? 'selected' : '' }}>{{ $dept }}</option>
@@ -240,27 +240,26 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Formulaire de recherche / filtre ──────────────────────
     var filterForm = document.querySelector('form[action="{{ route('employees.index') }}"]');
     if (filterForm) {
-        filterForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            searchParams = new URLSearchParams(new FormData(this));
-            ajaxEmployees(1, false);
-        });
+        filterForm.addEventListener('submit', function () {
+    // Soumission GET normale :
+    // le serveur renvoie la ligne complète générée par Blade.
+});
         filterForm.querySelectorAll('select').forEach(function(el) {
-            el.addEventListener('change', function() {
-                filterForm.dispatchEvent(new Event('submit'));
-            });
+            el.addEventListener('change', function () {
+    filterForm.submit();
+});
         });
         // Recherche en temps réel sur le champ texte
         var searchInput = filterForm.querySelector('input[name="search"]');
         if (searchInput) {
             var searchTimer;
-            searchInput.addEventListener('input', function() {
-                clearTimeout(searchTimer);
-                searchTimer = setTimeout(function() {
-                    searchParams = new URLSearchParams(new FormData(filterForm));
-                    ajaxEmployees(1, false);
-                }, 350);
-            });
+            searchInput.addEventListener('input', function () {
+    clearTimeout(searchTimer);
+
+    searchTimer = setTimeout(function () {
+        filterForm.submit();
+    }, 350);
+});
         }
     }
 

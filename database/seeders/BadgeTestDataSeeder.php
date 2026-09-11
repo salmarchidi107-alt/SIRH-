@@ -22,7 +22,7 @@ class BadgeTestDataSeeder extends Seeder
         $user = User::create([
             'name' => 'Test Badge User',
             'email' => 'test.badge@hospitalrh.local',
-            'password' => Hash::make('password123'), 
+            'password' => Hash::make('password123'),
             'role' => 'employee',
         ]);
 
@@ -41,7 +41,7 @@ class BadgeTestDataSeeder extends Seeder
             'base_salary' => 5000.00,
         ]);
 
-        echo "✅ Test badge data created:\n";
+        echo " Test badge data created:\n";
         echo "- Matricule: TEST001\n";
         echo "- PIN: 1234AB\n";
         echo "- Use at http://127.0.0.1:8000/badge/login\n";

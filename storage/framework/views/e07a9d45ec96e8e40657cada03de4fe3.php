@@ -8,10 +8,9 @@
         <h1><?php echo e($employee->full_name); ?></h1>
         <p><?php echo e($employee->department); ?> — <?php echo e($employee->position); ?></p>
     </div>
-    
     <?php if (! (auth()->user()->isEmployee())): ?>
         <div style="display:flex;gap:8px">
-            <?php if(auth()->user()->role !== 'rh'): ?>
+            <?php if(auth()->user()->canCreate('salary') || auth()->user()->canEdit('salary')): ?>
                 <a href="<?php echo e(route('salary.create', [$employee,'month'=>now()->month,'year'=>now()->year])); ?>"
                    class="btn btn-primary">Saisir la paie du mois</a>
             <?php endif; ?>
@@ -38,7 +37,6 @@
             </strong></div>
             <div><div style="color:var(--text-muted);font-size:0.75rem">Salaire base</div><strong><?php echo e(number_format($employee->base_salary,0,',',' ')); ?> </strong></div>
 
-            
             <div><div style="color:var(--text-muted);font-size:0.75rem">Situation familiale</div><strong><?php echo e(ucfirst($employee->family_situation ?? 'Célibataire')); ?></strong></div>
 
             <div><div style="color:var(--text-muted);font-size:0.75rem">Enfants</div><strong><?php echo e($employee->children_count ?? 0); ?></strong></div>
@@ -103,8 +101,10 @@
             <div style="font-size:3rem;margin-bottom:12px">💰</div>
             <div style="font-size:1rem;margin-bottom:8px">Aucun bulletin de paie</div>
             <?php if (! (auth()->user()->isEmployee())): ?>
-                <a href="<?php echo e(route('salary.create',[$employee,'month'=>now()->month,'year'=>now()->year])); ?>"
-                   class="btn btn-primary" style="margin-top:12px">Générer le premier bulletin</a>
+                <?php if(auth()->user()->canCreate('salary')): ?>
+                    <a href="<?php echo e(route('salary.create',[$employee,'month'=>now()->month,'year'=>now()->year])); ?>"
+                       class="btn btn-primary" style="margin-top:12px">Générer le premier bulletin</a>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
     </div>
@@ -124,7 +124,6 @@
 
                 </span>
                 <span class="badge badge-<?php echo e($salary->status_color); ?>" style="margin-left:8px"><?php echo e($salary->status_label); ?></span>
-                
                 <span style="margin-left:8px;font-size:0.72rem;padding:2px 8px;border-radius:12px;font-weight:700;
                     background:<?php echo e($cur==='MRU'?'#f0fdf4':'#eff6ff'); ?>;
                     color:<?php echo e($cur==='MRU'?'#14532d':'#1e40af'); ?>;
@@ -151,19 +150,24 @@
                 <a href="<?php echo e(route('salary.pdf',$salary)); ?>" class="btn btn-sm btn-ghost" download="bulletin.pdf" onclick="event.stopPropagation()">PDF</a>
 
                 <?php if (! (auth()->user()->isEmployee())): ?>
-                    <?php if($salary->status==='draft' && auth()->user()->role !== 'rh'): ?>
+                    
+                    <?php if($salary->status==='draft' && auth()->user()->canEdit('salary')): ?>
                         <form method="POST" action="<?php echo e(route('salary.validate',$salary)); ?>" onclick="event.stopPropagation()">
                             <?php echo csrf_field(); ?> <?php echo method_field('PATCH'); ?>
                             <button class="btn btn-sm btn-success">Valider</button>
                         </form>
                     <?php endif; ?>
-                    <?php if($salary->status==='validated'): ?>
+
+                    
+                    <?php if($salary->status==='validated' && auth()->user()->canEdit('salary')): ?>
                         <form method="POST" action="<?php echo e(route('salary.paid',$salary)); ?>" onclick="event.stopPropagation()">
                             <?php echo csrf_field(); ?> <?php echo method_field('PATCH'); ?>
                             <button class="btn btn-sm btn-primary">Marquer rémunéré</button>
                         </form>
                     <?php endif; ?>
-                    <?php if($salary->status==='draft'): ?>
+
+                    
+                    <?php if($salary->status==='draft' && auth()->user()->canDelete('salary')): ?>
                         <form method="POST" action="<?php echo e(route('salary.destroy',$salary)); ?>"
                               onsubmit="return confirm('Supprimer ce bulletin ?')" onclick="event.stopPropagation()">
                             <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
@@ -176,6 +180,11 @@
                         <a href="<?php echo e(route('salary.create', [$employee, 'month'=>$salary->month, 'year'=>$salary->year])); ?>"
                            class="btn btn-sm btn-outline" onclick="event.stopPropagation()"
                            title="Modifier ce bulletin (même si validé/payé)">
+                            Modifier
+                        </a>
+                    <?php elseif(auth()->user()->canEdit('salary') && $salary->status === 'draft'): ?>
+                        <a href="<?php echo e(route('salary.create', [$employee, 'month'=>$salary->month, 'year'=>$salary->year])); ?>"
+                           class="btn btn-sm btn-outline" onclick="event.stopPropagation()">
                             Modifier
                         </a>
                     <?php endif; ?>

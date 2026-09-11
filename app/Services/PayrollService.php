@@ -615,4 +615,144 @@ class PayrollService
         $salary = $this->calculate($employee, $data);
         return $salary->toArray();
     }
+
+    // ─── Reprise du salaire du mois précédent ───────────────────────
+
+    /**
+     * Reprend les éléments FIXES du bulletin du mois précédent (primes,
+     * indemnités, retenues récurrentes, mode de cotisation, type de
+     * salaire) pour un employé donné et les recombine avec les heures
+     * RÉELLES du mois courant (pointage, planning, gardes, absences,
+     * retards) — jamais copiées depuis l'ancien mois.
+     *
+     * Ne modifie jamais un bulletin déjà saisi pour le mois courant,
+     * sauf si $overwriteExisting vaut true.
+     *
+     * Retourne :
+     *  - le Salary créé/mis à jour si la copie a eu lieu,
+     *  - le Salary existant si un bulletin existait déjà et qu'on ne
+     *    l'écrase pas,
+     *  - null si aucun bulletin n'existe pour le mois précédent (rien
+     *    à reprendre — nouvel employé, absence d'historique...).
+     */
+    public function copyFromPreviousMonth(
+        Employee $employee,
+        int $month,
+        int $year,
+        bool $overwriteExisting = false
+    ): ?Salary {
+        $prevDate = \Carbon\Carbon::create($year, $month, 1)->subMonthNoOverflow();
+
+        $previous = Salary::where('employee_id', $employee->id)
+            ->where('month', $prevDate->month)
+            ->where('year',  $prevDate->year)
+            ->first();
+
+        if (!$previous) {
+            return null;
+        }
+
+        $existingCurrent = Salary::where('employee_id', $employee->id)
+            ->where('month', $month)
+            ->where('year',  $year)
+            ->first();
+
+        if ($existingCurrent && !$overwriteExisting) {
+            return $existingCurrent;
+        }
+
+        // ── Heures recalculées depuis le pointage/planning du mois courant ──
+        $workingData = $this->getMonthlyWorkingHours($employee->id, $month, $year);
+
+        $data = [
+            'month'    => $month,
+            'year'     => $year,
+            'currency' => $previous->currency,
+
+            'salary_type' => $previous->salary_type,
+            'hourly_rate' => $previous->salary_type === 'hourly' ? $previous->hourly_rate : null,
+            'base_salary' => $previous->salary_type === 'hourly' ? null : $previous->base_salary,
+
+            // ── Heures : jamais copiées, toujours fraîches ──
+            'working_hours'          => $workingData['working_hours'],
+            'overtime_hours_day'     => $workingData['overtime_day'],
+            'overtime_hours_night'   => $workingData['overtime_night'],
+            'overtime_hours_weekend' => $workingData['overtime_weekend'],
+            'absence_hours'          => $workingData['absence_hours'],
+            'delay_hours'            => $workingData['delay_hours'],
+            'garde_hours'            => $workingData['garde_hours'],
+
+            // garde_override / garde_indemnite volontairement NON copiés :
+            // la garde du mois précédent n'a aucun sens ce mois-ci, elle
+            // est recalculée automatiquement depuis le planning du mois courant.
+            'garde_override'  => false,
+            'garde_indemnite' => 0,
+
+            // ── Éléments fixes copiés tels quels ──
+            'performance_bonus'        => $previous->performance_bonus,
+            'transport_allowance'      => $previous->transport_allowance,
+            'meal_allowance'           => $previous->meal_allowance,
+            'housing_allowance'        => $previous->housing_allowance,
+            'responsibility_allowance' => $previous->responsibility_allowance,
+            'other_gains'              => $previous->other_gains,
+
+            'advance_deduction'     => $previous->advance_deduction,
+            'loan_deduction'        => $previous->loan_deduction,
+            'garnishment_deduction' => $previous->garnishment_deduction,
+            'other_deductions'      => $previous->other_deductions,
+
+            'mode_cotisation'       => $previous->mode_cotisation,
+            'cnss_deduction_manual' => $previous->cnss_deduction_manual,
+            'amo_deduction_manual'  => $previous->amo_deduction_manual,
+            'fp_deduction_manual'   => $previous->fp_deduction_manual,
+        ];
+
+        return $this->calculate($employee, $data);
+    }
+
+    /**
+     * Copie en masse pour tous les employés du tenant courant qui n'ont
+     * pas encore de bulletin pour le mois demandé. Ne remplace jamais
+     * un bulletin déjà saisi.
+     *
+     * Retourne un tableau ['copied' => int, 'skipped' => int, 'errors' => array]
+     */
+    public function copyAllFromPreviousMonth(int $month, int $year): array
+    {
+        $tenantId = $this->getTenantId();
+
+        $query = Employee::query();
+        if ($tenantId) {
+            $query->where('tenant_id', $tenantId);
+        }
+
+        $copied  = 0;
+        $skipped = 0;
+        $errors  = [];
+
+        foreach ($query->get() as $employee) {
+            $already = Salary::where('employee_id', $employee->id)
+                ->where('month', $month)
+                ->where('year',  $year)
+                ->exists();
+
+            if ($already) {
+                $skipped++;
+                continue;
+            }
+
+            try {
+                $result = $this->copyFromPreviousMonth($employee, $month, $year);
+                if ($result) {
+                    $copied++;
+                } else {
+                    $skipped++;
+                }
+            } catch (\Throwable $e) {
+                $errors[] = "{$employee->full_name} : {$e->getMessage()}";
+            }
+        }
+
+        return compact('copied', 'skipped', 'errors');
+    }
 }
